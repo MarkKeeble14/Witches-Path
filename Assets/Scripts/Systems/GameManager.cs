@@ -5,11 +5,7 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     public static GameManager _Instance { get; private set; }
-
-    [SerializeField] private GameOccuranceMap map;
-    private GameOccuranceMap.GameOccuranceMapNode currentOccuranceNode;
     private GameOccurance currentOccurance;
-    private List<GameOccuranceMap.GameOccuranceMapNode> currentAllowedNodes;
 
     private void Awake()
     {
@@ -22,17 +18,9 @@ public class GameManager : MonoBehaviour
         StartCoroutine(Begin());
     }
 
-    public void SetNextGameOccurance(GameOccuranceMap.GameOccuranceMapNode node)
-    {
-        currentOccuranceNode = node;
-        currentOccurance = currentOccuranceNode.GetOccurance();
-    }
-
     public void LoadMap()
     {
-        Debug.Log("Loaded Map");
-        map.Load();
-        currentAllowedNodes = map.GetAllowedNodes();
+        Debug.Log("Loading Map");
     }
 
     private void ShowMap()
@@ -53,6 +41,7 @@ public class GameManager : MonoBehaviour
             currentOccurance = null;
 
             // Update new next possible nodes
+            /*
             currentAllowedNodes = map.GetAllowedNodes(currentOccuranceNode);
 
             if (currentAllowedNodes.Count == 0)
@@ -60,6 +49,7 @@ public class GameManager : MonoBehaviour
                 // No more possible nodes, beat the level
                 break;
             }
+            */
         }
 
         Debug.Log("Level Ended");
@@ -69,11 +59,5 @@ public class GameManager : MonoBehaviour
     private void ResolveCurrentEvent()
     {
         currentOccurance.SetResolve(true);
-    }
-
-    [ContextMenu("SelectRandomAllowedGameOccuranceNode")]
-    private void SelectRandomAllowedGameOccuranceNode()
-    {
-        SetNextGameOccurance(RandomHelper.GetRandomFromList(currentAllowedNodes));
     }
 }
