@@ -1,9 +1,10 @@
 ﻿using System.Collections;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "Combat", menuName = "Combat")]
+[CreateAssetMenu(fileName = "Combat", menuName = "GameOccurance/Combat")]
 public class Combat : GameOccurance
 {
+    public override MapNodeType Type => MapNodeType.MINOR_FIGHT;
     protected override IEnumerator OnResolve()
     {
         Debug.Log(name + ": OnResolve");
@@ -13,6 +14,6 @@ public class Combat : GameOccurance
     protected override IEnumerator OnStart()
     {
         Debug.Log(name + ": OnStart");
-        yield return null;
+        yield return GameManager._Instance.StartCoroutine(CombatManager._Instance.StartCombat(this));
     }
 }

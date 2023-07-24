@@ -13,6 +13,21 @@ public class Utils
         return s[0].ToString().ToUpper() + s.Substring(1, s.Length - 1).ToLower();
     }
 
+    public static string CapitalizeFirstLetters(string s, char[] splitOn)
+    {
+        string[] tokens = s.Split(splitOn);
+        string r = "";
+        for (int i = 0; i < tokens.Length; i++)
+        {
+            string token = tokens[i];
+            r += CapitalizeFirstLetter(token);
+
+            if (i < tokens.Length - 1)
+                r += " ";
+        }
+        return r;
+    }
+
     public static string ConvVector3ToString(Vector3 v)
     {
         return "<" + v.x + ", " + v.y + ", " + v.z + ">";

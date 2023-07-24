@@ -1,9 +1,10 @@
 ﻿using System.Collections;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "BossCombat", menuName = "BossCombat")]
+[CreateAssetMenu(fileName = "BossCombat", menuName = "GameOccurance/BossCombat")]
 public class BossCombat : GameOccurance
 {
+    public override MapNodeType Type => MapNodeType.BOSS;
     protected override IEnumerator OnResolve()
     {
         Debug.Log(name + ": OnResolve");
@@ -13,6 +14,6 @@ public class BossCombat : GameOccurance
     protected override IEnumerator OnStart()
     {
         Debug.Log(name + ": OnStart");
-        yield return null;
+        yield return GameManager._Instance.StartCoroutine(CombatManager._Instance.StartBossCombat(this));
     }
 }

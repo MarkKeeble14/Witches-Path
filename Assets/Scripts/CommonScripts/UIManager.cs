@@ -83,17 +83,17 @@ public class UIManager : MonoBehaviour
         });
     }
 
-    public void SavePlayerPrefs()
-    {
-        PlayerPrefs.Save();
-    }
-
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             TogglePauseState();
         }
+    }
+
+    public void SavePlayerPrefs()
+    {
+        PlayerPrefs.Save();
     }
 
     [ContextMenu("ClearPlayerPrefs")]

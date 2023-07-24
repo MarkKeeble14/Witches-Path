@@ -1,4 +1,5 @@
-﻿public interface Equipment
+﻿using UnityEngine;
+
+public abstract class Equipment : ScriptableObject
 {
-    public void Equip();
 }
