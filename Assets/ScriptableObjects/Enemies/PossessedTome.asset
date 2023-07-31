@@ -12,3 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b31adb0cf191c0a429a2c11ce960a977, type: 3}
   m_Name: PossessedTome
   m_EditorClassIdentifier: 
+  combatSprite: {fileID: 0}
+  maxHP: 25
+  startingHP: 25
+  basicAttackDamage: 1

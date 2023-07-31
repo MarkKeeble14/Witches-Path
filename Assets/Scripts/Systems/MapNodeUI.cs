@@ -52,11 +52,11 @@ public class MapNodeUI : MonoBehaviour
         GameManager._Instance.SetCurrentGameOccurance(this);
     }
 
-    public void Set(GameOccurance setTo)
+    public void Set(GameOccurance setTo, Sprite sprite)
     {
         this.representedGameOccurance = setTo;
         nodeTypeText.text = setTo.Label;
-        changeColorOf.sprite = setTo.MapIcon;
+        changeColorOf.sprite = sprite;
     }
 
     public void SetShow(bool b)

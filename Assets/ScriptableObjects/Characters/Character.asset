@@ -12,9 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca226392ff22ceb429a58fa99900c73d, type: 3}
   m_Name: Character
   m_EditorClassIdentifier: 
-  maxHP: 78
-  startingHP: 78
   startingCurrency: 100
   startingRobe: {fileID: 11400000, guid: 4e96354116aaa7543addc011250a6b34, type: 2}
   startingHat: {fileID: 11400000, guid: a3ed9b2b3d19c01469505e726d09302d, type: 2}
   startingWand: {fileID: 11400000, guid: 3b166944cc13dea4e929e85310a8221e, type: 2}
+  combatSprite: {fileID: 0}
+  maxHP: 78
+  startingHP: 78
+  basicAttackDamage: 1

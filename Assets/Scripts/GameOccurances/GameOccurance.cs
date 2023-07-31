@@ -3,8 +3,6 @@ using UnityEngine;
 
 public abstract class GameOccurance : ScriptableObject
 {
-    [SerializeField] private Sprite mapIcon;
-    public Sprite MapIcon => mapIcon;
     public abstract MapNodeType Type { get; }
     public string Label => Utils.CapitalizeFirstLetters(Type.ToString(), new char[] { '_' });
 

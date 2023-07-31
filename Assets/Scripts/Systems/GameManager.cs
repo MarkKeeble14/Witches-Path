@@ -184,13 +184,38 @@ public class GameManager : MonoBehaviour
         currentOccurance = currentNode.GetRepresentedGameOccurance();
     }
 
+    public bool CheckCanAfford(float amount)
+    {
+        return currentPlayerCurrency >= amount;
+    }
+
     public void AlterCurrency(float amount)
     {
         currentPlayerCurrency += amount;
     }
 
-    public void AlterPlayerHP(float amount)
+    public bool AlterPlayerHP(float amount)
     {
         currentPlayerHP += amount;
+        if (currentPlayerHP > 0)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    public Character GetCharacter()
+    {
+        return playerCharacter;
+    }
+
+    public float GetCurrentCharacterHP()
+    {
+        return currentPlayerHP;
+    }
+
+    public float GetMaxPlayerHP()
+    {
+        return maxPlayerHP;
     }
 }

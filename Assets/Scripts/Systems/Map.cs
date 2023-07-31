@@ -8,7 +8,6 @@ using UnityEngine.UI;
 public class Map
 {
     [SerializeField] private SerializableDictionary<MapNodeType, List<GameOccurance>> mapNodes = new SerializableDictionary<MapNodeType, List<GameOccurance>>();
-
     [SerializeField] private SerializableDictionary<int, MapNodeType> forcedNodeIndices = new SerializableDictionary<int, MapNodeType>();
     [SerializeField] private List<MapNodeType> allowedRandomNodeTypes = new List<MapNodeType>();
 
@@ -17,8 +16,8 @@ public class Map
 
     [Header("Visual Settings")]
     [SerializeField] private float delayBetweenShowingCells = .1f;
-
     [SerializeField] private Vector2 chanceToPokeHole = new Vector2(1, 3);
+    [SerializeField] private SerializableDictionary<MapNodeType, Sprite> mapNodeIconDict = new SerializableDictionary<MapNodeType, Sprite>();
 
     [Header("References")]
     [SerializeField] private GridLayoutGroup grid;
@@ -139,7 +138,7 @@ public class Map
         foreach (MapNodeUI node in spawnedGridNodes)
         {
             MapNodeType nodeType = RandomHelper.GetRandomFromList(allowedRandomNodeTypes);
-            node.Set(GetMapNodeOfType(nodeType));
+            node.Set(GetMapNodeOfType(nodeType), mapNodeIconDict[nodeType]);
         }
     }
 
@@ -152,7 +151,8 @@ public class Map
             for (int p = 0; p < mapGridSize.y; p++)
             {
                 MapNodeUI node = spawnedGridNodes[i, p];
-                node.Set(GetMapNodeOfType(forcedNodeIndices[i]));
+                MapNodeType type = forcedNodeIndices[i];
+                node.Set(GetMapNodeOfType(type), mapNodeIconDict[type]);
             }
         }
     }

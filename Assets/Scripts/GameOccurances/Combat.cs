@@ -1,10 +1,22 @@
 ﻿using System.Collections;
+using UnityEditor;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "Combat", menuName = "GameOccurance/Combat")]
-public class Combat : GameOccurance
+public abstract class Combat : GameOccurance
 {
-    public override MapNodeType Type => MapNodeType.MINOR_FIGHT;
+    [Header("Map")]
+    [SerializeField] private DefaultAsset mapFile; // Map file (.osu format), attach from editor
+    public DefaultAsset MapFile { get => mapFile; }
+    [SerializeField] private AudioClip mainMusic; // Music file, attach from editor
+    public AudioClip MainMusic { get => mainMusic; }
+    [SerializeField] private AudioClip hitSound; // Hit sound
+    public AudioClip HitSound { get => hitSound; }
+    [SerializeField] private AudioClip missSound; // Hit sound
+    public AudioClip MissSound { get => missSound; }
+
+    [SerializeField] private Enemy enemy;
+    public Enemy Enemy { get => enemy; }
+
     protected override IEnumerator OnResolve()
     {
         Debug.Log(name + ": OnResolve");
