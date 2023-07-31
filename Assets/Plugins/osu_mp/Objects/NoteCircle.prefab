@@ -11,8 +11,8 @@ GameObject:
   - component: {fileID: 4858362944512862}
   - component: {fileID: 114692418342517324}
   - component: {fileID: 65712764148315052}
-  m_Layer: 0
-  m_Name: Circle
+  m_Layer: 6
+  m_Name: NoteCircle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -78,7 +78,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4487122673431488}
   - component: {fileID: 212177605319455866}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Overlay
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -162,7 +162,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4734109104871970}
   - component: {fileID: 212759885179515234}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Foreground
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -246,7 +246,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4407260895824746}
   - component: {fileID: 212883330347435912}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Background
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -21,19 +21,17 @@ public class GameManager : MonoBehaviour
     private List<Artifact> playerArtifacts = new List<Artifact>();
 
     private string persistentTokensKey = "PersistentTokens";
-    private Dictionary<string, Image> artifactDisplayTracker = new Dictionary<string, Image>();
+    private Dictionary<ArtifactLabel, Image> artifactDisplayTracker = new Dictionary<ArtifactLabel, Image>();
 
     [Header("References")]
     [SerializeField] private TextMeshProUGUI hpText;
     [SerializeField] private TextMeshProUGUI currencyText;
     [SerializeField] private Transform artifactBar;
 
-    private Action onSuccessfulNoteHit;
-    private Action onFailedNoteHit;
-    private Action onRecievedDamage;
-    private Action onDealtDamage;
-    private Action onSongStart;
-    private Action onSongEnd;
+    public Action OnEnterNewRoom;
+
+    private Dictionary<MapNodeType, Action> OnEnterSpecificRoomActionMap = new Dictionary<MapNodeType, Action>();
+    [SerializeField] private List<ArtifactLabel> testArtifacts;
 
     [Header("Prefabs")]
     [SerializeField] private Image artifactDisplay;
@@ -46,6 +44,11 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         TryAddPersistentTokens();
+
+        foreach (MapNodeType type in Enum.GetValues(typeof(MapNodeType)))
+        {
+            OnEnterSpecificRoomActionMap.Add(type, null);
+        }
 
         LoadMap();
         StartCoroutine(Begin());
@@ -62,14 +65,13 @@ public class GameManager : MonoBehaviour
         {
             if (testArtifacts.Count > 0)
             {
-                Artifact a = testArtifacts[0];
+                ArtifactLabel a = testArtifacts[0];
                 testArtifacts.RemoveAt(0);
                 AddArtifact(a);
             }
         }
     }
 
-    [SerializeField] private List<Artifact> testArtifacts;
 
     private void EquipCharacterLoadout(Character c)
     {
@@ -106,16 +108,77 @@ public class GameManager : MonoBehaviour
         // Figure out what to do here
     }
 
-    public void AddArtifact(Artifact artifact)
+    public Artifact GetArtifactOfType(ArtifactLabel label)
     {
+        switch (label)
+        {
+            case ArtifactLabel.BankCard:
+                return new BankCard();
+            case ArtifactLabel.Barricade:
+                return new Barricade();
+            case ArtifactLabel.BlueMantis:
+                return new BlueMantis();
+            case ArtifactLabel.CanyonChunk:
+                return new CanyonChunk();
+            case ArtifactLabel.DoctorsReport:
+                return new DoctorsReport();
+            case ArtifactLabel.SpecialSpinich:
+                return new SpecialSpinach();
+            case ArtifactLabel.HalfLitFirework:
+                return new HalfLitFirework();
+            case ArtifactLabel.HealthInsurance:
+                return new HealthInsurance();
+            case ArtifactLabel.HolyShield:
+                return new HolyShield();
+            case ArtifactLabel.InvertedPolaroid:
+                return new InvertedPolaroid();
+            case ArtifactLabel.LooseTrigger:
+                return new LooseTrigger();
+            case ArtifactLabel.BoldInvestments:
+                return new BoldInvestments();
+            case ArtifactLabel.MedicineKit:
+                return new MedicineKit();
+            case ArtifactLabel.MolatovCocktail:
+                return new MolatovCocktail();
+            case ArtifactLabel.Plaguebringer:
+                return new Plaguebringer();
+            case ArtifactLabel.RustyCannon:
+                return new RustyCannon();
+            case ArtifactLabel.SheriffsEye:
+                return new SheriffsEye();
+            case ArtifactLabel.SmokeBomb:
+                return new SmokeBomb();
+            case ArtifactLabel.SmokeShroud:
+                return new SmokeShroud();
+            case ArtifactLabel.GreedyHands:
+                return new GreedyHands();
+            case ArtifactLabel.VoodooDoll:
+                return new VoodooDoll();
+            case ArtifactLabel.ZedsScalpel:
+                return new ZedsScalpel();
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
+
+    public void AddArtifact(ArtifactLabel type)
+    {
+        Artifact artifact = GetArtifactOfType(type);
+        artifact.OnEquip();
         playerArtifacts.Add(artifact);
 
         Image spawned = Instantiate(artifactDisplay, artifactBar);
+        spawned.name = "Artifact(" + type + ")";
         spawned.sprite = artifact.GetSprite();
 
-        artifactDisplayTracker.Add(artifact.GetIdentifier(), spawned);
+        artifactDisplayTracker.Add(artifact.GetLabel(), spawned);
 
         // Somehow evaluate what artifact must do and add it's effect
+    }
+
+    internal void GameOver()
+    {
+        throw new NotImplementedException();
     }
 
     private void TryAddPersistentTokens()
@@ -153,6 +216,9 @@ public class GameManager : MonoBehaviour
             yield return new WaitUntil(() => currentOccurance != null);
             currentOccurance.SetResolve(false);
 
+            OnEnterNewRoom?.Invoke();
+            OnEnterSpecificRoomActionMap[currentOccurance.Type]?.Invoke();
+
             yield return StartCoroutine(currentOccurance.RunOccurance());
 
             // if beat boss, break the loop as the level is done
@@ -184,6 +250,11 @@ public class GameManager : MonoBehaviour
         currentOccurance = currentNode.GetRepresentedGameOccurance();
     }
 
+    public GameOccurance GetCurrentGameOccurance()
+    {
+        return currentOccurance;
+    }
+
     public bool CheckCanAfford(float amount)
     {
         return currentPlayerCurrency >= amount;
@@ -196,7 +267,14 @@ public class GameManager : MonoBehaviour
 
     public bool AlterPlayerHP(float amount)
     {
-        currentPlayerHP += amount;
+        if (currentPlayerHP + amount > maxPlayerHP)
+        {
+            currentPlayerHP = maxPlayerHP;
+        }
+        else
+        {
+            currentPlayerHP += amount;
+        }
         if (currentPlayerHP > 0)
         {
             return true;
@@ -217,5 +295,20 @@ public class GameManager : MonoBehaviour
     public float GetMaxPlayerHP()
     {
         return maxPlayerHP;
+    }
+
+    public void AddOnEnterSpecificRoomAction(MapNodeType type, Action a)
+    {
+        OnEnterSpecificRoomActionMap[type] += a;
+    }
+
+    public void RemoveOnEnterSpecificRoomAction(MapNodeType type, Action a)
+    {
+        OnEnterSpecificRoomActionMap[type] -= a;
+    }
+
+    public bool HasArtifact(ArtifactLabel label)
+    {
+        return artifactDisplayTracker.ContainsKey(label);
     }
 }

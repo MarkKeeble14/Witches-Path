@@ -196,4 +196,10 @@ public class Utils
             Debug.Log(label + " - Average: " + (total / repititions) + "ms");
         }
     }
+
+    public static IEnumerator CallActionAfterDelay(Action action, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        action?.Invoke();
+    }
 }

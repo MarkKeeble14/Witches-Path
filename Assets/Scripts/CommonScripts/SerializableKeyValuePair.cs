@@ -8,6 +8,8 @@ public class SerializableKeyValuePair<TKey, TValue>
     [SerializeField]
     private TValue value;
 
+    public string name => key.ToString();
+
     public SerializableKeyValuePair(TKey key, TValue value)
     {
         this.key = key;

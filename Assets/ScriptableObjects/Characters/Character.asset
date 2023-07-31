@@ -19,4 +19,4 @@ MonoBehaviour:
   combatSprite: {fileID: 0}
   maxHP: 78
   startingHP: 78
-  basicAttackDamage: 1
+  basicAttackDamage: 5
