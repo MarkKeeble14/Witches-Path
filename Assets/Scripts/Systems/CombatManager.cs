@@ -99,12 +99,17 @@ public class CombatManager : MonoBehaviour
     public Action OnCharacterLoseAffliction;
     public Action OnEnemyGainAffliction;
     public Action OnEnemyLoseAffliction;
+    private List<Coroutine> onStartCombatCoroutines = new List<Coroutine>();
 
     private Dictionary<AfflictionType, Affliction> characterAfflictionMap = new Dictionary<AfflictionType, Affliction>();
     private Dictionary<AfflictionType, Affliction> enemyAfflictionMap = new Dictionary<AfflictionType, Affliction>();
     private List<AfflictionType> toClearFromAffMap = new List<AfflictionType>();
 
-    private List<Coroutine> onStartCombatCoroutines = new List<Coroutine>();
+    private Dictionary<AfflictionType, AfflictionIcon> afflictionIconTracker = new Dictionary<AfflictionType, AfflictionIcon>();
+    [SerializeField] private AfflictionIcon afflictionIconPrefab;
+
+    [SerializeField] private Transform characterAfflictionList;
+    [SerializeField] private Transform enemyAfflictionList;
 
     public void AddAffliction(AfflictionType type, float num, AfflictionSetType setType, Target target)
     {
@@ -125,14 +130,14 @@ public class CombatManager : MonoBehaviour
                 switch (setType)
                 {
                     case AfflictionSetType.Activations:
-                        if (AddAffliction(type, (int)num, characterAfflictionMap))
+                        if (SetAffliction(type, (int)num, target))
                         {
                             // Character was given new Affliction
                             OnCharacterGainAffliction?.Invoke();
                         }
                         break;
                     case AfflictionSetType.Duration:
-                        if (AddAffliction(type, num, characterAfflictionMap))
+                        if (SetAffliction(type, num, target))
                         {
                             // Character was given new Affliction
                             OnCharacterGainAffliction?.Invoke();
@@ -144,14 +149,14 @@ public class CombatManager : MonoBehaviour
                 switch (setType)
                 {
                     case AfflictionSetType.Activations:
-                        if (AddAffliction(type, (int)num, enemyAfflictionMap))
+                        if (SetAffliction(type, (int)num, target))
                         {
                             // Enemy was given new Affliction
                             OnEnemyGainAffliction?.Invoke();
                         }
                         break;
                     case AfflictionSetType.Duration:
-                        if (AddAffliction(type, num, enemyAfflictionMap))
+                        if (SetAffliction(type, num, target))
                         {
                             // Enemy was given new Affliction
                             OnEnemyGainAffliction?.Invoke();
@@ -162,8 +167,21 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    private bool AddAffliction(AfflictionType type, float duration, Dictionary<AfflictionType, Affliction> map)
+    private Dictionary<AfflictionType, Affliction> GetTargetAfflictionMap(Target t)
     {
+        return t == Target.Character ? characterAfflictionMap : enemyAfflictionMap;
+    }
+
+    private Transform GetTargetParentAfflictionTo(Target t)
+    {
+        return t == Target.Character ? characterAfflictionList : enemyAfflictionList;
+    }
+
+    private bool SetAffliction(AfflictionType type, float duration, Target t)
+    {
+        Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(t);
+        Transform parentTo = GetTargetParentAfflictionTo(t);
+
         //  Affliction Map already contains
         if (map.ContainsKey(type))
         {
@@ -172,15 +190,22 @@ public class CombatManager : MonoBehaviour
         }
         else
         {
-            Affliction aff = new Affliction();
-            aff.SetDuration(duration);
+            Affliction aff = new Affliction(type, duration);
             map.Add(type, aff);
+
+            AfflictionIcon spawned = Instantiate(afflictionIconPrefab, parentTo);
+            spawned.SetAffliction(aff);
+            afflictionIconTracker.Add(type, spawned);
+
             return true;
         }
     }
 
-    private bool AddAffliction(AfflictionType type, int activations, Dictionary<AfflictionType, Affliction> map)
+    private bool SetAffliction(AfflictionType type, int activations, Target t)
     {
+        Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(t);
+        Transform parentTo = GetTargetParentAfflictionTo(t);
+
         // Affliction Map already contains
         if (map.ContainsKey(type))
         {
@@ -189,9 +214,13 @@ public class CombatManager : MonoBehaviour
         }
         else
         {
-            Affliction aff = new Affliction();
-            aff.SetActivations(activations);
+            Affliction aff = new Affliction(type, activations);
             map.Add(type, aff);
+
+            AfflictionIcon spawned = Instantiate(afflictionIconPrefab, parentTo);
+            spawned.SetAffliction(aff);
+            afflictionIconTracker.Add(type, spawned);
+
             return true;
         }
     }
@@ -203,15 +232,22 @@ public class CombatManager : MonoBehaviour
     }
 
 
-    private void ClearAfflictionMaps()
+    private void ClearAfflictionMap(Dictionary<AfflictionType, Affliction> map)
     {
-        enemyAfflictionMap.Clear();
-        characterAfflictionMap.Clear();
+        Dictionary<AfflictionType, Affliction>.KeyCollection keys = map.Keys;
+        foreach (AfflictionType type in keys)
+        {
+            AfflictionIcon icon = afflictionIconTracker[type];
+            afflictionIconTracker.Remove(type);
+            Destroy(icon.gameObject);
+        }
+        map.Clear();
     }
 
     private void ResetCombat()
     {
-        ClearAfflictionMaps();
+        ClearAfflictionMap(enemyAfflictionMap);
+        ClearAfflictionMap(characterAfflictionMap);
 
         foreach (Coroutine c in onStartCombatCoroutines)
         {
@@ -251,7 +287,12 @@ public class CombatManager : MonoBehaviour
 
         foreach (AfflictionType toClear in toClearFromAffMap)
         {
+            AfflictionIcon i = afflictionIconTracker[toClear];
+            afflictionIconTracker.Remove(toClear);
+            Destroy(i.gameObject);
+
             map.Remove(toClear);
+
             switch (target)
             {
                 case Target.Character:
@@ -308,7 +349,7 @@ public class CombatManager : MonoBehaviour
     {
         if (GameManager._Instance.HasArtifact(ArtifactLabel.DoctorsReport) && amount > ArtifactManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "MustBeOver"))
         {
-            AddAffliction(AfflictionType.Bandaged, ArtifactManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "StackAmount"), characterAfflictionMap);
+            AddAffliction(AfflictionType.Bandaged, ArtifactManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "StackAmount"), AfflictionSetType.Activations, Target.Character);
             GameManager._Instance.AnimateArtifact(ArtifactLabel.DoctorsReport);
         }
 

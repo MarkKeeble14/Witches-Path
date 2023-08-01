@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5580262284394836984}
   - component: {fileID: 7516618647761885518}
   m_Layer: 0
-  m_Name: Artifact
+  m_Name: ArtifactIcon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
