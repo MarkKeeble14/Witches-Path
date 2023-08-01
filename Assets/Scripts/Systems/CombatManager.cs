@@ -111,6 +111,13 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private Transform characterAfflictionList;
     [SerializeField] private Transform enemyAfflictionList;
 
+    private void Start()
+    {
+        circleList = new List<GameObject>();
+    }
+
+    #region Afflictions
+
     public void AddAffliction(AfflictionType type, float num, AfflictionSetType setType, Target target)
     {
         switch (target)
@@ -167,16 +174,6 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    private Dictionary<AfflictionType, Affliction> GetTargetAfflictionMap(Target t)
-    {
-        return t == Target.Character ? characterAfflictionMap : enemyAfflictionMap;
-    }
-
-    private Transform GetTargetParentAfflictionTo(Target t)
-    {
-        return t == Target.Character ? characterAfflictionList : enemyAfflictionList;
-    }
-
     private bool SetAffliction(AfflictionType type, float duration, Target t)
     {
         Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(t);
@@ -225,50 +222,6 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    private void UpdateAfflictionMaps()
-    {
-        UpdateAfflictionMap(characterAfflictionMap, Target.Character);
-        UpdateAfflictionMap(enemyAfflictionMap, Target.Enemy);
-    }
-
-
-    private void ClearAfflictionMap(Dictionary<AfflictionType, Affliction> map)
-    {
-        Dictionary<AfflictionType, Affliction>.KeyCollection keys = map.Keys;
-        foreach (AfflictionType type in keys)
-        {
-            AfflictionIcon icon = afflictionIconTracker[type];
-            afflictionIconTracker.Remove(type);
-            Destroy(icon.gameObject);
-        }
-        map.Clear();
-    }
-
-    private void ResetCombat()
-    {
-        ClearAfflictionMap(enemyAfflictionMap);
-        ClearAfflictionMap(characterAfflictionMap);
-
-        foreach (Coroutine c in onStartCombatCoroutines)
-        {
-            StopCoroutine(c);
-        }
-        onStartCombatCoroutines.Clear();
-
-        musicSource.Stop();
-        musicSource.time = 0;
-        objCount = 0;
-        noteCount = 0;
-
-        // Destroy Circles
-        while (circleList.Count > 0)
-        {
-            GameObject circle = circleList[0];
-            circleList.RemoveAt(0);
-            Destroy(circle);
-        }
-    }
-
     private void UpdateAfflictionMap(Dictionary<AfflictionType, Affliction> map, Target target)
     {
         toClearFromAffMap.Clear();
@@ -305,6 +258,147 @@ public class CombatManager : MonoBehaviour
         }
     }
 
+    private void UpdateAfflictionMaps()
+    {
+        UpdateAfflictionMap(characterAfflictionMap, Target.Character);
+        UpdateAfflictionMap(enemyAfflictionMap, Target.Enemy);
+    }
+
+    private void ClearAfflictionMap(Dictionary<AfflictionType, Affliction> map)
+    {
+        Dictionary<AfflictionType, Affliction>.KeyCollection keys = map.Keys;
+        foreach (AfflictionType type in keys)
+        {
+            AfflictionIcon icon = afflictionIconTracker[type];
+            afflictionIconTracker.Remove(type);
+            Destroy(icon.gameObject);
+        }
+        map.Clear();
+    }
+
+    private Dictionary<AfflictionType, Affliction> GetTargetAfflictionMap(Target t)
+    {
+        return t == Target.Character ? characterAfflictionMap : enemyAfflictionMap;
+    }
+
+    private Transform GetTargetParentAfflictionTo(Target t)
+    {
+        return t == Target.Character ? characterAfflictionList : enemyAfflictionList;
+    }
+
+    public bool TargetHasAffliction(AfflictionType type, Target target)
+    {
+        return GetTargetAfflictionMap(target).ContainsKey(type);
+    }
+
+    public void TryConsumeAfflictionStack(AfflictionType type, Target target)
+    {
+        // Only consumes a stack if there are stacks to be consumed
+        Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(target);
+        Affliction aff = map[type];
+        if (!aff.TickAway)
+        {
+            map[type].AlterActivations(-1);
+        }
+    }
+
+    private void UpdateTickBasedAfflictions(Dictionary<AfflictionType, Affliction> map, Target t)
+    {
+        foreach (KeyValuePair<AfflictionType, Affliction> kvp in map)
+        {
+            if (kvp.Key == AfflictionType.Blight)
+            {
+                AlterCombatentHP(-kvp.Value.RemainingActivations, t);
+                map[kvp.Key].AlterActivations(-1);
+            }
+            else if (kvp.Key == AfflictionType.Burn)
+            {
+                AlterCombatentHP(-BalenceManager._Instance.GetValue(AfflictionType.Burn, "DamageAmount"), t);
+                map[kvp.Key].AlterActivations(-1);
+            }
+        }
+    }
+
+    private IEnumerator UpdateTickBasedAfflictions()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(1);
+
+            UpdateTickBasedAfflictions(characterAfflictionMap, Target.Character);
+            UpdateTickBasedAfflictions(enemyAfflictionMap, Target.Enemy);
+        }
+    }
+
+    #endregion
+
+    #region Combat
+
+    public IEnumerator StartCombat(Combat combat)
+    {
+        Debug.Log("Combat Started: " + combat);
+
+        MapManager._Instance.Hide();
+
+        // Set Up Combat
+        musicSource.clip = combat.MainMusic;
+        ReadCircles(AssetDatabase.GetAssetPath(combat.MapFile));
+        hitSound = combat.HitSound;
+        missSound = combat.MissSound;
+
+        currentEnemy = combat.Enemy;
+        maxEnemyHP = currentEnemy.GetMaxHP();
+        currentEnemyHP = maxEnemyHP;
+        enemyCombatSprite.sprite = currentEnemy.GetCombatSprite();
+        characterCombatSprite.sprite = GameManager._Instance.GetCharacter().GetCombatSprite();
+
+        CallOnStartCombat();
+
+        musicSource.Play();
+
+        yield return StartCoroutine(UpdateRoutine());
+
+        // Bandaged Effect
+        if (TargetHasAffliction(AfflictionType.Bandaged, Target.Character))
+        {
+            GameManager._Instance.AlterPlayerHP(characterAfflictionMap[AfflictionType.Bandaged].RemainingActivations);
+        }
+
+        // Reset
+        ResetCombat();
+
+        GameManager._Instance.ResolveCurrentEvent();
+
+        MapManager._Instance.Show();
+
+        Debug.Log("Combat Completed: " + combat);
+    }
+
+    private void ResetCombat()
+    {
+        ClearAfflictionMap(enemyAfflictionMap);
+        ClearAfflictionMap(characterAfflictionMap);
+
+        foreach (Coroutine c in onStartCombatCoroutines)
+        {
+            StopCoroutine(c);
+        }
+        onStartCombatCoroutines.Clear();
+
+        musicSource.Stop();
+        musicSource.time = 0;
+        objCount = 0;
+        noteCount = 0;
+
+        // Destroy Circles
+        while (circleList.Count > 0)
+        {
+            GameObject circle = circleList[0];
+            circleList.RemoveAt(0);
+            Destroy(circle);
+        }
+    }
+
     public void ReduceActiveSpellCDsByPercent(float normalizedPercent)
     {
         // normaliedPercent is some number between 0 and 1
@@ -321,11 +415,6 @@ public class CombatManager : MonoBehaviour
     public void ReleaseHalfLitFirework()
     {
 
-    }
-
-    private void Start()
-    {
-        circleList = new List<GameObject>();
     }
 
     public void OnNoteHit()
@@ -345,11 +434,122 @@ public class CombatManager : MonoBehaviour
         EnemyAttack();
     }
 
-    public void AltarEnemyHP(float amount)
+    private void PlayerAttack()
     {
-        if (GameManager._Instance.HasArtifact(ArtifactLabel.DoctorsReport) && amount > ArtifactManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "MustBeOver"))
+        // Simple way of attacking for now
+        AttackCombatent(-GameManager._Instance.GetCharacter().GetBasicAttackDamage(), Target.Character, Target.Enemy);
+
+        OnPlayerAttack?.Invoke();
+    }
+
+    private void EnemyAttack()
+    {
+        // Simple way of attacking for now
+        if (!AttackCombatent(-currentEnemy.GetBasicAttackDamage(), Target.Enemy, Target.Character))
         {
-            AddAffliction(AfflictionType.Bandaged, ArtifactManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "StackAmount"), AfflictionSetType.Activations, Target.Character);
+            // Player Died
+            GameManager._Instance.GameOver();
+        }
+        else
+        {
+            OnEnemyAttack?.Invoke();
+        }
+    }
+
+    public bool AttackCombatent(float amount, Target attacker, Target target)
+    {
+        // Paralyzed Effect
+        if (TargetHasAffliction(AfflictionType.Paralyzed, attacker))
+        {
+            TryConsumeAfflictionStack(AfflictionType.Paralyzed, attacker);
+            return true;
+        }
+
+        // Emboldened Effect
+        if (amount < 0 && TargetHasAffliction(AfflictionType.Emboldened, attacker))
+        {
+            amount *= BalenceManager._Instance.GetValue(AfflictionType.Emboldened, "MultiplyBy");
+            TryConsumeAfflictionStack(AfflictionType.Emboldened, attacker);
+        }
+
+        // Weakened Effect
+        if (amount < 0 && TargetHasAffliction(AfflictionType.Weakened, attacker))
+        {
+            amount *= BalenceManager._Instance.GetValue(AfflictionType.Weakened, "MultiplyBy");
+            TryConsumeAfflictionStack(AfflictionType.Weakened, attacker);
+        }
+
+        // Retribution Effect
+        if (TargetHasAffliction(AfflictionType.Retribution, target))
+        {
+            DamageCombatent(BalenceManager._Instance.GetValue(AfflictionType.Retribution, "DamageAmount"), attacker, target);
+            TryConsumeAfflictionStack(AfflictionType.Retribution, target);
+        }
+
+        // Parry Effect
+        if (TargetHasAffliction(AfflictionType.Parry, target))
+        {
+            TryConsumeAfflictionStack(AfflictionType.Parry, target);
+            Target swap = target;
+            target = attacker;
+            attacker = swap;
+        }
+
+        // Then to Deal Damage
+        return DamageCombatent(amount, target, attacker);
+    }
+
+    public bool DamageCombatent(float amount, Target combatent, Target attacker)
+    {
+        // Vulnerable Effect
+        if (amount < 0 && TargetHasAffliction(AfflictionType.Vulnerable, Target.Enemy))
+        {
+            amount *= BalenceManager._Instance.GetValue(AfflictionType.Vulnerable, "MultiplyBy");
+            TryConsumeAfflictionStack(AfflictionType.Vulnerable, Target.Enemy);
+        }
+
+        // Guarded Effect
+        if (amount < 0 && TargetHasAffliction(AfflictionType.Guarded, Target.Enemy))
+        {
+            amount -= BalenceManager._Instance.GetValue(AfflictionType.Guarded, "ReduceBy");
+            TryConsumeAfflictionStack(AfflictionType.Guarded, Target.Enemy);
+            if (amount > 0)
+            {
+                amount = 0;
+            }
+        }
+
+        // Alter HP
+        return AlterCombatentHP(amount, combatent);
+    }
+
+    private bool AlterCombatentHP(float amount, Target t)
+    {
+        // Prepared Effect
+        if (TargetHasAffliction(AfflictionType.Prepared, t))
+        {
+            amount = 1;
+            TryConsumeAfflictionStack(AfflictionType.Prepared, t);
+        }
+
+        // Call the AlterHP function on the appropriate Target
+        switch (t)
+        {
+            case Target.Character:
+                return GameManager._Instance.AlterPlayerHP(amount);
+            case Target.Enemy:
+                return AltarEnemyHP(amount);
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
+
+    public bool AltarEnemyHP(float amount)
+    {
+        // Doctors Report Effect
+        if (GameManager._Instance.HasArtifact(ArtifactLabel.DoctorsReport) && amount > BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "MustBeOver"))
+        {
+            AddAffliction(AfflictionType.Bandaged, BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "StackAmount"), AfflictionSetType.Activations, Target.Character);
             GameManager._Instance.AnimateArtifact(ArtifactLabel.DoctorsReport);
         }
 
@@ -364,41 +564,62 @@ public class CombatManager : MonoBehaviour
             {
                 // Enemy Died
                 CallOnEndCombat();
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void CallOnStartCombat()
+    {
+        OnCombatStart?.Invoke();
+
+        foreach (KeyValuePair<Action, float> kvp in OnCombatStartDelayedActionMap)
+        {
+            Debug.Log("Starting: " + kvp.Key + ", Delay = " + kvp.Value);
+            onStartCombatCoroutines.Add(StartCoroutine(Utils.CallActionAfterDelay(kvp.Key, kvp.Value)));
+        }
+
+        foreach (KeyValuePair<Action, RepeatData> kvp in OnCombatStartRepeatedActionMap)
+        {
+            Debug.Log("Starting: " + kvp.Key + ", Repetitions = " + kvp.Value.Repetitions + ", Delay = " + kvp.Value.Delay);
+            for (int i = 1; i <= kvp.Value.Repetitions; i++)
+            {
+                onStartCombatCoroutines.Add(StartCoroutine(Utils.CallActionAfterDelay(kvp.Key, kvp.Value.Delay * i)));
             }
         }
     }
 
-    private void PlayerAttack()
+    private void CallOnEndCombat()
     {
-        // Simple way of attacking for now
-        AltarEnemyHP(-GameManager._Instance.GetCharacter().GetBasicAttackDamage());
-
-        OnPlayerAttack?.Invoke();
+        OnCombatEnd?.Invoke();
     }
 
-    private void EnemyAttack()
+    public void AddOnCombatStartDelayedAction(Action a, float delay)
     {
-        // Simple way of attacking for now
-        if (!GameManager._Instance.AlterPlayerHP(-currentEnemy.GetBasicAttackDamage()))
-        {
-            // Player Died
-            GameManager._Instance.GameOver();
-        }
-        else
-        {
-            OnEnemyAttack?.Invoke();
-        }
+        Debug.Log("Added: " + a + ", Delay = " + delay);
+        OnCombatStartDelayedActionMap.Add(a, delay);
     }
 
-    public double GetTimer()
+    public void RemoveOnCombatStartDelayedAction(Action a)
     {
-        return timer;
+        OnCombatStartDelayedActionMap.Remove(a);
     }
 
-    public int GetApprRate()
+    public void AddOnCombatStartRepeatedAction(Action a, RepeatData data)
     {
-        return apprRate;
+        Debug.Log("Starting: " + a + ", Repetitions = " + data.Repetitions + ", Delay = " + data.Delay);
+        OnCombatStartRepeatedActionMap.Add(a, data);
     }
+
+    public void RemoveOnCombatStartRepeatedAction(Action a)
+    {
+        OnCombatStartRepeatedActionMap.Remove(a);
+    }
+
+    #endregion
+
+    #region Parsing
 
     void ReadCircles(string path)
     {
@@ -504,6 +725,7 @@ public class CombatManager : MonoBehaviour
 
     private IEnumerator UpdateRoutine()
     {
+        Coroutine tickAfflictionsRoutine = StartCoroutine(UpdateTickBasedAfflictions());
         while (true)
         {
             // Show Enemy HP
@@ -545,81 +767,18 @@ public class CombatManager : MonoBehaviour
 
             yield return null;
         }
+        StopCoroutine(tickAfflictionsRoutine);
     }
 
-    private void CallOnStartCombat()
+    #endregion
+
+    public double GetTimer()
     {
-        OnCombatStart?.Invoke();
-
-        foreach (KeyValuePair<Action, float> kvp in OnCombatStartDelayedActionMap)
-        {
-            Debug.Log("Starting: " + kvp.Key + ", Delay = " + kvp.Value);
-            onStartCombatCoroutines.Add(StartCoroutine(Utils.CallActionAfterDelay(kvp.Key, kvp.Value)));
-        }
-
-        foreach (KeyValuePair<Action, RepeatData> kvp in OnCombatStartRepeatedActionMap)
-        {
-            Debug.Log("Starting: " + kvp.Key + ", Repetitions = " + kvp.Value.Repetitions + ", Delay = " + kvp.Value.Delay);
-            for (int i = 1; i <= kvp.Value.Repetitions; i++)
-            {
-                onStartCombatCoroutines.Add(StartCoroutine(Utils.CallActionAfterDelay(kvp.Key, kvp.Value.Delay * i)));
-            }
-        }
+        return timer;
     }
 
-    private void CallOnEndCombat()
+    public int GetApprRate()
     {
-        OnCombatEnd?.Invoke();
-    }
-
-    public void AddOnCombatStartDelayedAction(Action a, float delay)
-    {
-        Debug.Log("Added: " + a + ", Delay = " + delay);
-        OnCombatStartDelayedActionMap.Add(a, delay);
-    }
-
-    public void RemoveOnCombatStartDelayedAction(Action a)
-    {
-        OnCombatStartDelayedActionMap.Remove(a);
-    }
-
-    public void AddOnCombatStartRepeatedAction(Action a, RepeatData data)
-    {
-        Debug.Log("Starting: " + a + ", Repetitions = " + data.Repetitions + ", Delay = " + data.Delay);
-        OnCombatStartRepeatedActionMap.Add(a, data);
-    }
-
-    public void RemoveOnCombatStartRepeatedAction(Action a)
-    {
-        OnCombatStartRepeatedActionMap.Remove(a);
-    }
-
-    public IEnumerator StartCombat(Combat combat)
-    {
-        Debug.Log("Combat Started: " + combat);
-
-        // Set Up Combat
-        musicSource.clip = combat.MainMusic;
-        ReadCircles(AssetDatabase.GetAssetPath(combat.MapFile));
-        hitSound = combat.HitSound;
-        missSound = combat.MissSound;
-
-        currentEnemy = combat.Enemy;
-        maxEnemyHP = currentEnemy.GetMaxHP();
-        currentEnemyHP = maxEnemyHP;
-        enemyCombatSprite.sprite = currentEnemy.GetCombatSprite();
-        characterCombatSprite.sprite = GameManager._Instance.GetCharacter().GetCombatSprite();
-
-        CallOnStartCombat();
-
-        musicSource.Play();
-
-        yield return StartCoroutine(UpdateRoutine());
-
-        // Reset
-        ResetCombat();
-
-        GameManager._Instance.ResolveCurrentEvent();
-        Debug.Log("Combat Completed: " + combat);
+        return apprRate;
     }
 }

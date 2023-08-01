@@ -22,7 +22,7 @@ public class GameManager : MonoBehaviour
 
     private string persistentTokensKey = "PersistentTokens";
 
-    private Dictionary<ArtifactLabel, ArtifactDisplay> artifactDisplayTracker = new Dictionary<ArtifactLabel, ArtifactDisplay>();
+    private Dictionary<ArtifactLabel, ArtifactIcon> artifactDisplayTracker = new Dictionary<ArtifactLabel, ArtifactIcon>();
 
     [Header("References")]
     [SerializeField] private TextMeshProUGUI hpText;
@@ -36,7 +36,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private List<ArtifactLabel> testArtifacts;
 
     [Header("Prefabs")]
-    [SerializeField] private ArtifactDisplay artifactDisplay;
+    [SerializeField] private ArtifactIcon artifactDisplay;
 
     private void Awake()
     {
@@ -169,7 +169,7 @@ public class GameManager : MonoBehaviour
         artifact.OnEquip();
         playerArtifacts.Add(artifact);
 
-        ArtifactDisplay spawned = Instantiate(artifactDisplay, artifactBar);
+        ArtifactIcon spawned = Instantiate(artifactDisplay, artifactBar);
         spawned.name = "Artifact(" + type + ")";
         spawned.SetSprite(artifact.GetSprite());
         spawned.SetText(Utils.SplitOnCapitalLetters(type.ToString()));
@@ -281,7 +281,7 @@ public class GameManager : MonoBehaviour
         // Barricade Effect
         if (amount <= -1 && HasArtifact(ArtifactLabel.Barricade))
         {
-            amount += ArtifactManager._Instance.GetValue(ArtifactLabel.Barricade, "ReductionAmount");
+            amount += BalenceManager._Instance.GetValue(ArtifactLabel.Barricade, "ReductionAmount");
             AnimateArtifact(ArtifactLabel.Barricade);
         }
 

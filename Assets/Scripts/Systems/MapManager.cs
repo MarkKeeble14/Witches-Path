@@ -8,6 +8,18 @@ public class MapManager : MonoBehaviour
 
     int currentRowIndex = 0;
 
+    [SerializeField] private CanvasGroup mapCV;
+
+    public void Hide()
+    {
+        mapCV.alpha = 0;
+    }
+
+    public void Show()
+    {
+        mapCV.alpha = 1;
+    }
+
     public void NextRow()
     {
         if (currentRowIndex > 0)

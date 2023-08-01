@@ -23,7 +23,7 @@ public abstract class Artifact
 
     protected float GetArtifactSpec(string specIdentifier)
     {
-        return ArtifactManager._Instance.GetValue(Label, specIdentifier);
+        return BalenceManager._Instance.GetValue(Label, specIdentifier);
     }
 
     protected void ShowArtifactProc()
@@ -288,7 +288,7 @@ public class MolatovCocktail : Artifact
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Burn, 1, AfflictionSetType.Activations, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Burn, 2, AfflictionSetType.Activations, Target.Enemy);
         ShowArtifactProc();
     }
 }

@@ -182,7 +182,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -540.0007}
+  m_AnchoredPosition: {x: 0, y: -540}
   m_SizeDelta: {x: 700, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &3239115800174809029
@@ -1148,6 +1148,7 @@ MonoBehaviour:
     grid: {fileID: 1154395246818888692}
     scrollRect: {fileID: 8791308365282803916}
     mapNodePrefab: {fileID: 5932683331434114181, guid: 07ed74b0a56adf64583b8214596c03bb, type: 3}
+  mapCV: {fileID: 9154002933272887501}
 --- !u!1 &2726084419924974722
 GameObject:
   m_ObjectHideFlags: 0
@@ -1721,7 +1722,7 @@ GameObject:
   - component: {fileID: 3305524967139375693}
   - component: {fileID: 1945451751665925325}
   m_Layer: 0
-  m_Name: ArtifactManager
+  m_Name: BalenceManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1864,6 +1865,58 @@ MonoBehaviour:
       value:
         dictionary: []
     - key: HolyShield
+      value:
+        dictionary: []
+  afflictionSpecDict:
+    dictionary:
+    - key: Emboldened
+      value:
+        dictionary:
+        - key: MultiplyBy
+          value: 1.25
+    - key: Weakened
+      value:
+        dictionary:
+        - key: MultiplyBy
+          value: 0.5
+    - key: Vulnerable
+      value:
+        dictionary:
+        - key: MultiplyBy
+          value: 1.4
+    - key: Guarded
+      value:
+        dictionary:
+        - key: ReduceBy
+          value: 3
+    - key: Bandaged
+      value:
+        dictionary:
+        - key: HealAmount
+          value: 2
+    - key: Retribution
+      value:
+        dictionary:
+        - key: DamageAmount
+          value: 5
+    - key: Prepared
+      value:
+        dictionary: []
+    - key: Parry
+      value:
+        dictionary: []
+    - key: Echo
+      value:
+        dictionary: []
+    - key: Blight
+      value:
+        dictionary: []
+    - key: Burn
+      value:
+        dictionary:
+        - key: DamageAmount
+          value: 2
+    - key: Paralyzed
       value:
         dictionary: []
 --- !u!1 &3764866126739295380
@@ -8009,6 +8062,7 @@ GameObject:
   - component: {fileID: 274659530819497317}
   - component: {fileID: 4837976950470549932}
   - component: {fileID: 8791308365282803916}
+  - component: {fileID: 9154002933272887501}
   m_Layer: 0
   m_Name: MapScrollView
   m_TagString: Untagged
@@ -8076,6 +8130,18 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!225 &9154002933272887501
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7182968247414647835}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &7543073188947019558
 GameObject:
   m_ObjectHideFlags: 0
@@ -10155,7 +10221,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3452216503942594434, guid: 569fc332c155e8b44bff50667589c14c, type: 3}
       propertyPath: m_Color.a
-      value: 0.1254902
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3452216503942594434, guid: 569fc332c155e8b44bff50667589c14c, type: 3}
       propertyPath: m_Color.b

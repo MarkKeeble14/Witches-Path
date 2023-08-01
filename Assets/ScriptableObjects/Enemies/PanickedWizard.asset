@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: PanickedWizard
   m_EditorClassIdentifier: 
   combatSprite: {fileID: 0}
-  maxHP: 50
-  startingHP: 50
-  basicAttackDamage: 1
+  maxHP: 250
+  startingHP: 250
+  basicAttackDamage: 5

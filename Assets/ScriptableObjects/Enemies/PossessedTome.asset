@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: PossessedTome
   m_EditorClassIdentifier: 
   combatSprite: {fileID: 0}
-  maxHP: 25
-  startingHP: 25
-  basicAttackDamage: 1
+  maxHP: 250
+  startingHP: 250
+  basicAttackDamage: 5

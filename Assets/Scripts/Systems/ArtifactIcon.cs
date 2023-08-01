@@ -2,7 +2,7 @@
 using UnityEngine.UI;
 using TMPro;
 
-public class ArtifactDisplay : MonoBehaviour
+public class ArtifactIcon : MonoBehaviour
 {
     [SerializeField] private Image image;
     [SerializeField] private TextMeshProUGUI text;
