@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -195,6 +196,26 @@ public class Utils
         {
             Debug.Log(label + " - Average: " + (total / repititions) + "ms");
         }
+    }
+
+    public static string SplitOnCapitalLetters(string s)
+    {
+        string[] afterSplit = SplitCamelCase(s);
+        string res = "";
+        for (int i = 0; i < afterSplit.Length; i++)
+        {
+            res += afterSplit[i];
+            if (i < afterSplit.Length - 1)
+            {
+                res += " ";
+            }
+        }
+        return res;
+    }
+
+    public static string[] SplitCamelCase(string s)
+    {
+        return Regex.Split(s, @"(?<!^)(?=[A-Z])");
     }
 
     public static IEnumerator CallActionAfterDelay(Action action, float delay)

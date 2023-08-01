@@ -21,7 +21,8 @@ public class GameManager : MonoBehaviour
     private List<Artifact> playerArtifacts = new List<Artifact>();
 
     private string persistentTokensKey = "PersistentTokens";
-    private Dictionary<ArtifactLabel, Image> artifactDisplayTracker = new Dictionary<ArtifactLabel, Image>();
+
+    private Dictionary<ArtifactLabel, ArtifactDisplay> artifactDisplayTracker = new Dictionary<ArtifactLabel, ArtifactDisplay>();
 
     [Header("References")]
     [SerializeField] private TextMeshProUGUI hpText;
@@ -29,12 +30,13 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Transform artifactBar;
 
     public Action OnEnterNewRoom;
+    public Action OnPlayerRecieveDamage;
 
     private Dictionary<MapNodeType, Action> OnEnterSpecificRoomActionMap = new Dictionary<MapNodeType, Action>();
     [SerializeField] private List<ArtifactLabel> testArtifacts;
 
     [Header("Prefabs")]
-    [SerializeField] private Image artifactDisplay;
+    [SerializeField] private ArtifactDisplay artifactDisplay;
 
     private void Awake()
     {
@@ -167,13 +169,22 @@ public class GameManager : MonoBehaviour
         artifact.OnEquip();
         playerArtifacts.Add(artifact);
 
-        Image spawned = Instantiate(artifactDisplay, artifactBar);
+        ArtifactDisplay spawned = Instantiate(artifactDisplay, artifactBar);
         spawned.name = "Artifact(" + type + ")";
-        spawned.sprite = artifact.GetSprite();
+        spawned.SetSprite(artifact.GetSprite());
+        spawned.SetText(Utils.SplitOnCapitalLetters(type.ToString()));
 
         artifactDisplayTracker.Add(artifact.GetLabel(), spawned);
 
         // Somehow evaluate what artifact must do and add it's effect
+    }
+
+    public void AnimateArtifact(ArtifactLabel type)
+    {
+        if (artifactDisplayTracker.ContainsKey(type))
+        {
+            artifactDisplayTracker[type].AnimateScale();
+        }
     }
 
     internal void GameOver()
@@ -267,6 +278,19 @@ public class GameManager : MonoBehaviour
 
     public bool AlterPlayerHP(float amount)
     {
+        // Barricade Effect
+        if (amount <= -1 && HasArtifact(ArtifactLabel.Barricade))
+        {
+            amount += ArtifactManager._Instance.GetValue(ArtifactLabel.Barricade, "ReductionAmount");
+            AnimateArtifact(ArtifactLabel.Barricade);
+        }
+
+        // If amount is still less than 0 (i.e., a negative number), the player is taking damage
+        if (amount < 0)
+        {
+            OnPlayerRecieveDamage?.Invoke();
+        }
+
         if (currentPlayerHP + amount > maxPlayerHP)
         {
             currentPlayerHP = maxPlayerHP;

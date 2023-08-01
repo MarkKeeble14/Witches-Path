@@ -19,11 +19,16 @@ public abstract class Artifact
 
     public abstract void OnUnequip();
 
-    public abstract void EffectFunction();
+    protected abstract void Effect();
 
     protected float GetArtifactSpec(string specIdentifier)
     {
         return ArtifactManager._Instance.GetValue(Label, specIdentifier);
+    }
+
+    protected void ShowArtifactProc()
+    {
+        GameManager._Instance.AnimateArtifact(Label);
     }
 }
 
@@ -39,19 +44,20 @@ public class GreedyHands : Artifact
     {
         procAfter = (int)GetArtifactSpec("ProcAfter");
         currencyAmount = (int)GetArtifactSpec("CurrencyAmount");
-        CombatManager._Instance.OnPlayerAttack += EffectFunction;
+        CombatManager._Instance.OnPlayerAttack += Effect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnPlayerAttack -= EffectFunction;
+        CombatManager._Instance.OnPlayerAttack -= Effect;
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         tracker += 1;
         if (tracker >= procAfter)
         {
+            ShowArtifactProc();
             tracker = 0;
             GameManager._Instance.AlterCurrency(currencyAmount);
         }
@@ -67,17 +73,18 @@ public class SheriffsEye : Artifact
     public override void OnEquip()
     {
         cdReduction = GetArtifactSpec("CDReduction");
-        CombatManager._Instance.OnPassiveSpellProc += EffectFunction;
+        CombatManager._Instance.OnPassiveSpellProc += Effect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnPassiveSpellProc -= EffectFunction;
+        CombatManager._Instance.OnPassiveSpellProc -= Effect;
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         CombatManager._Instance.ReduceActiveSpellCDsByPercent(cdReduction);
+        ShowArtifactProc();
     }
 }
 
@@ -90,17 +97,18 @@ public class CanyonChunk : Artifact
     public override void OnEquip()
     {
         stackAmount = (int)GetArtifactSpec("StackAmount");
-        CombatManager._Instance.OnCombatStart += EffectFunction;
+        CombatManager._Instance.OnCombatStart += Effect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnCombatStart -= EffectFunction;
+        CombatManager._Instance.OnCombatStart -= Effect;
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Echo, stackAmount, AfflictionSetType.Activations, Target.Character);
+        ShowArtifactProc();
     }
 }
 
@@ -112,17 +120,18 @@ public class Plaguebringer : Artifact
     public override void OnEquip()
     {
         stackAmount = (int)GetArtifactSpec("StackAmount");
-        CombatManager._Instance.OnCombatStart += EffectFunction;
+        CombatManager._Instance.OnCombatStart += Effect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnCombatStart -= EffectFunction;
+        CombatManager._Instance.OnCombatStart -= Effect;
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Blight, stackAmount, AfflictionSetType.Activations, Target.Enemy);
+        ShowArtifactProc();
     }
 }
 
@@ -135,17 +144,18 @@ public class MedicineKit : Artifact
     public override void OnEquip()
     {
         healAmount = (int)GetArtifactSpec("HealAmount");
-        GameManager._Instance.OnEnterNewRoom += EffectFunction;
+        GameManager._Instance.OnEnterNewRoom += Effect;
     }
 
     public override void OnUnequip()
     {
-        GameManager._Instance.OnEnterNewRoom -= EffectFunction;
+        GameManager._Instance.OnEnterNewRoom -= Effect;
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         GameManager._Instance.AlterPlayerHP(healAmount);
+        ShowArtifactProc();
     }
 }
 
@@ -156,17 +166,18 @@ public class BoldInvestments : Artifact
     public override void OnEquip()
     {
         currencyAmount = (int)GetArtifactSpec("CurrencyAmount");
-        GameManager._Instance.AddOnEnterSpecificRoomAction(MapNodeType.MINOR_FIGHT, EffectFunction);
+        GameManager._Instance.AddOnEnterSpecificRoomAction(MapNodeType.MINOR_FIGHT, Effect);
     }
 
     public override void OnUnequip()
     {
-        GameManager._Instance.RemoveOnEnterSpecificRoomAction(MapNodeType.MINOR_FIGHT, EffectFunction);
+        GameManager._Instance.RemoveOnEnterSpecificRoomAction(MapNodeType.MINOR_FIGHT, Effect);
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         GameManager._Instance.AlterCurrency(currencyAmount);
+        ShowArtifactProc();
     }
 }
 
@@ -177,17 +188,18 @@ public class SmokeShroud : Artifact
     public override void OnEquip()
     {
         stackAmount = (int)GetArtifactSpec("StackAmount");
-        CombatManager._Instance.OnCombatStart += EffectFunction;
+        CombatManager._Instance.OnCombatStart += Effect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnCombatStart -= EffectFunction;
+        CombatManager._Instance.OnCombatStart -= Effect;
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Weakened, stackAmount, AfflictionSetType.Activations, Target.Enemy);
+        ShowArtifactProc();
     }
 }
 
@@ -198,17 +210,18 @@ public class SmokeBomb : Artifact
     public override void OnEquip()
     {
         duration = (int)GetArtifactSpec("Duration");
-        CombatManager._Instance.OnCombatStart += EffectFunction;
+        CombatManager._Instance.OnCombatStart += Effect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnCombatStart -= EffectFunction;
+        CombatManager._Instance.OnCombatStart -= Effect;
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Weakened, duration, AfflictionSetType.Duration, Target.Enemy);
+        ShowArtifactProc();
     }
 }
 
@@ -219,17 +232,18 @@ public class BankCard : Artifact
     public override void OnEquip()
     {
         currencyAmount = (int)GetArtifactSpec("CurrencyAmount");
-        GameManager._Instance.AddOnEnterSpecificRoomAction(MapNodeType.SHOP, EffectFunction);
+        GameManager._Instance.AddOnEnterSpecificRoomAction(MapNodeType.SHOP, Effect);
     }
 
     public override void OnUnequip()
     {
-        GameManager._Instance.AddOnEnterSpecificRoomAction(MapNodeType.SHOP, EffectFunction);
+        GameManager._Instance.AddOnEnterSpecificRoomAction(MapNodeType.SHOP, Effect);
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         GameManager._Instance.AlterCurrency(currencyAmount);
+        ShowArtifactProc();
     }
 }
 
@@ -238,17 +252,18 @@ public class LooseTrigger : Artifact
     protected override ArtifactLabel Label => ArtifactLabel.LooseTrigger;
     public override void OnEquip()
     {
-        CombatManager._Instance.OnPlayerRecieveDamage += EffectFunction;
+        GameManager._Instance.OnPlayerRecieveDamage += Effect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnPlayerRecieveDamage -= EffectFunction;
+        GameManager._Instance.OnPlayerRecieveDamage -= Effect;
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         CombatManager._Instance.TriggerRandomPassiveSpell();
+        ShowArtifactProc();
     }
 }
 
@@ -263,17 +278,18 @@ public class MolatovCocktail : Artifact
     {
         delay = GetArtifactSpec("Delay");
         repetitions = (int)GetArtifactSpec("Repetitions");
-        CombatManager._Instance.AddOnCombatStartRepeatedAction(EffectFunction, new RepeatData(repetitions, delay));
+        CombatManager._Instance.AddOnCombatStartRepeatedAction(Effect, new RepeatData(repetitions, delay));
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.RemoveOnCombatStartRepeatedAction(EffectFunction);
+        CombatManager._Instance.RemoveOnCombatStartRepeatedAction(Effect);
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Burn, 1, AfflictionSetType.Activations, Target.Enemy);
+        ShowArtifactProc();
     }
 }
 
@@ -284,17 +300,18 @@ public class BlueMantis : Artifact
     public override void OnEquip()
     {
         stackAmount = (int)GetArtifactSpec("StackAmount");
-        CombatManager._Instance.OnPlayerRecieveDamage += EffectFunction;
+        GameManager._Instance.OnPlayerRecieveDamage += Effect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnCombatStart -= EffectFunction;
+        GameManager._Instance.OnPlayerRecieveDamage -= Effect;
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Paralyzed, stackAmount, AfflictionSetType.Activations, Target.Enemy);
+        ShowArtifactProc();
     }
 }
 
@@ -306,19 +323,20 @@ public class HealthInsurance : Artifact
     public override void OnEquip()
     {
         healAmount = (int)GetArtifactSpec("HealAmount");
-        GameManager._Instance.OnEnterNewRoom += EffectFunction;
+        GameManager._Instance.OnEnterNewRoom += Effect;
     }
 
     public override void OnUnequip()
     {
-        GameManager._Instance.OnEnterNewRoom -= EffectFunction;
+        GameManager._Instance.OnEnterNewRoom -= Effect;
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         if (!enabled) return;
 
         GameManager._Instance.AlterPlayerHP(healAmount);
+        ShowArtifactProc();
         MapNodeType type = GameManager._Instance.GetCurrentGameOccurance().Type;
         if (type == MapNodeType.MINOR_FIGHT || type == MapNodeType.BOSS)
         {
@@ -334,17 +352,18 @@ public class InvertedPolaroid : Artifact
     public override void OnEquip()
     {
         duration = GetArtifactSpec("Duration");
-        CombatManager._Instance.OnCombatStart += EffectFunction;
+        CombatManager._Instance.OnCombatStart += Effect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnCombatStart -= EffectFunction;
+        CombatManager._Instance.OnCombatStart -= Effect;
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Retribution, duration, AfflictionSetType.Duration, Target.Character);
+        ShowArtifactProc();
     }
 }
 
@@ -353,17 +372,18 @@ public class HalfLitFirework : Artifact
     protected override ArtifactLabel Label => ArtifactLabel.HalfLitFirework;
     public override void OnEquip()
     {
-        CombatManager._Instance.OnPlayerRecieveDamage += EffectFunction;
+        GameManager._Instance.OnPlayerRecieveDamage += Effect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnPlayerRecieveDamage -= EffectFunction;
+        GameManager._Instance.OnPlayerRecieveDamage -= Effect;
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         CombatManager._Instance.ReleaseHalfLitFirework();
+        ShowArtifactProc();
     }
 }
 
@@ -374,17 +394,18 @@ public class ZedsScalpel : Artifact
     public override void OnEquip()
     {
         healAmount = (int)GetArtifactSpec("HealAmount");
-        CombatManager._Instance.OnPlayerRecieveDamage += EffectFunction;
+        GameManager._Instance.OnPlayerRecieveDamage += Effect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnPlayerRecieveDamage -= EffectFunction;
+        GameManager._Instance.OnPlayerRecieveDamage -= Effect;
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         GameManager._Instance.AlterPlayerHP(healAmount);
+        ShowArtifactProc();
     }
 }
 
@@ -393,15 +414,13 @@ public class Barricade : Artifact
     protected override ArtifactLabel Label => ArtifactLabel.Barricade;
     public override void OnEquip()
     {
-        throw new System.NotImplementedException();
     }
 
     public override void OnUnequip()
     {
-        throw new System.NotImplementedException();
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
     }
 }
@@ -411,15 +430,13 @@ public class DoctorsReport : Artifact
     protected override ArtifactLabel Label => ArtifactLabel.DoctorsReport;
     public override void OnEquip()
     {
-        throw new System.NotImplementedException();
     }
 
     public override void OnUnequip()
     {
-        throw new System.NotImplementedException();
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
     }
 }
@@ -433,17 +450,18 @@ public class RustyCannon : Artifact
     {
         damageAmount = (int)GetArtifactSpec("DamageAmount");
         delay = GetArtifactSpec("Delay");
-        CombatManager._Instance.AddOnCombatStartDelayedAction(EffectFunction, delay);
+        CombatManager._Instance.AddOnCombatStartDelayedAction(Effect, delay);
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.RemoveOnCombatStartDelayedAction(EffectFunction);
+        CombatManager._Instance.RemoveOnCombatStartDelayedAction(Effect);
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         CombatManager._Instance.AltarEnemyHP(-damageAmount);
+        ShowArtifactProc();
     }
 }
 
@@ -456,17 +474,18 @@ public class VoodooDoll : Artifact
     public override void OnEquip()
     {
         damageAmount = (int)GetArtifactSpec("DamageAmount");
-        CombatManager._Instance.OnCharacterGainAffliction += EffectFunction;
+        CombatManager._Instance.OnCharacterGainAffliction += Effect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnCharacterGainAffliction -= EffectFunction;
+        CombatManager._Instance.OnCharacterGainAffliction -= Effect;
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
         CombatManager._Instance.AltarEnemyHP(-damageAmount);
+        ShowArtifactProc();
     }
 }
 
@@ -481,7 +500,7 @@ public class SpecialSpinach : Artifact
     {
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
     }
 }
@@ -497,7 +516,7 @@ public class HolyShield : Artifact
     {
     }
 
-    public override void EffectFunction()
+    protected override void Effect()
     {
     }
 }

@@ -89,7 +89,6 @@ public class CombatManager : MonoBehaviour
 
     public Action OnPlayerAttack;
     public Action OnEnemyAttack;
-    public Action OnPlayerRecieveDamage;
     public Action OnCombatStart;
     public Dictionary<Action, float> OnCombatStartDelayedActionMap = new Dictionary<Action, float>();
     public Dictionary<Action, RepeatData> OnCombatStartRepeatedActionMap = new Dictionary<Action, RepeatData>();
@@ -104,6 +103,8 @@ public class CombatManager : MonoBehaviour
     private Dictionary<AfflictionType, Affliction> characterAfflictionMap = new Dictionary<AfflictionType, Affliction>();
     private Dictionary<AfflictionType, Affliction> enemyAfflictionMap = new Dictionary<AfflictionType, Affliction>();
     private List<AfflictionType> toClearFromAffMap = new List<AfflictionType>();
+
+    private List<Coroutine> onStartCombatCoroutines = new List<Coroutine>();
 
     public void AddAffliction(AfflictionType type, float num, AfflictionSetType setType, Target target)
     {
@@ -212,6 +213,13 @@ public class CombatManager : MonoBehaviour
     {
         ClearAfflictionMaps();
 
+        foreach (Coroutine c in onStartCombatCoroutines)
+        {
+            StopCoroutine(c);
+        }
+        onStartCombatCoroutines.Clear();
+
+        musicSource.Stop();
         musicSource.time = 0;
         objCount = 0;
         noteCount = 0;
@@ -298,6 +306,12 @@ public class CombatManager : MonoBehaviour
 
     public void AltarEnemyHP(float amount)
     {
+        if (GameManager._Instance.HasArtifact(ArtifactLabel.DoctorsReport) && amount > ArtifactManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "MustBeOver"))
+        {
+            AddAffliction(AfflictionType.Bandaged, ArtifactManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "StackAmount"), characterAfflictionMap);
+            GameManager._Instance.AnimateArtifact(ArtifactLabel.DoctorsReport);
+        }
+
         if (currentEnemyHP + amount > maxEnemyHP)
         {
             currentEnemyHP = maxEnemyHP;
@@ -332,7 +346,6 @@ public class CombatManager : MonoBehaviour
         else
         {
             OnEnemyAttack?.Invoke();
-            OnPlayerRecieveDamage?.Invoke();
         }
     }
 
@@ -500,7 +513,7 @@ public class CombatManager : MonoBehaviour
         foreach (KeyValuePair<Action, float> kvp in OnCombatStartDelayedActionMap)
         {
             Debug.Log("Starting: " + kvp.Key + ", Delay = " + kvp.Value);
-            StartCoroutine(Utils.CallActionAfterDelay(kvp.Key, kvp.Value));
+            onStartCombatCoroutines.Add(StartCoroutine(Utils.CallActionAfterDelay(kvp.Key, kvp.Value)));
         }
 
         foreach (KeyValuePair<Action, RepeatData> kvp in OnCombatStartRepeatedActionMap)
@@ -508,7 +521,7 @@ public class CombatManager : MonoBehaviour
             Debug.Log("Starting: " + kvp.Key + ", Repetitions = " + kvp.Value.Repetitions + ", Delay = " + kvp.Value.Delay);
             for (int i = 1; i <= kvp.Value.Repetitions; i++)
             {
-                StartCoroutine(Utils.CallActionAfterDelay(kvp.Key, kvp.Value.Delay * i));
+                onStartCombatCoroutines.Add(StartCoroutine(Utils.CallActionAfterDelay(kvp.Key, kvp.Value.Delay * i)));
             }
         }
     }

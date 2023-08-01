@@ -1694,7 +1694,7 @@ MonoBehaviour:
         dictionary:
         - key: CDReduction
           value: 0.5
-    - key: ChunkOfCanyon
+    - key: CanyonChunk
       value:
         dictionary:
         - key: StackAmount
@@ -2264,8 +2264,8 @@ MonoBehaviour:
   hpText: {fileID: 1817865862606539329}
   currencyText: {fileID: 8778094111878917716}
   artifactBar: {fileID: 1841857443439868651}
-  testArtifacts: 0000000001000000040000000500000008000000090000000c0000000f00000012000000
-  artifactDisplay: {fileID: 5580262284394836984, guid: 6ff7e2d7934c96447bb8de20de4507bb, type: 3}
+  testArtifacts: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f000000100000001100000012000000130000001400000015000000
+  artifactDisplay: {fileID: 7516618647761885518, guid: 6ff7e2d7934c96447bb8de20de4507bb, type: 3}
 --- !u!1 &5388059309545443089
 GameObject:
   m_ObjectHideFlags: 0
@@ -7763,7 +7763,7 @@ GameObject:
   - component: {fileID: 1841857443439868651}
   - component: {fileID: 1994495150725588544}
   - component: {fileID: 5794694932353068946}
-  - component: {fileID: 1673104033753668572}
+  - component: {fileID: 7468018756291426385}
   m_Layer: 0
   m_Name: Foreground
   m_TagString: Untagged
@@ -7829,7 +7829,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &1673104033753668572
+--- !u!114 &7468018756291426385
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -7838,23 +7838,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 6555639538957985012}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+  m_Script: {fileID: 11500000, guid: 8a8695521f0d02e499659fee002a26c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 0
-    m_Right: 0
-    m_Top: 0
+    m_Left: 10
+    m_Right: 10
+    m_Top: 10
     m_Bottom: 0
-  m_ChildAlignment: 3
-  m_Spacing: 0
-  m_ChildForceExpandWidth: 0
-  m_ChildForceExpandHeight: 1
-  m_ChildControlWidth: 0
-  m_ChildControlHeight: 0
-  m_ChildScaleWidth: 0
-  m_ChildScaleHeight: 0
-  m_ReverseArrangement: 0
+  m_ChildAlignment: 0
+  m_StartCorner: 0
+  m_StartAxis: 0
+  m_CellSize: {x: 70, y: 70}
+  m_Spacing: {x: 12.5, y: 12.5}
+  m_Constraint: 0
+  m_ConstraintCount: 22
 --- !u!1 &7182968247414647835
 GameObject:
   m_ObjectHideFlags: 0
