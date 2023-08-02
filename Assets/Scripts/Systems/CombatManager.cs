@@ -112,6 +112,8 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private Transform characterAfflictionList;
     [SerializeField] private Transform enemyAfflictionList;
 
+    public bool InCombat { get; private set; }
+
     private void Start()
     {
         circleList = new List<GameObject>();
@@ -357,13 +359,18 @@ public class CombatManager : MonoBehaviour
 
         musicSource.Play();
 
+        InCombat = true;
+
         yield return StartCoroutine(UpdateRoutine());
+
 
         // Bandaged Effect
         if (TargetHasAffliction(AfflictionType.Bandaged, Target.Character))
         {
             GameManager._Instance.AlterPlayerHP(characterAfflictionMap[AfflictionType.Bandaged].RemainingActivations);
         }
+
+        InCombat = false;
 
         // Reset
         ResetCombat();
@@ -379,6 +386,9 @@ public class CombatManager : MonoBehaviour
     {
         ClearAfflictionMap(enemyAfflictionMap);
         ClearAfflictionMap(characterAfflictionMap);
+
+        // Clear active spell cooldowns
+        GameManager._Instance.TickActiveSpellCooldowns(-999);
 
         foreach (Coroutine c in onStartCombatCoroutines)
         {
@@ -398,14 +408,6 @@ public class CombatManager : MonoBehaviour
             circleList.RemoveAt(0);
             Destroy(circle);
         }
-    }
-
-    public void ReduceActiveSpellCDsByPercent(float normalizedPercent)
-    {
-        // normaliedPercent is some number between 0 and 1
-        // 0 = 0%, 1 = 100%
-        // .14 = 14%
-        // etc
     }
 
     public void TriggerRandomPassiveSpell()
@@ -609,7 +611,7 @@ public class CombatManager : MonoBehaviour
 
     public void AddOnCombatStartDelayedAction(Action a, float delay)
     {
-        Debug.Log("Added: " + a + ", Delay = " + delay);
+        // Debug.Log("Added: " + a + ", Delay = " + delay);
         OnCombatStartDelayedActionMap.Add(a, delay);
     }
 
@@ -620,7 +622,7 @@ public class CombatManager : MonoBehaviour
 
     public void AddOnCombatStartRepeatedAction(Action a, RepeatData data)
     {
-        Debug.Log("Added: " + a + ", Repetitions = " + data.Repetitions + ", Delay = " + data.Delay);
+        // Debug.Log("Added: " + a + ", Repetitions = " + data.Repetitions + ", Delay = " + data.Delay);
         OnCombatStartRepeatedActionMap.Add(a, data);
     }
 
@@ -631,7 +633,7 @@ public class CombatManager : MonoBehaviour
 
     public void AddOnCombatStartInfinitelyRepeatedAction(Action a, float delay)
     {
-        Debug.Log("Added (Infinite): " + a + ", Delay = " + delay);
+        // Debug.Log("Added (Infinite): " + a + ", Delay = " + delay);
         OnCombatStartInfinitelyRepeatedActionMap.Add(a, delay);
     }
 
@@ -755,6 +757,8 @@ public class CombatManager : MonoBehaviour
             enemyHP.text = currentEnemyHP + "/" + maxEnemyHP;
             characterHP.text = GameManager._Instance.GetCurrentCharacterHP() + "/" + GameManager._Instance.GetMaxPlayerHP();
             UpdateAfflictionMaps();
+
+            GameManager._Instance.TickActiveSpellCooldowns(Time.deltaTime);
 
             if (currentEnemyHP <= 0 || GameManager._Instance.GetCurrentCharacterHP() <= 0)
             {

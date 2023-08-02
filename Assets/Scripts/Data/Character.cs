@@ -14,6 +14,8 @@ public class Character : ScriptableObject
     [Header("Combat Settings")]
     [SerializeField] private float maxHP;
     [SerializeField] private float startingHP;
+    [SerializeField] private float maxMana;
+    [SerializeField] private float startingMana;
     [SerializeField] private float basicAttackDamage;
 
     public float GetMaxHP()
@@ -21,9 +23,19 @@ public class Character : ScriptableObject
         return maxHP;
     }
 
+    public float GetMaxMana()
+    {
+        return maxMana;
+    }
+
     public float GetStartingHP()
     {
         return startingHP;
+    }
+
+    public float GetStartingMana()
+    {
+        return startingMana;
     }
 
     public float GetBasicAttackDamage()

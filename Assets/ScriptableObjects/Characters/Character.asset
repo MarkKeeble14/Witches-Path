@@ -19,4 +19,6 @@ MonoBehaviour:
   combatSprite: {fileID: 0}
   maxHP: 500
   startingHP: 500
+  maxMana: 125
+  startingMana: 125
   basicAttackDamage: 5

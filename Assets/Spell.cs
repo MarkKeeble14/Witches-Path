@@ -13,7 +13,7 @@ public enum SpellLabel
     Singe,
     Plague,
     Toxify,
-    DoubleHit,
+    Jarkai,
     Flurry,
     Electrifry,
     ExposedFlesh,
@@ -31,21 +31,25 @@ public enum SpellLabel
 [System.Serializable]
 public abstract class Spell
 {
-    protected abstract SpellLabel Label { get; }
+    public abstract SpellLabel Label { get; }
+
+    public string name => Label.ToString();
 
     protected abstract void Effect();
 
     protected float GetSpellSpec(string specIdentifier)
     {
+        Debug.Log("GetSpellSpec Called for: " + Label + " - " + specIdentifier);
         return BalenceManager._Instance.GetValue(Label, specIdentifier);
     }
+
+    public abstract void OnEquip();
 }
 
 #region Passive Spells
 
 public abstract class PassiveSpell : Spell
 {
-    public abstract void OnEquip();
     public abstract void OnUnequip();
 }
 
@@ -55,7 +59,7 @@ public class PoisonTips : PassiveSpell
     private int procAfter;
     private int stackAmount;
 
-    protected override SpellLabel Label => SpellLabel.PoisonTips;
+    public override SpellLabel Label => SpellLabel.PoisonTips;
 
     public override void OnEquip()
     {
@@ -88,7 +92,7 @@ public class PoisonTips : PassiveSpell
 
 public class StaticField : PassiveSpell
 {
-    protected override SpellLabel Label => SpellLabel.StaticField;
+    public override SpellLabel Label => SpellLabel.StaticField;
 
     private float procAfter;
 
@@ -111,7 +115,7 @@ public class StaticField : PassiveSpell
 
 public class Inferno : PassiveSpell
 {
-    protected override SpellLabel Label => SpellLabel.Inferno;
+    public override SpellLabel Label => SpellLabel.Inferno;
 
     private int stackAmount;
     public override void OnEquip()
@@ -133,7 +137,7 @@ public class Inferno : PassiveSpell
 
 public class BattleTrance : PassiveSpell
 {
-    protected override SpellLabel Label => SpellLabel.BattleTrance;
+    public override SpellLabel Label => SpellLabel.BattleTrance;
 
     private int procAfter;
     private int duration;
@@ -158,7 +162,7 @@ public class BattleTrance : PassiveSpell
 
 public class MagicRain : PassiveSpell
 {
-    protected override SpellLabel Label => SpellLabel.MagicRain;
+    public override SpellLabel Label => SpellLabel.MagicRain;
 
     private float procAfter;
     private float damageAmount;
@@ -183,7 +187,7 @@ public class MagicRain : PassiveSpell
 
 public class CrushJoints : PassiveSpell
 {
-    protected override SpellLabel Label => SpellLabel.CrushJoints;
+    public override SpellLabel Label => SpellLabel.CrushJoints;
 
     private int tracker;
     private int procAfter;
@@ -224,9 +228,369 @@ public class CrushJoints : PassiveSpell
 
 public abstract class ActiveSpell : Spell
 {
+    private float manaCost;
+    private float cooldown;
+
+    private float cooldownTimer;
+
+    public string CooldownTimer => cooldownTimer.ToString();
+
+    public bool OnCooldown => cooldownTimer > 0;
+    public bool HasMana => GameManager._Instance.GetCurrentPlayerMana() > manaCost;
+    public bool CanCast => !OnCooldown && HasMana;
+
     public void Cast()
     {
         Effect();
+        SetCooldown();
+        GameManager._Instance.AlterPlayerMana(-manaCost);
+    }
+
+    public override void OnEquip()
+    {
+        cooldown = GetSpellSpec("Cooldown");
+        manaCost = GetSpellSpec("ManaCost");
+    }
+
+    private void SetCooldown()
+    {
+        cooldownTimer = cooldown;
+    }
+
+    public void MultiplyCooldown(float multiplyBy)
+    {
+        cooldownTimer *= multiplyBy;
+    }
+
+    public void AlterCooldown(float tickAmount)
+    {
+        if (cooldownTimer + tickAmount < 0)
+        {
+            cooldownTimer = 0;
+        }
+        else
+        {
+            cooldownTimer += tickAmount;
+        }
+    }
+}
+
+public class Fireball : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Fireball;
+
+    private int damageAmount;
+    private int stackAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        damageAmount = (int)GetSpellSpec("DamageAmount");
+        stackAmount = (int)GetSpellSpec("StackAmount");
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Burn, stackAmount, AfflictionSetType.Activations, Target.Enemy);
+    }
+}
+
+public class Shock : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Shock;
+
+    private int damageAmount;
+    private int stackAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        damageAmount = (int)GetSpellSpec("DamageAmount");
+        stackAmount = (int)GetSpellSpec("StackAmount");
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Paralyzed, stackAmount, AfflictionSetType.Activations, Target.Enemy);
+    }
+}
+
+public class Singe : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Singe;
+
+    private int stackAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        stackAmount = (int)GetSpellSpec("StackAmount");
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Burn, stackAmount, AfflictionSetType.Activations, Target.Enemy);
+    }
+}
+
+public class Plague : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Plague;
+
+    private int stackAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        stackAmount = (int)GetSpellSpec("StackAmount");
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Blight, stackAmount, AfflictionSetType.Activations, Target.Enemy);
+    }
+}
+
+public class Toxify : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Toxify;
+
+    private int damageAmount;
+    private int stackAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        damageAmount = (int)GetSpellSpec("DamageAmount");
+        stackAmount = (int)GetSpellSpec("StackAmount");
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Blight, stackAmount, AfflictionSetType.Activations, Target.Enemy);
+    }
+}
+
+public class Jarkai : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Jarkai;
+
+    private int damageAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        damageAmount = (int)GetSpellSpec("DamageAmount");
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+    }
+}
+
+public class Flurry : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Flurry;
+
+    private int damageAmount;
+    private int hitAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        damageAmount = (int)GetSpellSpec("DamageAmount");
+        hitAmount = (int)GetSpellSpec("HitAmount");
+    }
+
+    protected override void Effect()
+    {
+        for (int i = 0; i < hitAmount; i++)
+        {
+            CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+        }
+    }
+}
+
+public class Electrifry : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Electrifry;
+
+    private int paralyzeAmount;
+    private int burnAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        paralyzeAmount = (int)GetSpellSpec("ParalyzeAmount");
+        burnAmount = (int)GetSpellSpec("BurnAmount");
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Paralyzed, paralyzeAmount, AfflictionSetType.Activations, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Burn, burnAmount, AfflictionSetType.Activations, Target.Enemy);
+    }
+}
+
+public class ExposedFlesh : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.ExposedFlesh;
+
+    private int damageAmount;
+    private int stackAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        damageAmount = (int)GetSpellSpec("DamageAmount");
+        stackAmount = (int)GetSpellSpec("StackAmount");
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, stackAmount, AfflictionSetType.Activations, Target.Enemy);
+    }
+}
+
+public class Cripple : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Cripple;
+
+    private int damageAmount;
+    private int stackAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        damageAmount = (int)GetSpellSpec("DamageAmount");
+        stackAmount = (int)GetSpellSpec("StackAmount");
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Weakened, stackAmount, AfflictionSetType.Activations, Target.Enemy);
+    }
+}
+
+public class BloodTrade : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.BloodTrade;
+
+    private int selfDamageAmount;
+    private int otherDamageAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        selfDamageAmount = (int)GetSpellSpec("SelfDamageAmount");
+        otherDamageAmount = (int)GetSpellSpec("OtherDamageAmount");
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.DamageCombatent(-selfDamageAmount, Target.Character, Target.Character);
+        CombatManager._Instance.AttackCombatent(-otherDamageAmount, Target.Character, Target.Enemy);
+    }
+}
+
+public class Excite : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Excite;
+
+    private int stackAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        stackAmount = (int)GetSpellSpec("StackAmount");
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Emboldened, stackAmount, AfflictionSetType.Activations, Target.Character);
+    }
+}
+
+public class Overexcite : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Overexcite;
+
+    private int emboldenedAmount;
+    private int vulnerableAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        emboldenedAmount = (int)GetSpellSpec("EmboldenedAmount");
+        vulnerableAmount = (int)GetSpellSpec("VulnerableAmount");
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Emboldened, emboldenedAmount, AfflictionSetType.Activations, Target.Character);
+        CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, vulnerableAmount, AfflictionSetType.Activations, Target.Character);
+    }
+}
+
+public class Forethought : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Forethought;
+
+    private int stackAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        stackAmount = (int)GetSpellSpec("StackAmount");
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Prepared, stackAmount, AfflictionSetType.Activations, Target.Character);
+    }
+}
+
+public class Reverberations : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Reverberations;
+
+    private int duration;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        duration = (int)GetSpellSpec("Duration");
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Echo, duration, AfflictionSetType.Duration, Target.Character);
+    }
+}
+
+public class ImpartialAid : ActiveSpell
+{
+    public override SpellLabel Label => SpellLabel.ImpartialAid;
+
+    private int healAmount;
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        healAmount = (int)GetSpellSpec("HealAmount");
+    }
+
+    protected override void Effect()
+    {
+        GameManager._Instance.AlterPlayerHP(healAmount);
+        CombatManager._Instance.AltarEnemyHP(healAmount);
     }
 }
 

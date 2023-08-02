@@ -83,7 +83,7 @@ public class SheriffsEye : Artifact
 
     protected override void Effect()
     {
-        CombatManager._Instance.ReduceActiveSpellCDsByPercent(cdReduction);
+        GameManager._Instance.ReduceActiveSpellCDsByPercent(cdReduction);
         ShowArtifactProc();
     }
 }

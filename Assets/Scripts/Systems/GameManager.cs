@@ -14,6 +14,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Character playerCharacter;
     private float maxPlayerHP;
     private float currentPlayerHP;
+    private float maxPlayerMana;
+    private float currentPlayerMana;
     private float currentPlayerCurrency;
     private Robe playerEquippedRobe;
     private Hat playerEquippedHat;
@@ -26,6 +28,7 @@ public class GameManager : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private TextMeshProUGUI hpText;
+    [SerializeField] private TextMeshProUGUI manaText;
     [SerializeField] private TextMeshProUGUI currencyText;
     [SerializeField] private Transform artifactBar;
 
@@ -41,10 +44,15 @@ public class GameManager : MonoBehaviour
     [Header("Artifacts")]
     [SerializeField] private List<ArtifactLabel> testArtifacts;
 
-    [Header("Spells")]
-    [SerializeField] private List<SpellLabel> equippableSpells = new List<SpellLabel>();
+    [Header("Passive Spells")]
+    [SerializeField] private List<SpellLabel> equippablePassiveSpells = new List<SpellLabel>();
     [SerializeField] private List<PassiveSpell> equippedPassiveSpells = new List<PassiveSpell>();
-    private int equippableSpellIndex = 0;
+    private int equippablePassiveSpellIndex = 0;
+
+    [Header("Active Spells")]
+    [SerializeField] private List<SpellLabel> equippableActiveSpells = new List<SpellLabel>();
+    private int equippableActiveSpellIndex = 0;
+    private List<ActiveSpell> equippedActiveSpells = new List<ActiveSpell>();
 
 
     private void Awake()
@@ -69,6 +77,7 @@ public class GameManager : MonoBehaviour
     private void Update()
     {
         hpText.text = Mathf.RoundToInt(currentPlayerHP).ToString() + "/" + Mathf.RoundToInt(maxPlayerHP).ToString();
+        manaText.text = Mathf.RoundToInt(currentPlayerMana).ToString() + "/" + Mathf.RoundToInt(maxPlayerMana).ToString();
         currencyText.text = Mathf.RoundToInt(currentPlayerCurrency).ToString();
 
         // Testing
@@ -85,26 +94,101 @@ public class GameManager : MonoBehaviour
         // Testing
         if (Input.GetKeyDown(KeyCode.Alpha2))
         {
+            if (equippablePassiveSpellIndex > equippablePassiveSpells.Count - 1)
+                equippablePassiveSpellIndex = 0;
+
             // Unequip old spell
             if (equippedPassiveSpells.Count > 0)
             {
-                PassiveSpell prevSpell = equippedPassiveSpells[equippableSpellIndex - 1];
+                PassiveSpell prevSpell = equippedPassiveSpells[0];
                 prevSpell.OnUnequip();
+                equippedPassiveSpells.Remove(prevSpell);
             }
 
             // Equip new spell
-            PassiveSpell s = (PassiveSpell)GetSpellOfType(equippableSpells[equippableSpellIndex++]);
+            PassiveSpell s = (PassiveSpell)GetSpellOfType(equippablePassiveSpells[equippablePassiveSpellIndex++]);
             s.OnEquip();
             equippedPassiveSpells.Add(s);
         }
+
+        // Testing
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            if (equippableActiveSpellIndex > equippableActiveSpells.Count - 1)
+                equippableActiveSpellIndex = 0;
+
+            if (equippedActiveSpells.Count > 0)
+            {
+                ActiveSpell prevSpell = equippedActiveSpells[0];
+                equippedActiveSpells.Remove(prevSpell);
+            }
+
+            // Equip new spell
+            ActiveSpell s = (ActiveSpell)GetSpellOfType(equippableActiveSpells[equippableActiveSpellIndex++]);
+            s.OnEquip();
+            equippedActiveSpells.Add(s);
+        }
+
+        // Only allow for spell casts while in combat
+        if (CombatManager._Instance.InCombat)
+        {
+            // Testing
+            if (Input.GetKeyDown(KeyCode.Q))
+            {
+                ActiveSpell equippedActiveSpell = equippedActiveSpells[0];
+                Debug.Log("Attempting to Cast: " + equippedActiveSpell);
+                if (equippedActiveSpell.CanCast)
+                {
+                    Debug.Log("Casting: " + equippedActiveSpell);
+                    equippedActiveSpell.Cast();
+                }
+                else
+                {
+                    Debug.Log("Can't Cast: " + equippedActiveSpell);
+                    if (equippedActiveSpell.OnCooldown)
+                    {
+                        Debug.Log("Spell: " + equippedActiveSpell + " Cooling Down: " + equippedActiveSpell.CooldownTimer);
+                    }
+                    if (!equippedActiveSpell.HasMana)
+                    {
+                        Debug.Log("Not Enough Mana to Cast Spell: " + equippedActiveSpell);
+                    }
+                }
+            }
+        }
     }
 
+    public void TickActiveSpellCooldowns(float tickAmount)
+    {
+        foreach (ActiveSpell spell in equippedActiveSpells)
+        {
+            if (spell.OnCooldown)
+            {
+                spell.AlterCooldown(-tickAmount);
+            }
+        }
+    }
+
+    public void ReduceActiveSpellCDsByPercent(float normalizedPercent)
+    {
+        // normaliedPercent is some number between 0 and 1
+        // 0 = 0%, 1 = 100%
+        // .14 = 14%
+        // etc
+        foreach (ActiveSpell spell in equippedActiveSpells)
+        {
+            if (spell.OnCooldown)
+                spell.MultiplyCooldown(normalizedPercent);
+        }
+    }
 
     private void EquipCharacterLoadout(Character c)
     {
         maxPlayerHP = c.GetMaxHP();
+        maxPlayerMana = c.GetMaxMana();
         currentPlayerCurrency = c.GetStartingCurrency();
         currentPlayerHP = c.GetStartingHP();
+        currentPlayerMana = c.GetStartingMana();
         EquipRobe(c.GetStartingRobe());
         EquipHat(c.GetStartingHat());
         EquipWand(c.GetStartingWand());
@@ -141,16 +225,48 @@ public class GameManager : MonoBehaviour
         {
             case SpellLabel.BattleTrance:
                 return new BattleTrance();
+            case SpellLabel.BloodTrade:
+                return new BloodTrade();
+            case SpellLabel.Cripple:
+                return new Cripple();
             case SpellLabel.CrushJoints:
                 return new CrushJoints();
+            case SpellLabel.Electrifry:
+                return new Electrifry();
+            case SpellLabel.Excite:
+                return new Excite();
+            case SpellLabel.ExposedFlesh:
+                return new ExposedFlesh();
+            case SpellLabel.Fireball:
+                return new Fireball();
+            case SpellLabel.Flurry:
+                return new Flurry();
+            case SpellLabel.Forethought:
+                return new Forethought();
+            case SpellLabel.ImpartialAid:
+                return new ImpartialAid();
             case SpellLabel.Inferno:
                 return new Inferno();
+            case SpellLabel.Jarkai:
+                return new Jarkai();
             case SpellLabel.MagicRain:
                 return new MagicRain();
+            case SpellLabel.Overexcite:
+                return new Overexcite();
+            case SpellLabel.Plague:
+                return new Plague();
             case SpellLabel.PoisonTips:
                 return new PoisonTips();
+            case SpellLabel.Reverberations:
+                return new Reverberations();
+            case SpellLabel.Shock:
+                return new Shock();
+            case SpellLabel.Singe:
+                return new Singe();
             case SpellLabel.StaticField:
                 return new StaticField();
+            case SpellLabel.Toxify:
+                return new Toxify();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -341,10 +457,16 @@ public class GameManager : MonoBehaviour
         {
             currentPlayerHP = maxPlayerHP;
         }
+        else if (currentPlayerHP + amount < 0)
+        {
+            currentPlayerHP = 0;
+        }
         else
         {
             currentPlayerHP += amount;
         }
+
+        // Return true if the player is still alive, return false if not
         if (currentPlayerHP > 0)
         {
             return true;
@@ -352,10 +474,22 @@ public class GameManager : MonoBehaviour
         return false;
     }
 
-    public Character GetCharacter()
+    public void AlterPlayerMana(float amount)
     {
-        return playerCharacter;
+        if (currentPlayerMana + amount > maxPlayerMana)
+        {
+            currentPlayerMana = maxPlayerMana;
+        }
+        else if (currentPlayerMana + amount < 0)
+        {
+            currentPlayerMana = 0;
+        }
+        else
+        {
+            currentPlayerMana += amount;
+        }
     }
+
 
     public float GetCurrentCharacterHP()
     {
@@ -365,6 +499,21 @@ public class GameManager : MonoBehaviour
     public float GetMaxPlayerHP()
     {
         return maxPlayerHP;
+    }
+
+    public float GetCurrentPlayerMana()
+    {
+        return currentPlayerMana;
+    }
+
+    public float GetMaxPlayerMana()
+    {
+        return maxPlayerMana;
+    }
+
+    public Character GetCharacter()
+    {
+        return playerCharacter;
     }
 
     public void AddOnEnterSpecificRoomAction(MapNodeType type, Action a)
