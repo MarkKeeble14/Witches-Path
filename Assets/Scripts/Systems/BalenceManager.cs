@@ -12,6 +12,10 @@ public class BalenceManager : MonoBehaviour
     [SerializeField]
     private SerializableDictionary<string, SerializableDictionary<string, float>> afflictionSpecDict = new SerializableDictionary<string, SerializableDictionary<string, float>>();
 
+    [SerializeField]
+    private SerializableDictionary<string, SerializableDictionary<string, float>> spellSpecDict = new SerializableDictionary<string, SerializableDictionary<string, float>>();
+
+
     public float GetValue(ArtifactLabel artifactLabel, string identifier)
     {
         return artifactSpecDict[artifactLabel.ToString()][identifier];
@@ -20,6 +24,11 @@ public class BalenceManager : MonoBehaviour
     public float GetValue(AfflictionType afflictionType, string identifier)
     {
         return afflictionSpecDict[afflictionType.ToString()][identifier];
+    }
+
+    public float GetValue(SpellLabel spellLabel, string identifier)
+    {
+        return spellSpecDict[spellLabel.ToString()][identifier];
     }
 
     private void Awake()

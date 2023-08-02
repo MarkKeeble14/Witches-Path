@@ -223,4 +223,13 @@ public class Utils
         yield return new WaitForSeconds(delay);
         action?.Invoke();
     }
+
+    public static IEnumerator RepeatFunction(Action func, float delay, MonoBehaviour runOn)
+    {
+        yield return new WaitForSeconds(delay);
+
+        func?.Invoke();
+
+        runOn.StartCoroutine(RepeatFunction(func, delay, runOn));
+    }
 }

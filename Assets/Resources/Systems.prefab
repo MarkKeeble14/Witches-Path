@@ -182,7 +182,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -540}
+  m_AnchoredPosition: {x: 0, y: -539.99994}
   m_SizeDelta: {x: 700, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &3239115800174809029
@@ -1919,6 +1919,46 @@ MonoBehaviour:
     - key: Paralyzed
       value:
         dictionary: []
+  spellSpecDict:
+    dictionary:
+    - key: PoisonTips
+      value:
+        dictionary:
+        - key: ProcAfter
+          value: 4
+        - key: StackAmount
+          value: 2
+    - key: StaticField
+      value:
+        dictionary:
+        - key: ProcAfter
+          value: 10
+    - key: Inferno
+      value:
+        dictionary:
+        - key: StackAmount
+          value: 1
+    - key: BattleTrance
+      value:
+        dictionary:
+        - key: ProcAfter
+          value: 10
+        - key: Duration
+          value: 2.5
+    - key: MagicRain
+      value:
+        dictionary:
+        - key: ProcAfter
+          value: 5
+        - key: DamageAmount
+          value: 7.5
+    - key: CrushJoints
+      value:
+        dictionary:
+        - key: ProcAfter
+          value: 6
+        - key: StackAmount
+          value: 1
 --- !u!1 &3764866126739295380
 GameObject:
   m_ObjectHideFlags: 0
@@ -2461,8 +2501,9 @@ MonoBehaviour:
   hpText: {fileID: 1817865862606539329}
   currencyText: {fileID: 8778094111878917716}
   artifactBar: {fileID: 1841857443439868651}
-  testArtifacts: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f000000100000001100000012000000130000001400000015000000
   artifactDisplay: {fileID: 7516618647761885518, guid: 6ff7e2d7934c96447bb8de20de4507bb, type: 3}
+  testArtifacts: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f000000100000001100000012000000130000001400000015000000
+  equippableSpells: 000000000100000002000000030000001400000015000000
 --- !u!1 &5388059309545443089
 GameObject:
   m_ObjectHideFlags: 0

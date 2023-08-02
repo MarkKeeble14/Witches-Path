@@ -33,10 +33,19 @@ public class GameManager : MonoBehaviour
     public Action OnPlayerRecieveDamage;
 
     private Dictionary<MapNodeType, Action> OnEnterSpecificRoomActionMap = new Dictionary<MapNodeType, Action>();
-    [SerializeField] private List<ArtifactLabel> testArtifacts;
 
     [Header("Prefabs")]
     [SerializeField] private ArtifactIcon artifactDisplay;
+
+    [Header("Test")]
+    [Header("Artifacts")]
+    [SerializeField] private List<ArtifactLabel> testArtifacts;
+
+    [Header("Spells")]
+    [SerializeField] private List<SpellLabel> equippableSpells = new List<SpellLabel>();
+    [SerializeField] private List<PassiveSpell> equippedPassiveSpells = new List<PassiveSpell>();
+    private int equippableSpellIndex = 0;
+
 
     private void Awake()
     {
@@ -63,7 +72,7 @@ public class GameManager : MonoBehaviour
         currencyText.text = Mathf.RoundToInt(currentPlayerCurrency).ToString();
 
         // Testing
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Alpha1))
         {
             if (testArtifacts.Count > 0)
             {
@@ -71,6 +80,22 @@ public class GameManager : MonoBehaviour
                 testArtifacts.RemoveAt(0);
                 AddArtifact(a);
             }
+        }
+
+        // Testing
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            // Unequip old spell
+            if (equippedPassiveSpells.Count > 0)
+            {
+                PassiveSpell prevSpell = equippedPassiveSpells[equippableSpellIndex - 1];
+                prevSpell.OnUnequip();
+            }
+
+            // Equip new spell
+            PassiveSpell s = (PassiveSpell)GetSpellOfType(equippableSpells[equippableSpellIndex++]);
+            s.OnEquip();
+            equippedPassiveSpells.Add(s);
         }
     }
 
@@ -108,6 +133,27 @@ public class GameManager : MonoBehaviour
     private void EquipEquipment(Equipment e)
     {
         // Figure out what to do here
+    }
+
+    private Spell GetSpellOfType(SpellLabel label)
+    {
+        switch (label)
+        {
+            case SpellLabel.BattleTrance:
+                return new BattleTrance();
+            case SpellLabel.CrushJoints:
+                return new CrushJoints();
+            case SpellLabel.Inferno:
+                return new Inferno();
+            case SpellLabel.MagicRain:
+                return new MagicRain();
+            case SpellLabel.PoisonTips:
+                return new PoisonTips();
+            case SpellLabel.StaticField:
+                return new StaticField();
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
     }
 
     public Artifact GetArtifactOfType(ArtifactLabel label)

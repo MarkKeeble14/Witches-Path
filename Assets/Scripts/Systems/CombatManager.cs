@@ -92,6 +92,7 @@ public class CombatManager : MonoBehaviour
     public Action OnCombatStart;
     public Dictionary<Action, float> OnCombatStartDelayedActionMap = new Dictionary<Action, float>();
     public Dictionary<Action, RepeatData> OnCombatStartRepeatedActionMap = new Dictionary<Action, RepeatData>();
+    public Dictionary<Action, float> OnCombatStartInfinitelyRepeatedActionMap = new Dictionary<Action, float>();
     public Action OnCombatEnd;
     public Action OnPassiveSpellProc;
     public Action OnActiveSpellActivated;
@@ -417,6 +418,11 @@ public class CombatManager : MonoBehaviour
 
     }
 
+    public void FireMagicRain(float damageAmount)
+    {
+
+    }
+
     public void OnNoteHit()
     {
         sfxSource.PlayOneShot(hitSound);
@@ -588,6 +594,12 @@ public class CombatManager : MonoBehaviour
                 onStartCombatCoroutines.Add(StartCoroutine(Utils.CallActionAfterDelay(kvp.Key, kvp.Value.Delay * i)));
             }
         }
+
+        foreach (KeyValuePair<Action, float> kvp in OnCombatStartInfinitelyRepeatedActionMap)
+        {
+            Debug.Log("Starting: " + kvp.Key + ", Delay = " + kvp.Value);
+            onStartCombatCoroutines.Add(StartCoroutine(Utils.RepeatFunction(kvp.Key, kvp.Value, this)));
+        }
     }
 
     private void CallOnEndCombat()
@@ -608,13 +620,24 @@ public class CombatManager : MonoBehaviour
 
     public void AddOnCombatStartRepeatedAction(Action a, RepeatData data)
     {
-        Debug.Log("Starting: " + a + ", Repetitions = " + data.Repetitions + ", Delay = " + data.Delay);
+        Debug.Log("Added: " + a + ", Repetitions = " + data.Repetitions + ", Delay = " + data.Delay);
         OnCombatStartRepeatedActionMap.Add(a, data);
     }
 
     public void RemoveOnCombatStartRepeatedAction(Action a)
     {
         OnCombatStartRepeatedActionMap.Remove(a);
+    }
+
+    public void AddOnCombatStartInfinitelyRepeatedAction(Action a, float delay)
+    {
+        Debug.Log("Added (Infinite): " + a + ", Delay = " + delay);
+        OnCombatStartInfinitelyRepeatedActionMap.Add(a, delay);
+    }
+
+    public void RemoveOnCombatStartInfinitelyRepeatedAction(Action a)
+    {
+        OnCombatStartInfinitelyRepeatedActionMap.Remove(a);
     }
 
     #endregion

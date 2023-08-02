@@ -3,7 +3,7 @@
 public abstract class Artifact
 {
     protected string SpritePath => "Artifacts/" + Label.ToString().ToLower();
-    protected virtual ArtifactLabel Label { get; }
+    protected abstract ArtifactLabel Label { get; }
 
     public ArtifactLabel GetLabel()
     {
