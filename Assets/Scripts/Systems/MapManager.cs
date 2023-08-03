@@ -13,11 +13,13 @@ public class MapManager : MonoBehaviour
     public void Hide()
     {
         mapCV.alpha = 0;
+        mapCV.blocksRaycasts = false;
     }
 
     public void Show()
     {
         mapCV.alpha = 1;
+        mapCV.blocksRaycasts = true;
     }
 
     public void NextRow()

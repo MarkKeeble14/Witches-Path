@@ -154,7 +154,7 @@ public class MedicineKit : Artifact
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterPlayerHP(healAmount);
+        GameManager._Instance.AlterPlayerHP(healAmount, DamageSource.Heal);
         ShowArtifactProc();
     }
 }
@@ -335,7 +335,7 @@ public class HealthInsurance : Artifact
     {
         if (!enabled) return;
 
-        GameManager._Instance.AlterPlayerHP(healAmount);
+        GameManager._Instance.AlterPlayerHP(healAmount, DamageSource.Heal);
         ShowArtifactProc();
         MapNodeType type = GameManager._Instance.GetCurrentGameOccurance().Type;
         if (type == MapNodeType.MINOR_FIGHT || type == MapNodeType.BOSS)
@@ -404,7 +404,7 @@ public class ZedsScalpel : Artifact
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterPlayerHP(healAmount);
+        GameManager._Instance.AlterPlayerHP(healAmount, DamageSource.Heal);
         ShowArtifactProc();
     }
 }
@@ -460,7 +460,7 @@ public class RustyCannon : Artifact
 
     protected override void Effect()
     {
-        CombatManager._Instance.AltarEnemyHP(-damageAmount);
+        CombatManager._Instance.DamageCombatent(-damageAmount, Target.Enemy, Target.Character, DamageSource.Default);
         ShowArtifactProc();
     }
 }
@@ -484,7 +484,7 @@ public class VoodooDoll : Artifact
 
     protected override void Effect()
     {
-        CombatManager._Instance.AltarEnemyHP(-damageAmount);
+        CombatManager._Instance.DamageCombatent(-damageAmount, Target.Enemy, Target.Character, DamageSource.Default);
         ShowArtifactProc();
     }
 }

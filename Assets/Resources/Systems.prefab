@@ -713,6 +713,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3021345007037296721}
   - component: {fileID: 958746244892814528}
+  - component: {fileID: 931891167865429361}
   m_Layer: 0
   m_Name: Character
   m_TagString: Untagged
@@ -769,6 +770,18 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 1
+--- !u!225 &931891167865429361
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1819684552039135733}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &2250960034126908072
 GameObject:
   m_ObjectHideFlags: 0
@@ -1761,6 +1774,7 @@ MonoBehaviour:
   Circle: {fileID: 1048798711757196, guid: 0013f3c552b5a32428fe42d1e1aac4b5, type: 3}
   enableSliders: 1
   apprRate: 600
+  popupTextPrefab: {fileID: 418672499888249726, guid: 48f94fe2840fcaa4bbddeec5080544e5, type: 3}
   sfxSource: {fileID: 3473017674410196107}
   musicSource: {fileID: 2765515325418531909}
   noteLayer:
@@ -2803,9 +2817,22 @@ MonoBehaviour:
   - {fileID: 6954200699785662765}
   activeSpellBindings: 710000007700000065000000
   artifactDisplay: {fileID: 7516618647761885518, guid: 6ff7e2d7934c96447bb8de20de4507bb, type: 3}
+  popupTextPrefab: {fileID: 418672499888249726, guid: aadbf8430d60c914e956d62e25f319d2, type: 3}
   testArtifacts: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f000000100000001100000012000000130000001400000015000000
   equippablePassiveSpells: 000000000100000002000000030000001400000015000000
   equippableActiveSpells: 0400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f00000010000000110000001200000013000000
+  damageSourceColorDict:
+    dictionary:
+    - key: 0
+      value: {r: 1, g: 1, b: 1, a: 1}
+    - key: 1
+      value: {r: 0.116742745, g: 0.3773585, b: 0.10466357, a: 1}
+    - key: 2
+      value: {r: 0.2867924, g: 0.32125667, b: 1, a: 1}
+    - key: 3
+      value: {r: 1, g: 0.22075468, b: 0.22075468, a: 1}
+    - key: 4
+      value: {r: 0.25186503, g: 0.9433962, b: 0.18155923, a: 1}
 --- !u!1 &5388059309545443089
 GameObject:
   m_ObjectHideFlags: 0
@@ -2905,6 +2932,7 @@ GameObject:
   m_Component:
   - component: {fileID: 354155039109752433}
   - component: {fileID: 2832820272295901075}
+  - component: {fileID: 5006587226944684188}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Untagged
@@ -2961,6 +2989,18 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 1
+--- !u!225 &5006587226944684188
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5398431168217222443}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &5456369392861894012
 GameObject:
   m_ObjectHideFlags: 0
@@ -9613,6 +9653,14 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 2461664163193000547}
     m_Modifications:
+    - target: {fileID: 466146239662261088, guid: 569fc332c155e8b44bff50667589c14c, type: 3}
+      propertyPath: m_Camera
+      value: 
+      objectReference: {fileID: 6050718438856923262}
+    - target: {fileID: 466146239662261088, guid: 569fc332c155e8b44bff50667589c14c, type: 3}
+      propertyPath: m_RenderMode
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 466146239662261088, guid: 569fc332c155e8b44bff50667589c14c, type: 3}
       propertyPath: m_SortingOrder
       value: 2

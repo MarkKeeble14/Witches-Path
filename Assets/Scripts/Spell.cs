@@ -331,7 +331,7 @@ public class Fireball : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Fire);
         CombatManager._Instance.AddAffliction(AfflictionType.Burn, stackAmount, AfflictionSetType.Activations, Target.Enemy);
     }
 }
@@ -352,7 +352,7 @@ public class Shock : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Electricity);
         CombatManager._Instance.AddAffliction(AfflictionType.Paralyzed, stackAmount, AfflictionSetType.Activations, Target.Enemy);
     }
 }
@@ -409,7 +409,7 @@ public class Toxify : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Poison);
         CombatManager._Instance.AddAffliction(AfflictionType.Blight, stackAmount, AfflictionSetType.Activations, Target.Enemy);
     }
 }
@@ -428,8 +428,8 @@ public class Jarkai : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Default);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Default);
     }
 }
 
@@ -451,7 +451,7 @@ public class Flurry : ActiveSpell
     {
         for (int i = 0; i < hitAmount; i++)
         {
-            CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+            CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Default);
         }
     }
 }
@@ -493,7 +493,7 @@ public class ExposedFlesh : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Default);
         CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, stackAmount, AfflictionSetType.Activations, Target.Enemy);
     }
 }
@@ -514,7 +514,7 @@ public class Cripple : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Default);
         CombatManager._Instance.AddAffliction(AfflictionType.Weakened, stackAmount, AfflictionSetType.Activations, Target.Enemy);
     }
 }
@@ -535,8 +535,8 @@ public class BloodTrade : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.DamageCombatent(-selfDamageAmount, Target.Character, Target.Character);
-        CombatManager._Instance.AttackCombatent(-otherDamageAmount, Target.Character, Target.Enemy);
+        CombatManager._Instance.DamageCombatent(-selfDamageAmount, Target.Character, Target.Character, DamageSource.Default);
+        CombatManager._Instance.AttackCombatent(-otherDamageAmount, Target.Character, Target.Enemy, DamageSource.Default);
     }
 }
 
@@ -629,8 +629,8 @@ public class ImpartialAid : ActiveSpell
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterPlayerHP(healAmount);
-        CombatManager._Instance.AltarEnemyHP(healAmount);
+        GameManager._Instance.AlterPlayerHP(healAmount, DamageSource.Heal);
+        CombatManager._Instance.AltarEnemyHP(healAmount, DamageSource.Heal);
     }
 }
 

@@ -47,6 +47,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Prefabs")]
     [SerializeField] private ArtifactIcon artifactDisplay;
+    [SerializeField] private PopupText popupTextPrefab;
 
     [Header("Test")]
     [Header("Artifacts")]
@@ -59,6 +60,8 @@ public class GameManager : MonoBehaviour
     [Header("Active Spells")]
     [SerializeField] private List<SpellLabel> equippableActiveSpells = new List<SpellLabel>();
     private int equippableActiveSpellIndex = 0;
+
+    [SerializeField] private SerializableDictionary<DamageSource, Color> damageSourceColorDict = new SerializableDictionary<DamageSource, Color>();
 
 
     private void Awake()
@@ -529,7 +532,7 @@ public class GameManager : MonoBehaviour
         currentPlayerCurrency += amount;
     }
 
-    public bool AlterPlayerHP(float amount)
+    public bool AlterPlayerHP(float amount, DamageSource damageSource, bool spawnPopupText = true)
     {
         // Barricade Effect
         if (amount <= -1 && HasArtifact(ArtifactLabel.Barricade))
@@ -542,6 +545,12 @@ public class GameManager : MonoBehaviour
         if (amount < 0)
         {
             OnPlayerRecieveDamage?.Invoke();
+        }
+
+        if (spawnPopupText)
+        {
+            PopupText spawned = Instantiate(popupTextPrefab, hpText.transform.position, Quaternion.identity);
+            spawned.Set(Utils.RoundTo(amount, 1).ToString(), GetColorByDamageSource(damageSource));
         }
 
         if (currentPlayerHP + amount > maxPlayerHP)
@@ -581,6 +590,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public Color GetColorByDamageSource(DamageSource damageSource)
+    {
+        return damageSourceColorDict[damageSource];
+    }
 
     public float GetCurrentCharacterHP()
     {

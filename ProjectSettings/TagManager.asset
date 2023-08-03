@@ -44,3 +44,6 @@ TagManager:
   - name: Notes
     uniqueID: 4090958465
     locked: 0
+  - name: PopupText
+    uniqueID: 2182495485
+    locked: 0

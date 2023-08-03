@@ -35,6 +35,15 @@ public enum AfflictionSetType
     Duration
 }
 
+public enum DamageSource
+{
+    Default,
+    Poison,
+    Electricity,
+    Fire,
+    Heal
+}
+
 public class CombatManager : MonoBehaviour
 {
     public static CombatManager _Instance { get; private set; }
@@ -60,6 +69,9 @@ public class CombatManager : MonoBehaviour
 
     private List<GameObject> circleList; // Circles List
     private static string[] lineParams; // Object Parameters
+
+    [Header("Prefabs")]
+    [SerializeField] private PopupText popupTextPrefab;
 
     // Audio stuff
     [SerializeField] private AudioSource sfxSource;
@@ -113,6 +125,7 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private Transform enemyAfflictionList;
 
     public bool InCombat { get; private set; }
+
 
     private void Start()
     {
@@ -311,12 +324,12 @@ public class CombatManager : MonoBehaviour
         {
             if (kvp.Key == AfflictionType.Blight)
             {
-                AlterCombatentHP(-kvp.Value.RemainingActivations, t);
+                AlterCombatentHP(-kvp.Value.RemainingActivations, t, DamageSource.Poison);
                 map[kvp.Key].AlterActivations(-1);
             }
             else if (kvp.Key == AfflictionType.Burn)
             {
-                AlterCombatentHP(-BalenceManager._Instance.GetValue(AfflictionType.Burn, "DamageAmount"), t);
+                AlterCombatentHP(-BalenceManager._Instance.GetValue(AfflictionType.Burn, "DamageAmount"), t, DamageSource.Fire);
                 map[kvp.Key].AlterActivations(-1);
             }
         }
@@ -363,11 +376,10 @@ public class CombatManager : MonoBehaviour
 
         yield return StartCoroutine(UpdateRoutine());
 
-
         // Bandaged Effect
         if (TargetHasAffliction(AfflictionType.Bandaged, Target.Character))
         {
-            GameManager._Instance.AlterPlayerHP(characterAfflictionMap[AfflictionType.Bandaged].RemainingActivations);
+            GameManager._Instance.AlterPlayerHP(characterAfflictionMap[AfflictionType.Bandaged].RemainingActivations, DamageSource.Heal);
         }
 
         InCombat = false;
@@ -445,7 +457,7 @@ public class CombatManager : MonoBehaviour
     private void PlayerAttack()
     {
         // Simple way of attacking for now
-        AttackCombatent(-GameManager._Instance.GetCharacter().GetBasicAttackDamage(), Target.Character, Target.Enemy);
+        AttackCombatent(-GameManager._Instance.GetCharacter().GetBasicAttackDamage(), Target.Character, Target.Enemy, DamageSource.Default);
 
         OnPlayerAttack?.Invoke();
     }
@@ -453,7 +465,7 @@ public class CombatManager : MonoBehaviour
     private void EnemyAttack()
     {
         // Simple way of attacking for now
-        if (!AttackCombatent(-currentEnemy.GetBasicAttackDamage(), Target.Enemy, Target.Character))
+        if (!AttackCombatent(-currentEnemy.GetBasicAttackDamage(), Target.Enemy, Target.Character, DamageSource.Default))
         {
             // Player Died
             GameManager._Instance.GameOver();
@@ -464,7 +476,7 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    public bool AttackCombatent(float amount, Target attacker, Target target)
+    public bool AttackCombatent(float amount, Target attacker, Target target, DamageSource damageSource)
     {
         // Paralyzed Effect
         if (TargetHasAffliction(AfflictionType.Paralyzed, attacker))
@@ -490,7 +502,7 @@ public class CombatManager : MonoBehaviour
         // Retribution Effect
         if (TargetHasAffliction(AfflictionType.Retribution, target))
         {
-            DamageCombatent(BalenceManager._Instance.GetValue(AfflictionType.Retribution, "DamageAmount"), attacker, target);
+            DamageCombatent(BalenceManager._Instance.GetValue(AfflictionType.Retribution, "DamageAmount"), attacker, target, DamageSource.Default);
             TryConsumeAfflictionStack(AfflictionType.Retribution, target);
         }
 
@@ -504,10 +516,10 @@ public class CombatManager : MonoBehaviour
         }
 
         // Then to Deal Damage
-        return DamageCombatent(amount, target, attacker);
+        return DamageCombatent(amount, target, attacker, damageSource);
     }
 
-    public bool DamageCombatent(float amount, Target combatent, Target attacker)
+    public bool DamageCombatent(float amount, Target combatent, Target attacker, DamageSource damageSource)
     {
         // Vulnerable Effect
         if (amount < 0 && TargetHasAffliction(AfflictionType.Vulnerable, Target.Enemy))
@@ -528,10 +540,10 @@ public class CombatManager : MonoBehaviour
         }
 
         // Alter HP
-        return AlterCombatentHP(amount, combatent);
+        return AlterCombatentHP(amount, combatent, damageSource);
     }
 
-    private bool AlterCombatentHP(float amount, Target t)
+    private bool AlterCombatentHP(float amount, Target t, DamageSource damageSource)
     {
         // Prepared Effect
         if (TargetHasAffliction(AfflictionType.Prepared, t))
@@ -544,15 +556,19 @@ public class CombatManager : MonoBehaviour
         switch (t)
         {
             case Target.Character:
-                return GameManager._Instance.AlterPlayerHP(amount);
+
+                PopupText text = Instantiate(popupTextPrefab, characterCombatSprite.transform.position, Quaternion.identity);
+                text.Set(Utils.RoundTo(amount, 1).ToString(), GameManager._Instance.GetColorByDamageSource(damageSource));
+
+                return GameManager._Instance.AlterPlayerHP(amount, damageSource, false);
             case Target.Enemy:
-                return AltarEnemyHP(amount);
+                return AltarEnemyHP(amount, damageSource);
             default:
                 throw new UnhandledSwitchCaseException();
         }
     }
 
-    public bool AltarEnemyHP(float amount)
+    public bool AltarEnemyHP(float amount, DamageSource damageSource)
     {
         // Doctors Report Effect
         if (GameManager._Instance.HasArtifact(ArtifactLabel.DoctorsReport) && amount > BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "MustBeOver"))
@@ -560,6 +576,9 @@ public class CombatManager : MonoBehaviour
             AddAffliction(AfflictionType.Bandaged, BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "StackAmount"), AfflictionSetType.Activations, Target.Character);
             GameManager._Instance.AnimateArtifact(ArtifactLabel.DoctorsReport);
         }
+
+        PopupText text = Instantiate(popupTextPrefab, enemyCombatSprite.transform.position, Quaternion.identity);
+        text.Set(Utils.RoundTo(amount, 1).ToString(), GameManager._Instance.GetColorByDamageSource(damageSource));
 
         if (currentEnemyHP + amount > maxEnemyHP)
         {
