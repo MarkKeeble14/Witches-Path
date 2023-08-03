@@ -92,7 +92,7 @@ public class CombatManager : MonoBehaviour
     public Action OnCombatStart;
     public Dictionary<Action, float> OnCombatStartDelayedActionMap = new Dictionary<Action, float>();
     public Dictionary<Action, RepeatData> OnCombatStartRepeatedActionMap = new Dictionary<Action, RepeatData>();
-    public Dictionary<Action, float> OnCombatStartInfinitelyRepeatedActionMap = new Dictionary<Action, float>();
+    public List<IEnumerator> OnCombatStartInfinitelyRepeatedActionMap = new List<IEnumerator>();
     public Action OnCombatEnd;
     public Action OnPassiveSpellProc;
     public Action OnActiveSpellActivated;
@@ -597,10 +597,10 @@ public class CombatManager : MonoBehaviour
             }
         }
 
-        foreach (KeyValuePair<Action, float> kvp in OnCombatStartInfinitelyRepeatedActionMap)
+        foreach (IEnumerator c in OnCombatStartInfinitelyRepeatedActionMap)
         {
-            Debug.Log("Starting: " + kvp.Key + ", Delay = " + kvp.Value);
-            onStartCombatCoroutines.Add(StartCoroutine(Utils.RepeatFunction(kvp.Key, kvp.Value, this)));
+            Debug.Log("Starting: " + c);
+            onStartCombatCoroutines.Add(StartCoroutine(c));
         }
     }
 
@@ -631,15 +631,15 @@ public class CombatManager : MonoBehaviour
         OnCombatStartRepeatedActionMap.Remove(a);
     }
 
-    public void AddOnCombatStartInfinitelyRepeatedAction(Action a, float delay)
+    public void AddOnCombatStartInfinitelyRepeatedAction(IEnumerator c)
     {
         // Debug.Log("Added (Infinite): " + a + ", Delay = " + delay);
-        OnCombatStartInfinitelyRepeatedActionMap.Add(a, delay);
+        OnCombatStartInfinitelyRepeatedActionMap.Add(c);
     }
 
-    public void RemoveOnCombatStartInfinitelyRepeatedAction(Action a)
+    public void RemoveOnCombatStartInfinitelyRepeatedAction(IEnumerator c)
     {
-        OnCombatStartInfinitelyRepeatedActionMap.Remove(a);
+        OnCombatStartInfinitelyRepeatedActionMap.Remove(c);
     }
 
     #endregion

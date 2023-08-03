@@ -29,8 +29,16 @@ public class GameManager : MonoBehaviour
     [Header("References")]
     [SerializeField] private TextMeshProUGUI hpText;
     [SerializeField] private TextMeshProUGUI manaText;
+
     [SerializeField] private TextMeshProUGUI currencyText;
     [SerializeField] private Transform artifactBar;
+
+    [SerializeField] private ActiveSpellDisplay[] activeSpellDisplays = new ActiveSpellDisplay[3];
+    private Dictionary<SpellLabel, SpellDisplay> loadedSpellDisplays = new Dictionary<SpellLabel, SpellDisplay>();
+    private Dictionary<ActiveSpellDisplay, ActiveSpell> equippedActiveSpells = new Dictionary<ActiveSpellDisplay, ActiveSpell>();
+    private Dictionary<PassiveSpellDisplay, PassiveSpell> equippedPassiveSpells = new Dictionary<PassiveSpellDisplay, PassiveSpell>();
+    [SerializeField] private PassiveSpellDisplay[] passiveSpellDisplays = new PassiveSpellDisplay[2];
+    [SerializeField] private KeyCode[] activeSpellBindings = new KeyCode[3];
 
     public Action OnEnterNewRoom;
     public Action OnPlayerRecieveDamage;
@@ -46,13 +54,11 @@ public class GameManager : MonoBehaviour
 
     [Header("Passive Spells")]
     [SerializeField] private List<SpellLabel> equippablePassiveSpells = new List<SpellLabel>();
-    [SerializeField] private List<PassiveSpell> equippedPassiveSpells = new List<PassiveSpell>();
     private int equippablePassiveSpellIndex = 0;
 
     [Header("Active Spells")]
     [SerializeField] private List<SpellLabel> equippableActiveSpells = new List<SpellLabel>();
     private int equippableActiveSpellIndex = 0;
-    private List<ActiveSpell> equippedActiveSpells = new List<ActiveSpell>();
 
 
     private void Awake()
@@ -92,79 +98,162 @@ public class GameManager : MonoBehaviour
         }
 
         // Testing
+        // Active Spells
         if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            if (equippablePassiveSpellIndex > equippablePassiveSpells.Count - 1)
-                equippablePassiveSpellIndex = 0;
-
-            // Unequip old spell
-            if (equippedPassiveSpells.Count > 0)
-            {
-                PassiveSpell prevSpell = equippedPassiveSpells[0];
-                prevSpell.OnUnequip();
-                equippedPassiveSpells.Remove(prevSpell);
-            }
-
             // Equip new spell
-            PassiveSpell s = (PassiveSpell)GetSpellOfType(equippablePassiveSpells[equippablePassiveSpellIndex++]);
-            s.OnEquip();
-            equippedPassiveSpells.Add(s);
-        }
+            equippableActiveSpellIndex++;
 
-        // Testing
-        if (Input.GetKeyDown(KeyCode.Alpha3))
-        {
             if (equippableActiveSpellIndex > equippableActiveSpells.Count - 1)
                 equippableActiveSpellIndex = 0;
 
-            if (equippedActiveSpells.Count > 0)
-            {
-                ActiveSpell prevSpell = equippedActiveSpells[0];
-                equippedActiveSpells.Remove(prevSpell);
-            }
+            Debug.Log("Selected: " + equippableActiveSpells[equippableActiveSpellIndex]);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            EquipActiveSpell(equippableActiveSpells[equippableActiveSpellIndex]);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha4))
+        {
+            UnequipActiveSpell(equippableActiveSpells[equippableActiveSpellIndex]);
+        }
 
+        // Passive Spells
+        if (Input.GetKeyDown(KeyCode.Alpha5))
+        {
             // Equip new spell
-            ActiveSpell s = (ActiveSpell)GetSpellOfType(equippableActiveSpells[equippableActiveSpellIndex++]);
-            s.OnEquip();
-            equippedActiveSpells.Add(s);
+            equippablePassiveSpellIndex++;
+
+            if (equippablePassiveSpellIndex > equippablePassiveSpells.Count - 1)
+                equippablePassiveSpellIndex = 0;
+
+            Debug.Log("Selected: " + equippablePassiveSpells[equippablePassiveSpellIndex]);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha6))
+        {
+            EquipPassiveSpell(equippablePassiveSpells[equippablePassiveSpellIndex]);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha7))
+        {
+            UnequipPassiveSpell(equippablePassiveSpells[equippablePassiveSpellIndex]);
         }
 
         // Only allow for spell casts while in combat
         if (CombatManager._Instance.InCombat)
         {
-            // Testing
-            if (Input.GetKeyDown(KeyCode.Q))
+            for (int i = 0; i < activeSpellBindings.Length; i++)
             {
-                ActiveSpell equippedActiveSpell = equippedActiveSpells[0];
-                Debug.Log("Attempting to Cast: " + equippedActiveSpell);
-                if (equippedActiveSpell.CanCast)
+                if (Input.GetKeyDown(activeSpellBindings[i]))
                 {
-                    Debug.Log("Casting: " + equippedActiveSpell);
-                    equippedActiveSpell.Cast();
-                }
-                else
-                {
-                    Debug.Log("Can't Cast: " + equippedActiveSpell);
-                    if (equippedActiveSpell.OnCooldown)
+                    ActiveSpell spellToCast = activeSpellDisplays[i].GetSpell();
+                    Debug.Log("Attempting to Cast: " + spellToCast);
+                    if (spellToCast.CanCast)
                     {
-                        Debug.Log("Spell: " + equippedActiveSpell + " Cooling Down: " + equippedActiveSpell.CooldownTimer);
+                        Debug.Log("Casting: " + spellToCast);
+                        spellToCast.Cast();
                     }
-                    if (!equippedActiveSpell.HasMana)
+                    else
                     {
-                        Debug.Log("Not Enough Mana to Cast Spell: " + equippedActiveSpell);
+                        Debug.Log("Can't Cast: " + spellToCast);
+                        if (spellToCast.OnCooldown)
+                        {
+                            Debug.Log("Spell: " + spellToCast + " Cooling Down: " + spellToCast.CooldownTimer);
+                        }
+                        if (!spellToCast.HasMana)
+                        {
+                            Debug.Log("Not Enough Mana to Cast Spell: " + spellToCast);
+                        }
                     }
                 }
             }
         }
     }
 
+    public void EquipPassiveSpell(SpellLabel label)
+    {
+        for (int i = 0; i < passiveSpellDisplays.Length; i++)
+        {
+            if (passiveSpellDisplays[i].IsAvailable)
+            {
+                PassiveSpell newSpell = (PassiveSpell)GetSpellOfType(label);
+                newSpell.OnEquip();
+
+                equippedPassiveSpells.Add(passiveSpellDisplays[i], newSpell);
+                passiveSpellDisplays[i].SetPassiveSpell(newSpell);
+                loadedSpellDisplays.Add(label, passiveSpellDisplays[i]);
+
+                Debug.Log("Equipped: " + newSpell);
+
+                return;
+            }
+        }
+
+        Debug.Log("No Empty Slot to Equip: " + label.ToString());
+    }
+
+    public void UnequipPassiveSpell(SpellLabel label)
+    {
+        if (!loadedSpellDisplays.ContainsKey(label))
+        {
+            Debug.Log("Spell: " + label + ", not Currency Equipped");
+            return;
+        }
+
+        SpellDisplay loaded = loadedSpellDisplays[label];
+
+        equippedPassiveSpells.Remove((PassiveSpellDisplay)loaded);
+        loaded.Unset();
+        loadedSpellDisplays.Remove(label);
+
+        Debug.Log("Unequipped: " + label.ToString());
+    }
+
+    public void EquipActiveSpell(SpellLabel label)
+    {
+        for (int i = 0; i < activeSpellDisplays.Length; i++)
+        {
+            if (activeSpellDisplays[i].IsAvailable)
+            {
+                ActiveSpell newSpell = (ActiveSpell)GetSpellOfType(label);
+                newSpell.OnEquip();
+
+                equippedActiveSpells.Add(activeSpellDisplays[i], newSpell);
+                activeSpellDisplays[i].SetActiveSpell(newSpell, activeSpellBindings[i]);
+                loadedSpellDisplays.Add(label, activeSpellDisplays[i]);
+
+                Debug.Log("Equipped: " + newSpell);
+
+                return;
+            }
+        }
+
+        Debug.Log("No Empty Slot to Equip: " + label.ToString());
+    }
+
+    public void UnequipActiveSpell(SpellLabel label)
+    {
+        if (!loadedSpellDisplays.ContainsKey(label))
+        {
+            Debug.Log("Spell: " + label + ", not Currency Equipped");
+            return;
+        }
+
+        SpellDisplay loaded = loadedSpellDisplays[label];
+
+        equippedActiveSpells.Remove((ActiveSpellDisplay)loaded);
+        loaded.Unset();
+        loadedSpellDisplays.Remove(label);
+
+        Debug.Log("Unequipped: " + label.ToString());
+    }
+
     public void TickActiveSpellCooldowns(float tickAmount)
     {
-        foreach (ActiveSpell spell in equippedActiveSpells)
+        foreach (KeyValuePair<ActiveSpellDisplay, ActiveSpell> kvp in equippedActiveSpells)
         {
-            if (spell.OnCooldown)
+            if (kvp.Value.OnCooldown)
             {
-                spell.AlterCooldown(-tickAmount);
+                kvp.Value.AlterCooldown(-tickAmount);
             }
         }
     }
@@ -175,10 +264,12 @@ public class GameManager : MonoBehaviour
         // 0 = 0%, 1 = 100%
         // .14 = 14%
         // etc
-        foreach (ActiveSpell spell in equippedActiveSpells)
+        foreach (KeyValuePair<ActiveSpellDisplay, ActiveSpell> kvp in equippedActiveSpells)
         {
-            if (spell.OnCooldown)
-                spell.MultiplyCooldown(normalizedPercent);
+            if (kvp.Value.OnCooldown)
+            {
+                kvp.Value.MultiplyCooldown(normalizedPercent);
+            }
         }
     }
 
@@ -529,5 +620,10 @@ public class GameManager : MonoBehaviour
     public bool HasArtifact(ArtifactLabel label)
     {
         return artifactDisplayTracker.ContainsKey(label);
+    }
+
+    public void AnimateSpell(SpellLabel label)
+    {
+        loadedSpellDisplays[label].AnimateScale();
     }
 }

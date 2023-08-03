@@ -17,8 +17,8 @@ MonoBehaviour:
   startingHat: {fileID: 11400000, guid: a3ed9b2b3d19c01469505e726d09302d, type: 2}
   startingWand: {fileID: 11400000, guid: 3b166944cc13dea4e929e85310a8221e, type: 2}
   combatSprite: {fileID: 0}
-  maxHP: 500
-  startingHP: 500
+  maxHP: 2500
+  startingHP: 2500
   maxMana: 125
   startingMana: 125
   basicAttackDamage: 5

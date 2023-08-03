@@ -33,6 +33,8 @@ public abstract class Spell
 {
     public abstract SpellLabel Label { get; }
 
+    public string SpritePath => "Spells/" + Label.ToString().ToLower();
+
     public string name => Label.ToString();
 
     protected abstract void Effect();
@@ -44,6 +46,11 @@ public abstract class Spell
     }
 
     public abstract void OnEquip();
+
+    protected void ShowSpellProc()
+    {
+        GameManager._Instance.AnimateSpell(Label);
+    }
 }
 
 #region Passive Spells
@@ -51,6 +58,49 @@ public abstract class Spell
 public abstract class PassiveSpell : Spell
 {
     public abstract void OnUnequip();
+
+    public virtual string GetSecondaryText()
+    {
+        return "";
+    }
+}
+
+public abstract class TimedPassPassiveSpell : PassiveSpell
+{
+    protected float procAfter;
+    private string secondaryText;
+    protected IEnumerator CombatLoop(MonoBehaviour runOn)
+    {
+        float t = 0;
+        while (t < procAfter)
+        {
+            t += Time.deltaTime;
+
+            secondaryText = Utils.RoundTo(procAfter - t, 0).ToString();
+
+            yield return null;
+        }
+
+        Effect();
+
+        runOn.StartCoroutine(CombatLoop(runOn));
+    }
+
+    public override void OnEquip()
+    {
+        procAfter = GetSpellSpec("ProcAfter");
+        CombatManager._Instance.AddOnCombatStartInfinitelyRepeatedAction(CombatLoop(CombatManager._Instance));
+    }
+
+    public override void OnUnequip()
+    {
+        CombatManager._Instance.RemoveOnCombatStartInfinitelyRepeatedAction(CombatLoop(CombatManager._Instance));
+    }
+
+    public override string GetSecondaryText()
+    {
+        return secondaryText;
+    }
 }
 
 public class PoisonTips : PassiveSpell
@@ -80,6 +130,7 @@ public class PoisonTips : PassiveSpell
         {
             tracker = 0;
             CombatManager._Instance.OnPlayerAttack += OnNextAttack;
+            ShowSpellProc();
         }
     }
 
@@ -88,28 +139,21 @@ public class PoisonTips : PassiveSpell
         CombatManager._Instance.AddAffliction(AfflictionType.Blight, stackAmount, AfflictionSetType.Activations, Target.Enemy);
         CombatManager._Instance.OnPlayerAttack -= OnNextAttack;
     }
+
+    public override string GetSecondaryText()
+    {
+        return tracker + "/" + procAfter;
+    }
 }
 
-public class StaticField : PassiveSpell
+public class StaticField : TimedPassPassiveSpell
 {
     public override SpellLabel Label => SpellLabel.StaticField;
-
-    private float procAfter;
-
-    public override void OnEquip()
-    {
-        procAfter = GetSpellSpec("ProcAfter");
-        CombatManager._Instance.AddOnCombatStartInfinitelyRepeatedAction(Effect, procAfter);
-    }
-
-    public override void OnUnequip()
-    {
-        CombatManager._Instance.RemoveOnCombatStartInfinitelyRepeatedAction(Effect);
-    }
 
     protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Paralyzed, 1, AfflictionSetType.Activations, Target.Enemy);
+        ShowSpellProc();
     }
 }
 
@@ -132,56 +176,45 @@ public class Inferno : PassiveSpell
     protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Burn, stackAmount, AfflictionSetType.Activations, Target.Enemy);
+        ShowSpellProc();
     }
 }
 
-public class BattleTrance : PassiveSpell
+public class BattleTrance : TimedPassPassiveSpell
 {
     public override SpellLabel Label => SpellLabel.BattleTrance;
 
-    private int procAfter;
     private int duration;
 
     public override void OnEquip()
     {
-        procAfter = (int)GetSpellSpec("ProcAfter");
         duration = (int)GetSpellSpec("Duration");
-        CombatManager._Instance.AddOnCombatStartInfinitelyRepeatedAction(Effect, procAfter);
-    }
-
-    public override void OnUnequip()
-    {
-        CombatManager._Instance.RemoveOnCombatStartInfinitelyRepeatedAction(Effect);
+        base.OnEquip();
     }
 
     protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Emboldened, duration, AfflictionSetType.Duration, Target.Character);
+        ShowSpellProc();
     }
 }
 
-public class MagicRain : PassiveSpell
+public class MagicRain : TimedPassPassiveSpell
 {
     public override SpellLabel Label => SpellLabel.MagicRain;
 
-    private float procAfter;
     private float damageAmount;
 
     public override void OnEquip()
     {
-        procAfter = GetSpellSpec("ProcAfter");
         damageAmount = GetSpellSpec("DamageAmount");
-        CombatManager._Instance.AddOnCombatStartInfinitelyRepeatedAction(Effect, procAfter);
-    }
-
-    public override void OnUnequip()
-    {
-        CombatManager._Instance.RemoveOnCombatStartInfinitelyRepeatedAction(Effect);
+        base.OnEquip();
     }
 
     protected override void Effect()
     {
         CombatManager._Instance.FireMagicRain(damageAmount);
+        ShowSpellProc();
     }
 }
 
@@ -212,6 +245,7 @@ public class CrushJoints : PassiveSpell
         {
             tracker = 0;
             CombatManager._Instance.OnPlayerAttack += OnNextAttack;
+            ShowSpellProc();
         }
     }
 
@@ -219,6 +253,11 @@ public class CrushJoints : PassiveSpell
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, stackAmount, AfflictionSetType.Activations, Target.Enemy);
         CombatManager._Instance.OnPlayerAttack -= OnNextAttack;
+    }
+
+    public override string GetSecondaryText()
+    {
+        return tracker + "/" + procAfter;
     }
 }
 
@@ -233,7 +272,7 @@ public abstract class ActiveSpell : Spell
 
     private float cooldownTimer;
 
-    public string CooldownTimer => cooldownTimer.ToString();
+    public Vector2 CooldownTimer => new Vector2(cooldownTimer, cooldown);
 
     public bool OnCooldown => cooldownTimer > 0;
     public bool HasMana => GameManager._Instance.GetCurrentPlayerMana() > manaCost;
@@ -243,6 +282,7 @@ public abstract class ActiveSpell : Spell
     {
         Effect();
         SetCooldown();
+        ShowSpellProc();
         GameManager._Instance.AlterPlayerMana(-manaCost);
     }
 
