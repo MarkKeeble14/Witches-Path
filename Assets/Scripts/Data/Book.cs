@@ -66,6 +66,7 @@ public class PhantasmalWhispers : Book
     protected override void Effect()
     {
         CombatManager._Instance.PhantasmalWhispersProc();
+        ShowBookProc();
     }
 }
 
@@ -137,6 +138,7 @@ public class TomeOfCleansing : Book
     protected override void Effect()
     {
         CombatManager._Instance.ClearRandomAffliction(Target.Character, AfflictionSign.Negative);
+        ShowBookProc();
     }
 }
 
@@ -215,6 +217,7 @@ public class ToDoList : Book
         if (tracker >= procAfter)
         {
             CombatManager._Instance.AddAffliction(AfflictionType.Prepared, 1, AfflictionSetType.Activations, Target.Character);
+            ShowBookProc();
             tracker = 0;
         }
     }
@@ -245,6 +248,7 @@ public class ForgiversOath : Book
         {
             CombatManager._Instance.OnActiveSpellActivated += OnNextActiveSpell;
             CombatManager._Instance.SetActiveSpellCooldowns = false;
+            ShowBookProc();
             tracker = 0;
         }
     }
@@ -285,6 +289,7 @@ public class WrittenWarning : Book
         {
             CombatManager._Instance.WrittenWarningProc(damage);
             damage += damageIncrease;
+            ShowBookProc();
             tracker = 0;
         }
     }

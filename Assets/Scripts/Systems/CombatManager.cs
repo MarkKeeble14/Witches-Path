@@ -373,10 +373,17 @@ public class CombatManager : MonoBehaviour
 
         currentEnemy = combat.Enemy;
         maxEnemyHP = currentEnemy.GetMaxHP();
-        currentEnemyHP =
-            GameManager._Instance.HasBook(BookLabel.CheatersConfessional)
-            ? maxEnemyHP * BalenceManager._Instance.GetValue(BookLabel.CheatersConfessional, "PercentHP")
-            : maxEnemyHP;
+
+        if (GameManager._Instance.HasBook(BookLabel.CheatersConfessional))
+        {
+            currentEnemyHP = maxEnemyHP * BalenceManager._Instance.GetValue(BookLabel.CheatersConfessional, "PercentHP");
+            GameManager._Instance.AnimateBook(BookLabel.CheatersConfessional);
+        }
+        else
+        {
+            currentEnemyHP = maxEnemyHP;
+        }
+
         enemyCombatSprite.sprite = currentEnemy.GetCombatSprite();
         characterCombatSprite.sprite = GameManager._Instance.GetCharacter().GetCombatSprite();
 
@@ -385,6 +392,7 @@ public class CombatManager : MonoBehaviour
         musicSource.Play();
 
         InCombat = true;
+        SetActiveSpellCooldowns = true;
 
         yield return StartCoroutine(UpdateRoutine());
 
@@ -394,6 +402,7 @@ public class CombatManager : MonoBehaviour
             GameManager._Instance.AlterPlayerHP(characterAfflictionMap[AfflictionType.Bandaged].RemainingActivations, DamageType.Heal);
         }
 
+        SetActiveSpellCooldowns = false;
         InCombat = false;
 
         // Reset
@@ -508,11 +517,11 @@ public class CombatManager : MonoBehaviour
 
         // Book of Effect Effect
         if (attacker == Target.Character
-            && amount > 0
             && source == DamageSource.ActiveSpell
             && GameManager._Instance.HasBook(BookLabel.BookOfEffect))
         {
             amount *= BalenceManager._Instance.GetValue(BookLabel.BookOfEffect, "PercentDamageIncrease");
+            GameManager._Instance.AnimateBook(BookLabel.BookOfEffect);
         }
 
         // Emboldened Effect
@@ -586,6 +595,7 @@ public class CombatManager : MonoBehaviour
         if (amount < 0 && GameManager._Instance.HasBook(BookLabel.BarbariansTactics))
         {
             amount -= BalenceManager._Instance.GetValue(BookLabel.BarbariansTactics, "DamageIncrease");
+            GameManager._Instance.AnimateBook(BookLabel.ClarksTimeCard);
         }
 
         // Call the AlterHP function on the appropriate Target

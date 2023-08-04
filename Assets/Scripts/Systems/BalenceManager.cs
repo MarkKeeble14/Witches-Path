@@ -39,12 +39,7 @@ public class BalenceManager : MonoBehaviour
 
     public float GetValue(SpellLabel spellLabel, string identifier)
     {
-        float v = spellSpecDict[spellLabel.ToString()][identifier];
-        if (GameManager._Instance.HasBook(BookLabel.ClarksTimeCard) && identifier.Equals("Cooldown"))
-        {
-            v /= 2;
-        }
-        return v;
+        return spellSpecDict[spellLabel.ToString()][identifier];
     }
 
     public float GetValue(MapNodeType type, string identifier)

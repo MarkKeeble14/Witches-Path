@@ -5,6 +5,14 @@ using TMPro;
 using System.Collections.Generic;
 using UnityEngine.UI;
 
+public enum TestType
+{
+    Artifact,
+    Book,
+    PassiveSpell,
+    ActiveSpell
+}
+
 public class GameManager : MonoBehaviour
 {
     public static GameManager _Instance { get; private set; }
@@ -32,10 +40,13 @@ public class GameManager : MonoBehaviour
     // Books
     [SerializeField] private Transform bookBar;
     private Dictionary<BookLabel, ArtifactIcon> bookDisplayTracker = new Dictionary<BookLabel, ArtifactIcon>();
+    private Dictionary<BookLabel, Book> equippedBooks = new Dictionary<BookLabel, Book>();
+
 
     // Artifacts
     [SerializeField] private Transform artifactBar;
     private Dictionary<ArtifactLabel, ArtifactIcon> artifactDisplayTracker = new Dictionary<ArtifactLabel, ArtifactIcon>();
+    private Dictionary<ArtifactLabel, Artifact> equippedArtifacts = new Dictionary<ArtifactLabel, Artifact>();
 
     // Spells
     [SerializeField] private ActiveSpellDisplay[] activeSpellDisplays = new ActiveSpellDisplay[3];
@@ -57,9 +68,11 @@ public class GameManager : MonoBehaviour
     [Header("Test")]
     [Header("Artifacts")]
     [SerializeField] private List<ArtifactLabel> testArtifacts;
+    private int artifactIndex;
 
     [Header("Books")]
     [SerializeField] private List<BookLabel> testBooks;
+    private int bookIndex;
 
     [Header("Passive Spells")]
     [SerializeField] private List<SpellLabel> equippablePassiveSpells = new List<SpellLabel>();
@@ -71,6 +84,7 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private SerializableDictionary<DamageType, Color> damageSourceColorDict = new SerializableDictionary<DamageType, Color>();
 
+    [SerializeField] private TestType currentlyTesting;
 
     private void Awake()
     {
@@ -97,67 +111,123 @@ public class GameManager : MonoBehaviour
         manaText.text = Mathf.RoundToInt(currentPlayerMana).ToString() + "/" + Mathf.RoundToInt(maxPlayerMana).ToString();
         currencyText.text = Mathf.RoundToInt(currentPlayerCurrency).ToString();
 
-        // Artifacts
-        if (Input.GetKeyDown(KeyCode.Alpha1))
+        if (Input.GetKeyDown(KeyCode.Tab))
         {
-            if (testArtifacts.Count > 0)
+            int v = (int)currentlyTesting;
+            if (v + 1 >= Enum.GetNames(typeof(TestType)).Length)
             {
-                ArtifactLabel a = testArtifacts[0];
-                testArtifacts.RemoveAt(0);
-                AddArtifact(a);
+                v = 0;
             }
-        }
-
-        // Books
-        if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            if (testBooks.Count > 0)
+            else
             {
-                BookLabel a = testBooks[0];
-                testBooks.RemoveAt(0);
-                AddBook(a);
+                v += 1;
             }
+            currentlyTesting = (TestType)v;
+            Debug.Log("Now Testing: " + currentlyTesting);
         }
 
         // Testing
-        // Active Spells
-        if (Input.GetKeyDown(KeyCode.Alpha3))
+        switch (currentlyTesting)
         {
-            // Equip new spell
-            equippableActiveSpellIndex++;
+            case TestType.ActiveSpell:
 
-            if (equippableActiveSpellIndex > equippableActiveSpells.Count - 1)
-                equippableActiveSpellIndex = 0;
+                // Testing
+                // Active Spells
+                if (Input.GetKeyDown(KeyCode.RightArrow))
+                {
+                    // Equip new spell
+                    equippableActiveSpellIndex++;
 
-            Debug.Log("Selected: " + equippableActiveSpells[equippableActiveSpellIndex]);
-        }
-        if (Input.GetKeyDown(KeyCode.Alpha4))
-        {
-            EquipActiveSpell(equippableActiveSpells[equippableActiveSpellIndex]);
-        }
-        if (Input.GetKeyDown(KeyCode.Alpha5))
-        {
-            UnequipActiveSpell(equippableActiveSpells[equippableActiveSpellIndex]);
-        }
+                    if (equippableActiveSpellIndex > equippableActiveSpells.Count - 1)
+                        equippableActiveSpellIndex = 0;
 
-        // Passive Spells
-        if (Input.GetKeyDown(KeyCode.Alpha6))
-        {
-            // Equip new spell
-            equippablePassiveSpellIndex++;
+                    Debug.Log("Selected: " + equippableActiveSpells[equippableActiveSpellIndex]);
+                }
 
-            if (equippablePassiveSpellIndex > equippablePassiveSpells.Count - 1)
-                equippablePassiveSpellIndex = 0;
+                if (Input.GetKeyDown(KeyCode.Alpha1))
+                {
+                    EquipActiveSpell(equippableActiveSpells[equippableActiveSpellIndex]);
+                }
+                if (Input.GetKeyDown(KeyCode.Alpha2))
+                {
+                    UnequipActiveSpell(equippableActiveSpells[equippableActiveSpellIndex]);
+                }
 
-            Debug.Log("Selected: " + equippablePassiveSpells[equippablePassiveSpellIndex]);
-        }
-        if (Input.GetKeyDown(KeyCode.Alpha7))
-        {
-            EquipPassiveSpell(equippablePassiveSpells[equippablePassiveSpellIndex]);
-        }
-        if (Input.GetKeyDown(KeyCode.Alpha8))
-        {
-            UnequipPassiveSpell(equippablePassiveSpells[equippablePassiveSpellIndex]);
+                break;
+            case TestType.PassiveSpell:
+
+                // Passive Spells
+                if (Input.GetKeyDown(KeyCode.RightArrow))
+                {
+                    // Equip new spell
+                    equippablePassiveSpellIndex++;
+
+                    if (equippablePassiveSpellIndex > equippablePassiveSpells.Count - 1)
+                        equippablePassiveSpellIndex = 0;
+
+                    Debug.Log("Selected: " + equippablePassiveSpells[equippablePassiveSpellIndex]);
+                }
+
+                if (Input.GetKeyDown(KeyCode.Alpha1))
+                {
+                    EquipPassiveSpell(equippablePassiveSpells[equippablePassiveSpellIndex]);
+                }
+                if (Input.GetKeyDown(KeyCode.Alpha2))
+                {
+                    UnequipPassiveSpell(equippablePassiveSpells[equippablePassiveSpellIndex]);
+                }
+
+                break;
+            case TestType.Artifact:
+
+                // Artifacts
+                if (Input.GetKeyDown(KeyCode.RightArrow))
+                {
+                    // Equip new spell
+                    artifactIndex++;
+
+                    if (artifactIndex > testArtifacts.Count - 1)
+                        artifactIndex = 0;
+
+                    Debug.Log("Selected: " + testArtifacts[artifactIndex]);
+                }
+
+                if (Input.GetKeyDown(KeyCode.Alpha1))
+                {
+                    AddArtifact(testArtifacts[artifactIndex]);
+                }
+
+                if (Input.GetKeyDown(KeyCode.Alpha2))
+                {
+                    RemoveArtifact(testArtifacts[artifactIndex]);
+                }
+
+                break;
+            case TestType.Book:
+
+                // Passive Spells
+                if (Input.GetKeyDown(KeyCode.RightArrow))
+                {
+                    // Equip new spell
+                    bookIndex++;
+
+                    if (bookIndex > testBooks.Count - 1)
+                        bookIndex = 0;
+
+                    Debug.Log("Selected: " + testBooks[bookIndex]);
+                }
+
+                if (Input.GetKeyDown(KeyCode.Alpha1))
+                {
+                    AddBook(testBooks[bookIndex]);
+                }
+
+                if (Input.GetKeyDown(KeyCode.Alpha2))
+                {
+                    RemoveBook(testBooks[bookIndex]);
+                }
+
+                break;
         }
 
         // Only allow for spell casts while in combat
@@ -479,9 +549,20 @@ public class GameManager : MonoBehaviour
         spawned.SetSprite(artifact.GetSprite());
         spawned.SetText(Utils.SplitOnCapitalLetters(type.ToString()));
 
-        artifactDisplayTracker.Add(artifact.GetLabel(), spawned);
+        artifactDisplayTracker.Add(type, spawned);
+        equippedArtifacts.Add(type, artifact);
+    }
 
-        // Somehow evaluate what artifact must do and add it's effect
+
+    public void RemoveArtifact(ArtifactLabel type)
+    {
+        Artifact artifact = equippedArtifacts[type];
+        artifact.OnUnequip();
+
+        artifactDisplayTracker.Remove(type);
+        equippedArtifacts.Remove(type);
+
+        Destroy(artifactDisplayTracker[type].gameObject);
     }
 
     public void AddBook(BookLabel type)
@@ -489,14 +570,24 @@ public class GameManager : MonoBehaviour
         Book book = GetBookOfType(type);
         book.OnEquip();
 
-        ArtifactIcon spawned = Instantiate(artifactDisplay, artifactBar);
+        ArtifactIcon spawned = Instantiate(artifactDisplay, bookBar);
         spawned.name = "Artifact(" + type + ")";
         spawned.SetSprite(book.GetSprite());
         spawned.SetText(Utils.SplitOnCapitalLetters(type.ToString()));
 
         bookDisplayTracker.Add(book.GetLabel(), spawned);
+        equippedBooks.Add(type, book);
+    }
 
-        // Somehow evaluate what artifact must do and add it's effect
+    public void RemoveBook(BookLabel type)
+    {
+        Book book = equippedBooks[type];
+        book.OnUnequip();
+
+        bookDisplayTracker.Remove(type);
+        equippedBooks.Remove(type);
+
+        Destroy(bookDisplayTracker[type].gameObject);
     }
 
     public void AnimateArtifact(ArtifactLabel label)
@@ -608,6 +699,7 @@ public class GameManager : MonoBehaviour
         if (amount > 0 && HasBook(BookLabel.MerchantsManual))
         {
             amount *= BalenceManager._Instance.GetValue(BookLabel.MerchantsManual, "PercentIncrease");
+            AnimateBook(BookLabel.MerchantsManual);
         }
 
         // Spawn Popup Text

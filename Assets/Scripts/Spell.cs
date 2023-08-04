@@ -39,6 +39,8 @@ public abstract class Spell
 
     protected abstract void Effect();
 
+    protected abstract void CallEffect();
+
     protected float GetSpellSpec(string specIdentifier)
     {
         Debug.Log("GetSpellSpec Called for: " + Label + " - " + specIdentifier);
@@ -64,12 +66,15 @@ public abstract class PassiveSpell : Spell
         return "";
     }
 
-    protected void CallEffect()
+    protected override void CallEffect()
     {
         Effect();
+        CombatManager._Instance.OnPassiveSpellProc?.Invoke();
         if (GameManager._Instance.HasBook(BookLabel.ReplicatorsFables))
         {
             Effect();
+            CombatManager._Instance.OnPassiveSpellProc?.Invoke();
+            GameManager._Instance.AnimateBook(BookLabel.ReplicatorsFables);
         }
     }
 }
@@ -287,17 +292,37 @@ public abstract class ActiveSpell : Spell
     public bool HasMana => GameManager._Instance.GetCurrentPlayerMana() > manaCost;
     public bool CanCast => !OnCooldown && HasMana;
 
+    protected override void CallEffect()
+    {
+        CombatManager._Instance.OnActiveSpellActivated?.Invoke();
+        Effect();
+    }
+
     public void Cast()
     {
-        Effect();
+        // Echo Effect
+        if (CombatManager._Instance.TargetHasAffliction(AfflictionType.Echo, Target.Character))
+        {
+            CallEffect();
+            CallEffect();
+            CombatManager._Instance.TryConsumeAfflictionStack(AfflictionType.Echo, Target.Character);
+        }
+        else
+        {
+            CallEffect();
+        }
 
+        // Set Cooldown
         if (CombatManager._Instance.SetActiveSpellCooldowns)
         {
             SetCooldown();
         }
 
-        ShowSpellProc();
+        // Consume Mana
         GameManager._Instance.AlterPlayerMana(-manaCost);
+
+        // Show Spell Proc
+        ShowSpellProc();
     }
 
     public override void OnEquip()
@@ -308,7 +333,15 @@ public abstract class ActiveSpell : Spell
 
     private void SetCooldown()
     {
-        cooldownTimer = cooldown;
+        if (GameManager._Instance.HasBook(BookLabel.ClarksTimeCard))
+        {
+            GameManager._Instance.AnimateBook(BookLabel.ClarksTimeCard);
+            cooldownTimer = cooldown / 2;
+        }
+        else
+        {
+            cooldownTimer = cooldown;
+        }
     }
 
     public void MultiplyCooldown(float multiplyBy)
