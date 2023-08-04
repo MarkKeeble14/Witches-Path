@@ -4,7 +4,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Event", menuName = "GameOccurance/Event")]
 public class Event : GameOccurance
 {
-    public override MapNodeType Type => MapNodeType.EVENT;
+    public override MapNodeType Type => MapNodeType.Event;
     protected override IEnumerator OnResolve()
     {
         Debug.Log(name + ": OnResolve");

@@ -35,13 +35,20 @@ public enum AfflictionSetType
     Duration
 }
 
-public enum DamageSource
+public enum DamageType
 {
     Default,
     Poison,
     Electricity,
     Fire,
     Heal
+}
+
+public enum DamageSource
+{
+    ActiveSpell,
+    PassiveSpell,
+    BasicAttack,
 }
 
 public class CombatManager : MonoBehaviour
@@ -114,12 +121,16 @@ public class CombatManager : MonoBehaviour
     public Action OnEnemyLoseAffliction;
     private List<Coroutine> onStartCombatCoroutines = new List<Coroutine>();
 
+    public bool SetActiveSpellCooldowns { get; set; }
+
     private Dictionary<AfflictionType, Affliction> characterAfflictionMap = new Dictionary<AfflictionType, Affliction>();
     private Dictionary<AfflictionType, Affliction> enemyAfflictionMap = new Dictionary<AfflictionType, Affliction>();
     private List<AfflictionType> toClearFromAffMap = new List<AfflictionType>();
 
     private Dictionary<AfflictionType, AfflictionIcon> afflictionIconTracker = new Dictionary<AfflictionType, AfflictionIcon>();
     [SerializeField] private AfflictionIcon afflictionIconPrefab;
+
+    [SerializeField] private SerializableDictionary<AfflictionType, AfflictionSign> afflictionSignMap = new SerializableDictionary<AfflictionType, AfflictionSign>();
 
     [SerializeField] private Transform characterAfflictionList;
     [SerializeField] private Transform enemyAfflictionList;
@@ -324,12 +335,12 @@ public class CombatManager : MonoBehaviour
         {
             if (kvp.Key == AfflictionType.Blight)
             {
-                AlterCombatentHP(-kvp.Value.RemainingActivations, t, DamageSource.Poison);
+                AlterCombatentHP(-kvp.Value.RemainingActivations, t, DamageType.Poison);
                 map[kvp.Key].AlterActivations(-1);
             }
             else if (kvp.Key == AfflictionType.Burn)
             {
-                AlterCombatentHP(-BalenceManager._Instance.GetValue(AfflictionType.Burn, "DamageAmount"), t, DamageSource.Fire);
+                AlterCombatentHP(-BalenceManager._Instance.GetValue(AfflictionType.Burn, "DamageAmount"), t, DamageType.Fire);
                 map[kvp.Key].AlterActivations(-1);
             }
         }
@@ -354,8 +365,6 @@ public class CombatManager : MonoBehaviour
     {
         Debug.Log("Combat Started: " + combat);
 
-        MapManager._Instance.Hide();
-
         // Set Up Combat
         musicSource.clip = combat.MainMusic;
         ReadCircles(AssetDatabase.GetAssetPath(combat.MapFile));
@@ -364,7 +373,10 @@ public class CombatManager : MonoBehaviour
 
         currentEnemy = combat.Enemy;
         maxEnemyHP = currentEnemy.GetMaxHP();
-        currentEnemyHP = maxEnemyHP;
+        currentEnemyHP =
+            GameManager._Instance.HasBook(BookLabel.CheatersConfessional)
+            ? maxEnemyHP * BalenceManager._Instance.GetValue(BookLabel.CheatersConfessional, "PercentHP")
+            : maxEnemyHP;
         enemyCombatSprite.sprite = currentEnemy.GetCombatSprite();
         characterCombatSprite.sprite = GameManager._Instance.GetCharacter().GetCombatSprite();
 
@@ -379,7 +391,7 @@ public class CombatManager : MonoBehaviour
         // Bandaged Effect
         if (TargetHasAffliction(AfflictionType.Bandaged, Target.Character))
         {
-            GameManager._Instance.AlterPlayerHP(characterAfflictionMap[AfflictionType.Bandaged].RemainingActivations, DamageSource.Heal);
+            GameManager._Instance.AlterPlayerHP(characterAfflictionMap[AfflictionType.Bandaged].RemainingActivations, DamageType.Heal);
         }
 
         InCombat = false;
@@ -388,8 +400,6 @@ public class CombatManager : MonoBehaviour
         ResetCombat();
 
         GameManager._Instance.ResolveCurrentEvent();
-
-        MapManager._Instance.Show();
 
         Debug.Log("Combat Completed: " + combat);
     }
@@ -427,12 +437,23 @@ public class CombatManager : MonoBehaviour
 
     }
 
-    public void ReleaseHalfLitFirework()
+    public void HalfLitFireworkProc()
     {
 
     }
 
-    public void FireMagicRain(float damageAmount)
+    public void MagicRainProc(float damageAmount)
+    {
+
+    }
+
+    public void PhantasmalWhispersProc()
+    {
+
+    }
+
+
+    public void WrittenWarningProc(float damage)
     {
 
     }
@@ -457,7 +478,7 @@ public class CombatManager : MonoBehaviour
     private void PlayerAttack()
     {
         // Simple way of attacking for now
-        AttackCombatent(-GameManager._Instance.GetCharacter().GetBasicAttackDamage(), Target.Character, Target.Enemy, DamageSource.Default);
+        AttackCombatent(-GameManager._Instance.GetCharacter().GetBasicAttackDamage(), Target.Character, Target.Enemy, DamageType.Default, DamageSource.BasicAttack);
 
         OnPlayerAttack?.Invoke();
     }
@@ -465,7 +486,7 @@ public class CombatManager : MonoBehaviour
     private void EnemyAttack()
     {
         // Simple way of attacking for now
-        if (!AttackCombatent(-currentEnemy.GetBasicAttackDamage(), Target.Enemy, Target.Character, DamageSource.Default))
+        if (!AttackCombatent(-currentEnemy.GetBasicAttackDamage(), Target.Enemy, Target.Character, DamageType.Default, DamageSource.BasicAttack))
         {
             // Player Died
             GameManager._Instance.GameOver();
@@ -476,13 +497,22 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    public bool AttackCombatent(float amount, Target attacker, Target target, DamageSource damageSource)
+    public bool AttackCombatent(float amount, Target attacker, Target target, DamageType damageType, DamageSource source)
     {
         // Paralyzed Effect
         if (TargetHasAffliction(AfflictionType.Paralyzed, attacker))
         {
             TryConsumeAfflictionStack(AfflictionType.Paralyzed, attacker);
             return true;
+        }
+
+        // Book of Effect Effect
+        if (attacker == Target.Character
+            && amount > 0
+            && source == DamageSource.ActiveSpell
+            && GameManager._Instance.HasBook(BookLabel.BookOfEffect))
+        {
+            amount *= BalenceManager._Instance.GetValue(BookLabel.BookOfEffect, "PercentDamageIncrease");
         }
 
         // Emboldened Effect
@@ -502,7 +532,7 @@ public class CombatManager : MonoBehaviour
         // Retribution Effect
         if (TargetHasAffliction(AfflictionType.Retribution, target))
         {
-            DamageCombatent(BalenceManager._Instance.GetValue(AfflictionType.Retribution, "DamageAmount"), attacker, target, DamageSource.Default);
+            DamageCombatent(BalenceManager._Instance.GetValue(AfflictionType.Retribution, "DamageAmount"), attacker, target, DamageType.Default);
             TryConsumeAfflictionStack(AfflictionType.Retribution, target);
         }
 
@@ -516,10 +546,10 @@ public class CombatManager : MonoBehaviour
         }
 
         // Then to Deal Damage
-        return DamageCombatent(amount, target, attacker, damageSource);
+        return DamageCombatent(amount, target, attacker, damageType);
     }
 
-    public bool DamageCombatent(float amount, Target combatent, Target attacker, DamageSource damageSource)
+    public bool DamageCombatent(float amount, Target combatent, Target attacker, DamageType damageType)
     {
         // Vulnerable Effect
         if (amount < 0 && TargetHasAffliction(AfflictionType.Vulnerable, Target.Enemy))
@@ -540,10 +570,10 @@ public class CombatManager : MonoBehaviour
         }
 
         // Alter HP
-        return AlterCombatentHP(amount, combatent, damageSource);
+        return AlterCombatentHP(amount, combatent, damageType);
     }
 
-    private bool AlterCombatentHP(float amount, Target t, DamageSource damageSource)
+    private bool AlterCombatentHP(float amount, Target t, DamageType damageType)
     {
         // Prepared Effect
         if (TargetHasAffliction(AfflictionType.Prepared, t))
@@ -552,23 +582,29 @@ public class CombatManager : MonoBehaviour
             TryConsumeAfflictionStack(AfflictionType.Prepared, t);
         }
 
+        // Barbarians Tactics Effect
+        if (amount < 0 && GameManager._Instance.HasBook(BookLabel.BarbariansTactics))
+        {
+            amount -= BalenceManager._Instance.GetValue(BookLabel.BarbariansTactics, "DamageIncrease");
+        }
+
         // Call the AlterHP function on the appropriate Target
         switch (t)
         {
             case Target.Character:
 
                 PopupText text = Instantiate(popupTextPrefab, characterCombatSprite.transform.position, Quaternion.identity);
-                text.Set(Utils.RoundTo(amount, 1).ToString(), GameManager._Instance.GetColorByDamageSource(damageSource));
+                text.Set(Utils.RoundTo(amount, 1).ToString(), GameManager._Instance.GetColorByDamageSource(damageType));
 
-                return GameManager._Instance.AlterPlayerHP(amount, damageSource, false);
+                return GameManager._Instance.AlterPlayerHP(amount, damageType, false);
             case Target.Enemy:
-                return AltarEnemyHP(amount, damageSource);
+                return AltarEnemyHP(amount, damageType);
             default:
                 throw new UnhandledSwitchCaseException();
         }
     }
 
-    public bool AltarEnemyHP(float amount, DamageSource damageSource)
+    public bool AltarEnemyHP(float amount, DamageType damageType)
     {
         // Doctors Report Effect
         if (GameManager._Instance.HasArtifact(ArtifactLabel.DoctorsReport) && amount > BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "MustBeOver"))
@@ -578,7 +614,7 @@ public class CombatManager : MonoBehaviour
         }
 
         PopupText text = Instantiate(popupTextPrefab, enemyCombatSprite.transform.position, Quaternion.identity);
-        text.Set(Utils.RoundTo(amount, 1).ToString(), GameManager._Instance.GetColorByDamageSource(damageSource));
+        text.Set(Utils.RoundTo(amount, 1).ToString(), GameManager._Instance.GetColorByDamageSource(damageType));
 
         if (currentEnemyHP + amount > maxEnemyHP)
         {
@@ -595,6 +631,33 @@ public class CombatManager : MonoBehaviour
             }
         }
         return true;
+    }
+
+    public void ClearRandomAffliction(Target t, AfflictionSign sign)
+    {
+        List<AfflictionType> negativeAfflictions = new List<AfflictionType>();
+        Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(t);
+        foreach (KeyValuePair<AfflictionType, Affliction> kvp in map)
+        {
+            if (afflictionSignMap[kvp.Key] == AfflictionSign.Negative)
+            {
+                negativeAfflictions.Add(kvp.Key);
+            }
+        }
+
+        if (negativeAfflictions.Count > 0)
+        {
+            AfflictionType affToRemove = RandomHelper.GetRandomFromList(negativeAfflictions);
+            RemoveAffliction(t, affToRemove);
+        }
+    }
+
+    public void RemoveAffliction(Target t, AfflictionType type)
+    {
+        AfflictionIcon icon = afflictionIconTracker[type];
+        afflictionIconTracker.Remove(type);
+        Destroy(icon.gameObject);
+        GetTargetAfflictionMap(t).Remove(type);
     }
 
     private void CallOnStartCombat()

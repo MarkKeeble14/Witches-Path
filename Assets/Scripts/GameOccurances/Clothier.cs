@@ -4,7 +4,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Clothier", menuName = "GameOccurance/Clothier")]
 public class Clothier : GameOccurance
 {
-    public override MapNodeType Type => MapNodeType.CLOTHIER;
+    public override MapNodeType Type => MapNodeType.Clothier;
     protected override IEnumerator OnResolve()
     {
         Debug.Log(name + ": OnResolve");

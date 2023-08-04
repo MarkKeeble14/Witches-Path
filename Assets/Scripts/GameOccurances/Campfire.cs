@@ -4,7 +4,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Campfire", menuName = "GameOccurance/Campfire")]
 public class Campfire : GameOccurance
 {
-    public override MapNodeType Type => MapNodeType.CAMPFIRE;
+    public override MapNodeType Type => MapNodeType.Campfire;
     protected override IEnumerator OnResolve()
     {
         Debug.Log(name + ": OnResolve");

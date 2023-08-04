@@ -1,5 +1,11 @@
 ﻿using UnityEngine;
 
+public enum AfflictionSign
+{
+    Positive,
+    Negative
+}
+
 public class Affliction
 {
     [SerializeField] private AfflictionType type;

@@ -1,11 +1,11 @@
 ﻿public enum MapNodeType
 {
-    MINOR_FIGHT,
-    BOSS,
-    LIBRARY,
-    APOTHECARY,
-    CAMPFIRE,
-    CLOTHIER,
-    EVENT,
-    SHOP
+    MinorFight,
+    Boss,
+    Library,
+    Apothecary,
+    Campfire,
+    Clothier,
+    Event,
+    Shop
 }

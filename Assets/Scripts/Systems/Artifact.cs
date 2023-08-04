@@ -154,7 +154,7 @@ public class MedicineKit : Artifact
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterPlayerHP(healAmount, DamageSource.Heal);
+        GameManager._Instance.AlterPlayerHP(healAmount, DamageType.Heal);
         ShowArtifactProc();
     }
 }
@@ -166,12 +166,12 @@ public class BoldInvestments : Artifact
     public override void OnEquip()
     {
         currencyAmount = (int)GetArtifactSpec("CurrencyAmount");
-        GameManager._Instance.AddOnEnterSpecificRoomAction(MapNodeType.MINOR_FIGHT, Effect);
+        GameManager._Instance.AddOnEnterSpecificRoomAction(MapNodeType.MinorFight, Effect);
     }
 
     public override void OnUnequip()
     {
-        GameManager._Instance.RemoveOnEnterSpecificRoomAction(MapNodeType.MINOR_FIGHT, Effect);
+        GameManager._Instance.RemoveOnEnterSpecificRoomAction(MapNodeType.MinorFight, Effect);
     }
 
     protected override void Effect()
@@ -232,12 +232,12 @@ public class BankCard : Artifact
     public override void OnEquip()
     {
         currencyAmount = (int)GetArtifactSpec("CurrencyAmount");
-        GameManager._Instance.AddOnEnterSpecificRoomAction(MapNodeType.SHOP, Effect);
+        GameManager._Instance.AddOnEnterSpecificRoomAction(MapNodeType.Shop, Effect);
     }
 
     public override void OnUnequip()
     {
-        GameManager._Instance.AddOnEnterSpecificRoomAction(MapNodeType.SHOP, Effect);
+        GameManager._Instance.AddOnEnterSpecificRoomAction(MapNodeType.Shop, Effect);
     }
 
     protected override void Effect()
@@ -335,10 +335,10 @@ public class HealthInsurance : Artifact
     {
         if (!enabled) return;
 
-        GameManager._Instance.AlterPlayerHP(healAmount, DamageSource.Heal);
+        GameManager._Instance.AlterPlayerHP(healAmount, DamageType.Heal);
         ShowArtifactProc();
         MapNodeType type = GameManager._Instance.GetCurrentGameOccurance().Type;
-        if (type == MapNodeType.MINOR_FIGHT || type == MapNodeType.BOSS)
+        if (type == MapNodeType.MinorFight || type == MapNodeType.Boss)
         {
             enabled = false;
         }
@@ -382,7 +382,7 @@ public class HalfLitFirework : Artifact
 
     protected override void Effect()
     {
-        CombatManager._Instance.ReleaseHalfLitFirework();
+        CombatManager._Instance.HalfLitFireworkProc();
         ShowArtifactProc();
     }
 }
@@ -404,7 +404,7 @@ public class ZedsScalpel : Artifact
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterPlayerHP(healAmount, DamageSource.Heal);
+        GameManager._Instance.AlterPlayerHP(healAmount, DamageType.Heal);
         ShowArtifactProc();
     }
 }
@@ -460,7 +460,7 @@ public class RustyCannon : Artifact
 
     protected override void Effect()
     {
-        CombatManager._Instance.DamageCombatent(-damageAmount, Target.Enemy, Target.Character, DamageSource.Default);
+        CombatManager._Instance.DamageCombatent(-damageAmount, Target.Enemy, Target.Character, DamageType.Default);
         ShowArtifactProc();
     }
 }
@@ -484,7 +484,7 @@ public class VoodooDoll : Artifact
 
     protected override void Effect()
     {
-        CombatManager._Instance.DamageCombatent(-damageAmount, Target.Enemy, Target.Character, DamageSource.Default);
+        CombatManager._Instance.DamageCombatent(-damageAmount, Target.Enemy, Target.Character, DamageType.Default);
         ShowArtifactProc();
     }
 }

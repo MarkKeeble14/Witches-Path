@@ -1788,6 +1788,32 @@ MonoBehaviour:
   characterCombatSprite: {fileID: 6189487899338219895}
   enemyCombatSprite: {fileID: 3991006692122812564}
   afflictionIconPrefab: {fileID: 4749371621634008758, guid: 3f957daec7ebab3458f588b71ceb7b0a, type: 3}
+  afflictionSignMap:
+    dictionary:
+    - key: 0
+      value: 0
+    - key: 1
+      value: 1
+    - key: 2
+      value: 1
+    - key: 3
+      value: 0
+    - key: 4
+      value: 0
+    - key: 5
+      value: 0
+    - key: 6
+      value: 0
+    - key: 7
+      value: 0
+    - key: 8
+      value: 0
+    - key: 9
+      value: 1
+    - key: 10
+      value: 1
+    - key: 11
+      value: 1
   characterAfflictionList: {fileID: 7778195381085439993}
   enemyAfflictionList: {fileID: 896969245468064014}
 --- !u!1 &3665709001373686638
@@ -1946,6 +1972,59 @@ MonoBehaviour:
     - key: HolyShield
       value:
         dictionary: []
+  bookSpecDict:
+    dictionary:
+    - key: PhantasmalWhispers
+      value:
+        dictionary: []
+    - key: ReplicatorsFables
+      value:
+        dictionary: []
+    - key: ClarksTimeCard
+      value:
+        dictionary: []
+    - key: BarbariansTactics
+      value:
+        dictionary:
+        - key: DamageIncrease
+          value: 3
+    - key: TomeOfCleansing
+      value:
+        dictionary: []
+    - key: MerchantsManual
+      value:
+        dictionary:
+        - key: PercentIncrease
+          value: 0.25
+    - key: CheatersConfessional
+      value:
+        dictionary:
+        - key: PercentHP
+          value: 0.85
+    - key: BookOfEffect
+      value:
+        dictionary:
+        - key: PercentDamageIncrease
+          value: 1.5
+    - key: ToDoList
+      value:
+        dictionary:
+        - key: ProcAfter
+          value: 4
+    - key: ForgiversOath
+      value:
+        dictionary:
+        - key: ProcAfter
+          value: 3
+    - key: WrittenWarning
+      value:
+        dictionary:
+        - key: StartingDamage
+          value: 3
+        - key: DamageIncrease
+          value: 2
+        - key: ProcAfter
+          value: 5
   afflictionSpecDict:
     dictionary:
     - key: Emboldened
@@ -2200,6 +2279,13 @@ MonoBehaviour:
           value: 5
         - key: ManaCost
           value: 5
+  mapNodeSpecDict:
+    dictionary:
+    - key: Campfire
+      value:
+        dictionary:
+        - key: HealPercent
+          value: 0.25
 --- !u!1 &3764866126739295380
 GameObject:
   m_ObjectHideFlags: 0
@@ -2262,6 +2348,71 @@ MonoBehaviour:
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 1
   m_ChildControlHeight: 1
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
+  m_ReverseArrangement: 0
+--- !u!1 &4045730372457959588
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 65312316665183851}
+  - component: {fileID: 2806914225188997588}
+  m_Layer: 0
+  m_Name: CampfireButton
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &65312316665183851
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4045730372457959588}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3206513422729035969}
+  - {fileID: 2116641417824749585}
+  m_Father: {fileID: 2638109456222560939}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 250, y: 400}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &2806914225188997588
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4045730372457959588}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  m_ChildAlignment: 4
+  m_Spacing: 0
+  m_ChildForceExpandWidth: 1
+  m_ChildForceExpandHeight: 0
+  m_ChildControlWidth: 1
+  m_ChildControlHeight: 0
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
@@ -2807,6 +2958,7 @@ MonoBehaviour:
   hpText: {fileID: 1817865862606539329}
   manaText: {fileID: 6236520070283003658}
   currencyText: {fileID: 8778094111878917716}
+  bookBar: {fileID: 0}
   artifactBar: {fileID: 1841857443439868651}
   activeSpellDisplays:
   - {fileID: 9208903555570828799}
@@ -2819,6 +2971,7 @@ MonoBehaviour:
   artifactDisplay: {fileID: 7516618647761885518, guid: 6ff7e2d7934c96447bb8de20de4507bb, type: 3}
   popupTextPrefab: {fileID: 418672499888249726, guid: aadbf8430d60c914e956d62e25f319d2, type: 3}
   testArtifacts: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f000000100000001100000012000000130000001400000015000000
+  testBooks: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a000000
   equippablePassiveSpells: 000000000100000002000000030000001400000015000000
   equippableActiveSpells: 0400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f00000010000000110000001200000013000000
   damageSourceColorDict:
@@ -3013,7 +3166,7 @@ GameObject:
   - component: {fileID: 4485231002377780315}
   - component: {fileID: 6586197383352194722}
   m_Layer: 0
-  m_Name: ResolveButtonText
+  m_Name: CampfireButtonText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3026,18 +3179,18 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5456369392861894012}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 3206513422729035969}
-  m_RootOrder: 0
+  m_Father: {fileID: 65312316665183851}
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 125, y: -325}
+  m_SizeDelta: {x: 250, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4485231002377780315
 CanvasRenderer:
@@ -3067,17 +3220,17 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Resolve
+  m_text: Rest
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 31be86eac7cb4b244bb25fdad55d4218, type: 2}
+  m_sharedMaterial: {fileID: -8641412981985209751, guid: 31be86eac7cb4b244bb25fdad55d4218, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
-  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+    rgba: 4278190335
+  m_fontColor: {r: 1, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -3094,8 +3247,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 44
-  m_fontSizeBase: 44
+  m_fontSize: 72
+  m_fontSizeBase: 72
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -8613,9 +8766,8 @@ GameObject:
   - component: {fileID: 5632991314215431166}
   - component: {fileID: 3499610554271337690}
   - component: {fileID: 5634685953982040870}
-  - component: {fileID: 5798135944175660009}
   m_Layer: 0
-  m_Name: ResolveButton
+  m_Name: CampfireButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8632,15 +8784,14 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 2116641417824749585}
-  m_Father: {fileID: 2638109456222560939}
+  m_Children: []
+  m_Father: {fileID: 65312316665183851}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 1, y: 0}
-  m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -150, y: 87.5}
-  m_SizeDelta: {x: 250, y: 125}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 125, y: -150}
+  m_SizeDelta: {x: 250, y: 250}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5632991314215431166
 CanvasRenderer:
@@ -8663,15 +8814,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: 21300000, guid: 0f7dabb2b772ccd4caea6331b223ee6a, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -8724,9 +8875,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1265367204042214036}
-        m_TargetAssemblyTypeName: ResolveButton, Assembly-CSharp
-        m_MethodName: ResolveCurrentEvent
+      - m_Target: {fileID: 5388059309283002361}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: RestAtCampfire
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -8736,18 +8887,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
---- !u!114 &5798135944175660009
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7838355444704321092}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e6a7dee9e45d30e47afb0d63945fab6d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &8472712412591796227
 GameObject:
   m_ObjectHideFlags: 0

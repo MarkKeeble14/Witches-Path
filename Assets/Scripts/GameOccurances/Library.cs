@@ -4,7 +4,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Library", menuName = "GameOccurance/Library")]
 public class Library : GameOccurance
 {
-    public override MapNodeType Type => MapNodeType.LIBRARY;
+    public override MapNodeType Type => MapNodeType.Library;
     protected override IEnumerator OnResolve()
     {
         Debug.Log(name + ": OnResolve");

@@ -63,6 +63,15 @@ public abstract class PassiveSpell : Spell
     {
         return "";
     }
+
+    protected void CallEffect()
+    {
+        Effect();
+        if (GameManager._Instance.HasBook(BookLabel.ReplicatorsFables))
+        {
+            Effect();
+        }
+    }
 }
 
 public abstract class TimedPassPassiveSpell : PassiveSpell
@@ -81,7 +90,7 @@ public abstract class TimedPassPassiveSpell : PassiveSpell
             yield return null;
         }
 
-        Effect();
+        CallEffect();
 
         runOn.StartCoroutine(CombatLoop(runOn));
     }
@@ -115,12 +124,12 @@ public class PoisonTips : PassiveSpell
     {
         procAfter = (int)GetSpellSpec("ProcAfter");
         stackAmount = (int)GetSpellSpec("StackAmount");
-        CombatManager._Instance.OnPlayerAttack += Effect;
+        CombatManager._Instance.OnPlayerAttack += CallEffect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnPlayerAttack -= Effect;
+        CombatManager._Instance.OnPlayerAttack -= CallEffect;
     }
 
     protected override void Effect()
@@ -165,12 +174,12 @@ public class Inferno : PassiveSpell
     public override void OnEquip()
     {
         stackAmount = (int)GetSpellSpec("StackAmount");
-        CombatManager._Instance.OnPlayerAttack += Effect;
+        CombatManager._Instance.OnPlayerAttack += CallEffect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnPlayerAttack -= Effect;
+        CombatManager._Instance.OnPlayerAttack -= CallEffect;
     }
 
     protected override void Effect()
@@ -213,7 +222,7 @@ public class MagicRain : TimedPassPassiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.FireMagicRain(damageAmount);
+        CombatManager._Instance.MagicRainProc(damageAmount);
         ShowSpellProc();
     }
 }
@@ -230,12 +239,12 @@ public class CrushJoints : PassiveSpell
     {
         procAfter = (int)GetSpellSpec("ProcAfter");
         stackAmount = (int)GetSpellSpec("StackAmount");
-        CombatManager._Instance.OnPlayerAttack += Effect;
+        CombatManager._Instance.OnPlayerAttack += CallEffect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnPlayerAttack -= Effect;
+        CombatManager._Instance.OnPlayerAttack -= CallEffect;
     }
 
     protected override void Effect()
@@ -281,7 +290,12 @@ public abstract class ActiveSpell : Spell
     public void Cast()
     {
         Effect();
-        SetCooldown();
+
+        if (CombatManager._Instance.SetActiveSpellCooldowns)
+        {
+            SetCooldown();
+        }
+
         ShowSpellProc();
         GameManager._Instance.AlterPlayerMana(-manaCost);
     }
@@ -331,7 +345,7 @@ public class Fireball : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Fire);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Fire, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Burn, stackAmount, AfflictionSetType.Activations, Target.Enemy);
     }
 }
@@ -352,7 +366,7 @@ public class Shock : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Electricity);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Electricity, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Paralyzed, stackAmount, AfflictionSetType.Activations, Target.Enemy);
     }
 }
@@ -409,7 +423,7 @@ public class Toxify : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Poison);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Poison, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Blight, stackAmount, AfflictionSetType.Activations, Target.Enemy);
     }
 }
@@ -428,8 +442,8 @@ public class Jarkai : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Default);
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Default);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
     }
 }
 
@@ -451,7 +465,7 @@ public class Flurry : ActiveSpell
     {
         for (int i = 0; i < hitAmount; i++)
         {
-            CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Default);
+            CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
         }
     }
 }
@@ -493,7 +507,7 @@ public class ExposedFlesh : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Default);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, stackAmount, AfflictionSetType.Activations, Target.Enemy);
     }
 }
@@ -514,7 +528,7 @@ public class Cripple : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageSource.Default);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Weakened, stackAmount, AfflictionSetType.Activations, Target.Enemy);
     }
 }
@@ -535,8 +549,8 @@ public class BloodTrade : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.DamageCombatent(-selfDamageAmount, Target.Character, Target.Character, DamageSource.Default);
-        CombatManager._Instance.AttackCombatent(-otherDamageAmount, Target.Character, Target.Enemy, DamageSource.Default);
+        CombatManager._Instance.DamageCombatent(-selfDamageAmount, Target.Character, Target.Character, DamageType.Default);
+        CombatManager._Instance.AttackCombatent(-otherDamageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
     }
 }
 
@@ -629,8 +643,8 @@ public class ImpartialAid : ActiveSpell
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterPlayerHP(healAmount, DamageSource.Heal);
-        CombatManager._Instance.AltarEnemyHP(healAmount, DamageSource.Heal);
+        GameManager._Instance.AlterPlayerHP(healAmount, DamageType.Heal);
+        CombatManager._Instance.AltarEnemyHP(healAmount, DamageType.Heal);
     }
 }
 

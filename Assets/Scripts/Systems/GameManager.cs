@@ -20,19 +20,24 @@ public class GameManager : MonoBehaviour
     private Robe playerEquippedRobe;
     private Hat playerEquippedHat;
     private Wand playerEquippedWand;
-    private List<Artifact> playerArtifacts = new List<Artifact>();
 
     private string persistentTokensKey = "PersistentTokens";
 
-    private Dictionary<ArtifactLabel, ArtifactIcon> artifactDisplayTracker = new Dictionary<ArtifactLabel, ArtifactIcon>();
 
     [Header("References")]
     [SerializeField] private TextMeshProUGUI hpText;
     [SerializeField] private TextMeshProUGUI manaText;
-
     [SerializeField] private TextMeshProUGUI currencyText;
-    [SerializeField] private Transform artifactBar;
 
+    // Books
+    [SerializeField] private Transform bookBar;
+    private Dictionary<BookLabel, ArtifactIcon> bookDisplayTracker = new Dictionary<BookLabel, ArtifactIcon>();
+
+    // Artifacts
+    [SerializeField] private Transform artifactBar;
+    private Dictionary<ArtifactLabel, ArtifactIcon> artifactDisplayTracker = new Dictionary<ArtifactLabel, ArtifactIcon>();
+
+    // Spells
     [SerializeField] private ActiveSpellDisplay[] activeSpellDisplays = new ActiveSpellDisplay[3];
     private Dictionary<SpellLabel, SpellDisplay> loadedSpellDisplays = new Dictionary<SpellLabel, SpellDisplay>();
     private Dictionary<ActiveSpellDisplay, ActiveSpell> equippedActiveSpells = new Dictionary<ActiveSpellDisplay, ActiveSpell>();
@@ -40,9 +45,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private PassiveSpellDisplay[] passiveSpellDisplays = new PassiveSpellDisplay[2];
     [SerializeField] private KeyCode[] activeSpellBindings = new KeyCode[3];
 
+    // Callbacks
     public Action OnEnterNewRoom;
     public Action OnPlayerRecieveDamage;
-
     private Dictionary<MapNodeType, Action> OnEnterSpecificRoomActionMap = new Dictionary<MapNodeType, Action>();
 
     [Header("Prefabs")]
@@ -53,6 +58,9 @@ public class GameManager : MonoBehaviour
     [Header("Artifacts")]
     [SerializeField] private List<ArtifactLabel> testArtifacts;
 
+    [Header("Books")]
+    [SerializeField] private List<BookLabel> testBooks;
+
     [Header("Passive Spells")]
     [SerializeField] private List<SpellLabel> equippablePassiveSpells = new List<SpellLabel>();
     private int equippablePassiveSpellIndex = 0;
@@ -61,7 +69,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private List<SpellLabel> equippableActiveSpells = new List<SpellLabel>();
     private int equippableActiveSpellIndex = 0;
 
-    [SerializeField] private SerializableDictionary<DamageSource, Color> damageSourceColorDict = new SerializableDictionary<DamageSource, Color>();
+    [SerializeField] private SerializableDictionary<DamageType, Color> damageSourceColorDict = new SerializableDictionary<DamageType, Color>();
 
 
     private void Awake()
@@ -89,7 +97,7 @@ public class GameManager : MonoBehaviour
         manaText.text = Mathf.RoundToInt(currentPlayerMana).ToString() + "/" + Mathf.RoundToInt(maxPlayerMana).ToString();
         currencyText.text = Mathf.RoundToInt(currentPlayerCurrency).ToString();
 
-        // Testing
+        // Artifacts
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
             if (testArtifacts.Count > 0)
@@ -100,9 +108,20 @@ public class GameManager : MonoBehaviour
             }
         }
 
+        // Books
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            if (testBooks.Count > 0)
+            {
+                BookLabel a = testBooks[0];
+                testBooks.RemoveAt(0);
+                AddBook(a);
+            }
+        }
+
         // Testing
         // Active Spells
-        if (Input.GetKeyDown(KeyCode.Alpha2))
+        if (Input.GetKeyDown(KeyCode.Alpha3))
         {
             // Equip new spell
             equippableActiveSpellIndex++;
@@ -112,17 +131,17 @@ public class GameManager : MonoBehaviour
 
             Debug.Log("Selected: " + equippableActiveSpells[equippableActiveSpellIndex]);
         }
-        if (Input.GetKeyDown(KeyCode.Alpha3))
+        if (Input.GetKeyDown(KeyCode.Alpha4))
         {
             EquipActiveSpell(equippableActiveSpells[equippableActiveSpellIndex]);
         }
-        if (Input.GetKeyDown(KeyCode.Alpha4))
+        if (Input.GetKeyDown(KeyCode.Alpha5))
         {
             UnequipActiveSpell(equippableActiveSpells[equippableActiveSpellIndex]);
         }
 
         // Passive Spells
-        if (Input.GetKeyDown(KeyCode.Alpha5))
+        if (Input.GetKeyDown(KeyCode.Alpha6))
         {
             // Equip new spell
             equippablePassiveSpellIndex++;
@@ -132,11 +151,11 @@ public class GameManager : MonoBehaviour
 
             Debug.Log("Selected: " + equippablePassiveSpells[equippablePassiveSpellIndex]);
         }
-        if (Input.GetKeyDown(KeyCode.Alpha6))
+        if (Input.GetKeyDown(KeyCode.Alpha7))
         {
             EquipPassiveSpell(equippablePassiveSpells[equippablePassiveSpellIndex]);
         }
-        if (Input.GetKeyDown(KeyCode.Alpha7))
+        if (Input.GetKeyDown(KeyCode.Alpha8))
         {
             UnequipPassiveSpell(equippablePassiveSpells[equippablePassiveSpellIndex]);
         }
@@ -419,11 +438,41 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public Book GetBookOfType(BookLabel label)
+    {
+        switch (label)
+        {
+            case BookLabel.BarbariansTactics:
+                return new BarbariansTactics();
+            case BookLabel.BookOfEffect:
+                return new BookOfEffect();
+            case BookLabel.CheatersConfessional:
+                return new CheatersConfessional();
+            case BookLabel.ClarksTimeCard:
+                return new ClarksTimeCard();
+            case BookLabel.ForgiversOath:
+                return new ForgiversOath();
+            case BookLabel.MerchantsManual:
+                return new MerchantsManual();
+            case BookLabel.PhantasmalWhispers:
+                return new PhantasmalWhispers();
+            case BookLabel.ReplicatorsFables:
+                return new ReplicatorsFables();
+            case BookLabel.ToDoList:
+                return new ToDoList();
+            case BookLabel.TomeOfCleansing:
+                return new TomeOfCleansing();
+            case BookLabel.WrittenWarning:
+                return new WrittenWarning();
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
+
     public void AddArtifact(ArtifactLabel type)
     {
         Artifact artifact = GetArtifactOfType(type);
         artifact.OnEquip();
-        playerArtifacts.Add(artifact);
 
         ArtifactIcon spawned = Instantiate(artifactDisplay, artifactBar);
         spawned.name = "Artifact(" + type + ")";
@@ -435,11 +484,34 @@ public class GameManager : MonoBehaviour
         // Somehow evaluate what artifact must do and add it's effect
     }
 
-    public void AnimateArtifact(ArtifactLabel type)
+    public void AddBook(BookLabel type)
     {
-        if (artifactDisplayTracker.ContainsKey(type))
+        Book book = GetBookOfType(type);
+        book.OnEquip();
+
+        ArtifactIcon spawned = Instantiate(artifactDisplay, artifactBar);
+        spawned.name = "Artifact(" + type + ")";
+        spawned.SetSprite(book.GetSprite());
+        spawned.SetText(Utils.SplitOnCapitalLetters(type.ToString()));
+
+        bookDisplayTracker.Add(book.GetLabel(), spawned);
+
+        // Somehow evaluate what artifact must do and add it's effect
+    }
+
+    public void AnimateArtifact(ArtifactLabel label)
+    {
+        if (artifactDisplayTracker.ContainsKey(label))
         {
-            artifactDisplayTracker[type].AnimateScale();
+            artifactDisplayTracker[label].AnimateScale();
+        }
+    }
+
+    public void AnimateBook(BookLabel label)
+    {
+        if (bookDisplayTracker.ContainsKey(label))
+        {
+            bookDisplayTracker[label].AnimateScale();
         }
     }
 
@@ -483,13 +555,15 @@ public class GameManager : MonoBehaviour
             yield return new WaitUntil(() => currentOccurance != null);
             currentOccurance.SetResolve(false);
 
+            MapManager._Instance.Hide();
+
             OnEnterNewRoom?.Invoke();
             OnEnterSpecificRoomActionMap[currentOccurance.Type]?.Invoke();
 
             yield return StartCoroutine(currentOccurance.RunOccurance());
 
             // if beat boss, break the loop as the level is done
-            if (currentOccurance.Type == MapNodeType.BOSS)
+            if (currentOccurance.Type == MapNodeType.Boss)
             {
                 break;
             }
@@ -499,6 +573,8 @@ public class GameManager : MonoBehaviour
             currentOccurance = null;
 
             // move to next room
+            MapManager._Instance.Show();
+
             MapManager._Instance.NextRow();
         }
 
@@ -529,13 +605,22 @@ public class GameManager : MonoBehaviour
 
     public void AlterCurrency(float amount)
     {
+        if (amount > 0 && HasBook(BookLabel.MerchantsManual))
+        {
+            amount *= BalenceManager._Instance.GetValue(BookLabel.MerchantsManual, "PercentIncrease");
+        }
+
+        // Spawn Popup Text
+        PopupText spawned = Instantiate(popupTextPrefab, currencyText.transform.position, Quaternion.identity);
+        spawned.Set(Utils.RoundTo(amount, 1).ToString(), Color.yellow);
+
         currentPlayerCurrency += amount;
     }
 
-    public bool AlterPlayerHP(float amount, DamageSource damageSource, bool spawnPopupText = true)
+    public bool AlterPlayerHP(float amount, DamageType damageSource, bool spawnPopupText = true)
     {
         // Barricade Effect
-        if (amount <= -1 && HasArtifact(ArtifactLabel.Barricade))
+        if (amount < -1 && HasArtifact(ArtifactLabel.Barricade))
         {
             amount += BalenceManager._Instance.GetValue(ArtifactLabel.Barricade, "ReductionAmount");
             AnimateArtifact(ArtifactLabel.Barricade);
@@ -590,7 +675,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public Color GetColorByDamageSource(DamageSource damageSource)
+    public Color GetColorByDamageSource(DamageType damageSource)
     {
         return damageSourceColorDict[damageSource];
     }
@@ -635,8 +720,31 @@ public class GameManager : MonoBehaviour
         return artifactDisplayTracker.ContainsKey(label);
     }
 
+    public bool HasBook(BookLabel label)
+    {
+        return bookDisplayTracker.ContainsKey(label);
+    }
+
     public void AnimateSpell(SpellLabel label)
     {
         loadedSpellDisplays[label].AnimateScale();
     }
+
+    #region Game Occurances
+
+    #region Campfire
+
+    public void RestAtCampfire()
+    {
+        AlterPlayerHP(BalenceManager._Instance.GetValue(MapNodeType.Campfire, "HealPercent") * maxPlayerHP, DamageType.Heal);
+        ResolveCurrentEvent();
+    }
+
+    #endregion
+
+    #region Clothier
+
+    #endregion
+
+    #endregion
 }

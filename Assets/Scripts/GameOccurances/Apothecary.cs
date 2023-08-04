@@ -4,7 +4,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Apothecary", menuName = "GameOccurance/Apothecary")]
 public class Apothecary : GameOccurance
 {
-    public override MapNodeType Type => MapNodeType.APOTHECARY;
+    public override MapNodeType Type => MapNodeType.Apothecary;
 
     protected override IEnumerator OnResolve()
     {
