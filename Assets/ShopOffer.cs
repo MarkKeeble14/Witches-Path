@@ -28,12 +28,3 @@ public abstract class ShopOffer : MonoBehaviour
 
     protected abstract void Purchase();
 }
-
-public class IngredientShopOffer : ShopOffer
-{
-    [SerializeField] private PotionIngredient ingredient;
-    protected override void Purchase()
-    {
-        throw new System.NotImplementedException();
-    }
-}

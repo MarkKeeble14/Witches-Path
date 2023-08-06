@@ -52,6 +52,8 @@ public class EventManager : MonoBehaviour
 
         yield return new WaitUntil(() => currentOutcome != null);
 
+        yield return StartCoroutine(GameManager._Instance.ParseEventEffect(currentOutcome.CodeString));
+
         resolveButton.gameObject.SetActive(true);
 
         while (addedOptions.Count > 0)

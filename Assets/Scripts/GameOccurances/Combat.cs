@@ -3,6 +3,12 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
+public enum RewardType
+{
+    Artifact,
+    Book,
+}
+
 public abstract class Combat : GameOccurance
 {
     [Header("Map")]
@@ -18,10 +24,32 @@ public abstract class Combat : GameOccurance
     [SerializeField] private Enemy enemy;
     public Enemy Enemy { get => enemy; }
 
+    [SerializeField] private Vector2 minMaxCurrencyReward;
+    [SerializeField] private SerializableDictionary<RewardType, Vector2> chanceForOtherRewards = new SerializableDictionary<RewardType, Vector2>();
+
     protected override IEnumerator OnResolve()
     {
         Debug.Log(name + ": OnResolve");
-        yield return null;
+
+        foreach (RewardType type in chanceForOtherRewards.Keys())
+        {
+            if (RandomHelper.EvaluateChanceTo(chanceForOtherRewards[type]))
+            {
+                switch (type)
+                {
+                    case RewardType.Artifact:
+                        RewardManager._Instance.AddReward(GameManager._Instance.GetRandomArtifact());
+                        break;
+                    case RewardType.Book:
+                        RewardManager._Instance.AddReward(GameManager._Instance.GetRandomBook());
+                        break;
+                }
+            }
+        }
+
+        RewardManager._Instance.AddReward(RandomHelper.RandomIntExclusive(minMaxCurrencyReward));
+
+        yield return RewardManager._Instance.ShowRewardScreen();
     }
 
     protected override IEnumerator OnStart()

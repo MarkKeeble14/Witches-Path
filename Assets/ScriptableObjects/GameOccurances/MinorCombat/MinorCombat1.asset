@@ -17,3 +17,6 @@ MonoBehaviour:
   hitSound: {fileID: 8300000, guid: 9a09e84d2f42d8442bb253df828df025, type: 3}
   missSound: {fileID: 8300000, guid: 5ed467b1dd669254989345d5dce48d6d, type: 3}
   enemy: {fileID: 11400000, guid: 4b9f5ea9e01623d4ca4dd5401cb5d580, type: 2}
+  minMaxCurrencyReward: {x: 25, y: 40}
+  chanceForOtherRewards:
+    dictionary: []

@@ -33,32 +33,27 @@ public class GameManager : MonoBehaviour
     private string persistentTokensKey = "PersistentTokens";
 
 
-    [Header("References")]
-    [SerializeField] private TextMeshProUGUI hpText;
-    [SerializeField] private TextMeshProUGUI manaText;
-    [SerializeField] private TextMeshProUGUI currencyText;
 
-    [SerializeField] private GameObject[] turnOnForBrewPotionScreen;
-    [SerializeField] private GameObject[] turnOffForBrewPotionScreen;
-
-    // Books
+    [Header("Books")]
     [SerializeField] private Transform bookBar;
     private Dictionary<BookLabel, ArtifactIcon> bookDisplayTracker = new Dictionary<BookLabel, ArtifactIcon>();
     private Dictionary<BookLabel, Book> equippedBooks = new Dictionary<BookLabel, Book>();
 
-
-    // Artifacts
+    [Header("Artifacts")]
     [SerializeField] private Transform artifactBar;
     private Dictionary<ArtifactLabel, ArtifactIcon> artifactDisplayTracker = new Dictionary<ArtifactLabel, ArtifactIcon>();
     private Dictionary<ArtifactLabel, Artifact> equippedArtifacts = new Dictionary<ArtifactLabel, Artifact>();
 
-    // Spells
+    [Header("Spells")]
     [SerializeField] private ActiveSpellDisplay[] activeSpellDisplays = new ActiveSpellDisplay[3];
     private Dictionary<SpellLabel, SpellDisplay> loadedSpellDisplays = new Dictionary<SpellLabel, SpellDisplay>();
     private Dictionary<ActiveSpellDisplay, ActiveSpell> equippedActiveSpells = new Dictionary<ActiveSpellDisplay, ActiveSpell>();
     private Dictionary<PassiveSpellDisplay, PassiveSpell> equippedPassiveSpells = new Dictionary<PassiveSpellDisplay, PassiveSpell>();
     [SerializeField] private PassiveSpellDisplay[] passiveSpellDisplays = new PassiveSpellDisplay[2];
     [SerializeField] private KeyCode[] activeSpellBindings = new KeyCode[3];
+
+    // Potions
+    [SerializeField] private Dictionary<PotionIngredient, int> potionIngredientMap = new Dictionary<PotionIngredient, int>();
 
     // Callbacks
     public Action OnEnterNewRoom;
@@ -90,17 +85,36 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private TestType currentlyTesting;
 
+    [Header("Shop")]
     [SerializeField] private Transform artifactShopOffersTransform;
     [SerializeField] private Transform bookShopOffersTransform;
+    [SerializeField] private Transform potionIngredientShopOffersTransform;
 
+    [SerializeField] private IngredientShopOffer potionIngredientShopOfferPrefab;
     [SerializeField] private ArtifactShopOffer artifactShopOfferPrefab;
     [SerializeField] private BookShopOffer bookShopOfferPrefab;
 
+    [SerializeField] private int numPotionIngredientShopOffers;
     [SerializeField] private int numArtifactShopOffers;
     [SerializeField] private int numBookShopOffers;
 
     private List<ArtifactShopOffer> shopArtifactList = new List<ArtifactShopOffer>();
     private List<BookShopOffer> shopBookList = new List<BookShopOffer>();
+    private List<IngredientShopOffer> shopIngredientList = new List<IngredientShopOffer>();
+
+    [Header("References")]
+    [SerializeField] private TextMeshProUGUI hpText;
+    [SerializeField] private TextMeshProUGUI manaText;
+    [SerializeField] private TextMeshProUGUI currencyText;
+
+    [SerializeField] private GameObject[] turnOnForBrewPotionScreen;
+    [SerializeField] private GameObject[] turnOffForBrewPotionScreen;
+
+    [Header("Potion Screen")]
+    private Dictionary<PotionIngredient, PotionIngredientListEntry> potionIngredientUIList = new Dictionary<PotionIngredient, PotionIngredientListEntry>();
+    [SerializeField] private PotionIngredientListEntry potionIngredientListEntryPrefab;
+    [SerializeField] private Transform potionIngredientListParent;
+    [SerializeField] private GameObject potionIngredientListScreen;
 
     private void Awake()
     {
@@ -622,9 +636,66 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    internal void GameOver()
+    private void PrintPotionIngredientMap()
     {
-        throw new NotImplementedException();
+        foreach (KeyValuePair<PotionIngredient, int> kvp in potionIngredientMap)
+        {
+            Debug.Log(kvp);
+        }
+    }
+
+    public void AddPotionIngredient(PotionIngredient ingredient)
+    {
+        if (potionIngredientMap.ContainsKey(ingredient))
+        {
+            potionIngredientMap[ingredient] = potionIngredientMap[ingredient] + 1;
+
+            // Update entry in UI
+            potionIngredientUIList[ingredient].UpdateQuantity(potionIngredientMap[ingredient]);
+        }
+        else
+        {
+            potionIngredientMap.Add(ingredient, 1);
+
+            PotionIngredientListEntry spawned = Instantiate(potionIngredientListEntryPrefab, potionIngredientListParent);
+            potionIngredientUIList.Add(ingredient, spawned);
+            spawned.Set(ingredient, 1);
+        }
+    }
+
+    public void RemovePotionIngredient(PotionIngredient ingredient)
+    {
+        if (potionIngredientMap.ContainsKey(ingredient))
+        {
+            int numIngredient = potionIngredientMap[ingredient];
+            if (numIngredient == 1)
+            {
+                potionIngredientMap.Remove(ingredient);
+
+                PotionIngredientListEntry ui = potionIngredientUIList[ingredient];
+                Destroy(ui.gameObject);
+                potionIngredientUIList.Remove(ingredient);
+            }
+            else
+            {
+                potionIngredientMap[ingredient] = numIngredient - 1;
+                potionIngredientUIList[ingredient].UpdateQuantity(potionIngredientMap[ingredient]);
+            }
+        }
+        else
+        {
+            throw new Exception();
+        }
+    }
+
+    public PotionIngredient GetRandomPotionIngredient()
+    {
+        return RandomHelper.GetRandomEnumValue<PotionIngredient>();
+    }
+
+    public void AddRandomPotionIngredient()
+    {
+        AddPotionIngredient(GetRandomPotionIngredient());
     }
 
     private void TryAddPersistentTokens()
@@ -843,6 +914,16 @@ public class GameManager : MonoBehaviour
         loadedSpellDisplays[label].AnimateScale();
     }
 
+    public void GameOver()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void TogglePotionIngredientListScreen()
+    {
+        potionIngredientListScreen.SetActive(!potionIngredientListScreen.activeInHierarchy);
+    }
+
     #region Game Occurances
 
     #region Campfire
@@ -901,15 +982,22 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < numArtifactShopOffers; i++)
         {
             ArtifactShopOffer offer = Instantiate(artifactShopOfferPrefab, artifactShopOffersTransform);
-            offer.Set(ArtifactLabel.BankCard, 100, null);
+            offer.Set(GetRandomArtifact(), 100, null);
             shopArtifactList.Add(offer);
         }
 
         for (int i = 0; i < numBookShopOffers; i++)
         {
             BookShopOffer offer = Instantiate(bookShopOfferPrefab, bookShopOffersTransform);
-            offer.Set(BookLabel.BarbariansTactics, 100, null);
+            offer.Set(GetRandomBook(), 100, null);
             shopBookList.Add(offer);
+        }
+
+        for (int i = 0; i < numPotionIngredientShopOffers; i++)
+        {
+            IngredientShopOffer offer = Instantiate(potionIngredientShopOfferPrefab, potionIngredientShopOffersTransform);
+            offer.Set(GetRandomPotionIngredient(), 100, null);
+            shopIngredientList.Add(offer);
         }
     }
 
@@ -928,6 +1016,13 @@ public class GameManager : MonoBehaviour
             shopBookList.RemoveAt(0);
             Destroy(offer.gameObject);
         }
+
+        while (shopIngredientList.Count > 0)
+        {
+            IngredientShopOffer offer = shopIngredientList[0];
+            shopIngredientList.RemoveAt(0);
+            Destroy(offer.gameObject);
+        }
     }
 
     #endregion
@@ -944,7 +1039,7 @@ public class GameManager : MonoBehaviour
         return res;
     }
 
-    public void ParseEventEffect(string effects)
+    public IEnumerator ParseEventEffect(string effects)
     {
         Debug.Log("Parsing Event Effect: " + effects);
         string[] commands = CureAllStrings(effects.Split(';'));
@@ -961,16 +1056,19 @@ public class GameManager : MonoBehaviour
                 switch (singleCommand)
                 {
                     case "ADDRANDOMARTIFACT":
-                        AddRandomArtifact();
+                        RewardManager._Instance.AddReward(GetRandomArtifact());
                         break;
                     case "ADDRANDOMBOOK":
-                        AddRandomBook();
+                        RewardManager._Instance.AddReward(GetRandomBook());
                         break;
                     case "REMOVERANDOMARTIFACT":
                         RemoveArtifact(GetRandomOwnedArtifact());
                         break;
                     case "REMOVERANDOMBOOK":
                         RemoveBook(GetRandomOwnedBook());
+                        break;
+                    case "ADDRANDOMPOTIONINGREDIENT":
+                        RewardManager._Instance.AddReward(GetRandomPotionIngredient());
                         break;
                     default:
                         throw new UnhandledSwitchCaseException(singleCommand);
@@ -987,7 +1085,14 @@ public class GameManager : MonoBehaviour
                         int goldAmount;
                         if (int.TryParse(argument, out goldAmount))
                         {
-                            AlterCurrency(goldAmount);
+                            if (goldAmount > 0)
+                            {
+                                RewardManager._Instance.AddReward(goldAmount);
+                            }
+                            else
+                            {
+                                AlterCurrency(goldAmount);
+                            }
                         }
                         else
                         {
@@ -1031,7 +1136,8 @@ public class GameManager : MonoBehaviour
                         ArtifactLabel addedArtifact;
                         if (Enum.TryParse<ArtifactLabel>(argument, out addedArtifact))
                         {
-                            RemoveArtifact(addedArtifact);
+                            RewardManager._Instance.AddReward(addedArtifact);
+
                         }
                         else
                         {
@@ -1042,11 +1148,25 @@ public class GameManager : MonoBehaviour
                         BookLabel addedBook;
                         if (Enum.TryParse<BookLabel>(argument, out addedBook))
                         {
-                            AddBook(addedBook);
+                            RewardManager._Instance.AddReward(addedBook);
                         }
                         else
                         {
                             Debug.Log("Could not Convert Argument: " + argument + " to BookLabel");
+                        }
+                        break;
+                    case "ADDRANDOMPOTIONINGREDIENT":
+                        int numIngredients;
+                        if (int.TryParse(argument, out numIngredients))
+                        {
+                            for (int i = 0; i < numIngredients; i++)
+                            {
+                                RewardManager._Instance.AddReward(GetRandomPotionIngredient());
+                            }
+                        }
+                        else
+                        {
+                            Debug.Log("Could not Convert Argument: " + argument + " to Int");
                         }
                         break;
                     default:
@@ -1054,6 +1174,8 @@ public class GameManager : MonoBehaviour
                 }
             }
         }
+
+        yield return StartCoroutine(RewardManager._Instance.ShowRewardScreen());
     }
 
     public ArtifactLabel GetRandomOwnedArtifact()

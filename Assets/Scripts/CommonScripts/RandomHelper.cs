@@ -130,8 +130,13 @@ public static class RandomHelper
         return GetRandomColor(minColorComponentValue, 255);
     }
 
-    internal static Vector2 RandomVector2(Vector2 minMaxTextureTiling)
+    public static Vector2 RandomVector2(Vector2 minMaxTextureTiling)
     {
         return new Vector2(RandomFloat(minMaxTextureTiling.x, minMaxTextureTiling.y), RandomFloat(minMaxTextureTiling.x, minMaxTextureTiling.y));
+    }
+
+    public static T GetRandomEnumValue<T>()
+    {
+        return GetRandomFromArray<T>(Enum.GetValues(typeof(T)));
     }
 }

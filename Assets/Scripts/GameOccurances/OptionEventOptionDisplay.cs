@@ -22,8 +22,6 @@ public class OptionEventOptionDisplay : MonoBehaviour
         EventOptionOutcome outcome = setTo.GetOutcome();
         EventManager._Instance.SetOutcome(outcome);
 
-        GameManager._Instance.ParseEventEffect(outcome.CodeString);
-
         onClick?.Invoke();
     }
 

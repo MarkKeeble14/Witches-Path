@@ -26,7 +26,7 @@ MonoBehaviour:
           resultText: The witch who owns the hut storms through the door just as
             you pocket the ingredient. She aggressively escorts you out of her abode,
             but not without a swift slap to your rear on the way out.
-          codeString: AddRandomPotionIngredient;AlterHP:50
+          codeString: AddRandomPotionIngredient;AlterHP:-50
         value: 10
       - key:
           resultText: You pocket the ingredient without any disturbance.
@@ -40,11 +40,11 @@ MonoBehaviour:
           resultText: The witch who owns the hut storms through the door just as
             you pocket the ingredient. She aggressively escorts you out of her abode,
             but not without a swift slap to your rear on the way out.
-          codeString: AddRandomPotionIngredient;AlterHP:50
+          codeString: AddRandomPotionIngredient:2;AlterHP:-50
         value: 25
       - key:
-          resultText: You pocket the ingredient without any disturbance.
-          codeString: AddRandomPotionIngredient
+          resultText: You pocket the ingredients without any disturbance.
+          codeString: AddRandomPotionIngredient:2
         value: 75
   - hintText: Steal 3 Ingredients
     effectText: Gain 3 Random Potion Ingredients, 50% Chance to Lose 50 HP
@@ -54,9 +54,9 @@ MonoBehaviour:
           resultText: The witch who owns the hut storms through the door just as
             you pocket the ingredient. She aggressively escorts you out of her abode,
             but not without a swift slap to your rear on the way out.
-          codeString: AddRandomPotionIngredient;AlterHP:50
+          codeString: AddRandomPotionIngredient:3;AlterHP:-50
         value: 50
       - key:
-          resultText: You pocket the ingredient without any disturbance.
-          codeString: AddRandomPotionIngredient
+          resultText: You pocket the ingredients without any disturbance.
+          codeString: AddRandomPotionIngredient:3
         value: 50
