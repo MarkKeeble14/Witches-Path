@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e02c33385eb9aa54caf185fc2f315c60, type: 3}
   m_Name: BossCombat2
   m_EditorClassIdentifier: 
-  mapIcon: {fileID: 21300000, guid: a075b601154b8b84c8efd858de216b2e, type: 3}
   mapFile: {fileID: 102900000, guid: 3c495491bc905524ca9dcaca0c29b336, type: 3}
   mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
   hitSound: {fileID: 8300000, guid: 9a09e84d2f42d8442bb253df828df025, type: 3}
   missSound: {fileID: 8300000, guid: 5ed467b1dd669254989345d5dce48d6d, type: 3}
+  enemy: {fileID: 11400000, guid: 5a31a5c589cb9b746a9b61d0a9c95baa, type: 2}

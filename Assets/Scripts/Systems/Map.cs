@@ -9,7 +9,7 @@ public class Map
 {
     [SerializeField] private SerializableDictionary<MapNodeType, List<GameOccurance>> mapNodes = new SerializableDictionary<MapNodeType, List<GameOccurance>>();
     [SerializeField] private SerializableDictionary<int, MapNodeType> forcedNodeIndices = new SerializableDictionary<int, MapNodeType>();
-    [SerializeField] private List<MapNodeType> allowedRandomNodeTypes = new List<MapNodeType>();
+    [SerializeField] private PercentageMap<MapNodeType> randomNodeTypeLiklihood = new PercentageMap<MapNodeType>();
 
     [SerializeField] private Vector2Int mapGridSize = new Vector2Int(5, 15);
     private MapNodeUI[,] spawnedGridNodes;
@@ -18,6 +18,7 @@ public class Map
     [SerializeField] private float delayBetweenShowingCells = .1f;
     [SerializeField] private Vector2 chanceToPokeHole = new Vector2(1, 3);
     [SerializeField] private SerializableDictionary<MapNodeType, Sprite> mapNodeIconDict = new SerializableDictionary<MapNodeType, Sprite>();
+
 
     [Header("References")]
     [SerializeField] private GridLayoutGroup grid;
@@ -137,7 +138,7 @@ public class Map
     {
         foreach (MapNodeUI node in spawnedGridNodes)
         {
-            MapNodeType nodeType = RandomHelper.GetRandomFromList(allowedRandomNodeTypes);
+            MapNodeType nodeType = randomNodeTypeLiklihood.GetOption();
             node.Set(GetMapNodeOfType(nodeType), mapNodeIconDict[nodeType]);
         }
     }

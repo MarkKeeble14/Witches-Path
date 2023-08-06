@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b924829fe90b9d5438ebf2815aa699b4, type: 3}
+  m_Name: TravellersDelivery
+  m_EditorClassIdentifier: 
+  eventArt: {fileID: 0}
+  eventName: Travellers Delivery
+  eventText: A wayward traveller approaches you waving a knitted knapsack over his
+    head. He claims to have a gift for you, but requires payment for his services...
+  options:
+  - hintText: Accept the travellers delivery
+    effectText: Gain a Random Artifact, Lose 50 Gold
+    possibleOutcomes:
+      percentageMap:
+      - key:
+          resultText: The traveller stops, opens his bag and out pops a trinket alongside
+            a card from your mother wishing you good luck.
+          codeString: AddRandomArtifact;AlterGold:-50
+        value: 100
+  - hintText: Rob the traveller
+    effectText: '50%: Gain a Random Artifact, Gain 75 Gold, 50%: Lose 100 HP'
+    possibleOutcomes:
+      percentageMap:
+      - key:
+          resultText: You assault the traveller before he comes to a complete stop,
+            catching him totally by surprise. He stands no chance.
+          codeString: AddRandomArtifact;AlterGold:75
+        value: 50
+      - key:
+          resultText: The traveller notices your windup and manages to kick your
+            shin before running off.
+          codeString: AlterHP:100
+        value: 50

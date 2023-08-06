@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b924829fe90b9d5438ebf2815aa699b4, type: 3}
+  m_Name: HomeFree
+  m_EditorClassIdentifier: 
+  eventArt: {fileID: 0}
+  eventName: Home Free
+  eventText: In the distance, you notice a magical portal gurgling in the wind...
+  options:
+  - hintText: Apprach the Portal
+    effectText: Gain 100 Gold, Lose a Random Artifact
+    possibleOutcomes:
+      percentageMap:
+      - key:
+          resultText: As you approach the portal, one of your artifacts is sucked
+            from your bag straight into the portal's waiting ripples. A moment later,
+            a sack of money flies out, nearing taking off your head before landing
+            by your feet.
+          codeString: AlterGold:100;RemoveRandomArtifact
+        value: 100
+  - hintText: Leave
+    effectText: Gain Nothing, Lose Nothing
+    possibleOutcomes:
+      percentageMap:
+      - key:
+          resultText: Being wary can be a boon and a curse...
+          codeString: 
+        value: 100

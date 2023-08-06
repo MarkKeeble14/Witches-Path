@@ -4,6 +4,7 @@ using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using System.Linq;
 
 public enum TestType
 {
@@ -36,6 +37,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI hpText;
     [SerializeField] private TextMeshProUGUI manaText;
     [SerializeField] private TextMeshProUGUI currencyText;
+
+    [SerializeField] private GameObject[] turnOnForBrewPotionScreen;
+    [SerializeField] private GameObject[] turnOffForBrewPotionScreen;
 
     // Books
     [SerializeField] private Transform bookBar;
@@ -85,6 +89,18 @@ public class GameManager : MonoBehaviour
     [SerializeField] private SerializableDictionary<DamageType, Color> damageSourceColorDict = new SerializableDictionary<DamageType, Color>();
 
     [SerializeField] private TestType currentlyTesting;
+
+    [SerializeField] private Transform artifactShopOffersTransform;
+    [SerializeField] private Transform bookShopOffersTransform;
+
+    [SerializeField] private ArtifactShopOffer artifactShopOfferPrefab;
+    [SerializeField] private BookShopOffer bookShopOfferPrefab;
+
+    [SerializeField] private int numArtifactShopOffers;
+    [SerializeField] private int numBookShopOffers;
+
+    private List<ArtifactShopOffer> shopArtifactList = new List<ArtifactShopOffer>();
+    private List<BookShopOffer> shopBookList = new List<BookShopOffer>();
 
     private void Awake()
     {
@@ -782,6 +798,11 @@ public class GameManager : MonoBehaviour
         return maxPlayerHP;
     }
 
+    public float GetPlayerCurrency()
+    {
+        return currentPlayerCurrency;
+    }
+
     public float GetCurrentPlayerMana()
     {
         return currentPlayerMana;
@@ -832,11 +853,238 @@ public class GameManager : MonoBehaviour
         ResolveCurrentEvent();
     }
 
+    public void OpenBrewPotionScreen()
+    {
+        foreach (GameObject obj in turnOnForBrewPotionScreen)
+        {
+            obj.SetActive(true);
+        }
+        foreach (GameObject obj in turnOffForBrewPotionScreen)
+        {
+            obj.SetActive(false);
+        }
+    }
+
+    public void CloseBrewPotionScreen()
+    {
+        foreach (GameObject obj in turnOnForBrewPotionScreen)
+        {
+            obj.SetActive(false);
+        }
+        foreach (GameObject obj in turnOffForBrewPotionScreen)
+        {
+            obj.SetActive(true);
+        }
+    }
+
+    public void ChoosePotion()
+    {
+        // Add potion somehow
+
+        // Close brew potion screen 
+        CloseBrewPotionScreen();
+    }
+
     #endregion
 
     #region Clothier
 
     #endregion
+
+    #endregion
+
+    #region Shop
+
+    public void LoadShop()
+    {
+        // Spawn Offers
+        for (int i = 0; i < numArtifactShopOffers; i++)
+        {
+            ArtifactShopOffer offer = Instantiate(artifactShopOfferPrefab, artifactShopOffersTransform);
+            offer.Set(ArtifactLabel.BankCard, 100, null);
+            shopArtifactList.Add(offer);
+        }
+
+        for (int i = 0; i < numBookShopOffers; i++)
+        {
+            BookShopOffer offer = Instantiate(bookShopOfferPrefab, bookShopOffersTransform);
+            offer.Set(BookLabel.BarbariansTactics, 100, null);
+            shopBookList.Add(offer);
+        }
+    }
+
+    public void ClearShop()
+    {
+        while (shopArtifactList.Count > 0)
+        {
+            ArtifactShopOffer offer = shopArtifactList[0];
+            shopArtifactList.RemoveAt(0);
+            Destroy(offer.gameObject);
+        }
+
+        while (shopBookList.Count > 0)
+        {
+            BookShopOffer offer = shopBookList[0];
+            shopBookList.RemoveAt(0);
+            Destroy(offer.gameObject);
+        }
+    }
+
+    #endregion
+
+    #region Event 
+
+    private string[] CureAllStrings(string[] arr)
+    {
+        string[] res = new string[arr.Length];
+        for (int i = 0; i < arr.Length; i++)
+        {
+            res[i] = arr[i].ToUpper();
+        }
+        return res;
+    }
+
+    public void ParseEventEffect(string effects)
+    {
+        Debug.Log("Parsing Event Effect: " + effects);
+        string[] commands = CureAllStrings(effects.Split(';'));
+        Debug.Log("NumCommands: " + commands.Length);
+
+        foreach (string command in commands)
+        {
+            string[] commandParts = CureAllStrings(command.Split(':'));
+            Debug.Log("Command: " + command + ", NumParts = " + commandParts.Length);
+            if (commandParts.Length == 1)
+            {
+                string singleCommand = commandParts[0];
+                Debug.Log("Single Command: " + singleCommand);
+                switch (singleCommand)
+                {
+                    case "ADDRANDOMARTIFACT":
+                        AddRandomArtifact();
+                        break;
+                    case "ADDRANDOMBOOK":
+                        AddRandomBook();
+                        break;
+                    case "REMOVERANDOMARTIFACT":
+                        RemoveArtifact(GetRandomOwnedArtifact());
+                        break;
+                    case "REMOVERANDOMBOOK":
+                        RemoveBook(GetRandomOwnedBook());
+                        break;
+                    default:
+                        throw new UnhandledSwitchCaseException(singleCommand);
+                }
+            }
+            else
+            {
+                string commandPart = commandParts[0];
+                string argument = commandParts[1];
+                Debug.Log("Argument Command: " + commandPart + ", Argument = " + argument);
+                switch (commandPart)
+                {
+                    case "ALTERGOLD":
+                        int goldAmount;
+                        if (int.TryParse(argument, out goldAmount))
+                        {
+                            AlterCurrency(goldAmount);
+                        }
+                        else
+                        {
+                            Debug.Log("Could not Convert Argument: " + argument + " to Int");
+                        }
+                        break;
+                    case "ALTERHP":
+                        int hpAmount;
+                        if (int.TryParse(argument, out hpAmount))
+                        {
+                            AlterPlayerHP(hpAmount, DamageType.Default);
+                        }
+                        else
+                        {
+                            Debug.Log("Could not Convert Argument: " + argument + " to Int");
+                        }
+                        break;
+                    case "REMOVEARTIFACT":
+                        ArtifactLabel removedArtifact;
+                        if (Enum.TryParse<ArtifactLabel>(argument, out removedArtifact))
+                        {
+                            RemoveArtifact(removedArtifact);
+                        }
+                        else
+                        {
+                            Debug.Log("Could not Convert Argument: " + argument + " to ArtifactLabel");
+                        }
+                        break;
+                    case "REMOVEBOOK":
+                        BookLabel removedBook;
+                        if (Enum.TryParse<BookLabel>(argument, out removedBook))
+                        {
+                            RemoveBook(removedBook);
+                        }
+                        else
+                        {
+                            Debug.Log("Could not Convert Argument: " + argument + " to BookLabel");
+                        }
+                        break;
+                    case "ADDARTIFACT":
+                        ArtifactLabel addedArtifact;
+                        if (Enum.TryParse<ArtifactLabel>(argument, out addedArtifact))
+                        {
+                            RemoveArtifact(addedArtifact);
+                        }
+                        else
+                        {
+                            Debug.Log("Could not Convert Argument: " + argument + " to ArtifactLabel");
+                        }
+                        break;
+                    case "ADDBOOK":
+                        BookLabel addedBook;
+                        if (Enum.TryParse<BookLabel>(argument, out addedBook))
+                        {
+                            AddBook(addedBook);
+                        }
+                        else
+                        {
+                            Debug.Log("Could not Convert Argument: " + argument + " to BookLabel");
+                        }
+                        break;
+                    default:
+                        throw new UnhandledSwitchCaseException(commandPart + ", " + argument);
+                }
+            }
+        }
+    }
+
+    public ArtifactLabel GetRandomOwnedArtifact()
+    {
+        return RandomHelper.GetRandomFromList(equippedArtifacts.Keys.ToList());
+    }
+
+    public BookLabel GetRandomOwnedBook()
+    {
+        return RandomHelper.GetRandomFromList(equippedBooks.Keys.ToList());
+    }
+
+    public ArtifactLabel GetRandomArtifact()
+    {
+        return RandomHelper.GetRandomFromList(testArtifacts);
+    }
+
+    public void AddRandomArtifact()
+    {
+        AddArtifact(GetRandomArtifact());
+    }
+
+    public BookLabel GetRandomBook()
+    {
+        return RandomHelper.GetRandomFromList(testBooks);
+    }
+
+    public void AddRandomBook()
+    {
+        AddBook(GetRandomBook());
+    }
 
     #endregion
 }

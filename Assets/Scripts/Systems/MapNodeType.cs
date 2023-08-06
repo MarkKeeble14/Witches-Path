@@ -3,7 +3,6 @@
     MinorFight,
     Boss,
     Library,
-    Apothecary,
     Campfire,
     Clothier,
     Event,
