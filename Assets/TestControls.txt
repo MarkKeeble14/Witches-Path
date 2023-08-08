@@ -1,0 +1,5 @@
+Tab - Switch Test Category
+Alpha 1 - Equip Selected
+Alpha 2 - Unequip Selected
+Right Arrow - Next Element
+Left Arrow - Last Element

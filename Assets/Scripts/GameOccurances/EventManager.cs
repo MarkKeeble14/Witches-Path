@@ -52,7 +52,7 @@ public class EventManager : MonoBehaviour
 
         yield return new WaitUntil(() => currentOutcome != null);
 
-        yield return StartCoroutine(GameManager._Instance.ParseEventEffect(currentOutcome.CodeString));
+        yield return StartCoroutine(GameManager._Instance.ParseEventEffect(optionEvent.EventLabel, currentOutcome.CodeString));
 
         resolveButton.gameObject.SetActive(true);
 

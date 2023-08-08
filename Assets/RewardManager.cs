@@ -23,6 +23,7 @@ public class RewardManager : MonoBehaviour
 
     public void AddReward(ArtifactLabel label)
     {
+        Debug.Log("Adding Artifact Reward: " + label);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         spawned.Set(label.ToString(), null, delegate
         {
@@ -33,6 +34,7 @@ public class RewardManager : MonoBehaviour
 
     public void AddReward(BookLabel label)
     {
+        Debug.Log("Adding Book Reward: " + label);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         spawned.Set(label.ToString(), null, delegate
         {
@@ -43,6 +45,7 @@ public class RewardManager : MonoBehaviour
 
     public void AddReward(PotionIngredient label)
     {
+        Debug.Log("Adding Potion Ingredient Reward: " + label);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         spawned.Set(label.ToString(), null, delegate
         {
@@ -53,6 +56,7 @@ public class RewardManager : MonoBehaviour
 
     public void AddReward(int currencyAmount)
     {
+        Debug.Log("Adding Financial Reward: " + currencyAmount);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         spawned.Set(currencyAmount.ToString() + " Gold", null, delegate
         {
@@ -63,7 +67,11 @@ public class RewardManager : MonoBehaviour
 
     public IEnumerator ShowRewardScreen()
     {
-        rewardScreen.SetActive(true);
+        Debug.Log("1: " + rewardScreen + ", Reward Screen Active Self: " + rewardScreen.activeSelf);
+
+        rewardScreen.gameObject.SetActive(true);
+
+        Debug.Log("2: " + rewardScreen + ", Reward Screen Active Self: " + rewardScreen.activeSelf);
 
         yield return new WaitUntil(() => resolved);
 

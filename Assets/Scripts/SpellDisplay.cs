@@ -61,4 +61,6 @@ public abstract class SpellDisplay : MonoBehaviour
         progressBar.fillAmount = 1;
         isAvailable = true;
     }
+
+    public abstract Spell GetSpell();
 }

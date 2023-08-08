@@ -3,7 +3,6 @@ using System.Collections;
 using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
-using UnityEngine.UI;
 using System.Linq;
 
 public enum TestType
@@ -20,10 +19,12 @@ public class GameManager : MonoBehaviour
     private MapNodeUI currentNode;
     private GameOccurance currentOccurance;
 
+    [Header("Character")]
     [SerializeField] private Character playerCharacter;
     private float maxPlayerHP;
     private float currentPlayerHP;
     private float maxPlayerMana;
+    private float characterMaxMana;
     private float currentPlayerMana;
     private float currentPlayerCurrency;
     private Robe playerEquippedRobe;
@@ -31,8 +32,6 @@ public class GameManager : MonoBehaviour
     private Wand playerEquippedWand;
 
     private string persistentTokensKey = "PersistentTokens";
-
-
 
     [Header("Books")]
     [SerializeField] private Transform bookBar;
@@ -52,19 +51,16 @@ public class GameManager : MonoBehaviour
     [SerializeField] private PassiveSpellDisplay[] passiveSpellDisplays = new PassiveSpellDisplay[2];
     [SerializeField] private KeyCode[] activeSpellBindings = new KeyCode[3];
 
-    // Potions
-    [SerializeField] private Dictionary<PotionIngredient, int> potionIngredientMap = new Dictionary<PotionIngredient, int>();
-
-    // Callbacks
-    public Action OnEnterNewRoom;
-    public Action OnPlayerRecieveDamage;
-    private Dictionary<MapNodeType, Action> OnEnterSpecificRoomActionMap = new Dictionary<MapNodeType, Action>();
+    [Header("Potions")]
+    private Dictionary<PotionIngredient, int> potionIngredientMap = new Dictionary<PotionIngredient, int>();
 
     [Header("Prefabs")]
     [SerializeField] private ArtifactIcon artifactDisplay;
     [SerializeField] private PopupText popupTextPrefab;
 
     [Header("Test")]
+    [SerializeField] private TestType currentlyTesting;
+
     [Header("Artifacts")]
     [SerializeField] private List<ArtifactLabel> testArtifacts;
     private int artifactIndex;
@@ -81,40 +77,24 @@ public class GameManager : MonoBehaviour
     [SerializeField] private List<SpellLabel> equippableActiveSpells = new List<SpellLabel>();
     private int equippableActiveSpellIndex = 0;
 
+    [Header("Visual")]
     [SerializeField] private SerializableDictionary<DamageType, Color> damageSourceColorDict = new SerializableDictionary<DamageType, Color>();
-
-    [SerializeField] private TestType currentlyTesting;
-
-    [Header("Shop")]
-    [SerializeField] private Transform artifactShopOffersTransform;
-    [SerializeField] private Transform bookShopOffersTransform;
-    [SerializeField] private Transform potionIngredientShopOffersTransform;
-
-    [SerializeField] private IngredientShopOffer potionIngredientShopOfferPrefab;
-    [SerializeField] private ArtifactShopOffer artifactShopOfferPrefab;
-    [SerializeField] private BookShopOffer bookShopOfferPrefab;
-
-    [SerializeField] private int numPotionIngredientShopOffers;
-    [SerializeField] private int numArtifactShopOffers;
-    [SerializeField] private int numBookShopOffers;
-
-    private List<ArtifactShopOffer> shopArtifactList = new List<ArtifactShopOffer>();
-    private List<BookShopOffer> shopBookList = new List<BookShopOffer>();
-    private List<IngredientShopOffer> shopIngredientList = new List<IngredientShopOffer>();
 
     [Header("References")]
     [SerializeField] private TextMeshProUGUI hpText;
     [SerializeField] private TextMeshProUGUI manaText;
     [SerializeField] private TextMeshProUGUI currencyText;
+    [SerializeField] private TextMeshProUGUI damageText;
+    [SerializeField] private TextMeshProUGUI defenseText;
 
-    [SerializeField] private GameObject[] turnOnForBrewPotionScreen;
-    [SerializeField] private GameObject[] turnOffForBrewPotionScreen;
+    // Callbacks
+    public Action OnEnterNewRoom;
+    public Action OnPlayerRecieveDamage;
+    private Dictionary<MapNodeType, Action> OnEnterSpecificRoomActionMap = new Dictionary<MapNodeType, Action>();
 
-    [Header("Potion Screen")]
-    private Dictionary<PotionIngredient, PotionIngredientListEntry> potionIngredientUIList = new Dictionary<PotionIngredient, PotionIngredientListEntry>();
-    [SerializeField] private PotionIngredientListEntry potionIngredientListEntryPrefab;
-    [SerializeField] private Transform potionIngredientListParent;
-    [SerializeField] private GameObject potionIngredientListScreen;
+    public float DamageFromEquipment { get; set; }
+    public float DefenseFromEquipment { get; set; }
+    private float manaFromEquipment;
 
     private void Awake()
     {
@@ -140,6 +120,8 @@ public class GameManager : MonoBehaviour
         hpText.text = Mathf.RoundToInt(currentPlayerHP).ToString() + "/" + Mathf.RoundToInt(maxPlayerHP).ToString();
         manaText.text = Mathf.RoundToInt(currentPlayerMana).ToString() + "/" + Mathf.RoundToInt(maxPlayerMana).ToString();
         currencyText.text = Mathf.RoundToInt(currentPlayerCurrency).ToString();
+        damageText.text = GetBasicAttackDamage().ToString();
+        defenseText.text = Mathf.RoundToInt(DefenseFromEquipment).ToString();
 
         if (Input.GetKeyDown(KeyCode.Tab))
         {
@@ -161,15 +143,25 @@ public class GameManager : MonoBehaviour
         {
             case TestType.ActiveSpell:
 
-                // Testing
                 // Active Spells
+                // Equip new spell
                 if (Input.GetKeyDown(KeyCode.RightArrow))
                 {
-                    // Equip new spell
                     equippableActiveSpellIndex++;
 
                     if (equippableActiveSpellIndex > equippableActiveSpells.Count - 1)
                         equippableActiveSpellIndex = 0;
+
+                    Debug.Log("Selected: " + equippableActiveSpells[equippableActiveSpellIndex]);
+                }
+
+                // Equip new spell
+                if (Input.GetKeyDown(KeyCode.LeftArrow))
+                {
+                    equippableActiveSpellIndex--;
+
+                    if (equippableActiveSpellIndex < 0)
+                        equippableActiveSpellIndex = equippableActiveSpells.Count - 1;
 
                     Debug.Log("Selected: " + equippableActiveSpells[equippableActiveSpellIndex]);
                 }
@@ -187,13 +179,24 @@ public class GameManager : MonoBehaviour
             case TestType.PassiveSpell:
 
                 // Passive Spells
+                // Equip new spell
                 if (Input.GetKeyDown(KeyCode.RightArrow))
                 {
-                    // Equip new spell
                     equippablePassiveSpellIndex++;
 
                     if (equippablePassiveSpellIndex > equippablePassiveSpells.Count - 1)
                         equippablePassiveSpellIndex = 0;
+
+                    Debug.Log("Selected: " + equippablePassiveSpells[equippablePassiveSpellIndex]);
+                }
+
+                // Equip new spell
+                if (Input.GetKeyDown(KeyCode.LeftArrow))
+                {
+                    equippablePassiveSpellIndex--;
+
+                    if (equippablePassiveSpellIndex < 0)
+                        equippablePassiveSpellIndex = equippablePassiveSpells.Count - 1;
 
                     Debug.Log("Selected: " + equippablePassiveSpells[equippablePassiveSpellIndex]);
                 }
@@ -211,13 +214,24 @@ public class GameManager : MonoBehaviour
             case TestType.Artifact:
 
                 // Artifacts
+                // Equip new Artifact
                 if (Input.GetKeyDown(KeyCode.RightArrow))
                 {
-                    // Equip new spell
                     artifactIndex++;
 
                     if (artifactIndex > testArtifacts.Count - 1)
                         artifactIndex = 0;
+
+                    Debug.Log("Selected: " + testArtifacts[artifactIndex]);
+                }
+
+                // Equip new spell
+                if (Input.GetKeyDown(KeyCode.LeftArrow))
+                {
+                    artifactIndex--;
+
+                    if (artifactIndex < 0)
+                        artifactIndex = testArtifacts.Count - 1;
 
                     Debug.Log("Selected: " + testArtifacts[artifactIndex]);
                 }
@@ -236,13 +250,24 @@ public class GameManager : MonoBehaviour
             case TestType.Book:
 
                 // Passive Spells
+                // Equip new Book
                 if (Input.GetKeyDown(KeyCode.RightArrow))
                 {
-                    // Equip new spell
                     bookIndex++;
 
                     if (bookIndex > testBooks.Count - 1)
                         bookIndex = 0;
+
+                    Debug.Log("Selected: " + testBooks[bookIndex]);
+                }
+
+                // Equip new spell
+                if (Input.GetKeyDown(KeyCode.LeftArrow))
+                {
+                    bookIndex--;
+
+                    if (bookIndex < 0)
+                        bookIndex = testBooks.Count - 1;
 
                     Debug.Log("Selected: " + testBooks[bookIndex]);
                 }
@@ -267,7 +292,7 @@ public class GameManager : MonoBehaviour
             {
                 if (Input.GetKeyDown(activeSpellBindings[i]))
                 {
-                    ActiveSpell spellToCast = activeSpellDisplays[i].GetSpell();
+                    ActiveSpell spellToCast = activeSpellDisplays[i].GetActiveSpell();
                     Debug.Log("Attempting to Cast: " + spellToCast);
                     if (spellToCast.CanCast)
                     {
@@ -288,6 +313,39 @@ public class GameManager : MonoBehaviour
                     }
                 }
             }
+        }
+    }
+
+    public void EquipSpell(SpellLabel label)
+    {
+        Spell spell = GetSpellOfType(label);
+        switch (spell)
+        {
+            case ActiveSpell:
+                EquipActiveSpell(label);
+                break;
+            case PassiveSpell:
+                EquipPassiveSpell(label);
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
+
+    public void UnequipSpell(SpellLabel label)
+    {
+        Spell spell = loadedSpellDisplays[label].GetSpell();
+
+        switch (spell)
+        {
+            case ActiveSpell:
+                UnequipActiveSpell(label);
+                break;
+            case PassiveSpell:
+                UnequipPassiveSpell(label);
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
         }
     }
 
@@ -380,6 +438,11 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public int GetBasicAttackDamage()
+    {
+        return Mathf.RoundToInt(playerCharacter.GetBasicAttackDamage() + DamageFromEquipment);
+    }
+
     public void ReduceActiveSpellCDsByPercent(float normalizedPercent)
     {
         // normaliedPercent is some number between 0 and 1
@@ -397,39 +460,70 @@ public class GameManager : MonoBehaviour
 
     private void EquipCharacterLoadout(Character c)
     {
+        EquipEquipment(c.GetStartingRobe());
+        EquipEquipment(c.GetStartingHat());
+        EquipEquipment(c.GetStartingWand());
+        AddBook(c.GetStartingBook());
+
         maxPlayerHP = c.GetMaxHP();
-        maxPlayerMana = c.GetMaxMana();
+        characterMaxMana = c.GetMaxMana();
+        maxPlayerMana = characterMaxMana + manaFromEquipment;
         currentPlayerCurrency = c.GetStartingCurrency();
         currentPlayerHP = c.GetStartingHP();
-        currentPlayerMana = c.GetStartingMana();
-        EquipRobe(c.GetStartingRobe());
-        EquipHat(c.GetStartingHat());
-        EquipWand(c.GetStartingWand());
+        currentPlayerMana = maxPlayerMana;
     }
 
     private void EquipRobe(Robe robe)
     {
         playerEquippedRobe = robe;
-        EquipEquipment(robe);
-
     }
+
     private void EquipHat(Hat hat)
     {
         playerEquippedHat = hat;
-        EquipEquipment(hat);
-
     }
 
     private void EquipWand(Wand wand)
     {
         playerEquippedWand = wand;
-        EquipEquipment(wand);
     }
-
 
     private void EquipEquipment(Equipment e)
     {
-        // Figure out what to do here
+        switch (e)
+        {
+            case Robe robe:
+                EquipRobe(robe);
+                break;
+            case Hat hat:
+                EquipHat(hat);
+                break;
+            case Wand wand:
+                EquipWand(wand);
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+        e.OnEquip();
+    }
+
+    private void UnequipEquipment(Equipment e)
+    {
+        switch (e)
+        {
+            case Robe robe:
+                EquipRobe(null);
+                break;
+            case Hat hat:
+                EquipHat(null);
+                break;
+            case Wand wand:
+                EquipWand(null);
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+        e.OnUnequip();
     }
 
     private Spell GetSpellOfType(SpellLabel label)
@@ -564,6 +658,8 @@ public class GameManager : MonoBehaviour
                 return new TomeOfCleansing();
             case BookLabel.WrittenWarning:
                 return new WrittenWarning();
+            case BookLabel.WitchesTravelGuide:
+                return new WitchesTravelGuide();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -589,10 +685,10 @@ public class GameManager : MonoBehaviour
         Artifact artifact = equippedArtifacts[type];
         artifact.OnUnequip();
 
-        artifactDisplayTracker.Remove(type);
-        equippedArtifacts.Remove(type);
-
         Destroy(artifactDisplayTracker[type].gameObject);
+        artifactDisplayTracker.Remove(type);
+
+        equippedArtifacts.Remove(type);
     }
 
     public void AddBook(BookLabel type)
@@ -614,10 +710,10 @@ public class GameManager : MonoBehaviour
         Book book = equippedBooks[type];
         book.OnUnequip();
 
-        bookDisplayTracker.Remove(type);
-        equippedBooks.Remove(type);
-
         Destroy(bookDisplayTracker[type].gameObject);
+        bookDisplayTracker.Remove(type);
+
+        equippedBooks.Remove(type);
     }
 
     public void AnimateArtifact(ArtifactLabel label)
@@ -785,7 +881,7 @@ public class GameManager : MonoBehaviour
     {
         if (amount > 0 && HasBook(BookLabel.MerchantsManual))
         {
-            amount *= BalenceManager._Instance.GetValue(BookLabel.MerchantsManual, "PercentIncrease");
+            amount *= MerchantsManual.CurrencyMultiplier;
             AnimateBook(BookLabel.MerchantsManual);
         }
 
@@ -884,6 +980,14 @@ public class GameManager : MonoBehaviour
         return maxPlayerMana;
     }
 
+    public void AlterManaFromEquipment(float changeBy)
+    {
+        manaFromEquipment += changeBy;
+
+        maxPlayerMana = characterMaxMana + manaFromEquipment;
+        AlterPlayerMana(changeBy);
+    }
+
     public Character GetCharacter()
     {
         return playerCharacter;
@@ -924,9 +1028,27 @@ public class GameManager : MonoBehaviour
         potionIngredientListScreen.SetActive(!potionIngredientListScreen.activeInHierarchy);
     }
 
-    #region Game Occurances
+    private void SwitchUIScreens(GameObject[] turnOn, GameObject[] turnOff)
+    {
+        foreach (GameObject obj in turnOn)
+        {
+            obj.SetActive(true);
+        }
+        foreach (GameObject obj in turnOff)
+        {
+            obj.SetActive(false);
+        }
+    }
 
     #region Campfire
+
+    [Header("Potion Screen")]
+    private Dictionary<PotionIngredient, PotionIngredientListEntry> potionIngredientUIList = new Dictionary<PotionIngredient, PotionIngredientListEntry>();
+    [SerializeField] private PotionIngredientListEntry potionIngredientListEntryPrefab;
+    [SerializeField] private Transform potionIngredientListParent;
+    [SerializeField] private GameObject potionIngredientListScreen;
+    [SerializeField] private GameObject[] turnOnForBrewPotionScreen;
+    [SerializeField] private GameObject[] turnOffForBrewPotionScreen;
 
     public void RestAtCampfire()
     {
@@ -936,26 +1058,12 @@ public class GameManager : MonoBehaviour
 
     public void OpenBrewPotionScreen()
     {
-        foreach (GameObject obj in turnOnForBrewPotionScreen)
-        {
-            obj.SetActive(true);
-        }
-        foreach (GameObject obj in turnOffForBrewPotionScreen)
-        {
-            obj.SetActive(false);
-        }
+        SwitchUIScreens(turnOnForBrewPotionScreen, turnOffForBrewPotionScreen);
     }
 
     public void CloseBrewPotionScreen()
     {
-        foreach (GameObject obj in turnOnForBrewPotionScreen)
-        {
-            obj.SetActive(false);
-        }
-        foreach (GameObject obj in turnOffForBrewPotionScreen)
-        {
-            obj.SetActive(true);
-        }
+        SwitchUIScreens(turnOffForBrewPotionScreen, turnOnForBrewPotionScreen);
     }
 
     public void ChoosePotion()
@@ -964,17 +1072,29 @@ public class GameManager : MonoBehaviour
 
         // Close brew potion screen 
         CloseBrewPotionScreen();
+        ResolveCurrentEvent();
     }
 
     #endregion
 
-    #region Clothier
-
-    #endregion
-
-    #endregion
-
     #region Shop
+
+    [Header("Shop")]
+    [SerializeField] private Transform artifactShopOffersTransform;
+    [SerializeField] private Transform bookShopOffersTransform;
+    [SerializeField] private Transform potionIngredientShopOffersTransform;
+
+    [SerializeField] private IngredientShopOffer potionIngredientShopOfferPrefab;
+    [SerializeField] private ArtifactShopOffer artifactShopOfferPrefab;
+    [SerializeField] private BookShopOffer bookShopOfferPrefab;
+
+    [SerializeField] private int numPotionIngredientShopOffers;
+    [SerializeField] private int numArtifactShopOffers;
+    [SerializeField] private int numBookShopOffers;
+
+    private List<ArtifactShopOffer> shopArtifactList = new List<ArtifactShopOffer>();
+    private List<BookShopOffer> shopBookList = new List<BookShopOffer>();
+    private List<IngredientShopOffer> shopIngredientList = new List<IngredientShopOffer>();
 
     public void LoadShop()
     {
@@ -1034,13 +1154,15 @@ public class GameManager : MonoBehaviour
         string[] res = new string[arr.Length];
         for (int i = 0; i < arr.Length; i++)
         {
-            res[i] = arr[i].ToUpper();
+            res[i] = arr[i];
         }
         return res;
     }
 
-    public IEnumerator ParseEventEffect(string effects)
+    public IEnumerator ParseEventEffect(EventLabel label, string effects)
     {
+        if (effects.Length == 0) yield break;
+
         Debug.Log("Parsing Event Effect: " + effects);
         string[] commands = CureAllStrings(effects.Split(';'));
         Debug.Log("NumCommands: " + commands.Length);
@@ -1055,20 +1177,26 @@ public class GameManager : MonoBehaviour
                 Debug.Log("Single Command: " + singleCommand);
                 switch (singleCommand)
                 {
-                    case "ADDRANDOMARTIFACT":
+                    case "AddRandomArtifact":
                         RewardManager._Instance.AddReward(GetRandomArtifact());
                         break;
-                    case "ADDRANDOMBOOK":
+                    case "AddRandomBook":
                         RewardManager._Instance.AddReward(GetRandomBook());
                         break;
-                    case "REMOVERANDOMARTIFACT":
-                        RemoveArtifact(GetRandomOwnedArtifact());
+                    case "RemoveRandomArtifact":
+                        if (equippedArtifacts.Count > 0)
+                            RemoveArtifact(GetRandomOwnedArtifact());
                         break;
-                    case "REMOVERANDOMBOOK":
-                        RemoveBook(GetRandomOwnedBook());
+                    case "RemoveRandomBook":
+                        if (equippedBooks.Count > 0)
+                            RemoveBook(GetRandomOwnedBook());
                         break;
-                    case "ADDRANDOMPOTIONINGREDIENT":
+                    case "AddRandomPotionIngredient":
                         RewardManager._Instance.AddReward(GetRandomPotionIngredient());
+                        break;
+                    case "RemoveRandomPotionIngredient":
+                        if (GetNumPotionIngredients() > 0)
+                            RemovePotionIngredient(GetRandomOwnedPotionIngredient());
                         break;
                     default:
                         throw new UnhandledSwitchCaseException(singleCommand);
@@ -1078,16 +1206,17 @@ public class GameManager : MonoBehaviour
             {
                 string commandPart = commandParts[0];
                 string argument = commandParts[1];
+
                 Debug.Log("Argument Command: " + commandPart + ", Argument = " + argument);
                 switch (commandPart)
                 {
-                    case "ALTERGOLD":
-                        int goldAmount;
-                        if (int.TryParse(argument, out goldAmount))
+                    case "AlterGold":
+                        float goldAmount;
+                        if (TryParseArgument(label, argument, out goldAmount))
                         {
                             if (goldAmount > 0)
                             {
-                                RewardManager._Instance.AddReward(goldAmount);
+                                RewardManager._Instance.AddReward((int)goldAmount);
                             }
                             else
                             {
@@ -1099,9 +1228,9 @@ public class GameManager : MonoBehaviour
                             Debug.Log("Could not Convert Argument: " + argument + " to Int");
                         }
                         break;
-                    case "ALTERHP":
-                        int hpAmount;
-                        if (int.TryParse(argument, out hpAmount))
+                    case "AlterHP":
+                        float hpAmount;
+                        if (TryParseArgument(label, argument, out hpAmount))
                         {
                             AlterPlayerHP(hpAmount, DamageType.Default);
                         }
@@ -1110,7 +1239,7 @@ public class GameManager : MonoBehaviour
                             Debug.Log("Could not Convert Argument: " + argument + " to Int");
                         }
                         break;
-                    case "REMOVEARTIFACT":
+                    case "RemoveArtifact":
                         ArtifactLabel removedArtifact;
                         if (Enum.TryParse<ArtifactLabel>(argument, out removedArtifact))
                         {
@@ -1121,7 +1250,7 @@ public class GameManager : MonoBehaviour
                             Debug.Log("Could not Convert Argument: " + argument + " to ArtifactLabel");
                         }
                         break;
-                    case "REMOVEBOOK":
+                    case "RemoveBook":
                         BookLabel removedBook;
                         if (Enum.TryParse<BookLabel>(argument, out removedBook))
                         {
@@ -1132,7 +1261,7 @@ public class GameManager : MonoBehaviour
                             Debug.Log("Could not Convert Argument: " + argument + " to BookLabel");
                         }
                         break;
-                    case "ADDARTIFACT":
+                    case "AddArtifact":
                         ArtifactLabel addedArtifact;
                         if (Enum.TryParse<ArtifactLabel>(argument, out addedArtifact))
                         {
@@ -1144,7 +1273,7 @@ public class GameManager : MonoBehaviour
                             Debug.Log("Could not Convert Argument: " + argument + " to ArtifactLabel");
                         }
                         break;
-                    case "ADDBOOK":
+                    case "AddBook":
                         BookLabel addedBook;
                         if (Enum.TryParse<BookLabel>(argument, out addedBook))
                         {
@@ -1155,9 +1284,9 @@ public class GameManager : MonoBehaviour
                             Debug.Log("Could not Convert Argument: " + argument + " to BookLabel");
                         }
                         break;
-                    case "ADDRANDOMPOTIONINGREDIENT":
-                        int numIngredients;
-                        if (int.TryParse(argument, out numIngredients))
+                    case "AddRandomPotionIngredient":
+                        float numIngredients;
+                        if (TryParseArgument(label, argument, out numIngredients))
                         {
                             for (int i = 0; i < numIngredients; i++)
                             {
@@ -1176,6 +1305,54 @@ public class GameManager : MonoBehaviour
         }
 
         yield return StartCoroutine(RewardManager._Instance.ShowRewardScreen());
+    }
+
+    private int GetNumPotionIngredients()
+    {
+        int r = 0;
+        foreach (KeyValuePair<PotionIngredient, int> kvp in potionIngredientMap)
+        {
+            r += kvp.Value;
+        }
+        return r;
+    }
+
+    private PotionIngredient GetRandomOwnedPotionIngredient()
+    {
+        return RandomHelper.GetRandomFromList(potionIngredientMap.Keys.ToList());
+    }
+
+    private bool TryParseArgument(EventLabel label, string s, out float v)
+    {
+        if (s[0] == '{' && s[s.Length - 1] == '}')
+        {
+            string param = s.Substring(1, s.Length - 2);
+            Debug.Log(s + ", " + param);
+
+            if (BalenceManager._Instance.EventHasValue(label, param))
+            {
+                v = BalenceManager._Instance.GetValue(label, param);
+                Debug.Log("Parsed Argument: " + v);
+                return true;
+            }
+            else
+            {
+                Debug.Log("Failed to Parse Argument");
+                v = Utils.StandardSentinalValue;
+                return false;
+            }
+        }
+        else
+        {
+            if (float.TryParse(s, out v))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
     }
 
     public ArtifactLabel GetRandomOwnedArtifact()
@@ -1206,6 +1383,244 @@ public class GameManager : MonoBehaviour
     public void AddRandomBook()
     {
         AddBook(GetRandomBook());
+    }
+
+    #endregion
+
+    #region Library 
+
+    [Header("Swap Book Screen")]
+    [SerializeField] private GameObject[] turnOnForSwapBookScreen;
+    [SerializeField] private GameObject[] turnOffForSwapBookScreen;
+    [SerializeField] private Transform swapBookOptionList;
+    [SerializeField] private SwapBookButton swapBookButtonPrefab;
+    private List<SwapBookButton> spawnedSwapBookButtons = new List<SwapBookButton>();
+
+    public void UpgradeBooks()
+    {
+        foreach (KeyValuePair<BookLabel, Book> b in equippedBooks)
+        {
+            b.Value.TryCallLevelUp();
+        }
+
+        ResolveCurrentEvent();
+    }
+
+    public void OpenSwapBookScreen()
+    {
+        SwitchUIScreens(turnOnForSwapBookScreen, turnOffForSwapBookScreen);
+
+        SwapBookButton spawned = Instantiate(swapBookButtonPrefab, swapBookOptionList);
+        BookLabel swapTo = GetRandomBook();
+        spawned.Set(swapTo, () => SwapBooks(GetRandomOwnedBook(), swapTo));
+        spawnedSwapBookButtons.Add(spawned);
+    }
+
+    public void CloseSwapBookScreen()
+    {
+        SwitchUIScreens(turnOffForSwapBookScreen, turnOnForSwapBookScreen);
+
+        while (spawnedSwapBookButtons.Count > 0)
+        {
+            SwapBookButton spawned = spawnedSwapBookButtons[0];
+            spawnedSwapBookButtons.RemoveAt(0);
+            Destroy(spawned.gameObject);
+        }
+    }
+
+    public void SwapBooks(BookLabel swappingOut, BookLabel swappingTo)
+    {
+        RemoveBook(swappingOut);
+        AddBook(swappingTo);
+        CloseSwapBookScreen();
+        ResolveCurrentEvent();
+    }
+
+    public void RejectBookSwap()
+    {
+        CloseSwapBookScreen();
+        ResolveCurrentEvent();
+    }
+
+    #endregion
+
+    #region Clothier
+
+    [Header("Select Equipment Screen")]
+    [SerializeField] private GameObject selectEquipmentScreen;
+    [SerializeField] private SelectEquipmentButton selectEquipmentButtonPrefab;
+    [SerializeField] private Transform selectEquipmentList;
+    private List<SelectEquipmentButton> spawnedSelectEquipmentButtons = new List<SelectEquipmentButton>();
+
+    [Header("Select Stat Screen")]
+    [SerializeField] private GameObject selectStatScreen;
+    [SerializeField] private SelectButton selectButtonPrefab;
+    [SerializeField] private Transform selectStatList;
+    private List<SelectButton> spawnedSelectStatButtons = new List<SelectButton>();
+
+    private Equipment selectedEquipment;
+    private bool hasSelectedStat;
+    private BaseStat selectedStat;
+
+    private bool exitSelectEquipmentScreen;
+    private bool exitSelectStatScreen;
+
+    public void OpenSelectEquipmentScreen()
+    {
+        selectEquipmentScreen.SetActive(true);
+
+        SelectEquipmentButton spawnedForHat = Instantiate(selectEquipmentButtonPrefab, selectEquipmentList);
+        spawnedForHat.Set(playerEquippedHat, () => selectedEquipment = playerEquippedHat);
+
+        SelectEquipmentButton spawnedForRobe = Instantiate(selectEquipmentButtonPrefab, selectEquipmentList);
+        spawnedForRobe.Set(playerEquippedRobe, () => selectedEquipment = playerEquippedRobe);
+
+        SelectEquipmentButton spawnedForWand = Instantiate(selectEquipmentButtonPrefab, selectEquipmentList);
+        spawnedForWand.Set(playerEquippedWand, () => selectedEquipment = playerEquippedWand);
+
+        spawnedSelectEquipmentButtons.Add(spawnedForHat);
+        spawnedSelectEquipmentButtons.Add(spawnedForRobe);
+        spawnedSelectEquipmentButtons.Add(spawnedForWand);
+    }
+
+    private void CloseSelectEquipmentScreen()
+    {
+        while (spawnedSelectEquipmentButtons.Count > 0)
+        {
+            SelectEquipmentButton b = spawnedSelectEquipmentButtons[0];
+            spawnedSelectEquipmentButtons.RemoveAt(0);
+            Destroy(b.gameObject);
+        }
+
+        selectEquipmentScreen.SetActive(false);
+    }
+
+    public void OpenSelectStatScreen()
+    {
+        selectStatScreen.SetActive(true);
+
+        foreach (BaseStat stat in Enum.GetValues(typeof(BaseStat)))
+        {
+            SelectButton spawned = Instantiate(selectButtonPrefab, selectStatList);
+            spawned.Set(stat.ToString(), delegate
+            {
+                selectedStat = stat;
+                hasSelectedStat = true;
+            });
+            spawnedSelectStatButtons.Add(spawned);
+        }
+    }
+
+    private void CloseSelectStatScreen()
+    {
+        while (spawnedSelectStatButtons.Count > 0)
+        {
+            SelectButton b = spawnedSelectStatButtons[0];
+            spawnedSelectStatButtons.RemoveAt(0);
+            Destroy(b.gameObject);
+        }
+
+        selectStatScreen.SetActive(false);
+    }
+
+    public void ReforgeEquipmentSelected()
+    {
+        StartCoroutine(ReforgeEquipmentSequence());
+    }
+
+    private void ReforgeEquipment(Equipment e)
+    {
+        e.Reforge();
+    }
+
+    private IEnumerator ReforgeEquipmentSequence()
+    {
+        OpenSelectEquipmentScreen();
+
+        while (!exitSelectEquipmentScreen)
+        {
+            yield return new WaitUntil(() => selectedEquipment != null || exitSelectEquipmentScreen);
+
+            if (exitSelectEquipmentScreen)
+            {
+                selectedEquipment = null;
+                break;
+            }
+
+            // Reforge
+            ReforgeEquipment(selectedEquipment);
+
+            // Reset
+            selectedEquipment = null;
+        }
+
+        exitSelectEquipmentScreen = false;
+
+        CloseSelectEquipmentScreen();
+    }
+
+    public void StrengthenEquipmentSelected()
+    {
+        StartCoroutine(StrengthenEquipmentSequence());
+    }
+
+    private void StrengthenEquipment(Equipment e, BaseStat stat, int changeBy)
+    {
+        e.Strengthen(stat, changeBy);
+    }
+
+    private IEnumerator StrengthenEquipmentSequence()
+    {
+        OpenSelectEquipmentScreen();
+
+        while (!exitSelectEquipmentScreen)
+        {
+            yield return new WaitUntil(() => selectedEquipment != null || exitSelectEquipmentScreen);
+
+            if (exitSelectEquipmentScreen)
+            {
+                selectedEquipment = null;
+                break;
+            }
+
+            OpenSelectStatScreen();
+
+            while (!exitSelectStatScreen)
+            {
+                yield return new WaitUntil(() => hasSelectedStat || exitSelectStatScreen);
+
+                if (exitSelectStatScreen)
+                {
+                    selectedEquipment = null;
+                    hasSelectedStat = false;
+                    CloseSelectStatScreen();
+                    break;
+                }
+
+                // Reforge
+                StrengthenEquipment(selectedEquipment, selectedStat, 1);
+
+                // Reset
+                hasSelectedStat = false;
+            }
+
+            selectedEquipment = null;
+            exitSelectStatScreen = false;
+        }
+
+        exitSelectEquipmentScreen = false;
+
+        CloseSelectEquipmentScreen();
+    }
+
+    public void ExitSelectEquipmentScreen()
+    {
+        exitSelectEquipmentScreen = true;
+    }
+
+    public void ExitSelectStatScreen()
+    {
+        exitSelectStatScreen = true;
     }
 
     #endregion

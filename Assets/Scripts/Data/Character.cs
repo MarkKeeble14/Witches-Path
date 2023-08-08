@@ -7,6 +7,7 @@ public class Character : ScriptableObject
     [SerializeField] private Robe startingRobe;
     [SerializeField] private Hat startingHat;
     [SerializeField] private Wand startingWand;
+    [SerializeField] private BookLabel startingBook;
 
     [Header("UI")]
     [SerializeField] private Sprite combatSprite;
@@ -61,6 +62,11 @@ public class Character : ScriptableObject
     public Wand GetStartingWand()
     {
         return startingWand;
+    }
+
+    public BookLabel GetStartingBook()
+    {
+        return startingBook;
     }
 
     public Sprite GetCombatSprite()

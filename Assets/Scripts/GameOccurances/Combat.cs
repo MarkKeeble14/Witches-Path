@@ -50,6 +50,8 @@ public abstract class Combat : GameOccurance
         RewardManager._Instance.AddReward(RandomHelper.RandomIntExclusive(minMaxCurrencyReward));
 
         yield return RewardManager._Instance.ShowRewardScreen();
+
+        Debug.Log("2");
     }
 
     protected override IEnumerator OnStart()

@@ -28,4 +28,9 @@ public class PassiveSpellDisplay : SpellDisplay
         if (hasSecondaryText)
             text.text = spell.GetSecondaryText();
     }
+
+    public override Spell GetSpell()
+    {
+        return spell;
+    }
 }

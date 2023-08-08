@@ -122,6 +122,7 @@ public class CombatManager : MonoBehaviour
     private List<Coroutine> onStartCombatCoroutines = new List<Coroutine>();
 
     public bool SetActiveSpellCooldowns { get; set; }
+    public bool DuplicatePassiveSpellProcs { get; set; }
 
     private Dictionary<AfflictionType, Affliction> characterAfflictionMap = new Dictionary<AfflictionType, Affliction>();
     private Dictionary<AfflictionType, Affliction> enemyAfflictionMap = new Dictionary<AfflictionType, Affliction>();
@@ -136,7 +137,6 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private Transform enemyAfflictionList;
 
     public bool InCombat { get; private set; }
-
 
     private void Start()
     {
@@ -376,7 +376,7 @@ public class CombatManager : MonoBehaviour
 
         if (GameManager._Instance.HasBook(BookLabel.CheatersConfessional))
         {
-            currentEnemyHP = maxEnemyHP * BalenceManager._Instance.GetValue(BookLabel.CheatersConfessional, "PercentHP");
+            currentEnemyHP = maxEnemyHP * CheatersConfessional.PercentHP;
             GameManager._Instance.AnimateBook(BookLabel.CheatersConfessional);
         }
         else
@@ -393,24 +393,32 @@ public class CombatManager : MonoBehaviour
 
         InCombat = true;
         SetActiveSpellCooldowns = true;
+        DuplicatePassiveSpellProcs = false;
 
         yield return StartCoroutine(UpdateRoutine());
 
-        // Bandaged Effect
-        if (TargetHasAffliction(AfflictionType.Bandaged, Target.Character))
+        if (GameManager._Instance.GetMaxPlayerHP() <= 0)
         {
-            GameManager._Instance.AlterPlayerHP(characterAfflictionMap[AfflictionType.Bandaged].RemainingActivations, DamageType.Heal);
+            GameManager._Instance.GameOver();
         }
+        else
+        {
+            // Bandaged Effect
+            if (TargetHasAffliction(AfflictionType.Bandaged, Target.Character))
+            {
+                GameManager._Instance.AlterPlayerHP(characterAfflictionMap[AfflictionType.Bandaged].RemainingActivations, DamageType.Heal);
+            }
 
-        SetActiveSpellCooldowns = false;
-        InCombat = false;
+            SetActiveSpellCooldowns = false;
+            InCombat = false;
 
-        // Reset
-        ResetCombat();
+            // Reset
+            ResetCombat();
 
-        GameManager._Instance.ResolveCurrentEvent();
+            GameManager._Instance.ResolveCurrentEvent();
 
-        Debug.Log("Combat Completed: " + combat);
+            Debug.Log("Combat Completed: " + combat);
+        }
     }
 
     private void ResetCombat()
@@ -419,7 +427,7 @@ public class CombatManager : MonoBehaviour
         ClearAfflictionMap(characterAfflictionMap);
 
         // Clear active spell cooldowns
-        GameManager._Instance.TickActiveSpellCooldowns(-999);
+        GameManager._Instance.TickActiveSpellCooldowns(999);
 
         foreach (Coroutine c in onStartCombatCoroutines)
         {
@@ -487,7 +495,7 @@ public class CombatManager : MonoBehaviour
     private void PlayerAttack()
     {
         // Simple way of attacking for now
-        AttackCombatent(-GameManager._Instance.GetCharacter().GetBasicAttackDamage(), Target.Character, Target.Enemy, DamageType.Default, DamageSource.BasicAttack);
+        AttackCombatent(-GameManager._Instance.GetBasicAttackDamage(), Target.Character, Target.Enemy, DamageType.Default, DamageSource.BasicAttack);
 
         OnPlayerAttack?.Invoke();
     }
@@ -495,6 +503,7 @@ public class CombatManager : MonoBehaviour
     private void EnemyAttack()
     {
         // Simple way of attacking for now
+        // Damage increase from equipment is built into basic attack damage
         if (!AttackCombatent(-currentEnemy.GetBasicAttackDamage(), Target.Enemy, Target.Character, DamageType.Default, DamageSource.BasicAttack))
         {
             // Player Died
@@ -520,7 +529,7 @@ public class CombatManager : MonoBehaviour
             && source == DamageSource.ActiveSpell
             && GameManager._Instance.HasBook(BookLabel.BookOfEffect))
         {
-            amount *= BalenceManager._Instance.GetValue(BookLabel.BookOfEffect, "PercentDamageIncrease");
+            amount *= BookOfEffect.PercentDamageMultiplier;
             GameManager._Instance.AnimateBook(BookLabel.BookOfEffect);
         }
 
@@ -560,6 +569,16 @@ public class CombatManager : MonoBehaviour
 
     public bool DamageCombatent(float amount, Target combatent, Target attacker, DamageType damageType)
     {
+        if (amount < 0 && combatent == Target.Character)
+        {
+            // Reduce the amount of damage by the players defense added by equipment
+            amount += GameManager._Instance.DefenseFromEquipment;
+            if (amount > 0)
+            {
+                amount = 0;
+            }
+        }
+
         // Vulnerable Effect
         if (amount < 0 && TargetHasAffliction(AfflictionType.Vulnerable, Target.Enemy))
         {
@@ -594,7 +613,7 @@ public class CombatManager : MonoBehaviour
         // Barbarians Tactics Effect
         if (amount < 0 && GameManager._Instance.HasBook(BookLabel.BarbariansTactics))
         {
-            amount -= BalenceManager._Instance.GetValue(BookLabel.BarbariansTactics, "DamageIncrease");
+            amount -= BarbariansTactics.DamageIncrease;
             GameManager._Instance.AnimateBook(BookLabel.ClarksTimeCard);
         }
 

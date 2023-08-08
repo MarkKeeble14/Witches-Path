@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: MimicChest
   m_EditorClassIdentifier: 
   combatSprite: {fileID: 0}
-  maxHP: 500
-  startingHP: 500
-  basicAttackDamage: 7
+  maxHP: 300
+  startingHP: 300
+  basicAttackDamage: 3

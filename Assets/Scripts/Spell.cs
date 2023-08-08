@@ -59,6 +59,8 @@ public abstract class Spell
 
 public abstract class PassiveSpell : Spell
 {
+    public static bool DuplicateProcs { get; set; }
+
     public abstract void OnUnequip();
 
     public virtual string GetSecondaryText()
@@ -70,11 +72,10 @@ public abstract class PassiveSpell : Spell
     {
         Effect();
         CombatManager._Instance.OnPassiveSpellProc?.Invoke();
-        if (GameManager._Instance.HasBook(BookLabel.ReplicatorsFables))
+        if (DuplicateProcs)
         {
             Effect();
             CombatManager._Instance.OnPassiveSpellProc?.Invoke();
-            GameManager._Instance.AnimateBook(BookLabel.ReplicatorsFables);
         }
     }
 }
@@ -336,7 +337,7 @@ public abstract class ActiveSpell : Spell
         if (GameManager._Instance.HasBook(BookLabel.ClarksTimeCard))
         {
             GameManager._Instance.AnimateBook(BookLabel.ClarksTimeCard);
-            cooldownTimer = cooldown / 2;
+            cooldownTimer = cooldown * ClarksTimeCard.CooldownMultiplier;
         }
         else
         {

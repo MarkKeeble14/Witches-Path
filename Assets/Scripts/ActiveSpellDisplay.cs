@@ -39,7 +39,12 @@ public class ActiveSpellDisplay : SpellDisplay
         }
     }
 
-    public ActiveSpell GetSpell()
+    public ActiveSpell GetActiveSpell()
+    {
+        return spell;
+    }
+
+    public override Spell GetSpell()
     {
         return spell;
     }
