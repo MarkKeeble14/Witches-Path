@@ -13,6 +13,7 @@ public class UIManager : MonoBehaviour
 
     private int UILayer = 5;
     [SerializeField] private GameObject pauseScreen;
+    [SerializeField] private Transform parentToolTipsTo;
 
     [Header("Prefabs")]
     [SerializeField] private ToolTip toolTipPrefab;
@@ -98,15 +99,17 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    [SerializeField] private Transform parentToolTipsTo;
-
     public ToolTip SpawnToolTip(string text, Transform transform, Vector3 offset)
     {
+        float spawnOnWidth = transform.GetComponent<RectTransform>().sizeDelta.x;
         if (Input.mousePosition.x > Screen.width / 2)
+        {
             offset *= -1;
+            spawnOnWidth *= -1;
+        }
 
         ToolTip spawned = Instantiate(toolTipPrefab, parentToolTipsTo);
-        spawned.transform.position = transform.position + offset;
+        spawned.transform.position = transform.position + offset + new Vector3(spawnOnWidth / 2, 0, 0);
         spawned.Set(text);
         return spawned;
     }

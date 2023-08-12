@@ -98,7 +98,7 @@ MonoBehaviour:
   regularScale: 1
   maxScale: 2
   changeScaleSpeed: 2.5
-  toolTipXOffset: 150
+  toolTipXOffset: 125
 --- !u!114 &2538661873042568152
 MonoBehaviour:
   m_ObjectHideFlags: 0

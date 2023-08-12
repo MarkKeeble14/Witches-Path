@@ -14,6 +14,7 @@ public class CombatentHPBar : MonoBehaviour
     [SerializeField] private TextMeshProUGUI wardText;
     [SerializeField] private GameObject[] wardDisplay;
     private int currentWard;
+    private int setCurrentHP;
 
     public void Set(int currentHealth, int maxHealth)
     {
@@ -35,11 +36,8 @@ public class CombatentHPBar : MonoBehaviour
             }
         }
         hpText.text = maxHealth.ToString();
-
         setCurrentHP = currentHealth;
     }
-
-    private int setCurrentHP;
 
     public void SetCurrentHP(int newCurrentHP)
     {

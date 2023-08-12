@@ -12,11 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4c66d2c9f0d014844bd55af72da36e53, type: 3}
   m_Name: MinorCombat1
   m_EditorClassIdentifier: 
-  mapFile: {fileID: 102900000, guid: 3c495491bc905524ca9dcaca0c29b336, type: 3}
   mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
-  hitSound: {fileID: 8300000, guid: 9a09e84d2f42d8442bb253df828df025, type: 3}
-  missSound: {fileID: 8300000, guid: 5ed467b1dd669254989345d5dce48d6d, type: 3}
   enemy: {fileID: 11400000, guid: 4b9f5ea9e01623d4ca4dd5401cb5d580, type: 2}
   minMaxCurrencyReward: {x: 25, y: 40}
   chanceForOtherRewards:
-    dictionary: []
+    dictionary:
+    - key: 0
+      value: {x: 1, y: 1}

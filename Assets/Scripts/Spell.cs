@@ -70,7 +70,7 @@ public abstract class Spell
 
 public abstract class PassiveSpell : Spell
 {
-    public static bool DuplicateProcs { get; set; }
+    public static int NumDuplicateProcs { get; set; }
 
     public abstract void OnUnequip();
 
@@ -83,10 +83,11 @@ public abstract class PassiveSpell : Spell
     {
         Effect();
         CombatManager._Instance.OnPassiveSpellProc?.Invoke();
-        if (DuplicateProcs)
+        if (NumDuplicateProcs > 0)
         {
             Effect();
             CombatManager._Instance.OnPassiveSpellProc?.Invoke();
+            NumDuplicateProcs -= 1;
         }
     }
 }
@@ -322,7 +323,7 @@ public abstract class ActiveSpell : Spell
     private int cooldownTracker;
     public Vector2Int CooldownTracker => new Vector2Int(cooldownTracker, cooldown);
     public bool OnCooldown => cooldownTracker > 0;
-    public bool HasMana => GameManager._Instance.GetCurrentPlayerMana() > manaCost;
+    public bool HasMana => GameManager._Instance.GetCurrentPlayerMana() >= manaCost;
     public bool CanCast => !OnCooldown && HasMana;
 
     // Casting Information

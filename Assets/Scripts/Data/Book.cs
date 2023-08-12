@@ -148,19 +148,10 @@ public class ReplicatorsFables : Book
         tracker += 1;
         if (tracker >= procAfter)
         {
-            CombatManager._Instance.OnPassiveSpellProc += OnNextPassiveSpell;
-            PassiveSpell.DuplicateProcs = true;
-
-            ShowBookActivate();
+            PassiveSpell.NumDuplicateProcs += 1;
+            ShowBookProc();
             tracker = 0;
         }
-    }
-
-    private void OnNextPassiveSpell()
-    {
-        PassiveSpell.DuplicateProcs = false;
-        CombatManager._Instance.OnPassiveSpellProc -= OnNextPassiveSpell;
-        ShowBookProc();
     }
 
     protected override void LevelUp()
@@ -374,7 +365,7 @@ public class ForgiversOath : Book
 {
     protected override BookLabel Label => BookLabel.ForgiversOath;
 
-    public override string ToolTipText => "Every {ProcAfter}th Active Spell has No Cooldown";
+    public override string ToolTipText => "Every {ProcAfter}th Active Spell Queued makes the next Active Spell Free";
 
     int tracker;
     int procAfter;
@@ -382,12 +373,12 @@ public class ForgiversOath : Book
     public override void OnEquip()
     {
         procAfter = Mathf.CeilToInt(GetEffectSpec("ProcAfter"));
-        CombatManager._Instance.OnActiveSpellActivated += Effect;
+        CombatManager._Instance.OnActiveSpellQueued += Effect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnActiveSpellActivated -= Effect;
+        CombatManager._Instance.OnActiveSpellQueued -= Effect;
     }
 
     protected override void Effect()
@@ -395,19 +386,10 @@ public class ForgiversOath : Book
         tracker += 1;
         if (tracker >= procAfter)
         {
-            CombatManager._Instance.OnActiveSpellActivated += OnNextActiveSpell;
-            CombatManager._Instance.SetActiveSpellCooldowns = false;
-            ShowBookActivate();
+            CombatManager._Instance.NumFreeSpells += 1;
+            ShowBookProc();
             tracker = 0;
         }
-    }
-
-    private void OnNextActiveSpell()
-    {
-        CombatManager._Instance.SetActiveSpellCooldowns = true;
-        CombatManager._Instance.OnActiveSpellActivated -= OnNextActiveSpell;
-
-        ShowBookProc();
     }
 
     protected override void LevelUp()

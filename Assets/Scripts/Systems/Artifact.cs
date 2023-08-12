@@ -491,7 +491,7 @@ public class RustyCannon : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.RustyCannon;
 
-    public override string ToolTipText => "{NumTurns} after Combat Begins, Deal {DamageAmount} Damage to the Enemy";
+    public override string ToolTipText => "{NumTurns} Turns after Combat Begins, Deal {DamageAmount} Damage to the Enemy";
 
     int damageAmount;
     int numTurns;

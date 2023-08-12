@@ -4,7 +4,6 @@
     Boss,
     Library,
     Campfire,
-    Spellmaster,
+    Tavern,
     Event,
-    Tavern
 }

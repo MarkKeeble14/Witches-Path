@@ -14,6 +14,8 @@ public class RewardManager : MonoBehaviour
     [SerializeField] private Transform rewardList;
     [SerializeField] private GameObject rewardScreen;
 
+    [SerializeField] private float toolTipOffset = 50;
+
     private bool resolved;
 
     public void Resolve()
@@ -25,22 +27,42 @@ public class RewardManager : MonoBehaviour
     {
         Debug.Log("Adding Artifact Reward: " + label);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
-        spawned.Set(label.ToString(), null, delegate
-        {
-            GameManager._Instance.AddArtifact(label);
-            Destroy(spawned.gameObject);
-        });
+        ToolTip spawnedToolTip = null;
+        string finalizedToolTipText = GameManager._Instance.FillToolTipText(ContentType.Artifact, label.ToString(), GameManager._Instance.GetArtifactOfType(label).ToolTipText);
+        spawned.Set(label.ToString(), null,
+            delegate
+            {
+                GameManager._Instance.AddArtifact(label);
+                Destroy(spawned.gameObject);
+            }, delegate
+            {
+                spawnedToolTip = UIManager._Instance.SpawnToolTip(finalizedToolTipText, spawned.transform, new Vector3(toolTipOffset, 0, 0));
+            }, delegate
+            {
+                Destroy(spawnedToolTip.gameObject);
+            }
+        );
     }
 
     public void AddReward(BookLabel label)
     {
         Debug.Log("Adding Book Reward: " + label);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
-        spawned.Set(label.ToString(), null, delegate
-        {
-            GameManager._Instance.AddBook(label);
-            Destroy(spawned.gameObject);
-        });
+        ToolTip spawnedToolTip = null;
+        string finalizedToolTipText = GameManager._Instance.FillToolTipText(ContentType.Book, label.ToString(), GameManager._Instance.GetBookOfType(label).ToolTipText);
+        spawned.Set(label.ToString(), null,
+            delegate
+            {
+                GameManager._Instance.AddBook(label);
+                Destroy(spawned.gameObject);
+            }, delegate
+            {
+                spawnedToolTip = UIManager._Instance.SpawnToolTip(finalizedToolTipText, spawned.transform, new Vector3(toolTipOffset, 0, 0));
+            }, delegate
+            {
+                Destroy(spawnedToolTip.gameObject);
+            }
+        );
     }
 
     public void AddReward(PotionIngredient label)
@@ -51,7 +73,7 @@ public class RewardManager : MonoBehaviour
         {
             GameManager._Instance.AddPotionIngredient(label);
             Destroy(spawned.gameObject);
-        });
+        }, null, null);
     }
 
     public void AddReward(int currencyAmount)
@@ -62,7 +84,7 @@ public class RewardManager : MonoBehaviour
         {
             GameManager._Instance.AlterCurrency(currencyAmount);
             Destroy(spawned.gameObject);
-        });
+        }, null, null);
     }
 
     public IEnumerator ShowRewardScreen()

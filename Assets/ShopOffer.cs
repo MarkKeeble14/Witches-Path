@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using System;
 
 public abstract class ShopOffer : MonoBehaviour
 {
@@ -12,6 +13,20 @@ public abstract class ShopOffer : MonoBehaviour
     [SerializeField] protected TextMeshProUGUI itemText;
     [SerializeField] protected TextMeshProUGUI costText;
     [SerializeField] private CanvasGroup cv;
+
+    protected Action onPointerEnter;
+    protected Action onPointerExit;
+    [SerializeField] protected float toolTipOffset = 50;
+
+    public void OnPointerEnter()
+    {
+        onPointerEnter?.Invoke();
+    }
+
+    public void OnPointerExit()
+    {
+        onPointerExit?.Invoke();
+    }
 
     public void TryPurchase()
     {

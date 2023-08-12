@@ -326,6 +326,7 @@ MonoBehaviour:
   itemText: {fileID: 934464052226187708}
   costText: {fileID: 2471775640850196840}
   cv: {fileID: 3796474066479852872}
+  toolTipOffset: 25
   label: 0
 --- !u!1 &8279517814601320623
 GameObject:

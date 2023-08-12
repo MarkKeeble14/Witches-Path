@@ -13,7 +13,7 @@ public class PassiveSpellDisplay : SpellDisplay
         nameText.text = spell.Label.ToString();
         isAvailable = false;
 
-        FillToolTipText(ContentType.PassiveSpell, spell.Label.ToString(), spell.ToolTipText);
+        finalizedToolTipText = GameManager._Instance.FillToolTipText(ContentType.ActiveSpell, spell.Label.ToString(), spell.ToolTipText);
     }
 
     private new void Update()

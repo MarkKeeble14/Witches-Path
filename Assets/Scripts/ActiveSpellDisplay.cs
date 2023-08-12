@@ -6,9 +6,13 @@ public class ActiveSpellDisplay : SpellDisplay
 {
     private ActiveSpell spell;
 
-    [SerializeField] private TextMeshProUGUI keyBinding;
-    [SerializeField] private TextMeshProUGUI numNotes;
-    [SerializeField] private TextMeshProUGUI spellCD;
+    [SerializeField] private TextMeshProUGUI keyBindingText;
+    [SerializeField] private TextMeshProUGUI spellCDText;
+    [SerializeField] private TextMeshProUGUI spellNumNotesText;
+    [SerializeField] private TextMeshProUGUI spellManaCostText;
+
+    private int spellCD;
+    private int spellManaCost;
 
     public void SetActiveSpell(ActiveSpell spell, KeyCode binding)
     {
@@ -17,23 +21,26 @@ public class ActiveSpellDisplay : SpellDisplay
         nameText.text = spell.Label.ToString();
 
         // Auxillary info
-        numNotes.text = spell.NumNotes.ToString();
-        spellCD.text = spell.CooldownTracker.y.ToString();
-        keyBinding.text = binding.ToString();
+        spellCD = spell.CooldownTracker.y;
+        spellManaCost = spell.GetManaCost();
+        spellNumNotesText.text = spell.NumNotes.ToString();
+        keyBindingText.text = binding.ToString();
 
         isAvailable = false;
 
-        FillToolTipText(ContentType.ActiveSpell, spell.Label.ToString(), spell.ToolTipText);
+        finalizedToolTipText = GameManager._Instance.FillToolTipText(ContentType.ActiveSpell, spell.Label.ToString(), spell.ToolTipText);
     }
 
     private new void Update()
     {
         base.Update();
+
         if (spell == null)
         {
             return;
         }
 
+        // Show Cooldown
         if (spell.CooldownTracker.x > 0)
         {
             progressBar.fillAmount = spell.CooldownTracker.x / spell.CooldownTracker.y;
@@ -43,6 +50,18 @@ public class ActiveSpellDisplay : SpellDisplay
         {
             progressBar.fillAmount = 1;
             text.text = "";
+        }
+
+        // if the player has free spells available, show that
+        if (CombatManager._Instance.NumFreeSpells > 0)
+        {
+            spellCDText.text = 0.ToString();
+            spellManaCostText.text = 0.ToString();
+        }
+        else
+        {
+            spellCDText.text = spellCD.ToString();
+            spellManaCostText.text = spellManaCost.ToString();
         }
     }
 

@@ -100,6 +100,7 @@ public partial class CombatManager : MonoBehaviour
     [Header("Referencess")]
     [SerializeField] private CombatentHPBar characterHPBar;
     [SerializeField] private CombatentHPBar enemyHPBar;
+    [SerializeField] private IntentDisplay enemyIntentDisplay;
     [SerializeField] private Image characterCombatSprite;
     [SerializeField] private Image enemyCombatSprite;
 
@@ -128,9 +129,9 @@ public partial class CombatManager : MonoBehaviour
 
     #region Combat
 
-    public bool SetActiveSpellCooldowns { get; set; }
-    public bool DuplicatePassiveSpellProcs { get; set; }
+    public int NumFreeSpells { get; set; }
     public bool InCombat { get; private set; }
+
     private bool playerTurnEnded;
     private Turn currentTurn;
 
@@ -140,44 +141,6 @@ public partial class CombatManager : MonoBehaviour
     private List<QueuedActiveSpell> spellQueue = new List<QueuedActiveSpell>();
     [SerializeField] private float delayBetweenSpellCasts = 1;
     [SerializeField] private AudioSource spellSFXSource;
-
-    private Stack<CastActiveGameState> gameStateQueue = new Stack<CastActiveGameState>();
-
-    private void SaveNewCastSpellGameState()
-    {
-        CastActiveGameState newState = new CastActiveGameState(GameManager._Instance.GetActiveSpells(), GameManager._Instance.GetCurrentPlayerMana());
-        gameStateQueue.Push(newState);
-    }
-
-    private void LoadPreviousCastSpellGameState()
-    {
-        CastActiveGameState gameState = gameStateQueue.Pop();
-
-        // Set Cooldowns
-        foreach (KeyValuePair<ActiveSpell, int> kvp in gameState.CooldownDict)
-        {
-            kvp.Key.SetCooldown(kvp.Value);
-        }
-
-        // Set Player Mana
-        GameManager._Instance.SetPlayerMana(gameState.PlayerMana);
-    }
-
-    private struct CastActiveGameState
-    {
-        public Dictionary<ActiveSpell, int> CooldownDict;
-        public int PlayerMana;
-
-        public CastActiveGameState(List<ActiveSpell> activeSpells, int playerMana)
-        {
-            CooldownDict = new Dictionary<ActiveSpell, int>();
-            foreach (ActiveSpell equippedSpell in activeSpells)
-            {
-                CooldownDict.Add(equippedSpell, equippedSpell.CooldownTracker.x);
-            }
-            PlayerMana = playerMana;
-        }
-    }
 
     public void SetPlayerTurnEnded(bool b)
     {
@@ -221,8 +184,6 @@ public partial class CombatManager : MonoBehaviour
 
         // Set settings
         InCombat = true;
-        SetActiveSpellCooldowns = true;
-        DuplicatePassiveSpellProcs = false;
 
         StartCoroutine(UpdateDuringCombat());
         yield return StartCoroutine(CombatLoop());
@@ -236,10 +197,13 @@ public partial class CombatManager : MonoBehaviour
             // Bandaged Effect
             if (TargetHasAffliction(AfflictionType.Bandaged, Target.Character))
             {
-                GameManager._Instance.AlterPlayerHP(characterAfflictionMap[AfflictionType.Bandaged].GetStacks(), DamageType.Heal);
+                int numBandagedStacks = characterAfflictionMap[AfflictionType.Bandaged].GetStacks();
+                GameManager._Instance.AlterPlayerHP(numBandagedStacks, DamageType.Heal);
+                ConsumeAfflictionStack(AfflictionType.Bandaged, Target.Character, numBandagedStacks);
+                yield return new WaitForSeconds(1);
             }
 
-            SetActiveSpellCooldowns = false;
+
             InCombat = false;
 
             // Reset
@@ -253,12 +217,40 @@ public partial class CombatManager : MonoBehaviour
 
     private IEnumerator CombatLoop()
     {
-        while (true)
+        // Call OnCombatStart
+        OnCombatStart?.Invoke();
+
+        while (currentEnemyHP > 0 && GameManager._Instance.GetCurrentCharacterHP() > 0)
         {
+            // Remove Ward from all Combatents
+            enemyWard = 0;
+            enemyHPBar.SetWard(enemyWard);
+            characterWard = 0;
+            characterHPBar.SetWard(characterWard);
+
+            // Decide Enemy Intent
+            // ?
+            // Set Intent Display
+            enemyIntentDisplay.SetIntent(IntentType.Attack);
+            enemyIntentDisplay.SetIntentText(currentEnemy.GetBasicAttackDamage().ToString());
+
+            // Player Turn
             yield return StartCoroutine(PlayerTurn());
 
+            if (CheckForCombatOver())
+            {
+                yield break;
+            }
+
+            // Enemy Turn
             yield return StartCoroutine(EnemyTurn());
+
+            // End of Turn
+            yield return new WaitForSeconds(1);
         }
+
+        // Call On Combat End
+        OnCombatEnd?.Invoke();
     }
 
     private IEnumerator PlayerTurn()
@@ -268,52 +260,49 @@ public partial class CombatManager : MonoBehaviour
 
         OnPlayerTurnStart?.Invoke();
 
-
         // Reset for Turn
         ResetCombatentWard(Target.Character);
-        gameStateQueue.Clear();
         GameManager._Instance.AlterPlayerMana(GameManager._Instance.GetCharacter().GetManaPerTurn());
-        SaveNewCastSpellGameState();
 
         yield return new WaitUntil(() => playerTurnEnded);
         playerTurnEnded = false;
 
         yield return StartCoroutine(CastQueue());
 
-        GameManager._Instance.ResetActiveSpellCooldowns();
+        if (CheckForCombatOver())
+        {
+            yield break;
+        }
 
+        GameManager._Instance.ResetActiveSpellCooldowns();
 
         Debug.Log("Player Turn Ended");
     }
 
     public void AddSpellToCastQueue(ActiveSpell spell)
     {
-        // Ensure only the most recent spell can be removed
-        if (spellQueue.Count > 0)
-            spellQueue[spellQueue.Count - 1].SetCanBeRemoved(false);
-
         // Spawn new display
         SpellQueueDisplay spawned = Instantiate(spellQueueDisplayPrefab, spellQueueDisplayList);
-        spawned.Set(spell.name, spell.GetSpellSprite(), spellQueue.Count);
+        spawned.Set(spell.name, spell.GetSpellSprite());
         // Ensure only the most recent spell can be removed
-        spawned.CanBeRemoved = true;
 
         spellQueue.Add(new QueuedActiveSpell(spell, spawned, spellQueue.Count));
 
-        // Activate Callback
-        OnActiveSpellQueued?.Invoke();
-
-        // Save game state from before taking action
-        SaveNewCastSpellGameState();
-
-        // Set Cooldown
-        if (SetActiveSpellCooldowns)
+        // Check for Free Spell Casts
+        if (NumFreeSpells > 0)
         {
+            NumFreeSpells -= 1;
+        }
+        else
+        {
+            // Set Cooldown
             spell.SetOnCooldown();
+            // Consume Mana
+            GameManager._Instance.AlterPlayerMana(-spell.GetManaCost());
         }
 
-        // Consume Mana
-        GameManager._Instance.AlterPlayerMana(-spell.GetManaCost());
+        // Activate Callback
+        OnActiveSpellQueued?.Invoke();
 
         // Tick other spell cooldowns
         List<ActiveSpell> activeSpells = GameManager._Instance.GetActiveSpells();
@@ -324,28 +313,8 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void RemoveSpellFromQueue(int index)
-    {
-        // Remove the spell from the queue and destroy it's display
-        QueuedActiveSpell spell = spellQueue[index];
-        Destroy(spell.Display.gameObject);
-        spellQueue.RemoveAt(index);
-
-        // Allow new oldest spell to cast to be removed
-        if (spellQueue.Count > 0)
-            spellQueue[spellQueue.Count - 1].SetCanBeRemoved(true);
-
-        // Undo change cooldowns
-        LoadPreviousCastSpellGameState();
-    }
-
     private IEnumerator CastQueue()
     {
-        foreach (QueuedActiveSpell queuedSpell in spellQueue)
-        {
-            queuedSpell.SetCanBeRemoved(false);
-        }
-
         while (spellQueue.Count > 0)
         {
             // Update Tick Based Afflictions on Cast Spell
@@ -364,8 +333,18 @@ public partial class CombatManager : MonoBehaviour
             // Cast Spell
             yield return StartCoroutine(CastSpell(spell.Spell));
 
+            if (CheckForCombatOver())
+            {
+                yield break;
+            }
+
             yield return new WaitForSeconds(delayBetweenSpellCasts);
         }
+    }
+
+    private bool CheckForCombatOver()
+    {
+        return currentEnemyHP <= 0 || GameManager._Instance.GetCurrentCharacterHP() <= 0;
     }
 
     private IEnumerator CastSpell(ActiveSpell spell)
@@ -429,7 +408,12 @@ public partial class CombatManager : MonoBehaviour
         currentTurn = Turn.Enemy;
         OnEnemyTurnStart?.Invoke();
 
-        yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Space));
+        yield return new WaitForSeconds(1);
+
+        EnemyAttack();
+
+        // Clear Enemy Intent
+        enemyIntentDisplay.ClearIntents();
 
         Debug.Log("Enemy Turn Ended");
     }
@@ -450,11 +434,30 @@ public partial class CombatManager : MonoBehaviour
 
     private void ResetCombat()
     {
+        // Reset Num Free Spells
+        NumFreeSpells = 0;
+
+        // Clear Afflictions
         ClearAfflictionMap(enemyAfflictionMap);
         ClearAfflictionMap(characterAfflictionMap);
 
         // Clear active spell cooldowns
         GameManager._Instance.ResetActiveSpellCooldowns();
+
+        // Reset Player Mana
+        GameManager._Instance.SetPlayerMana(GameManager._Instance.GetMaxPlayerMana());
+
+        // Clear Spell Queue
+        while (spellQueue.Count > 0)
+        {
+            QueuedActiveSpell spell = spellQueue[0];
+            Destroy(spell.Display.gameObject);
+            spellQueue.RemoveAt(0);
+        }
+
+        // Reset HP Bars
+        characterHPBar.Clear();
+        enemyHPBar.Clear();
 
         musicSource.Stop();
         musicSource.time = 0;
@@ -463,11 +466,6 @@ public partial class CombatManager : MonoBehaviour
 
         // Destroy Circles
         ClearCircleList();
-    }
-
-    private void CallOnEndCombat()
-    {
-        OnCombatEnd?.Invoke();
     }
 
     public Turn GetTurn()
@@ -755,14 +753,14 @@ public partial class CombatManager : MonoBehaviour
         return GetTargetAfflictionMap(target).ContainsKey(type);
     }
 
-    public void ConsumeAfflictionStack(AfflictionType type, Target target)
+    public void ConsumeAfflictionStack(AfflictionType type, Target target, int toConsume = 1)
     {
         // Only consumes a stack if there are stacks to be consumed
         Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(target);
         Affliction aff = map[type];
 
         // remove a stack
-        aff.AlterStacks(-1);
+        aff.AlterStacks(-toConsume);
 
         // there remains at least a stack of the affliction, do not remove
         if (!aff.CanBeCleared) return;
@@ -962,13 +960,13 @@ public partial class CombatManager : MonoBehaviour
 
                 // Apply Ward
                 if (characterWard > 0 &&
-                    damageType == DamageType.Default)
+                    damageType == DamageType.Default
+                    && amount < 0)
                 {
                     int wardUsed = GetWardUsed(characterWard, amount);
                     characterWard -= wardUsed;
-                    amount -= wardUsed;
+                    amount += wardUsed;
                 }
-
                 // Set New Ward Amount
                 characterHPBar.SetWard(characterWard);
 
@@ -988,7 +986,9 @@ public partial class CombatManager : MonoBehaviour
     public bool AltarEnemyHP(int amount, DamageType damageType)
     {
         // Doctors Report Effect
-        if (GameManager._Instance.HasArtifact(ArtifactLabel.DoctorsReport) && amount > BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "MustBeOver"))
+        if (amount < 0
+            && GameManager._Instance.HasArtifact(ArtifactLabel.DoctorsReport)
+            && (amount * -1) > BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "MustBeOver"))
         {
             AddAffliction(AfflictionType.Bandaged, (int)BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "StackAmount"), Target.Character);
             GameManager._Instance.AnimateArtifact(ArtifactLabel.DoctorsReport);
@@ -996,12 +996,14 @@ public partial class CombatManager : MonoBehaviour
 
         // Apply Ward
         if (enemyWard > 0 &&
-            damageType == DamageType.Default)
+            damageType == DamageType.Default
+            && amount < 0)
         {
             int wardUsed = GetWardUsed(enemyWard, amount);
             enemyWard -= wardUsed;
-            amount -= wardUsed;
+            amount += wardUsed;
         }
+        // Set new Ward Amount
         enemyHPBar.SetWard(enemyWard);
 
         PopupText text = Instantiate(popupTextPrefab, enemyCombatSprite.transform);
@@ -1015,11 +1017,12 @@ public partial class CombatManager : MonoBehaviour
         else
         {
             currentEnemyHP += amount;
+            if (currentEnemyHP < 0)
+                currentEnemyHP = 0;
             enemyHPBar.SetCurrentHP(currentEnemyHP);
             if (currentEnemyHP <= 0)
             {
                 // Enemy Died
-                CallOnEndCombat();
                 return false;
             }
         }
@@ -1043,9 +1046,10 @@ public partial class CombatManager : MonoBehaviour
 
     private int GetWardUsed(int availableWard, int damageIncoming)
     {
+        damageIncoming *= -1;
         if (availableWard > damageIncoming)
         {
-            return availableWard - damageIncoming;
+            return damageIncoming;
         }
         else
         {

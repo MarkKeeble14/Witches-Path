@@ -39,6 +39,27 @@ public abstract class Equipment : ScriptableObject
     [SerializeField] private int manaChange;
     private int manaBoost;
 
+    public string ToolTipText => Name + "\n" + GetStatList() + "\n" + GetSpellList();
+
+    private string GetStatList()
+    {
+        return "Damage: " + damageChange + ", Defense: " + defenseChange + ", Mana: " + manaChange;
+    }
+
+    private string GetSpellList()
+    {
+        string s = "";
+        for (int i = 0; i < comesWithSpells.Count; i++)
+        {
+            s += comesWithSpells[i].ToString();
+            if (i < comesWithSpells.Count - 1)
+            {
+                s += ", ";
+            }
+        }
+        return s;
+    }
+
     [SerializeField] private List<SpellLabel> comesWithSpells = new List<SpellLabel>();
 
     private ReforgeModifier currentReforgeModifier;
