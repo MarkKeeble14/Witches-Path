@@ -12,14 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca226392ff22ceb429a58fa99900c73d, type: 3}
   m_Name: PoisonWitch
   m_EditorClassIdentifier: 
-  startingCurrency: 100
+  combatSprite: {fileID: 0}
   startingRobe: {fileID: 11400000, guid: c50f538457cbd8f4a911bfae3f970d78, type: 2}
   startingHat: {fileID: 11400000, guid: 427716a4784833947b46ed413f751470, type: 2}
   startingWand: {fileID: 11400000, guid: acda65fe9855c2547963cd46c0c48fba, type: 2}
-  startingBook: 11
-  combatSprite: {fileID: 0}
-  maxHP: 100
-  startingHP: 100
-  maxMana: 25
-  startingMana: 25
-  basicAttackDamage: 5
+  startingBook: 2
+  startingSpells: 1600000017000000
+  startingCurrency: 100
+  maxHP: 75
+  startingHP: 75
+  maxMana: 10
+  startingMana: 10
+  basicAttackDamage: 2
+  manaPerTurn: 10

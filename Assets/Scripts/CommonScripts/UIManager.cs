@@ -1,5 +1,8 @@
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 
 public class UIManager : MonoBehaviour
@@ -8,7 +11,11 @@ public class UIManager : MonoBehaviour
 
     public static UIManager _Instance { get; set; }
 
+    private int UILayer = 5;
     [SerializeField] private GameObject pauseScreen;
+
+    [Header("Prefabs")]
+    [SerializeField] private ToolTip toolTipPrefab;
 
     private void Awake()
     {
@@ -91,6 +98,19 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    [SerializeField] private Transform parentToolTipsTo;
+
+    public ToolTip SpawnToolTip(string text, Transform transform, Vector3 offset)
+    {
+        if (Input.mousePosition.x > Screen.width / 2)
+            offset *= -1;
+
+        ToolTip spawned = Instantiate(toolTipPrefab, parentToolTipsTo);
+        spawned.transform.position = transform.position + offset;
+        spawned.Set(text);
+        return spawned;
+    }
+
     public void SavePlayerPrefs()
     {
         PlayerPrefs.Save();
@@ -101,5 +121,35 @@ public class UIManager : MonoBehaviour
     {
         PlayerPrefs.DeleteAll();
         PlayerPrefs.Save();
+    }
+
+    //Returns 'true' if we touched or hovering on Unity UI element.
+    public bool IsPointerOverUIElement()
+    {
+        return IsPointerOverUIElement(GetEventSystemRaycastResults());
+    }
+
+
+    //Returns 'true' if we touched or hovering on Unity UI element.
+    private bool IsPointerOverUIElement(List<RaycastResult> eventSystemRaysastResults)
+    {
+        for (int index = 0; index < eventSystemRaysastResults.Count; index++)
+        {
+            RaycastResult curRaysastResult = eventSystemRaysastResults[index];
+            if (curRaysastResult.gameObject.layer == UILayer)
+                return true;
+        }
+        return false;
+    }
+
+
+    //Gets all event system raycast results of current mouse or touch position.
+    static List<RaycastResult> GetEventSystemRaycastResults()
+    {
+        PointerEventData eventData = new PointerEventData(EventSystem.current);
+        eventData.position = Input.mousePosition;
+        List<RaycastResult> raysastResults = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(eventData, raysastResults);
+        return raysastResults;
     }
 }

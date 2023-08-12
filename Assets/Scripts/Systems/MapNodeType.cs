@@ -4,7 +4,7 @@
     Boss,
     Library,
     Campfire,
-    Clothier,
+    Spellmaster,
     Event,
-    Shop
+    Tavern
 }

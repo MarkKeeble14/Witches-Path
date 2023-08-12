@@ -1,50 +1,60 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 [CreateAssetMenu(fileName = "Character", menuName = "Character")]
 public class Character : ScriptableObject
 {
-    [SerializeField] private float startingCurrency;
+    [Header("UI")]
+    [SerializeField] private Sprite combatSprite;
+
+    [Header("Starting Stats")]
     [SerializeField] private Robe startingRobe;
     [SerializeField] private Hat startingHat;
     [SerializeField] private Wand startingWand;
     [SerializeField] private BookLabel startingBook;
+    [SerializeField] private SpellLabel[] startingSpells;
 
-    [Header("UI")]
-    [SerializeField] private Sprite combatSprite;
+    [SerializeField] private int startingCurrency;
 
     [Header("Combat Settings")]
-    [SerializeField] private float maxHP;
-    [SerializeField] private float startingHP;
-    [SerializeField] private float maxMana;
-    [SerializeField] private float startingMana;
-    [SerializeField] private float basicAttackDamage;
+    [SerializeField] private int maxHP;
+    [SerializeField] private int startingHP;
+    [SerializeField] private int maxMana;
+    [SerializeField] private int startingMana;
+    [SerializeField] private int basicAttackDamage;
+    [SerializeField] private int manaPerTurn;
 
-    public float GetMaxHP()
+    public int GetMaxHP()
     {
         return maxHP;
     }
 
-    public float GetMaxMana()
+    public int GetMaxMana()
     {
         return maxMana;
     }
 
-    public float GetStartingHP()
+    public int GetManaPerTurn()
+    {
+        return manaPerTurn;
+    }
+
+    public int GetStartingHP()
     {
         return startingHP;
     }
 
-    public float GetStartingMana()
+    public int GetStartingMana()
     {
         return startingMana;
     }
 
-    public float GetBasicAttackDamage()
+    public int GetBasicAttackDamage()
     {
         return basicAttackDamage;
     }
 
-    public float GetStartingCurrency()
+    public int GetStartingCurrency()
     {
         return startingCurrency;
     }
@@ -67,6 +77,11 @@ public class Character : ScriptableObject
     public BookLabel GetStartingBook()
     {
         return startingBook;
+    }
+
+    public SpellLabel[] GetStartingSpells()
+    {
+        return startingSpells;
     }
 
     public Sprite GetCombatSprite()

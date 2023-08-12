@@ -12,14 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca226392ff22ceb429a58fa99900c73d, type: 3}
   m_Name: FireWitch
   m_EditorClassIdentifier: 
-  startingCurrency: 100
+  combatSprite: {fileID: 0}
   startingRobe: {fileID: 11400000, guid: a40bfcb8936ea604694906ae95a367e2, type: 2}
   startingHat: {fileID: 11400000, guid: a707352352167154381b4d14c6832951, type: 2}
   startingWand: {fileID: 11400000, guid: a794f23a6bced8a4f869c3618d2329a4, type: 2}
-  startingBook: 11
-  combatSprite: {fileID: 0}
-  maxHP: 75
-  startingHP: 75
-  maxMana: 25
-  startingMana: 25
-  basicAttackDamage: 3
+  startingBook: 2
+  startingSpells: 1600000017000000
+  startingCurrency: 100
+  maxHP: 90
+  startingHP: 90
+  maxMana: 5
+  startingMana: 5
+  basicAttackDamage: 5
+  manaPerTurn: 5

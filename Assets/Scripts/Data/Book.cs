@@ -7,7 +7,7 @@ public enum BookLabel
 {
     PhantasmalWhispers,
     ReplicatorsFables,
-    ClarksTimeCard,
+    WitchesTravelGuide,
     BarbariansTactics,
     TomeOfCleansing,
     MerchantsManual,
@@ -16,13 +16,14 @@ public enum BookLabel
     ToDoList,
     ForgiversOath,
     WrittenWarning,
-    WitchesTravelGuide
 }
 
-public abstract class Book
+public abstract class Book : PowerupItem
 {
-    protected string SpritePath => "Books/" + Label.ToString().ToLower();
     protected abstract BookLabel Label { get; }
+    protected override string SpritePath => "Books/" + Label.ToString().ToLower();
+    public override string Name => Utils.SplitOnCapitalLetters(Label.ToString());
+
 
     protected int currentLevel = 1;
     protected virtual int MaxLevel => 3;
@@ -42,16 +43,6 @@ public abstract class Book
 
     protected abstract void LevelUp();
 
-    public BookLabel GetLabel()
-    {
-        return Label;
-    }
-
-    public Sprite GetSprite()
-    {
-        return Resources.Load<Sprite>(SpritePath);
-    }
-
     public abstract void OnEquip();
 
     public abstract void OnUnequip();
@@ -68,7 +59,7 @@ public abstract class Book
         return BalenceManager._Instance.GetValue(Label, "OnLevelUp" + specIdentifier);
     }
 
-    private bool UpdateBookSpec(string specIdentifier, float changeBy)
+    private bool UpdateBookSpec(string specIdentifier, int changeBy)
     {
         return BalenceManager._Instance.UpdateValue(Label, specIdentifier, changeBy);
     }
@@ -87,17 +78,29 @@ public abstract class Book
     {
         GameManager._Instance.AnimateBook(Label);
     }
+
+    public BookLabel GetLabel()
+    {
+        return Label;
+    }
+
+    public override Sprite GetSprite()
+    {
+        return Resources.Load<Sprite>(SpritePath);
+    }
 }
 
 public class PhantasmalWhispers : Book
 {
     protected override BookLabel Label => BookLabel.PhantasmalWhispers;
 
-    public static float Damage { get; private set; }
+    public override string ToolTipText => "Basic Attacks fire an Additional Projectile Dealing {DamageAmount} Damage to the Enemy";
+
+    public static int Damage { get; private set; }
 
     public override void OnEquip()
     {
-        Damage = GetEffectSpec("DamageAmount");
+        Damage = Mathf.CeilToInt(GetEffectSpec("DamageAmount"));
         CombatManager._Instance.OnPlayerAttack += Effect;
     }
 
@@ -114,13 +117,17 @@ public class PhantasmalWhispers : Book
 
     protected override void LevelUp()
     {
-        Damage += GetLevelUpSpec("DamageIncrease");
+        Damage += Mathf.CeilToInt(GetLevelUpSpec("DamageIncrease"));
     }
+
+    public override bool HasAdditionalText => false;
 }
 
 public class ReplicatorsFables : Book
 {
     protected override BookLabel Label => BookLabel.ReplicatorsFables;
+
+    public override string ToolTipText => "Every {ProcAfter}th Passive Spell will Proc an Additional Time";
 
     int tracker;
     int procAfter;
@@ -160,36 +167,19 @@ public class ReplicatorsFables : Book
     {
         procAfter += (int)GetLevelUpSpec("AlterProcAfter");
     }
-}
 
-public class ClarksTimeCard : Book
-{
-    protected override BookLabel Label => BookLabel.ClarksTimeCard;
-
-    public static float CooldownMultiplier { get; private set; }
-
-    public override void OnEquip()
+    public override bool HasAdditionalText => true;
+    public override string GetAdditionalText()
     {
-        CooldownMultiplier = GetEffectSpec("CooldownMultiplier");
-    }
-
-    public override void OnUnequip()
-    {
-    }
-
-    protected override void Effect()
-    {
-    }
-
-    protected override void LevelUp()
-    {
-        CooldownMultiplier += GetLevelUpSpec("AlterCooldownMultiplier");
+        return tracker.ToString();
     }
 }
 
 public class BarbariansTactics : Book
 {
     protected override BookLabel Label => BookLabel.BarbariansTactics;
+
+    public override string ToolTipText => "All In-Combat Damage is Increased by {DamageIncrease}";
 
     public static int DamageIncrease { get; private set; }
 
@@ -210,11 +200,15 @@ public class BarbariansTactics : Book
     {
         DamageIncrease += (int)GetLevelUpSpec("DamageIncrease");
     }
+
+    public override bool HasAdditionalText => false;
 }
 
 public class TomeOfCleansing : Book
 {
     protected override BookLabel Label => BookLabel.TomeOfCleansing;
+
+    public override string ToolTipText => "Recieving Damage has a {ChanceToRemove}/100 Chance of Removing a Harmful Affliction";
 
     private Vector2 chanceToRemoveAffliction = new Vector2(0, 100);
 
@@ -242,17 +236,21 @@ public class TomeOfCleansing : Book
     {
         chanceToRemoveAffliction.x += GetLevelUpSpec("AlterChanceToRemove");
     }
+
+    public override bool HasAdditionalText => false;
 }
 
 public class MerchantsManual : Book
 {
     protected override BookLabel Label => BookLabel.MerchantsManual;
 
+    public override string ToolTipText => "All Currency Pickups are Inreased by {CurrencyMultiplier}%";
+
     public static float CurrencyMultiplier { get; private set; }
 
     public override void OnEquip()
     {
-        CurrencyMultiplier = GetEffectSpec("CurrencyMultiplier");
+        CurrencyMultiplier = BalenceManager._Instance.GetValue(Label, "CurrencyMultiplier") / 100;
     }
 
     public override void OnUnequip()
@@ -265,19 +263,23 @@ public class MerchantsManual : Book
 
     protected override void LevelUp()
     {
-        CurrencyMultiplier += GetEffectSpec("AlterCurrencyMultiplier");
+        CurrencyMultiplier += BalenceManager._Instance.GetValue(Label, "OnLevelUpCurrencyMultiplier") / 100;
     }
+
+    public override bool HasAdditionalText => false;
 }
 
 public class CheatersConfessional : Book
 {
     protected override BookLabel Label => BookLabel.CheatersConfessional;
 
+    public override string ToolTipText => "Enemies Begin Combat with {PercentHP}% HP";
+
     public static float PercentHP { get; private set; }
 
     public override void OnEquip()
     {
-        PercentHP = GetEffectSpec("PercentHP");
+        PercentHP = BalenceManager._Instance.GetValue(Label, "PercentHP") / 100;
     }
 
     public override void OnUnequip()
@@ -290,19 +292,23 @@ public class CheatersConfessional : Book
 
     protected override void LevelUp()
     {
-        PercentHP += GetLevelUpSpec("AlterPercentHP");
+        PercentHP += BalenceManager._Instance.GetValue(Label, "AlterPercentHP") / 100;
     }
+
+    public override bool HasAdditionalText => false;
 }
 
 public class BookOfEffect : Book
 {
     protected override BookLabel Label => BookLabel.BookOfEffect;
 
+    public override string ToolTipText => "Active Spells Deal {PercentDamageMultiplier}% Damage";
+
     public static float PercentDamageMultiplier { get; private set; }
 
     public override void OnEquip()
     {
-        PercentDamageMultiplier = GetEffectSpec("PercentDamageMultiplier");
+        PercentDamageMultiplier = BalenceManager._Instance.GetValue(Label, "PercentDamageMultiplier") / 100;
     }
 
     public override void OnUnequip()
@@ -315,20 +321,24 @@ public class BookOfEffect : Book
 
     protected override void LevelUp()
     {
-        PercentDamageMultiplier += GetLevelUpSpec("AlterPercentDamageMultiplier");
+        PercentDamageMultiplier = BalenceManager._Instance.GetValue(Label, "OnLevelUpAlterPercentDamageMultiplier") / 100;
     }
+
+    public override bool HasAdditionalText => false;
 }
 
 public class ToDoList : Book
 {
     protected override BookLabel Label => BookLabel.ToDoList;
 
+    public override string ToolTipText => "Every {ProcAfter}th Passive Spell Activated applies 1 stack of Prepared to yourself";
+
     int tracker;
     int procAfter;
 
     public override void OnEquip()
     {
-        procAfter = (int)BalenceManager._Instance.GetValue(Label, "ProcAfter");
+        procAfter = Mathf.CeilToInt(GetEffectSpec("ProcAfter"));
         CombatManager._Instance.OnPassiveSpellProc += Effect;
     }
 
@@ -342,7 +352,7 @@ public class ToDoList : Book
         tracker += 1;
         if (tracker >= procAfter)
         {
-            CombatManager._Instance.AddAffliction(AfflictionType.Prepared, 1, AfflictionSetType.Activations, Target.Character);
+            CombatManager._Instance.AddAffliction(AfflictionType.Prepared, 1, Target.Character);
             ShowBookProc();
             tracker = 0;
         }
@@ -352,18 +362,26 @@ public class ToDoList : Book
     {
         procAfter -= (int)GetLevelUpSpec("AlterProcAfter");
     }
+
+    public override bool HasAdditionalText => true;
+    public override string GetAdditionalText()
+    {
+        return tracker.ToString();
+    }
 }
 
 public class ForgiversOath : Book
 {
     protected override BookLabel Label => BookLabel.ForgiversOath;
 
+    public override string ToolTipText => "Every {ProcAfter}th Active Spell has No Cooldown";
+
     int tracker;
     int procAfter;
 
     public override void OnEquip()
     {
-        procAfter = (int)BalenceManager._Instance.GetValue(Label, "ProcAfter");
+        procAfter = Mathf.CeilToInt(GetEffectSpec("ProcAfter"));
         CombatManager._Instance.OnActiveSpellActivated += Effect;
     }
 
@@ -396,22 +414,30 @@ public class ForgiversOath : Book
     {
         procAfter -= (int)GetLevelUpSpec("AlterProcAfter");
     }
+
+    public override bool HasAdditionalText => true;
+    public override string GetAdditionalText()
+    {
+        return tracker.ToString();
+    }
 }
 
 public class WrittenWarning : Book
 {
     protected override BookLabel Label => BookLabel.WrittenWarning;
 
-    float damage;
-    float damageIncrease;
+    public override string ToolTipText => "Basic Attacks fire an Additional Projectile Dealing {DamageAmount} Damage to the Enemy. Every time this effect is activated, the Damage Increases by {DamageIncrease}";
+
+    int damage;
+    int damageIncrease;
     int tracker;
     int procAfter;
 
     public override void OnEquip()
     {
-        damage = BalenceManager._Instance.GetValue(Label, "StartingDamage");
-        damageIncrease = BalenceManager._Instance.GetValue(Label, "DamageIncrease");
-        procAfter = (int)BalenceManager._Instance.GetValue(Label, "ProcAfter");
+        damage = Mathf.CeilToInt(GetEffectSpec("StartingDamage"));
+        damageIncrease = Mathf.CeilToInt(GetEffectSpec("DamageIncrease"));
+        procAfter = Mathf.CeilToInt(GetEffectSpec("ProcAfter"));
         CombatManager._Instance.OnPassiveSpellProc += Effect;
     }
 
@@ -436,11 +462,19 @@ public class WrittenWarning : Book
     {
         procAfter -= (int)GetLevelUpSpec("AlterProcAfter");
     }
+
+    public override bool HasAdditionalText => true;
+    public override string GetAdditionalText()
+    {
+        return tracker.ToString();
+    }
 }
 
 public class WitchesTravelGuide : Book
 {
     protected override BookLabel Label => BookLabel.WitchesTravelGuide;
+
+    public override string ToolTipText => "A Classic Handbook filled with Helpful Tips and Tricks";
 
     public override void OnEquip()
     {
@@ -457,5 +491,7 @@ public class WitchesTravelGuide : Book
     protected override void LevelUp()
     {
     }
+
+    public override bool HasAdditionalText => false;
 }
 

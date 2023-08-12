@@ -21,9 +21,9 @@ public enum BaseStat
 public struct ReforgeModifierEffect
 {
     public BaseStat AffectedStat;
-    public float StatChange;
+    public int StatChange;
 
-    public ReforgeModifierEffect(BaseStat affectedStat, float statChange)
+    public ReforgeModifierEffect(BaseStat affectedStat, int statChange)
     {
         this.AffectedStat = affectedStat;
         this.StatChange = statChange;
@@ -44,6 +44,21 @@ public abstract class Equipment : ScriptableObject
     private ReforgeModifier currentReforgeModifier;
 
     public string Name => currentReforgeModifier.ToString() + " " + base.ToString();
+
+    public int GetStat(BaseStat stat)
+    {
+        switch (stat)
+        {
+            case BaseStat.Damage:
+                return damageChange + damageBoost;
+            case BaseStat.Defense:
+                return defenseChange + defenseBoost;
+            case BaseStat.Mana:
+                return manaChange + manaBoost;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
 
     public virtual void OnEquip()
     {

@@ -9,9 +9,11 @@ public class PassiveSpellDisplay : SpellDisplay
     public void SetPassiveSpell(PassiveSpell spell)
     {
         this.spell = spell;
-        LoadSpellSprite(spell);
+        spellIcon.sprite = spell.GetSpellSprite();
         nameText.text = spell.Label.ToString();
         isAvailable = false;
+
+        FillToolTipText(ContentType.PassiveSpell, spell.Label.ToString(), spell.ToolTipText);
     }
 
     private new void Update()

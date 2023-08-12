@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public abstract class ShopOffer : MonoBehaviour
 {
-    protected float cost;
+    protected int cost;
 
     [Header("References")]
     [SerializeField] protected TextMeshProUGUI itemText;

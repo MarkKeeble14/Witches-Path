@@ -17,8 +17,8 @@ public class Circle : MonoBehaviour
     [SerializeField] private SpriteRenderer fore, back, appr; // Circle sprites
 
     // Checking stuff
-    private bool removeNow = false;
-    private bool gotIt = false;
+    private bool canRemove = false;
+    private bool hasBeenClicked = false;
 
     // Set circle configuration
     public void Set(float x, float y, float z, int a)
@@ -33,34 +33,34 @@ public class Circle : MonoBehaviour
     }
 
     // Spawning the circle
-    public void Spawn()
+    public void Show()
     {
         gameObject.transform.position = new Vector3(posX, posY, posZ);
-        this.enabled = true;
+        enabled = true;
         StartCoroutine(Checker());
     }
 
     // If circle wasn't clicked
     public void Remove()
     {
-        if (!gotIt)
+        if (!hasBeenClicked)
         {
-            removeNow = true;
-            this.enabled = true;
+            canRemove = true;
+            enabled = true;
         }
     }
 
     // If circle was clicked
     public void Got()
     {
-        if (!removeNow)
+        if (!canRemove)
         {
-            gotIt = true;
+            hasBeenClicked = true;
             mainApproach.transform.position = new Vector2(-101, -101);
 
             CombatManager._Instance.OnNoteHit();
-            removeNow = false;
-            this.enabled = true;
+            canRemove = false;
+            enabled = true;
         }
     }
 
@@ -70,7 +70,7 @@ public class Circle : MonoBehaviour
         while (true)
         {
             // 75 means delay before removing
-            if (CombatManager._Instance.GetTimer() >= posA + (CombatManager._Instance.GetApprRate() + 75) && !gotIt)
+            if (CombatManager._Instance.GetTimer() >= posA + (CombatManager._Instance.GetApprRate() + 75) && !hasBeenClicked)
             {
                 Remove();
                 CombatManager._Instance.OnNoteMiss();
@@ -96,13 +96,13 @@ public class Circle : MonoBehaviour
 
         }
         // If circle wasn't clicked
-        else if (!gotIt)
+        else if (!hasBeenClicked)
         {
             // Remove circle
-            if (!removeNow)
+            if (!canRemove)
             {
                 mainApproach.transform.position = new Vector2(-101, -101);
-                this.enabled = false;
+                enabled = false;
             }
             // If circle wasn't clicked
             else
@@ -116,13 +116,13 @@ public class Circle : MonoBehaviour
                 if (mainColor1.a <= 0f)
                 {
                     gameObject.transform.position = new Vector2(-101, -101);
-                    this.enabled = false;
+                    enabled = false;
                 }
             }
         }
 
         // If circle was clicked
-        if (gotIt)
+        if (hasBeenClicked)
         {
             mainColor1.a -= 10f * Time.deltaTime;
             mainColor2.a -= 10f * Time.deltaTime;
@@ -133,7 +133,7 @@ public class Circle : MonoBehaviour
             if (mainColor1.a <= 0f)
             {
                 gameObject.transform.position = new Vector2(-101, -101);
-                this.enabled = false;
+                enabled = false;
             }
         }
     }

@@ -1,13 +1,13 @@
 ﻿public enum ArtifactLabel
 {
     GreedyHands,
-    SheriffsEye,
+    SpecialSpinich,
     CanyonChunk,
     Plaguebringer,
     MedicineKit,
     BoldInvestments,
     SmokeShroud,
-    SmokeBomb,
+    HolyShield,
     BankCard,
     LooseTrigger,
     MolatovCocktail,
@@ -20,6 +20,4 @@
     DoctorsReport,
     RustyCannon,
     VoodooDoll,
-    SpecialSpinich,
-    HolyShield
 }

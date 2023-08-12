@@ -7,65 +7,98 @@ public class BalenceManager : MonoBehaviour
     public static BalenceManager _Instance { get; private set; }
 
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, float>> artifactSpecDict = new SerializableDictionary<string, SerializableDictionary<string, float>>();
+    private SerializableDictionary<string, SerializableDictionary<string, int>> artifactSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, float>> bookSpecDict = new SerializableDictionary<string, SerializableDictionary<string, float>>();
+    private SerializableDictionary<string, SerializableDictionary<string, int>> bookSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, float>> afflictionSpecDict = new SerializableDictionary<string, SerializableDictionary<string, float>>();
+    private SerializableDictionary<string, SerializableDictionary<string, int>> afflictionSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, float>> spellSpecDict = new SerializableDictionary<string, SerializableDictionary<string, float>>();
+    private SerializableDictionary<string, SerializableDictionary<string, int>> spellSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, float>> mapNodeSpecDict = new SerializableDictionary<string, SerializableDictionary<string, float>>();
+    private SerializableDictionary<string, SerializableDictionary<string, int>> mapNodeSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, float>> eventSpecDict = new SerializableDictionary<string, SerializableDictionary<string, float>>();
+    private SerializableDictionary<string, SerializableDictionary<string, int>> eventSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
     [SerializeField] private SerializableDictionary<ReforgeModifier, ReforgeModifierEffect> reforgeModifierEffects = new SerializableDictionary<ReforgeModifier, ReforgeModifierEffect>();
+
     public ReforgeModifierEffect GetReforgeModifierEffect(ReforgeModifier reforgeModifier)
     {
         return reforgeModifierEffects[reforgeModifier];
     }
-    public float GetValue(ArtifactLabel artifactLabel, string identifier)
+
+    public int GetValue(ArtifactLabel artifactLabel, string identifier)
     {
         return artifactSpecDict[artifactLabel.ToString()][identifier];
     }
 
-    public bool UpdateValue(BookLabel bookLabel, string identifier, float changeBy)
+    public int GetValue(ContentType type, string label, string identifier)
+    {
+        switch (type)
+        {
+            case ContentType.Artifact:
+                return artifactSpecDict[label][identifier];
+            case ContentType.Book:
+                return bookSpecDict[label][identifier];
+            case ContentType.ActiveSpell:
+                return spellSpecDict[label][identifier];
+            case ContentType.PassiveSpell:
+                return spellSpecDict[label][identifier];
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
+
+    public bool UpdateValue(BookLabel bookLabel, string identifier, int changeBy)
     {
         if (bookSpecDict[bookLabel.ToString()].ContainsKey(identifier))
         {
-            float currentValue = bookSpecDict[bookLabel.ToString()][identifier];
-            bookSpecDict[bookLabel.ToString()][identifier] = currentValue += changeBy;
+            int currentValue = bookSpecDict[bookLabel.ToString()][identifier];
+            bookSpecDict[bookLabel.ToString()][identifier] = currentValue + changeBy;
             return true;
         }
         return false;
     }
 
-    public float GetValue(BookLabel bookLabel, string specIdentifier)
+    // Simply returns the value found in the dict
+    public int GetValue(BookLabel bookLabel, string specIdentifier)
     {
         return bookSpecDict[bookLabel.ToString()][specIdentifier];
     }
 
-    public float GetValue(AfflictionType afflictionType, string identifier)
+    // Automatically divides the value by 100 to create a percentage
+    public float GetPercentValue(BookLabel bookLabel, string identifier)
+    {
+        return bookSpecDict[bookLabel.ToString()][identifier] / 100;
+    }
+
+    // Simply returns the value found in the dict
+    public int GetValue(AfflictionType afflictionType, string identifier)
     {
         return afflictionSpecDict[afflictionType.ToString()][identifier];
     }
 
-    public float GetValue(SpellLabel spellLabel, string identifier)
+    // Automatically divides the value by 100 to create a percentage
+    public float GetPercentValue(AfflictionType afflictionType, string identifier)
+    {
+        return afflictionSpecDict[afflictionType.ToString()][identifier] / 100;
+    }
+
+    public int GetValue(SpellLabel spellLabel, string identifier)
     {
         return spellSpecDict[spellLabel.ToString()][identifier];
     }
 
-    public float GetValue(MapNodeType type, string identifier)
+    public int GetValue(MapNodeType type, string identifier)
     {
         return mapNodeSpecDict[type.ToString()][identifier];
     }
 
-    public float GetValue(EventLabel type, string identifier)
+    public int GetValue(EventLabel type, string identifier)
     {
         return eventSpecDict[type.ToString()][identifier];
     }

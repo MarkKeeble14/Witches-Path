@@ -11,44 +11,27 @@ public class Affliction
     [SerializeField] private AfflictionType type;
     public AfflictionType Type => type;
 
-    public bool TickAway => remainingActivations <= 0;
-    public bool CanBeCleared => remainingActivations <= 0 && remainingDuration <= 0;
+    public bool CanBeCleared => stacks <= 0;
+    private int stacks;
 
-    public float RemainingDuration { get => remainingDuration; }
-    public int RemainingActivations { get => remainingActivations; }
-
-    private float remainingDuration;
-    private int remainingActivations;
-
-    public Affliction(AfflictionType type, int activations)
+    public Affliction(AfflictionType type, int stacks)
     {
         this.type = type;
-        remainingActivations = activations;
+        this.stacks = stacks;
     }
 
-    public Affliction(AfflictionType type, float duration)
+    public void SetStacks(int v)
     {
-        this.type = type;
-        remainingDuration = duration;
+        stacks = v;
     }
 
-    public void SetDuration(float v)
+    public void AlterStacks(int v)
     {
-        remainingDuration = v;
+        stacks += v;
     }
 
-    public void AlterDuration(float v)
+    public int GetStacks()
     {
-        remainingDuration += v;
-    }
-
-    public void SetActivations(int v)
-    {
-        remainingActivations = v;
-    }
-
-    public void AlterActivations(int v)
-    {
-        remainingActivations += v;
+        return stacks;
     }
 }

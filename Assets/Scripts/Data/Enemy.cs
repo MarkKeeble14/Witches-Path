@@ -6,21 +6,21 @@ public class Enemy : ScriptableObject
     [SerializeField] private Sprite combatSprite;
 
     [Header("Combat Settings")]
-    [SerializeField] private float maxHP;
-    [SerializeField] private float startingHP;
-    [SerializeField] private float basicAttackDamage;
+    [SerializeField] private int maxHP;
+    [SerializeField] private int startingHP;
+    [SerializeField] private int basicAttackDamage;
 
-    public float GetMaxHP()
+    public int GetMaxHP()
     {
         return maxHP;
     }
 
-    public float GetStartingHP()
+    public int GetStartingHP()
     {
         return startingHP;
     }
 
-    public float GetBasicAttackDamage()
+    public int GetBasicAttackDamage()
     {
         return basicAttackDamage;
     }

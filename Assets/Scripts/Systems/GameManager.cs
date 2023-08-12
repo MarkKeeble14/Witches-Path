@@ -5,7 +5,7 @@ using TMPro;
 using System.Collections.Generic;
 using System.Linq;
 
-public enum TestType
+public enum ContentType
 {
     Artifact,
     Book,
@@ -21,12 +21,12 @@ public class GameManager : MonoBehaviour
 
     [Header("Character")]
     [SerializeField] private Character playerCharacter;
-    private float maxPlayerHP;
-    private float currentPlayerHP;
-    private float maxPlayerMana;
-    private float characterMaxMana;
-    private float currentPlayerMana;
-    private float currentPlayerCurrency;
+    private int maxPlayerHP;
+    private int currentPlayerHP;
+    private int maxPlayerMana;
+    private int characterMaxMana;
+    private int currentPlayerMana;
+    private int currentPlayerCurrency;
     private Robe playerEquippedRobe;
     private Hat playerEquippedHat;
     private Wand playerEquippedWand;
@@ -35,31 +35,40 @@ public class GameManager : MonoBehaviour
 
     [Header("Books")]
     [SerializeField] private Transform bookBar;
-    private Dictionary<BookLabel, ArtifactIcon> bookDisplayTracker = new Dictionary<BookLabel, ArtifactIcon>();
+    private Dictionary<BookLabel, ItemDisplay> bookDisplayTracker = new Dictionary<BookLabel, ItemDisplay>();
     private Dictionary<BookLabel, Book> equippedBooks = new Dictionary<BookLabel, Book>();
 
     [Header("Artifacts")]
     [SerializeField] private Transform artifactBar;
-    private Dictionary<ArtifactLabel, ArtifactIcon> artifactDisplayTracker = new Dictionary<ArtifactLabel, ArtifactIcon>();
+    private Dictionary<ArtifactLabel, ItemDisplay> artifactDisplayTracker = new Dictionary<ArtifactLabel, ItemDisplay>();
     private Dictionary<ArtifactLabel, Artifact> equippedArtifacts = new Dictionary<ArtifactLabel, Artifact>();
 
     [Header("Spells")]
-    [SerializeField] private ActiveSpellDisplay[] activeSpellDisplays = new ActiveSpellDisplay[3];
+    private List<ActiveSpellDisplay> activeSpellDisplays = new List<ActiveSpellDisplay>();
+
     private Dictionary<SpellLabel, SpellDisplay> loadedSpellDisplays = new Dictionary<SpellLabel, SpellDisplay>();
     private Dictionary<ActiveSpellDisplay, ActiveSpell> equippedActiveSpells = new Dictionary<ActiveSpellDisplay, ActiveSpell>();
     private Dictionary<PassiveSpellDisplay, PassiveSpell> equippedPassiveSpells = new Dictionary<PassiveSpellDisplay, PassiveSpell>();
-    [SerializeField] private PassiveSpellDisplay[] passiveSpellDisplays = new PassiveSpellDisplay[2];
-    [SerializeField] private KeyCode[] activeSpellBindings = new KeyCode[3];
+    [SerializeField] private KeyCode[] activeSpellBindings;
+    [SerializeField] private ActiveSpellDisplay activeSpellDisplayPrefab;
+    [SerializeField] private PassiveSpellDisplay passiveSpellDisplayPrefab;
+    [SerializeField] private Transform activeSpellDisplaysList;
+    [SerializeField] private Transform passiveSpellDisplaysList;
 
     [Header("Potions")]
     private Dictionary<PotionIngredient, int> potionIngredientMap = new Dictionary<PotionIngredient, int>();
 
+    [Header("Equipment")]
+    [SerializeField] private List<Hat> equippableHats = new List<Hat>();
+    [SerializeField] private List<Robe> equippableRobes = new List<Robe>();
+    [SerializeField] private List<Wand> equippableWands = new List<Wand>();
+
     [Header("Prefabs")]
-    [SerializeField] private ArtifactIcon artifactDisplay;
+    [SerializeField] private ItemDisplay artifactDisplay;
     [SerializeField] private PopupText popupTextPrefab;
 
     [Header("Test")]
-    [SerializeField] private TestType currentlyTesting;
+    [SerializeField] private ContentType currentlyTesting;
 
     [Header("Artifacts")]
     [SerializeField] private List<ArtifactLabel> testArtifacts;
@@ -92,9 +101,9 @@ public class GameManager : MonoBehaviour
     public Action OnPlayerRecieveDamage;
     private Dictionary<MapNodeType, Action> OnEnterSpecificRoomActionMap = new Dictionary<MapNodeType, Action>();
 
-    public float DamageFromEquipment { get; set; }
-    public float DefenseFromEquipment { get; set; }
-    private float manaFromEquipment;
+    public int DamageFromEquipment { get; set; }
+    public int DefenseFromEquipment { get; set; }
+    private int manaFromEquipment;
 
     private void Awake()
     {
@@ -126,7 +135,7 @@ public class GameManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Tab))
         {
             int v = (int)currentlyTesting;
-            if (v + 1 >= Enum.GetNames(typeof(TestType)).Length)
+            if (v + 1 >= Enum.GetNames(typeof(ContentType)).Length)
             {
                 v = 0;
             }
@@ -134,14 +143,14 @@ public class GameManager : MonoBehaviour
             {
                 v += 1;
             }
-            currentlyTesting = (TestType)v;
+            currentlyTesting = (ContentType)v;
             Debug.Log("Now Testing: " + currentlyTesting);
         }
 
         // Testing
         switch (currentlyTesting)
         {
-            case TestType.ActiveSpell:
+            case ContentType.ActiveSpell:
 
                 // Active Spells
                 // Equip new spell
@@ -176,7 +185,7 @@ public class GameManager : MonoBehaviour
                 }
 
                 break;
-            case TestType.PassiveSpell:
+            case ContentType.PassiveSpell:
 
                 // Passive Spells
                 // Equip new spell
@@ -211,7 +220,7 @@ public class GameManager : MonoBehaviour
                 }
 
                 break;
-            case TestType.Artifact:
+            case ContentType.Artifact:
 
                 // Artifacts
                 // Equip new Artifact
@@ -247,7 +256,7 @@ public class GameManager : MonoBehaviour
                 }
 
                 break;
-            case TestType.Book:
+            case ContentType.Book:
 
                 // Passive Spells
                 // Equip new Book
@@ -286,25 +295,25 @@ public class GameManager : MonoBehaviour
         }
 
         // Only allow for spell casts while in combat
-        if (CombatManager._Instance.InCombat)
+        if (CombatManager._Instance.InCombat && CombatManager._Instance.GetTurn() == Turn.Player)
         {
             for (int i = 0; i < activeSpellBindings.Length; i++)
             {
                 if (Input.GetKeyDown(activeSpellBindings[i]))
                 {
                     ActiveSpell spellToCast = activeSpellDisplays[i].GetActiveSpell();
-                    Debug.Log("Attempting to Cast: " + spellToCast);
+                    // Debug.Log("Attempting to Cast: " + spellToCast);
                     if (spellToCast.CanCast)
                     {
-                        Debug.Log("Casting: " + spellToCast);
-                        spellToCast.Cast();
+                        // Debug.Log("Adding: " + spellToCast + " to Queue");
+                        CombatManager._Instance.AddSpellToCastQueue(spellToCast);
                     }
                     else
                     {
                         Debug.Log("Can't Cast: " + spellToCast);
                         if (spellToCast.OnCooldown)
                         {
-                            Debug.Log("Spell: " + spellToCast + " Cooling Down: " + spellToCast.CooldownTimer);
+                            Debug.Log("Spell: " + spellToCast + " Cooling Down: " + spellToCast.CooldownTracker);
                         }
                         if (!spellToCast.HasMana)
                         {
@@ -351,24 +360,16 @@ public class GameManager : MonoBehaviour
 
     public void EquipPassiveSpell(SpellLabel label)
     {
-        for (int i = 0; i < passiveSpellDisplays.Length; i++)
-        {
-            if (passiveSpellDisplays[i].IsAvailable)
-            {
-                PassiveSpell newSpell = (PassiveSpell)GetSpellOfType(label);
-                newSpell.OnEquip();
+        PassiveSpellDisplay spawned = Instantiate(passiveSpellDisplayPrefab, passiveSpellDisplaysList);
 
-                equippedPassiveSpells.Add(passiveSpellDisplays[i], newSpell);
-                passiveSpellDisplays[i].SetPassiveSpell(newSpell);
-                loadedSpellDisplays.Add(label, passiveSpellDisplays[i]);
+        PassiveSpell newSpell = (PassiveSpell)GetSpellOfType(label);
+        newSpell.OnEquip();
 
-                Debug.Log("Equipped: " + newSpell);
+        equippedPassiveSpells.Add(spawned, newSpell);
+        spawned.SetPassiveSpell(newSpell);
+        loadedSpellDisplays.Add(label, spawned);
 
-                return;
-            }
-        }
-
-        Debug.Log("No Empty Slot to Equip: " + label.ToString());
+        Debug.Log("Equipped: " + newSpell);
     }
 
     public void UnequipPassiveSpell(SpellLabel label)
@@ -381,33 +382,27 @@ public class GameManager : MonoBehaviour
 
         SpellDisplay loaded = loadedSpellDisplays[label];
 
-        equippedPassiveSpells.Remove((PassiveSpellDisplay)loaded);
         loaded.Unset();
+        equippedPassiveSpells.Remove((PassiveSpellDisplay)loaded);
         loadedSpellDisplays.Remove(label);
+        Destroy(loaded.gameObject);
 
         Debug.Log("Unequipped: " + label.ToString());
     }
 
     public void EquipActiveSpell(SpellLabel label)
     {
-        for (int i = 0; i < activeSpellDisplays.Length; i++)
-        {
-            if (activeSpellDisplays[i].IsAvailable)
-            {
-                ActiveSpell newSpell = (ActiveSpell)GetSpellOfType(label);
-                newSpell.OnEquip();
+        ActiveSpellDisplay spawned = Instantiate(activeSpellDisplayPrefab, activeSpellDisplaysList);
 
-                equippedActiveSpells.Add(activeSpellDisplays[i], newSpell);
-                activeSpellDisplays[i].SetActiveSpell(newSpell, activeSpellBindings[i]);
-                loadedSpellDisplays.Add(label, activeSpellDisplays[i]);
+        ActiveSpell newSpell = (ActiveSpell)GetSpellOfType(label);
+        newSpell.OnEquip();
 
-                Debug.Log("Equipped: " + newSpell);
+        equippedActiveSpells.Add(spawned, newSpell);
+        spawned.SetActiveSpell(newSpell, activeSpellBindings[equippedActiveSpells.Count - 1]);
+        loadedSpellDisplays.Add(label, spawned);
+        activeSpellDisplays.Add(spawned);
 
-                return;
-            }
-        }
-
-        Debug.Log("No Empty Slot to Equip: " + label.ToString());
+        Debug.Log("Equipped: " + newSpell);
     }
 
     public void UnequipActiveSpell(SpellLabel label)
@@ -418,22 +413,36 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        SpellDisplay loaded = loadedSpellDisplays[label];
+        ActiveSpellDisplay loaded = (ActiveSpellDisplay)loadedSpellDisplays[label];
 
-        equippedActiveSpells.Remove((ActiveSpellDisplay)loaded);
         loaded.Unset();
+        equippedActiveSpells.Remove(loaded);
         loadedSpellDisplays.Remove(label);
+        activeSpellDisplays.Remove(loaded);
+
+        Destroy(loaded.gameObject);
 
         Debug.Log("Unequipped: " + label.ToString());
     }
 
-    public void TickActiveSpellCooldowns(float tickAmount)
+    public void ReduceActiveSpellCooldowns(int reduceBy)
     {
         foreach (KeyValuePair<ActiveSpellDisplay, ActiveSpell> kvp in equippedActiveSpells)
         {
             if (kvp.Value.OnCooldown)
             {
-                kvp.Value.AlterCooldown(-tickAmount);
+                kvp.Value.AlterCooldown(-reduceBy);
+            }
+        }
+    }
+
+    public void ResetActiveSpellCooldowns()
+    {
+        foreach (KeyValuePair<ActiveSpellDisplay, ActiveSpell> kvp in equippedActiveSpells)
+        {
+            if (kvp.Value.OnCooldown)
+            {
+                kvp.Value.ResetCooldown();
             }
         }
     }
@@ -458,13 +467,31 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public List<ActiveSpell> GetActiveSpells()
+    {
+        List<ActiveSpell> toReturn = new List<ActiveSpell>();
+        foreach (KeyValuePair<ActiveSpellDisplay, ActiveSpell> kvp in equippedActiveSpells)
+        {
+            toReturn.Add(kvp.Value);
+        }
+        return toReturn;
+    }
+
     private void EquipCharacterLoadout(Character c)
     {
+        // Equip starting spells
+        foreach (SpellLabel spellLabel in c.GetStartingSpells())
+        {
+            EquipSpell(spellLabel);
+        }
+
+        // Equip character equipment
         EquipEquipment(c.GetStartingRobe());
         EquipEquipment(c.GetStartingHat());
         EquipEquipment(c.GetStartingWand());
         AddBook(c.GetStartingBook());
 
+        // Set player stats
         maxPlayerHP = c.GetMaxHP();
         characterMaxMana = c.GetMaxMana();
         maxPlayerMana = characterMaxMana + manaFromEquipment;
@@ -475,20 +502,38 @@ public class GameManager : MonoBehaviour
 
     private void EquipRobe(Robe robe)
     {
+        // Unequip old
+        if (playerEquippedRobe != null)
+            UnequipEquipment(playerEquippedRobe);
+
+        // Equip new
         playerEquippedRobe = robe;
+        robe.OnEquip();
     }
 
     private void EquipHat(Hat hat)
     {
+        // Unequip old
+        if (playerEquippedHat != null)
+            UnequipEquipment(playerEquippedHat);
+
+        // Equip new
         playerEquippedHat = hat;
+        hat.OnEquip();
     }
 
     private void EquipWand(Wand wand)
     {
+        // Unequip old
+        if (playerEquippedWand != null)
+            UnequipEquipment(playerEquippedWand);
+
+        // Equip new
         playerEquippedWand = wand;
+        wand.OnEquip();
     }
 
-    private void EquipEquipment(Equipment e)
+    public void EquipEquipment(Equipment e)
     {
         switch (e)
         {
@@ -504,26 +549,25 @@ public class GameManager : MonoBehaviour
             default:
                 throw new UnhandledSwitchCaseException();
         }
-        e.OnEquip();
     }
 
     private void UnequipEquipment(Equipment e)
     {
+        e.OnUnequip();
         switch (e)
         {
             case Robe robe:
-                EquipRobe(null);
+                playerEquippedRobe = null;
                 break;
             case Hat hat:
-                EquipHat(null);
+                playerEquippedHat = null;
                 break;
             case Wand wand:
-                EquipWand(null);
+                playerEquippedWand = null;
                 break;
             default:
                 throw new UnhandledSwitchCaseException();
         }
-        e.OnUnequip();
     }
 
     private Spell GetSpellOfType(SpellLabel label)
@@ -574,6 +618,10 @@ public class GameManager : MonoBehaviour
                 return new StaticField();
             case SpellLabel.Toxify:
                 return new Toxify();
+            case SpellLabel.WitchesWill:
+                return new WitchesWill();
+            case SpellLabel.WitchesWard:
+                return new WitchesWard();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -615,10 +663,6 @@ public class GameManager : MonoBehaviour
                 return new Plaguebringer();
             case ArtifactLabel.RustyCannon:
                 return new RustyCannon();
-            case ArtifactLabel.SheriffsEye:
-                return new SheriffsEye();
-            case ArtifactLabel.SmokeBomb:
-                return new SmokeBomb();
             case ArtifactLabel.SmokeShroud:
                 return new SmokeShroud();
             case ArtifactLabel.GreedyHands:
@@ -642,8 +686,6 @@ public class GameManager : MonoBehaviour
                 return new BookOfEffect();
             case BookLabel.CheatersConfessional:
                 return new CheatersConfessional();
-            case BookLabel.ClarksTimeCard:
-                return new ClarksTimeCard();
             case BookLabel.ForgiversOath:
                 return new ForgiversOath();
             case BookLabel.MerchantsManual:
@@ -670,15 +712,13 @@ public class GameManager : MonoBehaviour
         Artifact artifact = GetArtifactOfType(type);
         artifact.OnEquip();
 
-        ArtifactIcon spawned = Instantiate(artifactDisplay, artifactBar);
+        ItemDisplay spawned = Instantiate(artifactDisplay, artifactBar);
+        spawned.SetItem(artifact);
         spawned.name = "Artifact(" + type + ")";
-        spawned.SetSprite(artifact.GetSprite());
-        spawned.SetText(Utils.SplitOnCapitalLetters(type.ToString()));
 
         artifactDisplayTracker.Add(type, spawned);
         equippedArtifacts.Add(type, artifact);
     }
-
 
     public void RemoveArtifact(ArtifactLabel type)
     {
@@ -696,10 +736,9 @@ public class GameManager : MonoBehaviour
         Book book = GetBookOfType(type);
         book.OnEquip();
 
-        ArtifactIcon spawned = Instantiate(artifactDisplay, bookBar);
+        ItemDisplay spawned = Instantiate(artifactDisplay, bookBar);
+        spawned.SetItem(book);
         spawned.name = "Artifact(" + type + ")";
-        spawned.SetSprite(book.GetSprite());
-        spawned.SetText(Utils.SplitOnCapitalLetters(type.ToString()));
 
         bookDisplayTracker.Add(book.GetLabel(), spawned);
         equippedBooks.Add(type, book);
@@ -877,22 +916,22 @@ public class GameManager : MonoBehaviour
         return currentPlayerCurrency >= amount;
     }
 
-    public void AlterCurrency(float amount)
+    public void AlterCurrency(int amount)
     {
         if (amount > 0 && HasBook(BookLabel.MerchantsManual))
         {
-            amount *= MerchantsManual.CurrencyMultiplier;
+            amount = Mathf.CeilToInt(amount * MerchantsManual.CurrencyMultiplier);
             AnimateBook(BookLabel.MerchantsManual);
         }
 
         // Spawn Popup Text
-        PopupText spawned = Instantiate(popupTextPrefab, currencyText.transform.position, Quaternion.identity);
+        PopupText spawned = Instantiate(popupTextPrefab, currencyText.transform);
         spawned.Set(Utils.RoundTo(amount, 1).ToString(), Color.yellow);
 
         currentPlayerCurrency += amount;
     }
 
-    public bool AlterPlayerHP(float amount, DamageType damageSource, bool spawnPopupText = true)
+    public bool AlterPlayerHP(int amount, DamageType damageSource, bool spawnPopupText = true)
     {
         // Barricade Effect
         if (amount < -1 && HasArtifact(ArtifactLabel.Barricade))
@@ -909,7 +948,7 @@ public class GameManager : MonoBehaviour
 
         if (spawnPopupText)
         {
-            PopupText spawned = Instantiate(popupTextPrefab, hpText.transform.position, Quaternion.identity);
+            PopupText spawned = Instantiate(popupTextPrefab, hpText.transform);
             spawned.Set(Utils.RoundTo(amount, 1).ToString(), GetColorByDamageSource(damageSource));
         }
 
@@ -934,7 +973,37 @@ public class GameManager : MonoBehaviour
         return false;
     }
 
-    public void AlterPlayerMana(float amount)
+    public Color GetColorByDamageSource(DamageType damageSource)
+    {
+        return damageSourceColorDict[damageSource];
+    }
+
+    public int GetCurrentCharacterHP()
+    {
+        return currentPlayerHP;
+    }
+
+    public int GetMaxPlayerHP()
+    {
+        return maxPlayerHP;
+    }
+
+    public int GetPlayerCurrency()
+    {
+        return currentPlayerCurrency;
+    }
+
+    public int GetCurrentPlayerMana()
+    {
+        return currentPlayerMana;
+    }
+
+    public int GetMaxPlayerMana()
+    {
+        return maxPlayerMana;
+    }
+
+    public void AlterPlayerMana(int amount)
     {
         if (currentPlayerMana + amount > maxPlayerMana)
         {
@@ -950,37 +1019,12 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public Color GetColorByDamageSource(DamageType damageSource)
+    public void SetPlayerMana(int playerMana)
     {
-        return damageSourceColorDict[damageSource];
+        currentPlayerMana = playerMana;
     }
 
-    public float GetCurrentCharacterHP()
-    {
-        return currentPlayerHP;
-    }
-
-    public float GetMaxPlayerHP()
-    {
-        return maxPlayerHP;
-    }
-
-    public float GetPlayerCurrency()
-    {
-        return currentPlayerCurrency;
-    }
-
-    public float GetCurrentPlayerMana()
-    {
-        return currentPlayerMana;
-    }
-
-    public float GetMaxPlayerMana()
-    {
-        return maxPlayerMana;
-    }
-
-    public void AlterManaFromEquipment(float changeBy)
+    public void AlterManaFromEquipment(int changeBy)
     {
         manaFromEquipment += changeBy;
 
@@ -1023,6 +1067,8 @@ public class GameManager : MonoBehaviour
         throw new NotImplementedException();
     }
 
+    #region UI
+
     public void TogglePotionIngredientListScreen()
     {
         potionIngredientListScreen.SetActive(!potionIngredientListScreen.activeInHierarchy);
@@ -1040,6 +1086,8 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    #endregion
+
     #region Campfire
 
     [Header("Potion Screen")]
@@ -1052,7 +1100,7 @@ public class GameManager : MonoBehaviour
 
     public void RestAtCampfire()
     {
-        AlterPlayerHP(BalenceManager._Instance.GetValue(MapNodeType.Campfire, "HealPercent") * maxPlayerHP, DamageType.Heal);
+        AlterPlayerHP(Mathf.CeilToInt((BalenceManager._Instance.GetValue(MapNodeType.Campfire, "HealPercent") / 100) * maxPlayerHP), DamageType.Heal);
         ResolveCurrentEvent();
     }
 
@@ -1077,48 +1125,110 @@ public class GameManager : MonoBehaviour
 
     #endregion
 
-    #region Shop
+    #region Tavern
 
-    [Header("Shop")]
-    [SerializeField] private Transform artifactShopOffersTransform;
-    [SerializeField] private Transform bookShopOffersTransform;
-    [SerializeField] private Transform potionIngredientShopOffersTransform;
-
-    [SerializeField] private IngredientShopOffer potionIngredientShopOfferPrefab;
-    [SerializeField] private ArtifactShopOffer artifactShopOfferPrefab;
-    [SerializeField] private BookShopOffer bookShopOfferPrefab;
-
+    [Header("Tavern")]
     [SerializeField] private int numPotionIngredientShopOffers;
     [SerializeField] private int numArtifactShopOffers;
-    [SerializeField] private int numBookShopOffers;
+    [SerializeField] private int numEquipmentShopOffers;
+
+    [SerializeField] private EquipmentShopOffer equipmentShopOfferPrefab;
+    [SerializeField] private ArtifactShopOffer artifactShopOfferPrefab;
+    [SerializeField] private IngredientShopOffer ingredientShopOfferPrefab;
 
     private List<ArtifactShopOffer> shopArtifactList = new List<ArtifactShopOffer>();
-    private List<BookShopOffer> shopBookList = new List<BookShopOffer>();
     private List<IngredientShopOffer> shopIngredientList = new List<IngredientShopOffer>();
+    private List<EquipmentShopOffer> shopEquipmentList = new List<EquipmentShopOffer>();
+
+    [SerializeField] private SerializableDictionary<TavernScreen, TavernScreenInformation> tavernScreens = new SerializableDictionary<TavernScreen, TavernScreenInformation>();
+
+    [SerializeField] private GameObject[] turnOnForBrowseWaresScreen;
+
+    public void OpenBrowseWaresScreen()
+    {
+        foreach (GameObject obj in turnOnForBrowseWaresScreen)
+        {
+            obj.SetActive(true);
+        }
+    }
+
+    public void CloseBrowseWaresScreen()
+    {
+        foreach (GameObject obj in turnOnForBrowseWaresScreen)
+        {
+            obj.SetActive(false);
+        }
+    }
+
+    [System.Serializable]
+    private class TavernScreenInformation
+    {
+        public GameObject[] turnOnForScreen;
+        public Transform parentSpawnsTo;
+    }
+
+    private enum TavernScreen
+    {
+        Innkeeper,
+        Clothier,
+        Merchant
+    }
+
+    public void OpenScreen(int index)
+    {
+        foreach (GameObject obj in tavernScreens[(TavernScreen)index].turnOnForScreen)
+        {
+            obj.SetActive(true);
+        }
+    }
+
+    public void CloseScreen(int index)
+    {
+        foreach (GameObject obj in tavernScreens[(TavernScreen)index].turnOnForScreen)
+        {
+            obj.SetActive(false);
+        }
+    }
 
     public void LoadShop()
     {
         // Spawn Offers
+        TavernScreenInformation innkeeperInfo = tavernScreens[TavernScreen.Innkeeper];
+        TavernScreenInformation merchantInfo = tavernScreens[TavernScreen.Merchant];
+        TavernScreenInformation clothierInfo = tavernScreens[TavernScreen.Clothier];
+
+        // Artifacts
         for (int i = 0; i < numArtifactShopOffers; i++)
         {
-            ArtifactShopOffer offer = Instantiate(artifactShopOfferPrefab, artifactShopOffersTransform);
+            ArtifactShopOffer offer = Instantiate(artifactShopOfferPrefab, merchantInfo.parentSpawnsTo);
             offer.Set(GetRandomArtifact(), 100, null);
             shopArtifactList.Add(offer);
         }
 
-        for (int i = 0; i < numBookShopOffers; i++)
-        {
-            BookShopOffer offer = Instantiate(bookShopOfferPrefab, bookShopOffersTransform);
-            offer.Set(GetRandomBook(), 100, null);
-            shopBookList.Add(offer);
-        }
-
+        // Potion Ingredients
         for (int i = 0; i < numPotionIngredientShopOffers; i++)
         {
-            IngredientShopOffer offer = Instantiate(potionIngredientShopOfferPrefab, potionIngredientShopOffersTransform);
+            IngredientShopOffer offer = Instantiate(ingredientShopOfferPrefab, innkeeperInfo.parentSpawnsTo);
             offer.Set(GetRandomPotionIngredient(), 100, null);
             shopIngredientList.Add(offer);
         }
+
+        // Equipment
+        for (int i = 0; i < numEquipmentShopOffers; i++)
+        {
+            EquipmentShopOffer offer = Instantiate(equipmentShopOfferPrefab, clothierInfo.parentSpawnsTo);
+            offer.Set(GetRandomEquipment(), 100);
+            shopEquipmentList.Add(offer);
+        }
+    }
+
+    private Equipment GetRandomEquipment()
+    {
+        List<Equipment> allEquipment = new List<Equipment>();
+        allEquipment.AddRange(equippableWands);
+        allEquipment.AddRange(equippableRobes);
+        allEquipment.AddRange(equippableHats);
+        return RandomHelper.GetRandomFromList(allEquipment);
     }
 
     public void ClearShop()
@@ -1130,20 +1240,44 @@ public class GameManager : MonoBehaviour
             Destroy(offer.gameObject);
         }
 
-        while (shopBookList.Count > 0)
-        {
-            BookShopOffer offer = shopBookList[0];
-            shopBookList.RemoveAt(0);
-            Destroy(offer.gameObject);
-        }
-
         while (shopIngredientList.Count > 0)
         {
             IngredientShopOffer offer = shopIngredientList[0];
             shopIngredientList.RemoveAt(0);
             Destroy(offer.gameObject);
         }
+
+        while (shopEquipmentList.Count > 0)
+        {
+            EquipmentShopOffer offer = shopEquipmentList[0];
+            shopEquipmentList.RemoveAt(0);
+            Destroy(offer.gameObject);
+        }
     }
+
+    #region Runemaiden
+
+    // Reroll Rune
+    public void RerollRune(Equipment e)
+    {
+
+    }
+
+    // Upgrade Rune
+    public void UpgradeRune(Equipment e)
+    {
+
+    }
+
+    #endregion
+
+    #region Merchant
+
+    #endregion
+
+    #region Innkeeper
+
+    #endregion
 
     #endregion
 
@@ -1211,7 +1345,7 @@ public class GameManager : MonoBehaviour
                 switch (commandPart)
                 {
                     case "AlterGold":
-                        float goldAmount;
+                        int goldAmount;
                         if (TryParseArgument(label, argument, out goldAmount))
                         {
                             if (goldAmount > 0)
@@ -1229,7 +1363,7 @@ public class GameManager : MonoBehaviour
                         }
                         break;
                     case "AlterHP":
-                        float hpAmount;
+                        int hpAmount;
                         if (TryParseArgument(label, argument, out hpAmount))
                         {
                             AlterPlayerHP(hpAmount, DamageType.Default);
@@ -1285,7 +1419,7 @@ public class GameManager : MonoBehaviour
                         }
                         break;
                     case "AddRandomPotionIngredient":
-                        float numIngredients;
+                        int numIngredients;
                         if (TryParseArgument(label, argument, out numIngredients))
                         {
                             for (int i = 0; i < numIngredients; i++)
@@ -1322,7 +1456,7 @@ public class GameManager : MonoBehaviour
         return RandomHelper.GetRandomFromList(potionIngredientMap.Keys.ToList());
     }
 
-    private bool TryParseArgument(EventLabel label, string s, out float v)
+    private bool TryParseArgument(EventLabel label, string s, out int v)
     {
         if (s[0] == '{' && s[s.Length - 1] == '}')
         {
@@ -1344,7 +1478,7 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            if (float.TryParse(s, out v))
+            if (int.TryParse(s, out v))
             {
                 return true;
             }

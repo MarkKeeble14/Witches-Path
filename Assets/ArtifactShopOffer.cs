@@ -5,7 +5,7 @@ public class ArtifactShopOffer : ShopOffer
 {
     [SerializeField] private ArtifactLabel label;
 
-    public void Set(ArtifactLabel setTo, float cost, Action onClick)
+    public void Set(ArtifactLabel setTo, int cost, Action onClick)
     {
         label = setTo;
         this.cost = cost;

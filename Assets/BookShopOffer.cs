@@ -9,7 +9,7 @@ public class BookShopOffer : ShopOffer
         GameManager._Instance.AddBook(label);
     }
 
-    public void Set(BookLabel setTo, float cost, Action onClick)
+    public void Set(BookLabel setTo, int cost, Action onClick)
     {
         label = setTo;
         this.cost = cost;

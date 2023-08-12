@@ -7,16 +7,23 @@ public class ActiveSpellDisplay : SpellDisplay
     private ActiveSpell spell;
 
     [SerializeField] private TextMeshProUGUI keyBinding;
+    [SerializeField] private TextMeshProUGUI numNotes;
+    [SerializeField] private TextMeshProUGUI spellCD;
 
     public void SetActiveSpell(ActiveSpell spell, KeyCode binding)
     {
         this.spell = spell;
-        LoadSpellSprite(spell);
+        spellIcon.sprite = spell.GetSpellSprite();
         nameText.text = spell.Label.ToString();
 
+        // Auxillary info
+        numNotes.text = spell.NumNotes.ToString();
+        spellCD.text = spell.CooldownTracker.y.ToString();
         keyBinding.text = binding.ToString();
 
         isAvailable = false;
+
+        FillToolTipText(ContentType.ActiveSpell, spell.Label.ToString(), spell.ToolTipText);
     }
 
     private new void Update()
@@ -27,10 +34,10 @@ public class ActiveSpellDisplay : SpellDisplay
             return;
         }
 
-        if (spell.CooldownTimer.x > 0)
+        if (spell.CooldownTracker.x > 0)
         {
-            progressBar.fillAmount = spell.CooldownTimer.x / spell.CooldownTimer.y;
-            text.text = Utils.RoundTo(spell.CooldownTimer.x, 0).ToString();
+            progressBar.fillAmount = spell.CooldownTracker.x / spell.CooldownTracker.y;
+            text.text = Utils.RoundTo(spell.CooldownTracker.x, 0).ToString();
         }
         else
         {
