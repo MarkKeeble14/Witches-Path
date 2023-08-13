@@ -28,7 +28,8 @@ public class EquipmentShopOffer : ShopOffer
         };
         onPointerExit += delegate
         {
-            Destroy(spawnedToolTip.gameObject);
+            if (spawnedToolTip != null)
+                Destroy(spawnedToolTip.gameObject);
         };
     }
 

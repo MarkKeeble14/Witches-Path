@@ -127,15 +127,23 @@ public abstract class Equipment : ScriptableObject
         }
     }
 
-    public void Reforge()
+    public bool Reforge()
     {
         if (currentReforgeModifier != ReforgeModifier.Unimpressive)
         {
             ApplyReforgeModifierEffect(currentReforgeModifier, -1);
         }
-        currentReforgeModifier = RandomHelper.GetRandomEnumValue<ReforgeModifier>();
+
+        List<ReforgeModifier> possibleModifiers = new List<ReforgeModifier>((ReforgeModifier[])Enum.GetValues(typeof(ReforgeModifier)));
+        possibleModifiers.Remove(ReforgeModifier.Unimpressive);
+        possibleModifiers.Remove(currentReforgeModifier);
+
+        if (possibleModifiers.Count == 0) return false;
+
+        currentReforgeModifier = RandomHelper.GetRandomFromList(possibleModifiers);
         ApplyReforgeModifierEffect(currentReforgeModifier, 1);
         Debug.Log("Reforge Result: " + Name + " - " + currentReforgeModifier);
+        return true;
     }
 
     private void ApplyReforgeModifierEffect(ReforgeModifier modifier, int multiplyBy)

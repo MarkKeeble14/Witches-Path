@@ -30,6 +30,7 @@ public enum AfflictionType
     Prepared,
     Parry,
     Echo,
+    Poison,
     Blight,
     Burn,
     Paralyzed,
@@ -256,9 +257,13 @@ public partial class CombatManager : MonoBehaviour
     private IEnumerator PlayerTurn()
     {
         Debug.Log("Player Turn Started");
-        currentTurn = Turn.Player;
 
+        currentTurn = Turn.Player;
         OnPlayerTurnStart?.Invoke();
+
+        // Tick Relevant Afflictions
+        ApplyBurnEffectOnMap(characterAfflictionMap, Target.Character);
+        ApplyBlightEffectOnMap(characterAfflictionMap, Target.Character);
 
         // Reset for Turn
         ResetCombatentWard(Target.Character);
@@ -267,7 +272,7 @@ public partial class CombatManager : MonoBehaviour
         yield return new WaitUntil(() => playerTurnEnded);
         playerTurnEnded = false;
 
-        yield return StartCoroutine(CastQueue());
+        yield return StartCoroutine(CastCharacterQueue());
 
         if (CheckForCombatOver())
         {
@@ -297,6 +302,7 @@ public partial class CombatManager : MonoBehaviour
         {
             // Set Cooldown
             spell.SetOnCooldown();
+
             // Consume Mana
             GameManager._Instance.AlterPlayerMana(-spell.GetManaCost());
         }
@@ -316,13 +322,12 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private IEnumerator CastQueue()
+    private IEnumerator CastCharacterQueue()
     {
         while (spellQueue.Count > 0)
         {
-            // Update Tick Based Afflictions on Cast Spell
-            UpdateTickBasedAfflictions(characterAfflictionMap, Target.Character);
-            UpdateTickBasedAfflictions(enemyAfflictionMap, Target.Enemy);
+            // Apply Poison Effect
+            ApplyPoisonEffectOnMap(enemyAfflictionMap, Target.Enemy);
 
             // Get Spell from Queue
             QueuedActiveSpell spell = spellQueue[0];
@@ -408,8 +413,13 @@ public partial class CombatManager : MonoBehaviour
     private IEnumerator EnemyTurn()
     {
         Debug.Log("Enemy Turn Started");
+
         currentTurn = Turn.Enemy;
         OnEnemyTurnStart?.Invoke();
+
+        // Tick Relevant Afflictions
+        ApplyBurnEffectOnMap(enemyAfflictionMap, Target.Enemy);
+        ApplyBlightEffectOnMap(enemyAfflictionMap, Target.Enemy);
 
         yield return new WaitForSeconds(1);
 
@@ -670,7 +680,6 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private Transform enemyAfflictionList;
     private Dictionary<AfflictionType, Affliction> characterAfflictionMap = new Dictionary<AfflictionType, Affliction>();
     private Dictionary<AfflictionType, Affliction> enemyAfflictionMap = new Dictionary<AfflictionType, Affliction>();
-    private List<AfflictionType> toClearFromAffMap = new List<AfflictionType>();
     private Dictionary<AfflictionType, AfflictionIcon> afflictionIconTracker = new Dictionary<AfflictionType, AfflictionIcon>();
 
     public void AddAffliction(AfflictionType type, int num, Target target)
@@ -785,14 +794,26 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void UpdateTickBasedAfflictions(Dictionary<AfflictionType, Affliction> map, Target target)
+    private void ApplyPoisonEffectOnMap(Dictionary<AfflictionType, Affliction> map, Target target)
+    {
+        if (map.ContainsKey(AfflictionType.Poison))
+        {
+            AlterCombatentHP(-map[AfflictionType.Poison].GetStacks(), target, DamageType.Poison);
+            ConsumeAfflictionStack(AfflictionType.Poison, target);
+        }
+    }
+
+    private void ApplyBlightEffectOnMap(Dictionary<AfflictionType, Affliction> map, Target target)
     {
         if (map.ContainsKey(AfflictionType.Blight))
         {
             AlterCombatentHP(-map[AfflictionType.Blight].GetStacks(), target, DamageType.Poison);
-            ConsumeAfflictionStack(AfflictionType.Blight, target);
+            AddAffliction(AfflictionType.Blight, 1, target);
         }
+    }
 
+    private void ApplyBurnEffectOnMap(Dictionary<AfflictionType, Affliction> map, Target target)
+    {
         if (map.ContainsKey(AfflictionType.Burn))
         {
             AlterCombatentHP(-BalenceManager._Instance.GetValue(AfflictionType.Burn, "DamageAmount"), target, DamageType.Fire);

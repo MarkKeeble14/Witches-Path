@@ -66,22 +66,11 @@ public class ItemDisplay : MonoBehaviour
 
         // Enable additional text object if the represented item has such
         additionalText.gameObject.SetActive(i.GetAdditionalText().Length > 0);
-
-        // Set the item accordingly
-        switch (i)
-        {
-            case Artifact artifact:
-                finalizedToolTipText = GameManager._Instance.FillToolTipText(ContentType.Artifact, artifact.GetLabel().ToString(), artifact.ToolTipText);
-                break;
-            case Book book:
-                finalizedToolTipText = GameManager._Instance.FillToolTipText(ContentType.Book, book.GetLabel().ToString(), book.ToolTipText);
-                break;
-        }
     }
 
     public void SpawnToolTip()
     {
-        spawnedToolTip = UIManager._Instance.SpawnToolTip(finalizedToolTipText, transform, new Vector3(toolTipXOffset, 0, 0));
+        spawnedToolTip = UIManager._Instance.SpawnToolTip(setTo.ToolTipText, transform, new Vector3(toolTipXOffset, 0, 0));
     }
 
     public void DestroyToolTip()

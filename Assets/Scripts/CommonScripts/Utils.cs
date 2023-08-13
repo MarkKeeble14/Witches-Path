@@ -109,6 +109,26 @@ public class Utils
         return minutes + "m:" + seconds + "s";
     }
 
+    public static string GetNumericalSuffix(int v)
+    {
+        if (v == 1)
+        {
+            return "st";
+        }
+        else if (v == 2)
+        {
+            return "nd";
+        }
+        else if (v == 3)
+        {
+            return "rd";
+        }
+        else
+        {
+            return "th";
+        }
+    }
+
     public static string GetRepeatingString(string s, int repeat)
     {
         string r = "";

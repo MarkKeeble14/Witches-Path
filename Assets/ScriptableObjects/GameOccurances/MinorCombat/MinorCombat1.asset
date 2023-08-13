@@ -14,8 +14,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
   enemy: {fileID: 11400000, guid: 4b9f5ea9e01623d4ca4dd5401cb5d580, type: 2}
-  minMaxCurrencyReward: {x: 25, y: 40}
-  chanceForOtherRewards:
+  itemRewards:
     dictionary:
     - key: 0
-      value: {x: 1, y: 1}
+      value:
+        percentageMap:
+        - key:
+            NumericalType: 1
+            Numbers: {x: 1, y: 2}
+          value: 100
+    - key: 1
+      value:
+        percentageMap:
+        - key:
+            NumericalType: 1
+            Numbers: {x: 1, y: 1}
+          value: 100
+  currencyRewards:
+    dictionary:
+    - key: 2
+      value:
+        percentageMap:
+        - key: {x: 20, y: 40}
+          value: 100
+    - key: 3
+      value:
+        percentageMap:
+        - key: {x: 0, y: 0}
+          value: 50
+        - key: {x: 1, y: 1}
+          value: 50

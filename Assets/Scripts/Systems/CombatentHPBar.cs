@@ -41,20 +41,17 @@ public class CombatentHPBar : MonoBehaviour
 
     public void SetCurrentHP(int newCurrentHP)
     {
-        if (newCurrentHP > setCurrentHP)
+        for (int i = 0; i < hPBarSegments.Length; i++)
         {
-            // HP Was Increased
-            for (int i = setCurrentHP; i < newCurrentHP; i++)
+            CombatentHPBarSegment segment = hPBarSegments[i];
+            // Hide segments that are indexed higher than the current HP Value
+            if (i > newCurrentHP)
             {
-                hPBarSegments[i - 1].SetAlpha(1);
+                segment.SetAlpha(0);
             }
-        }
-        else
-        {
-            // HP was decreased
-            for (int i = setCurrentHP; i > newCurrentHP; i--)
+            else
             {
-                hPBarSegments[i - 1].SetAlpha(0);
+                segment.SetAlpha(1);
             }
         }
         setCurrentHP = newCurrentHP;

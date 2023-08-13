@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,6 +8,21 @@ public enum RewardType
 {
     Artifact,
     Book,
+    Currency,
+    ClothierCurrency
+}
+
+public enum RewardNumericalType
+{
+    ChanceTo,
+    Between
+}
+
+[System.Serializable]
+public class RewardInfo
+{
+    public RewardNumericalType NumericalType;
+    public Vector2 Numbers;
 }
 
 public abstract class Combat : GameOccurance
@@ -17,30 +33,68 @@ public abstract class Combat : GameOccurance
     [SerializeField] private Enemy enemy;
     public Enemy Enemy { get => enemy; }
 
-    [SerializeField] private Vector2 minMaxCurrencyReward;
-    [SerializeField] private SerializableDictionary<RewardType, Vector2> chanceForOtherRewards = new SerializableDictionary<RewardType, Vector2>();
+    [SerializeField]
+    private SerializableDictionary<RewardType, PercentageMap<RewardInfo>> itemRewards
+        = new SerializableDictionary<RewardType, PercentageMap<RewardInfo>>();
+
+    [SerializeField]
+    private SerializableDictionary<RewardType, PercentageMap<Vector2Int>> currencyRewards
+    = new SerializableDictionary<RewardType, PercentageMap<Vector2Int>>();
+
+    private void ParseItemRewardInfo(RewardInfo info, Action act)
+    {
+        if (info.NumericalType == RewardNumericalType.Between)
+        {
+            int num = RandomHelper.RandomIntInclusive(info.Numbers);
+            for (int i = 0; i < num; i++)
+            {
+                act?.Invoke();
+            }
+        }
+        else if (info.NumericalType == RewardNumericalType.ChanceTo)
+        {
+            if (RandomHelper.EvaluateChanceTo(info.Numbers))
+            {
+                act?.Invoke();
+            }
+        }
+    }
 
     protected override IEnumerator OnResolve()
     {
         Debug.Log(name + ": OnResolve");
 
-        foreach (RewardType type in chanceForOtherRewards.Keys())
+        foreach (RewardType type in itemRewards.Keys())
         {
-            if (RandomHelper.EvaluateChanceTo(chanceForOtherRewards[type]))
+            RewardInfo info = itemRewards[type].GetOption();
+            switch (type)
             {
-                switch (type)
-                {
-                    case RewardType.Artifact:
-                        RewardManager._Instance.AddReward(GameManager._Instance.GetRandomArtifact());
-                        break;
-                    case RewardType.Book:
-                        RewardManager._Instance.AddReward(GameManager._Instance.GetRandomBook());
-                        break;
-                }
+                case RewardType.Artifact:
+                    ParseItemRewardInfo(info, () => RewardManager._Instance.AddReward(GameManager._Instance.GetRandomArtifact()));
+                    break;
+                case RewardType.Book:
+                    ParseItemRewardInfo(info, () => RewardManager._Instance.AddReward(GameManager._Instance.GetRandomBook()));
+                    break;
+                default:
+                    throw new UnhandledSwitchCaseException();
             }
         }
 
-        RewardManager._Instance.AddReward(RandomHelper.RandomIntExclusive(minMaxCurrencyReward));
+        foreach (RewardType type in currencyRewards.Keys())
+        {
+            int num = RandomHelper.RandomIntExclusive(currencyRewards[type].GetOption());
+            switch (type)
+            {
+                case RewardType.ClothierCurrency:
+                    RewardManager._Instance.AddClothierCurrencyReward(num);
+                    break;
+                case RewardType.Currency:
+                    RewardManager._Instance.AddCurrencyReward(num);
+                    break;
+                default:
+                    throw new UnhandledSwitchCaseException();
+            }
+        }
 
         yield return RewardManager._Instance.ShowRewardScreen();
 

@@ -29,4 +29,5 @@
     Telescope,
     CheapStopwatch,
     Boulder,
+    Crown
 }

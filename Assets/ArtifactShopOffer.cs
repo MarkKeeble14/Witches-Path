@@ -13,14 +13,15 @@ public class ArtifactShopOffer : ShopOffer
         costText.text = cost.ToString();
 
         ToolTip spawnedToolTip = null;
-        string finalizedToolTipText = GameManager._Instance.FillToolTipText(ContentType.Artifact, setTo.ToString(), GameManager._Instance.GetArtifactOfType(setTo).ToolTipText);
+        string finalizedToolTipText = GameManager._Instance.GetArtifactOfType(setTo).ToolTipText;
         onPointerEnter += delegate
         {
             spawnedToolTip = UIManager._Instance.SpawnToolTip(finalizedToolTipText, transform, new Vector3(toolTipOffset, 0, 0));
         };
         onPointerExit += delegate
         {
-            Destroy(spawnedToolTip.gameObject);
+            if (spawnedToolTip != null)
+                Destroy(spawnedToolTip.gameObject);
         };
     }
 

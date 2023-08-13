@@ -59,7 +59,7 @@ public class ActiveSpellDisplay : SpellDisplay
 
         isAvailable = false;
 
-        finalizedToolTipText = GameManager._Instance.FillToolTipText(ContentType.ActiveSpell, spell.Label.ToString(), spell.ToolTipText);
+        finalizedToolTipText = spell.ToolTipText;
     }
 
     private new void Update()

@@ -28,7 +28,7 @@ public class RewardManager : MonoBehaviour
         Debug.Log("Adding Artifact Reward: " + label);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         ToolTip spawnedToolTip = null;
-        string finalizedToolTipText = GameManager._Instance.FillToolTipText(ContentType.Artifact, label.ToString(), GameManager._Instance.GetArtifactOfType(label).ToolTipText);
+        string finalizedToolTipText = GameManager._Instance.GetArtifactOfType(label).ToolTipText;
         spawned.Set(label.ToString(), null,
             delegate
             {
@@ -49,11 +49,11 @@ public class RewardManager : MonoBehaviour
         Debug.Log("Adding Book Reward: " + label);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         ToolTip spawnedToolTip = null;
-        string finalizedToolTipText = GameManager._Instance.FillToolTipText(ContentType.Book, label.ToString(), GameManager._Instance.GetBookOfType(label).ToolTipText);
+        string finalizedToolTipText = GameManager._Instance.GetBookOfType(label).ToolTipText;
         spawned.Set(label.ToString(), null,
             delegate
             {
-                GameManager._Instance.AddBook(label);
+                GameManager._Instance.SwapBooks(GameManager._Instance.GetOwnedBook(0), label);
                 Destroy(spawned.gameObject);
             }, delegate
             {
@@ -76,9 +76,14 @@ public class RewardManager : MonoBehaviour
         }, null, null);
     }
 
-    public void AddReward(int currencyAmount)
+    public void AddCurrencyReward(int currencyAmount)
     {
-        Debug.Log("Adding Financial Reward: " + currencyAmount);
+        if (currencyAmount <= 0)
+        {
+            return;
+        }
+
+        Debug.Log("Adding Currency Reward: " + currencyAmount);
 
         // Lucky Coin Effect
         if (GameManager._Instance.HasArtifact(ArtifactLabel.LuckyCoin))
@@ -91,6 +96,23 @@ public class RewardManager : MonoBehaviour
         spawned.Set(currencyAmount.ToString() + " Gold", null, delegate
         {
             GameManager._Instance.AlterCurrency(currencyAmount);
+            Destroy(spawned.gameObject);
+        }, null, null);
+    }
+
+    public void AddClothierCurrencyReward(int currencyAmount)
+    {
+        if (currencyAmount <= 0)
+        {
+            return;
+        }
+
+        Debug.Log("Adding Clothier Currency Reward: " + currencyAmount);
+
+        RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
+        spawned.Set(currencyAmount.ToString() + " Pelt" + (currencyAmount > 1 ? "s" : ""), null, delegate
+        {
+            GameManager._Instance.AlterClothierCurrency(currencyAmount);
             Destroy(spawned.gameObject);
         }, null, null);
     }

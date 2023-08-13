@@ -27,27 +27,33 @@ public class GameManager : MonoBehaviour
     private int characterMaxMana;
     private int currentPlayerMana;
     private int currentPlayerCurrency;
+    private int currentPlayerClothierCurrency;
     private Robe playerEquippedRobe;
     private Hat playerEquippedHat;
     private Wand playerEquippedWand;
 
     private string persistentTokensKey = "PersistentTokens";
 
-    [Header("Books")]
-    [SerializeField] private Transform bookBar;
-    private Dictionary<BookLabel, BookDisplay> bookDisplayTracker = new Dictionary<BookLabel, BookDisplay>();
-    private Dictionary<BookLabel, Book> equippedBooks = new Dictionary<BookLabel, Book>();
-
     [Header("Artifacts")]
     [SerializeField] private Transform artifactBar;
-    private Dictionary<ArtifactLabel, ArtifactDisplay> artifactDisplayTracker = new Dictionary<ArtifactLabel, ArtifactDisplay>();
-    private Dictionary<ArtifactLabel, Artifact> equippedArtifacts = new Dictionary<ArtifactLabel, Artifact>();
     [SerializeField] private SerializableDictionary<ArtifactLabel, Rarity> artifactRarityMap = new SerializableDictionary<ArtifactLabel, Rarity>();
     [SerializeField] private PercentageMap<Rarity> artifactRarityOdds = new PercentageMap<Rarity>();
+    private Dictionary<ArtifactLabel, ArtifactDisplay> artifactDisplayTracker = new Dictionary<ArtifactLabel, ArtifactDisplay>();
+    private Dictionary<ArtifactLabel, Artifact> equippedArtifacts = new Dictionary<ArtifactLabel, Artifact>();
+    private List<ArtifactLabel> allArtifacts;
+    private int artifactIndex;
+
+    [Header("Books")]
+    [SerializeField] private Transform bookBar;
+    [SerializeField] private SerializableDictionary<BookLabel, Rarity> bookRarityMap = new SerializableDictionary<BookLabel, Rarity>();
+    [SerializeField] private PercentageMap<Rarity> bookRarityOdds = new PercentageMap<Rarity>();
+    private Dictionary<BookLabel, BookDisplay> bookDisplayTracker = new Dictionary<BookLabel, BookDisplay>();
+    private Dictionary<BookLabel, Book> equippedBooks = new Dictionary<BookLabel, Book>();
+    private List<BookLabel> allBooks;
+    private int bookIndex;
 
     [Header("Spells")]
     private List<ActiveSpellDisplay> activeSpellDisplays = new List<ActiveSpellDisplay>();
-
     private Dictionary<SpellLabel, SpellDisplay> loadedSpellDisplays = new Dictionary<SpellLabel, SpellDisplay>();
     private Dictionary<ActiveSpellDisplay, ActiveSpell> equippedActiveSpells = new Dictionary<ActiveSpellDisplay, ActiveSpell>();
     private Dictionary<PassiveSpellDisplay, PassiveSpell> equippedPassiveSpells = new Dictionary<PassiveSpellDisplay, PassiveSpell>();
@@ -57,12 +63,21 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Transform activeSpellDisplaysList;
     [SerializeField] private Transform passiveSpellDisplaysList;
 
+    [Header("Passive Spells")]
+    [SerializeField] private List<SpellLabel> equippablePassiveSpells = new List<SpellLabel>();
+    private int equippablePassiveSpellIndex = 0;
+
+    [Header("Active Spells")]
+    [SerializeField] private List<SpellLabel> equippableActiveSpells = new List<SpellLabel>();
+    private int equippableActiveSpellIndex = 0;
+
     [Header("Potions")]
     private Dictionary<PotionIngredient, int> potionIngredientMap = new Dictionary<PotionIngredient, int>();
 
     [Header("Equipment")]
     [SerializeField] private List<Hat> equippableHats = new List<Hat>();
     [SerializeField] private List<Robe> equippableRobes = new List<Robe>();
+
     [SerializeField] private List<Wand> equippableWands = new List<Wand>();
 
     [Header("Prefabs")]
@@ -73,21 +88,6 @@ public class GameManager : MonoBehaviour
     [Header("Test")]
     [SerializeField] private ContentType currentlyTesting;
 
-    [Header("Artifacts")]
-    private List<ArtifactLabel> allArtifacts;
-    private int artifactIndex;
-
-    [Header("Books")]
-    private List<BookLabel> allBooks;
-    private int bookIndex;
-
-    [Header("Passive Spells")]
-    [SerializeField] private List<SpellLabel> equippablePassiveSpells = new List<SpellLabel>();
-    private int equippablePassiveSpellIndex = 0;
-
-    [Header("Active Spells")]
-    [SerializeField] private List<SpellLabel> equippableActiveSpells = new List<SpellLabel>();
-    private int equippableActiveSpellIndex = 0;
 
     [Header("Visual")]
     [SerializeField] private SerializableDictionary<DamageType, Color> damageSourceColorDict = new SerializableDictionary<DamageType, Color>();
@@ -96,6 +96,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI hpText;
     [SerializeField] private TextMeshProUGUI manaText;
     [SerializeField] private TextMeshProUGUI currencyText;
+    [SerializeField] private TextMeshProUGUI clothierCurrencyText;
     [SerializeField] private TextMeshProUGUI damageText;
     [SerializeField] private TextMeshProUGUI defenseText;
 
@@ -108,6 +109,7 @@ public class GameManager : MonoBehaviour
     public int DefenseFromEquipment { get; set; }
     private int manaFromEquipment;
 
+
     private void Awake()
     {
         _Instance = this;
@@ -117,6 +119,7 @@ public class GameManager : MonoBehaviour
     {
         // Get List of all Book Labels
         allBooks = new List<BookLabel>((BookLabel[])Enum.GetValues(typeof(BookLabel)));
+
         // Get List of all Artifact Labels
         allArtifacts = new List<ArtifactLabel>((ArtifactLabel[])Enum.GetValues(typeof(ArtifactLabel)));
 
@@ -137,6 +140,7 @@ public class GameManager : MonoBehaviour
         hpText.text = Mathf.RoundToInt(currentPlayerHP).ToString() + "/" + Mathf.RoundToInt(maxPlayerHP).ToString();
         manaText.text = Mathf.RoundToInt(currentPlayerMana).ToString() + "/" + Mathf.RoundToInt(maxPlayerMana).ToString();
         currencyText.text = Mathf.RoundToInt(currentPlayerCurrency).ToString();
+        clothierCurrencyText.text = Mathf.RoundToInt(currentPlayerClothierCurrency).ToString();
         damageText.text = GetBasicAttackDamage().ToString();
         defenseText.text = Mathf.RoundToInt(DefenseFromEquipment).ToString();
 
@@ -483,6 +487,9 @@ public class GameManager : MonoBehaviour
         EquipEquipment(c.GetStartingWand());
         AddBook(c.GetStartingBook());
 
+        // Remove Owned Book from All Books
+        allBooks.Remove(GetOwnedBook(0));
+
         // Set player stats
         maxPlayerHP = c.GetMaxHP();
         characterMaxMana = c.GetMaxMana();
@@ -681,6 +688,8 @@ public class GameManager : MonoBehaviour
                 return new LuckyCoin();
             case ArtifactLabel.Telescope:
                 return new Telescope();
+            case ArtifactLabel.Crown:
+                return new Crown();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -697,13 +706,21 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void RemoveArtifactFromPool(ArtifactLabel label)
+    {
+        allArtifacts.Remove(label);
+    }
+
     public void AddArtifact(ArtifactLabel type)
     {
+        if (artifactDisplayTracker.ContainsKey(type))
+        {
+            AnimateArtifact(type);
+            return;
+        }
+
         Artifact artifact = GetArtifactOfType(type);
         artifact.OnEquip();
-
-        // Remove this artifact from the pool of available artifacts
-        allArtifacts.Remove(type);
 
         ArtifactDisplay spawned = Instantiate(artifactDisplay, artifactBar);
         spawned.SetItem(artifact);
@@ -728,9 +745,6 @@ public class GameManager : MonoBehaviour
     {
         Book book = GetBookOfType(type);
         book.SetParameters();
-
-        // Remove this book from the pool of available books
-        allBooks.Remove(type);
 
         BookDisplay spawned = Instantiate(bookDisplay, bookBar);
         spawned.SetItem(book);
@@ -918,6 +932,15 @@ public class GameManager : MonoBehaviour
         spawned.Set(Utils.RoundTo(amount, 1).ToString(), Color.yellow);
 
         currentPlayerCurrency += amount;
+    }
+
+    public void AlterClothierCurrency(int amount)
+    {
+        // Spawn Popup Text
+        PopupText spawned = Instantiate(popupTextPrefab, clothierCurrencyText.transform);
+        spawned.Set(Utils.RoundTo(amount, 1).ToString(), Color.blue);
+
+        currentPlayerClothierCurrency += amount;
     }
 
     public bool AlterPlayerHP(int amount, DamageType damageSource, bool spawnPopupText = true)
@@ -1191,10 +1214,20 @@ public class GameManager : MonoBehaviour
         // Artifacts
         for (int i = 0; i < numArtifactShopOffers; i++)
         {
+            // Ran out of aartifacts
+            if (allArtifacts.Count == 0)
+            {
+                break;
+            }
+
             ArtifactShopOffer offer = Instantiate(artifactShopOfferPrefab, merchantInfo.parentSpawnsTo);
+
+            // Get artifact that will be offered
             ArtifactLabel offered = GetRandomArtifact();
-            Rarity rarity = artifactRarityMap[offered];
-            offer.Set(offered, Mathf.RoundToInt(RandomHelper.RandomFloat(minMaxArtifactCostDict[rarity])), null);
+
+            // Determine cost
+            int cost = Mathf.RoundToInt(RandomHelper.RandomFloat(minMaxArtifactCostDict[artifactRarityMap[offered]]));
+            offer.Set(offered, cost, null);
             shopArtifactList.Add(offer);
         }
 
@@ -1218,9 +1251,17 @@ public class GameManager : MonoBehaviour
     private Equipment GetRandomEquipment()
     {
         List<Equipment> allEquipment = new List<Equipment>();
+
+        // Add all Equipment
         allEquipment.AddRange(equippableWands);
         allEquipment.AddRange(equippableRobes);
         allEquipment.AddRange(equippableHats);
+
+        // Remove Currently Equipped Equipment
+        allEquipment.Remove(playerEquippedWand);
+        allEquipment.Remove(playerEquippedRobe);
+        allEquipment.Remove(playerEquippedHat);
+
         return RandomHelper.GetRandomFromList(allEquipment);
     }
 
@@ -1343,7 +1384,7 @@ public class GameManager : MonoBehaviour
                         {
                             if (goldAmount > 0)
                             {
-                                RewardManager._Instance.AddReward((int)goldAmount);
+                                RewardManager._Instance.AddCurrencyReward((int)goldAmount);
                             }
                             else
                             {
@@ -1487,15 +1528,14 @@ public class GameManager : MonoBehaviour
         return RandomHelper.GetRandomFromList(equippedArtifacts.Keys.ToList());
     }
 
-    public BookLabel GetRandomOwnedBook()
+    public ArtifactLabel GetRandomArtifact(bool removeFromPool = true)
     {
-        return RandomHelper.GetRandomFromList(equippedBooks.Keys.ToList());
-    }
-
-    public ArtifactLabel GetRandomArtifact()
-    {
-        Rarity rarity = artifactRarityOdds.GetOption();
-        return GetRandomArtifactOfRarity(rarity);
+        ArtifactLabel artifact = GetRandomArtifactOfRarity(artifactRarityOdds.GetOption());
+        if (removeFromPool)
+        {
+            allArtifacts.Remove(artifact);
+        }
+        return artifact;
     }
 
     private ArtifactLabel GetRandomArtifactOfRarity(Rarity r)
@@ -1508,6 +1548,14 @@ public class GameManager : MonoBehaviour
                 options.Add(l);
             }
         }
+
+        // No Artifacts Remaining
+        if (options.Count == 0)
+        {
+            return ArtifactLabel.Crown;
+        }
+
+
         return RandomHelper.GetRandomFromList(options);
     }
 
@@ -1516,9 +1564,44 @@ public class GameManager : MonoBehaviour
         AddArtifact(GetRandomArtifact());
     }
 
-    public BookLabel GetRandomBook()
+    public BookLabel GetRandomOwnedBook()
     {
-        return RandomHelper.GetRandomFromList(allBooks);
+        return RandomHelper.GetRandomFromList(equippedBooks.Keys.ToList());
+    }
+
+    public BookLabel GetOwnedBook(int index)
+    {
+        return equippedBooks.Keys.ToList()[index];
+    }
+
+    public BookLabel GetRandomBook(bool removeFromPool = true)
+    {
+        BookLabel book = GetRandomBookOfRarity(bookRarityOdds.GetOption());
+        if (removeFromPool)
+        {
+            allBooks.Remove(book);
+        }
+        return book;
+    }
+
+    private BookLabel GetRandomBookOfRarity(Rarity r)
+    {
+        List<BookLabel> options = new List<BookLabel>();
+        foreach (BookLabel l in allBooks)
+        {
+            if (bookRarityMap[l] == r)
+            {
+                options.Add(l);
+            }
+        }
+
+        // No Books Remaining
+        if (options.Count == 0)
+        {
+            return BookLabel.WitchesTravelGuide;
+        }
+
+        return RandomHelper.GetRandomFromList(options);
     }
 
     public void AddRandomBook()
@@ -1673,12 +1756,9 @@ public class GameManager : MonoBehaviour
 
     public void ReforgeEquipmentSelected()
     {
-        StartCoroutine(ReforgeEquipmentSequence());
-    }
+        if (currentPlayerClothierCurrency <= 0) return;
 
-    private void ReforgeEquipment(Equipment e)
-    {
-        e.Reforge();
+        StartCoroutine(ReforgeEquipmentSequence());
     }
 
     private IEnumerator ReforgeEquipmentSequence()
@@ -1696,7 +1776,10 @@ public class GameManager : MonoBehaviour
             }
 
             // Reforge
-            ReforgeEquipment(selectedEquipment);
+            selectedEquipment.Reforge();
+
+            // Use Currency
+            currentPlayerClothierCurrency -= 1;
 
             // Reset
             selectedEquipment = null;
@@ -1709,12 +1792,9 @@ public class GameManager : MonoBehaviour
 
     public void StrengthenEquipmentSelected()
     {
-        StartCoroutine(StrengthenEquipmentSequence());
-    }
+        if (currentPlayerClothierCurrency <= 0) return;
 
-    private void StrengthenEquipment(Equipment e, BaseStat stat, int changeBy)
-    {
-        e.Strengthen(stat, changeBy);
+        StartCoroutine(StrengthenEquipmentSequence());
     }
 
     private IEnumerator StrengthenEquipmentSequence()
@@ -1746,7 +1826,10 @@ public class GameManager : MonoBehaviour
                 }
 
                 // Reforge
-                StrengthenEquipment(selectedEquipment, selectedStat, 1);
+                selectedEquipment.Strengthen(selectedStat, 1);
+
+                // Use Currency
+                currentPlayerClothierCurrency -= 1;
 
                 // Reset
                 hasSelectedStat = false;
@@ -1772,54 +1855,4 @@ public class GameManager : MonoBehaviour
     }
 
     #endregion
-
-    public string FillToolTipText(ContentType type, string label, string text)
-    {
-        bool inParam = false;
-        string param = "";
-        string res = "";
-
-        for (int i = 0; i < text.Length; i++)
-        {
-            char c = text[i];
-
-            // if the current char is an open curly bracket, that indicates that we are reading a parameter here
-            if (c.Equals('{'))
-            {
-                inParam = true;
-            }
-
-            // if we're currently getting the name of the parameter, we don't add the current char to the final string
-            if (inParam)
-            {
-                param += c;
-            }
-            else // if we're NOT currently getting the name of the parameter, we DO
-            {
-                res += c;
-            }
-
-            // the current char is a closed curly bracket, signifying the end of the parameter
-            if (c.Equals('}'))
-            {
-                // Substring the param to remove '{' and '}'
-                param = param.Substring(1, param.Length - 2);
-
-                // Check if value is negative, if so, make the number positive as the accompanying text will indicate the direction of the value, i.e., "Lose 50 Gold" instead of "Gain 50 Gold"
-                float v = BalenceManager._Instance.GetValue(type, label, param);
-                if (v < 0)
-                {
-                    v *= -1;
-                }
-                // Add the correct value to the string
-                res += v;
-
-                // no longer in param
-                inParam = false;
-                param = "";
-            }
-
-        }
-        return res;
-    }
 }

@@ -86,7 +86,7 @@ public abstract class Book : PowerupItem
     {
         return BalenceManager._Instance.GetValue(Label, specIdentifier);
     }
-    protected bool UpdateBookSpec(string specIdentifier, int changeBy)
+    protected float UpdateBookSpec(string specIdentifier, int changeBy)
     {
         return BalenceManager._Instance.UpdateValue(Label, specIdentifier, changeBy);
     }
@@ -126,7 +126,7 @@ public class WitchesTravelGuide : Book
 {
     protected override BookLabel Label => BookLabel.WitchesTravelGuide;
 
-    public override string ToolTipText => "Gain {CurrencyAmount} Gold";
+    public override string ToolTipText => "Gain " + currencyAmount + " Gold";
 
     public override int MaxCharge => 12;
 
@@ -146,7 +146,7 @@ public class WitchesTravelGuide : Book
 
     protected override void LevelUp()
     {
-        UpdateBookSpec("CurrencyAmount", increaseOnLevelUp);
+        currencyAmount += increaseOnLevelUp;
     }
 }
 

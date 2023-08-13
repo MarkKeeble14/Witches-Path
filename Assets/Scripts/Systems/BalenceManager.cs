@@ -53,15 +53,16 @@ public class BalenceManager : MonoBehaviour
         }
     }
 
-    public bool UpdateValue(BookLabel bookLabel, string identifier, int changeBy)
+    public int UpdateValue(BookLabel bookLabel, string identifier, int changeBy)
     {
         if (bookSpecDict[bookLabel.ToString()].ContainsKey(identifier))
         {
             int currentValue = bookSpecDict[bookLabel.ToString()][identifier];
-            bookSpecDict[bookLabel.ToString()][identifier] = currentValue + changeBy;
-            return true;
+            int newValue = currentValue + changeBy;
+            bookSpecDict[bookLabel.ToString()][identifier] = newValue;
+            return newValue;
         }
-        return false;
+        return Utils.StandardSentinalValue;
     }
 
     // Simply returns the value found in the dict
