@@ -21,12 +21,13 @@ public class ItemDisplay : MonoBehaviour
     [SerializeField] private float toolTipXOffset;
     private string finalizedToolTipText;
 
-    private void Start()
+    protected void Start()
     {
+        // Set Target Scale Initially
         targetScale = regularScale;
     }
 
-    private void Update()
+    protected void Update()
     {
         // Allow target scale to fall back to regular scale
         if (targetScale != regularScale)
@@ -34,15 +35,14 @@ public class ItemDisplay : MonoBehaviour
             targetScale = Mathf.MoveTowards(targetScale, regularScale, changeScaleSpeed * Time.deltaTime);
         }
 
-        // Set Scale
+        // Set Transforms Actual Scale Scale
         image.transform.localScale = targetScale * Vector3.one;
 
-        // if (setTo == null) return;
-
         // Update additional text if neccessary
-        if (setTo.HasAdditionalText)
+        string itemAdditionalText = setTo.GetAdditionalText();
+        if (itemAdditionalText.Length > 0)
         {
-            additionalText.text = setTo.GetAdditionalText();
+            additionalText.text = itemAdditionalText;
         }
         else
         {
@@ -55,7 +55,7 @@ public class ItemDisplay : MonoBehaviour
         targetScale = maxScale;
     }
 
-    public void SetItem(PowerupItem i)
+    public virtual void SetItem(PowerupItem i)
     {
         // Set item
         setTo = i;
@@ -65,8 +65,9 @@ public class ItemDisplay : MonoBehaviour
         text.text = i.Name;
 
         // Enable additional text object if the represented item has such
-        additionalText.gameObject.SetActive(i.HasAdditionalText);
+        additionalText.gameObject.SetActive(i.GetAdditionalText().Length > 0);
 
+        // Set the item accordingly
         switch (i)
         {
             case Artifact artifact:

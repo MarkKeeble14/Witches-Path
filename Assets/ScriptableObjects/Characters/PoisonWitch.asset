@@ -16,7 +16,7 @@ MonoBehaviour:
   startingRobe: {fileID: 11400000, guid: c50f538457cbd8f4a911bfae3f970d78, type: 2}
   startingHat: {fileID: 11400000, guid: 427716a4784833947b46ed413f751470, type: 2}
   startingWand: {fileID: 11400000, guid: acda65fe9855c2547963cd46c0c48fba, type: 2}
-  startingBook: 2
+  startingBook: 0
   startingSpells: 1600000017000000
   startingCurrency: 100
   maxHP: 75

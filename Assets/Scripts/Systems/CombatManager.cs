@@ -157,11 +157,11 @@ public partial class CombatManager : MonoBehaviour
         currentEnemy = combat.Enemy;
         maxEnemyHP = currentEnemy.GetMaxHP();
 
-        // Cheaters Confessional Effect
-        if (GameManager._Instance.HasBook(BookLabel.CheatersConfessional))
+        // Hired Hand Effect
+        if (GameManager._Instance.HasArtifact(ArtifactLabel.HiredHand))
         {
-            currentEnemyHP = Mathf.CeilToInt(maxEnemyHP * CheatersConfessional.PercentHP);
-            GameManager._Instance.AnimateBook(BookLabel.CheatersConfessional);
+            currentEnemyHP = Mathf.CeilToInt(maxEnemyHP * (HiredHand.PercentHP / 100));
+            GameManager._Instance.AnimateArtifact(ArtifactLabel.HiredHand);
         }
         else
         {
@@ -300,6 +300,9 @@ public partial class CombatManager : MonoBehaviour
             // Consume Mana
             GameManager._Instance.AlterPlayerMana(-spell.GetManaCost());
         }
+
+        // Add 1 Charge to all Books
+        GameManager._Instance.AlterAllBookCharge(1);
 
         // Activate Callback
         OnActiveSpellQueued?.Invoke();
@@ -636,7 +639,7 @@ public partial class CombatManager : MonoBehaviour
     }
 
 
-    public void WrittenWarningProc(float damage)
+    public void BoulderProc(float damage)
     {
 
     }
@@ -860,13 +863,13 @@ public partial class CombatManager : MonoBehaviour
             return true;
         }
 
-        // Book of Effect Effect
+        // Black Prism Effect
         if (attacker == Target.Character
             && source == DamageSource.ActiveSpell
-            && GameManager._Instance.HasBook(BookLabel.BookOfEffect))
+            && GameManager._Instance.HasArtifact(ArtifactLabel.BlackPrism))
         {
-            amount = Mathf.CeilToInt(amount * BookOfEffect.PercentDamageMultiplier);
-            GameManager._Instance.AnimateBook(BookLabel.BookOfEffect);
+            amount = Mathf.CeilToInt(amount * (BlackPrism.DamageMultiplier / 100));
+            GameManager._Instance.AnimateArtifact(ArtifactLabel.BlackPrism);
         }
 
         // Emboldened Effect
@@ -947,10 +950,10 @@ public partial class CombatManager : MonoBehaviour
         }
 
         // Barbarians Tactics Effect
-        if (amount < 0 && GameManager._Instance.HasBook(BookLabel.BarbariansTactics))
+        if (amount < 0 && GameManager._Instance.HasArtifact(ArtifactLabel.BarbariansBlade))
         {
-            amount -= BarbariansTactics.DamageIncrease;
-            GameManager._Instance.AnimateBook(BookLabel.BarbariansTactics);
+            amount -= BarbariansBlade.DamageIncrease;
+            GameManager._Instance.AnimateArtifact(ArtifactLabel.BarbariansBlade);
         }
 
         // Call the AlterHP function on the appropriate Target

@@ -11,8 +11,35 @@ public class ActiveSpellDisplay : SpellDisplay
     [SerializeField] private TextMeshProUGUI spellNumNotesText;
     [SerializeField] private TextMeshProUGUI spellManaCostText;
 
+    private KeyCode keyBinding;
     private int spellCD;
     private int spellManaCost;
+
+    public void TryCast()
+    {
+        // Only allow for spell casts while in combat
+        if (CombatManager._Instance.InCombat && CombatManager._Instance.GetTurn() == Turn.Player)
+        {
+            // Debug.Log("Attempting to Cast: " + spellToCast);
+            if (spell.CanCast)
+            {
+                // Debug.Log("Adding: " + spellToCast + " to Queue");
+                CombatManager._Instance.AddSpellToCastQueue(spell);
+            }
+            else
+            {
+                Debug.Log("Can't Cast: " + spell);
+                if (spell.OnCooldown)
+                {
+                    Debug.Log("Spell: " + spell + " Cooling Down: " + spell.CooldownTracker);
+                }
+                if (!spell.HasMana)
+                {
+                    Debug.Log("Not Enough Mana to Cast Spell: " + spell);
+                }
+            }
+        }
+    }
 
     public void SetActiveSpell(ActiveSpell spell, KeyCode binding)
     {
@@ -23,6 +50,10 @@ public class ActiveSpellDisplay : SpellDisplay
         // Auxillary info
         spellCD = spell.CooldownTracker.y;
         spellManaCost = spell.GetManaCost();
+        keyBinding = binding;
+
+        // Set Text
+        // Num Notes Never Changes
         spellNumNotesText.text = spell.NumNotes.ToString();
         keyBindingText.text = binding.ToString();
 
@@ -38,6 +69,12 @@ public class ActiveSpellDisplay : SpellDisplay
         if (spell == null)
         {
             return;
+        }
+
+        // Activate On KeyBindPressed
+        if (Input.GetKeyDown(keyBinding))
+        {
+            TryCast();
         }
 
         // Show Cooldown

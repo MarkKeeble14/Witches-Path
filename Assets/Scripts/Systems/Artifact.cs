@@ -38,9 +38,9 @@ public class GreedyHands : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.GreedyHands;
 
-    int tracker;
-    int procAfter;
-    int currencyAmount;
+    private int tracker;
+    private int procAfter;
+    private int currencyAmount;
 
     public override string ToolTipText => "On every {ProcAfter}th hit, gain {CurrencyAmount} Gold";
 
@@ -67,8 +67,6 @@ public class GreedyHands : Artifact
         }
     }
 
-    public override bool HasAdditionalText => true;
-
     public override string GetAdditionalText()
     {
         return tracker.ToString();
@@ -81,7 +79,7 @@ public class CanyonChunk : Artifact
 
     public override string ToolTipText => "On Combat Start, gain {StackAmount} Echo";
 
-    int stackAmount;
+    private int stackAmount;
 
     public override void OnEquip()
     {
@@ -99,8 +97,6 @@ public class CanyonChunk : Artifact
         CombatManager._Instance.AddAffliction(AfflictionType.Echo, stackAmount, Target.Character);
         ShowArtifactProc();
     }
-
-    public override bool HasAdditionalText => false;
 }
 
 public class Plaguebringer : Artifact
@@ -109,7 +105,8 @@ public class Plaguebringer : Artifact
 
     public override string ToolTipText => "On Combat Start, Apply {StackAmount} Blight to the Enemy";
 
-    int stackAmount;
+    private int stackAmount;
+
     public override void OnEquip()
     {
         stackAmount = (int)GetArtifactSpec("StackAmount");
@@ -126,8 +123,6 @@ public class Plaguebringer : Artifact
         CombatManager._Instance.AddAffliction(AfflictionType.Blight, stackAmount, Target.Enemy);
         ShowArtifactProc();
     }
-
-    public override bool HasAdditionalText => false;
 }
 
 public class MedicineKit : Artifact
@@ -136,7 +131,7 @@ public class MedicineKit : Artifact
 
     public override string ToolTipText => "Upon Entering a new room, Heal {HealAmount} HP";
 
-    int healAmount;
+    private int healAmount;
 
     public override void OnEquip()
     {
@@ -154,17 +149,15 @@ public class MedicineKit : Artifact
         GameManager._Instance.AlterPlayerHP(healAmount, DamageType.Heal);
         ShowArtifactProc();
     }
-
-    public override bool HasAdditionalText => false;
 }
 
 public class BoldInvestments : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.BoldInvestments;
 
-    public override string ToolTipText => "Upon Entering a Combat, Gain {CurrencyAmount} Currency";
+    public override string ToolTipText => "Upon Entering a Combat, Gain {CurrencyAmount} Gold";
 
-    int currencyAmount;
+    private int currencyAmount;
     public override void OnEquip()
     {
         currencyAmount = (int)GetArtifactSpec("CurrencyAmount");
@@ -181,8 +174,6 @@ public class BoldInvestments : Artifact
         GameManager._Instance.AlterCurrency(currencyAmount);
         ShowArtifactProc();
     }
-
-    public override bool HasAdditionalText => false;
 }
 
 public class SmokeShroud : Artifact
@@ -191,7 +182,7 @@ public class SmokeShroud : Artifact
 
     public override string ToolTipText => "On Combat Start, Apply {StackAmount} Weakened to the Enemy";
 
-    int stackAmount;
+    private int stackAmount;
     public override void OnEquip()
     {
         stackAmount = (int)GetArtifactSpec("StackAmount");
@@ -208,17 +199,15 @@ public class SmokeShroud : Artifact
         CombatManager._Instance.AddAffliction(AfflictionType.Weakened, stackAmount, Target.Enemy);
         ShowArtifactProc();
     }
-
-    public override bool HasAdditionalText => false;
 }
 
 public class BankCard : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.BankCard;
 
-    public override string ToolTipText => "Upon Entering a Shop, Gain {CurrencyAmount} Currency";
+    public override string ToolTipText => "Upon Entering a Tavern, Gain {CurrencyAmount} Gold";
 
-    int currencyAmount;
+    private int currencyAmount;
     public override void OnEquip()
     {
         currencyAmount = (int)GetArtifactSpec("CurrencyAmount");
@@ -235,8 +224,6 @@ public class BankCard : Artifact
         GameManager._Instance.AlterCurrency(currencyAmount);
         ShowArtifactProc();
     }
-
-    public override bool HasAdditionalText => false;
 }
 
 public class LooseTrigger : Artifact
@@ -260,8 +247,6 @@ public class LooseTrigger : Artifact
         CombatManager._Instance.TriggerRandomPassiveSpell();
         ShowArtifactProc();
     }
-
-    public override bool HasAdditionalText => false;
 }
 
 public class MolatovCocktail : Artifact
@@ -270,9 +255,9 @@ public class MolatovCocktail : Artifact
 
     public override string ToolTipText => "For {Repetitions} turns after combat starts, Apply {StackAmount} Burn to the Enemy at the beginning of your turn";
 
-    int stackAmount;
-    int repetitions;
-    int tracker;
+    private int stackAmount;
+    private int repetitions;
+    private int tracker;
 
     public override void OnEquip()
     {
@@ -296,7 +281,6 @@ public class MolatovCocktail : Artifact
         ShowArtifactProc();
     }
 
-    public override bool HasAdditionalText => true;
 
     public override string GetAdditionalText()
     {
@@ -310,7 +294,8 @@ public class BlueMantis : Artifact
 
     public override string ToolTipText => "Upon Recieving Damage, Apply {StackAmount} Paralyzed to the Enemy";
 
-    int stackAmount;
+    private int stackAmount;
+
     public override void OnEquip()
     {
         stackAmount = (int)GetArtifactSpec("StackAmount");
@@ -328,7 +313,6 @@ public class BlueMantis : Artifact
         ShowArtifactProc();
     }
 
-    public override bool HasAdditionalText => false;
 }
 
 public class HealthInsurance : Artifact
@@ -337,8 +321,9 @@ public class HealthInsurance : Artifact
 
     public override string ToolTipText => "Upon Entering a New Room, Heal {HealAmount} HP. Entering a combat will permanantly disable this effect";
 
-    int healAmount;
-    bool enabled = true;
+    private int healAmount;
+    private bool active = true;
+
     public override void OnEquip()
     {
         healAmount = (int)GetArtifactSpec("HealAmount");
@@ -352,18 +337,17 @@ public class HealthInsurance : Artifact
 
     protected override void Effect()
     {
-        if (!enabled) return;
+        if (!active) return;
 
         GameManager._Instance.AlterPlayerHP(healAmount, DamageType.Heal);
         ShowArtifactProc();
         MapNodeType type = GameManager._Instance.GetCurrentGameOccurance().Type;
         if (type == MapNodeType.MinorFight || type == MapNodeType.Boss)
         {
-            enabled = false;
+            active = false;
         }
     }
 
-    public override bool HasAdditionalText => false;
 }
 
 public class InvertedPolaroid : Artifact
@@ -372,7 +356,8 @@ public class InvertedPolaroid : Artifact
 
     public override string ToolTipText => "Upon Entering Combat, Gain {StackAmount} Retribution";
 
-    int stackAmount;
+    private int stackAmount;
+
     public override void OnEquip()
     {
         stackAmount = (int)GetArtifactSpec("StackAmount");
@@ -390,7 +375,6 @@ public class InvertedPolaroid : Artifact
         ShowArtifactProc();
     }
 
-    public override bool HasAdditionalText => false;
 }
 
 public class HalfLitFirework : Artifact
@@ -415,7 +399,6 @@ public class HalfLitFirework : Artifact
         ShowArtifactProc();
     }
 
-    public override bool HasAdditionalText => false;
 }
 
 public class ZedsScalpel : Artifact
@@ -424,7 +407,8 @@ public class ZedsScalpel : Artifact
 
     public override string ToolTipText => "Upon Recieving Damage, Heal {HealAmount} HP";
 
-    int healAmount;
+    private int healAmount;
+
     public override void OnEquip()
     {
         healAmount = (int)GetArtifactSpec("HealAmount");
@@ -442,7 +426,6 @@ public class ZedsScalpel : Artifact
         ShowArtifactProc();
     }
 
-    public override bool HasAdditionalText => false;
 }
 
 public class Barricade : Artifact
@@ -463,7 +446,6 @@ public class Barricade : Artifact
     {
     }
 
-    public override bool HasAdditionalText => false;
 }
 
 public class DoctorsReport : Artifact
@@ -484,7 +466,6 @@ public class DoctorsReport : Artifact
     {
     }
 
-    public override bool HasAdditionalText => false;
 }
 
 public class RustyCannon : Artifact
@@ -493,10 +474,11 @@ public class RustyCannon : Artifact
 
     public override string ToolTipText => "{NumTurns} Turns after Combat Begins, Deal {DamageAmount} Damage to the Enemy";
 
-    int damageAmount;
-    int numTurns;
-    int tracker;
-    bool hasActivated;
+    private int damageAmount;
+    private int numTurns;
+    private int tracker;
+    private bool hasActivated;
+
     public override void OnEquip()
     {
         damageAmount = (int)GetArtifactSpec("DamageAmount");
@@ -521,7 +503,6 @@ public class RustyCannon : Artifact
         }
     }
 
-    public override bool HasAdditionalText => true;
 
     public override string GetAdditionalText()
     {
@@ -535,8 +516,7 @@ public class VoodooDoll : Artifact
 
     public override string ToolTipText => "Upon Gaining a New Affliction, Deal {DamageAmount} Damage to the Enemy";
 
-
-    int damageAmount;
+    private int damageAmount;
 
     public override void OnEquip()
     {
@@ -554,7 +534,6 @@ public class VoodooDoll : Artifact
         CombatManager._Instance.DamageCombatent(-damageAmount, Target.Enemy, Target.Character, DamageType.Default);
         ShowArtifactProc();
     }
-    public override bool HasAdditionalText => false;
 }
 
 public class SpecialSpinach : Artifact
@@ -574,7 +553,6 @@ public class SpecialSpinach : Artifact
     protected override void Effect()
     {
     }
-    public override bool HasAdditionalText => false;
 }
 
 public class HolyShield : Artifact
@@ -594,5 +572,257 @@ public class HolyShield : Artifact
     protected override void Effect()
     {
     }
-    public override bool HasAdditionalText => false;
+}
+
+public class CaveMural : Artifact
+{
+    protected override ArtifactLabel Label => ArtifactLabel.CaveMural;
+
+    public override string ToolTipText => "Every {ProcAfter} Passive Spell Activated will Duplicate it's Effect";
+
+    private int tracker;
+    private int procAfter;
+
+    public override void OnEquip()
+    {
+        procAfter = (int)GetArtifactSpec("ProcAfter");
+        CombatManager._Instance.OnPassiveSpellProc += Effect;
+    }
+
+    public override void OnUnequip()
+    {
+        CombatManager._Instance.OnPassiveSpellProc -= Effect;
+    }
+
+    protected override void Effect()
+    {
+        tracker += 1;
+        if (tracker >= procAfter)
+        {
+            PassiveSpell.NumDuplicateProcs += 1;
+            ShowArtifactProc();
+            tracker = 0;
+        }
+    }
+}
+
+public class BarbariansBlade : Artifact
+{
+    protected override ArtifactLabel Label => ArtifactLabel.BarbariansBlade;
+
+    public override string ToolTipText => "All instances of In-Combat Damage are Increased by {DamageIncrease}";
+
+    public static int DamageIncrease { get; private set; }
+
+    public override void OnEquip()
+    {
+        DamageIncrease = (int)GetArtifactSpec("DamageIncrease");
+    }
+
+    public override void OnUnequip()
+    {
+    }
+
+    protected override void Effect()
+    {
+    }
+}
+
+public class LizardSkinSilk : Artifact
+{
+    protected override ArtifactLabel Label => ArtifactLabel.LizardSkinSilk;
+
+    public override string ToolTipText => "Losing HP has a {ChanceTo} in 100 Chance of Removing a Random Negative Affliction";
+
+    private Vector2 chanceToActivate;
+
+
+    public override void OnEquip()
+    {
+        chanceToActivate = new Vector2(GetArtifactSpec("ChanceTo"), 100);
+        GameManager._Instance.OnPlayerRecieveDamage += Effect;
+    }
+
+    public override void OnUnequip()
+    {
+        GameManager._Instance.OnPlayerRecieveDamage -= Effect;
+    }
+
+    protected override void Effect()
+    {
+        if (RandomHelper.EvaluateChanceTo(chanceToActivate))
+        {
+            CombatManager._Instance.ClearRandomAffliction(Target.Character, AfflictionSign.Negative);
+            ShowArtifactProc();
+        }
+    }
+}
+
+public class LuckyCoin : Artifact
+{
+    protected override ArtifactLabel Label => ArtifactLabel.LuckyCoin;
+
+    public override string ToolTipText => "All Gold Rewards are Increased by {CurrencyMultiplier}%";
+
+    public static float CurrencyMultiplier { get; private set; }
+
+    public override void OnEquip()
+    {
+        CurrencyMultiplier = GetArtifactSpec("CurrencyMultiplier");
+    }
+
+    public override void OnUnequip()
+    {
+    }
+
+    protected override void Effect()
+    {
+    }
+}
+
+public class HiredHand : Artifact
+{
+    protected override ArtifactLabel Label => ArtifactLabel.HiredHand;
+
+    public override string ToolTipText => "Enemies Begin Combat with {PercentHP}% HP";
+
+    public static float PercentHP { get; private set; }
+
+    public override void OnEquip()
+    {
+        PercentHP = GetArtifactSpec("PercentHP");
+    }
+
+    public override void OnUnequip()
+    {
+    }
+
+    protected override void Effect()
+    {
+    }
+}
+
+public class BlackPrism : Artifact
+{
+    protected override ArtifactLabel Label => ArtifactLabel.BlackPrism;
+
+    public override string ToolTipText => "Active Spells do {DamageMultiplier}% Damage";
+
+    public static float DamageMultiplier { get; private set; }
+
+    public override void OnEquip()
+    {
+        DamageMultiplier = GetArtifactSpec("DamageMultiplier");
+    }
+
+    public override void OnUnequip()
+    {
+    }
+
+    protected override void Effect()
+    {
+    }
+}
+
+public class Telescope : Artifact
+{
+    protected override ArtifactLabel Label => ArtifactLabel.Telescope;
+
+    public override string ToolTipText => "Every {ProcAfter}th Turn, Gain {StackAmount} Prepared";
+
+    private int tracker;
+    private int procAfter;
+    private int stackAmount;
+
+    public override void OnEquip()
+    {
+        procAfter = (int)GetArtifactSpec("ProcAfter");
+        stackAmount = (int)GetArtifactSpec("StackAmount");
+        CombatManager._Instance.OnPlayerTurnStart += Effect;
+    }
+
+    public override void OnUnequip()
+    {
+        CombatManager._Instance.OnPlayerTurnStart -= Effect;
+    }
+
+    protected override void Effect()
+    {
+        tracker += 1;
+        if (tracker >= procAfter)
+        {
+            CombatManager._Instance.AddAffliction(AfflictionType.Prepared, stackAmount, Target.Character);
+            ShowArtifactProc();
+            tracker = 0;
+        }
+    }
+}
+
+public class CheapStopwatch : Artifact
+{
+    protected override ArtifactLabel Label => ArtifactLabel.CheapStopwatch;
+
+    public override string ToolTipText => "Every {ProcAfter} Active Spell Queued}";
+
+    private int tracker;
+    private int procAfter;
+
+    public override void OnEquip()
+    {
+        procAfter = (int)GetArtifactSpec("ProcAfter");
+        CombatManager._Instance.OnActiveSpellQueued += Effect;
+    }
+
+    public override void OnUnequip()
+    {
+        CombatManager._Instance.OnActiveSpellQueued -= Effect;
+    }
+
+    protected override void Effect()
+    {
+        tracker += 1;
+        if (tracker >= procAfter)
+        {
+            CombatManager._Instance.NumFreeSpells += 1;
+            ShowArtifactProc();
+            tracker = 0;
+        }
+    }
+}
+
+public class Boulder : Artifact
+{
+    protected override ArtifactLabel Label => ArtifactLabel.Boulder;
+
+    public override string ToolTipText => "";
+
+    private int tracker;
+    private int procAfter;
+    private int damageAmount;
+    private int damageIncrease;
+
+    public override void OnEquip()
+    {
+        procAfter = (int)GetArtifactSpec("ProcAfter");
+        damageAmount = (int)GetArtifactSpec("DamageAmount");
+        damageIncrease = (int)GetArtifactSpec("DamageIncrease");
+        CombatManager._Instance.OnPlayerAttack += Effect;
+    }
+
+    public override void OnUnequip()
+    {
+        CombatManager._Instance.OnPlayerAttack -= Effect;
+    }
+
+    protected override void Effect()
+    {
+        tracker += 1;
+        if (tracker >= procAfter)
+        {
+            CombatManager._Instance.BoulderProc(damageAmount);
+            ShowArtifactProc();
+            tracker = 0;
+            damageAmount += damageIncrease;
+        }
+    }
 }

@@ -79,6 +79,14 @@ public class RewardManager : MonoBehaviour
     public void AddReward(int currencyAmount)
     {
         Debug.Log("Adding Financial Reward: " + currencyAmount);
+
+        // Lucky Coin Effect
+        if (GameManager._Instance.HasArtifact(ArtifactLabel.LuckyCoin))
+        {
+            currencyAmount = Mathf.CeilToInt(currencyAmount * (LuckyCoin.CurrencyMultiplier / 100));
+            GameManager._Instance.AnimateArtifact(ArtifactLabel.LuckyCoin);
+        }
+
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         spawned.Set(currencyAmount.ToString() + " Gold", null, delegate
         {

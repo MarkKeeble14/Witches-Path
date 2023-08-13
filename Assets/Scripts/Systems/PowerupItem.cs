@@ -4,7 +4,6 @@ public abstract class PowerupItem
 {
     protected abstract string SpritePath { get; }
 
-    public abstract bool HasAdditionalText { get; }
     public virtual string GetAdditionalText()
     {
         return "";

@@ -35,13 +35,15 @@ public class GameManager : MonoBehaviour
 
     [Header("Books")]
     [SerializeField] private Transform bookBar;
-    private Dictionary<BookLabel, ItemDisplay> bookDisplayTracker = new Dictionary<BookLabel, ItemDisplay>();
+    private Dictionary<BookLabel, BookDisplay> bookDisplayTracker = new Dictionary<BookLabel, BookDisplay>();
     private Dictionary<BookLabel, Book> equippedBooks = new Dictionary<BookLabel, Book>();
 
     [Header("Artifacts")]
     [SerializeField] private Transform artifactBar;
-    private Dictionary<ArtifactLabel, ItemDisplay> artifactDisplayTracker = new Dictionary<ArtifactLabel, ItemDisplay>();
+    private Dictionary<ArtifactLabel, ArtifactDisplay> artifactDisplayTracker = new Dictionary<ArtifactLabel, ArtifactDisplay>();
     private Dictionary<ArtifactLabel, Artifact> equippedArtifacts = new Dictionary<ArtifactLabel, Artifact>();
+    [SerializeField] private SerializableDictionary<ArtifactLabel, Rarity> artifactRarityMap = new SerializableDictionary<ArtifactLabel, Rarity>();
+    [SerializeField] private PercentageMap<Rarity> artifactRarityOdds = new PercentageMap<Rarity>();
 
     [Header("Spells")]
     private List<ActiveSpellDisplay> activeSpellDisplays = new List<ActiveSpellDisplay>();
@@ -64,18 +66,19 @@ public class GameManager : MonoBehaviour
     [SerializeField] private List<Wand> equippableWands = new List<Wand>();
 
     [Header("Prefabs")]
-    [SerializeField] private ItemDisplay artifactDisplay;
+    [SerializeField] private ArtifactDisplay artifactDisplay;
+    [SerializeField] private BookDisplay bookDisplay;
     [SerializeField] private PopupText popupTextPrefab;
 
     [Header("Test")]
     [SerializeField] private ContentType currentlyTesting;
 
     [Header("Artifacts")]
-    [SerializeField] private List<ArtifactLabel> testArtifacts;
+    private List<ArtifactLabel> allArtifacts;
     private int artifactIndex;
 
     [Header("Books")]
-    [SerializeField] private List<BookLabel> testBooks;
+    private List<BookLabel> allBooks;
     private int bookIndex;
 
     [Header("Passive Spells")]
@@ -112,6 +115,11 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        // Get List of all Book Labels
+        allBooks = new List<BookLabel>((BookLabel[])Enum.GetValues(typeof(BookLabel)));
+        // Get List of all Artifact Labels
+        allArtifacts = new List<ArtifactLabel>((ArtifactLabel[])Enum.GetValues(typeof(ArtifactLabel)));
+
         TryAddPersistentTokens();
 
         foreach (MapNodeType type in Enum.GetValues(typeof(MapNodeType)))
@@ -228,10 +236,10 @@ public class GameManager : MonoBehaviour
                 {
                     artifactIndex++;
 
-                    if (artifactIndex > testArtifacts.Count - 1)
+                    if (artifactIndex > allArtifacts.Count - 1)
                         artifactIndex = 0;
 
-                    Debug.Log("Selected: " + testArtifacts[artifactIndex]);
+                    Debug.Log("Selected: " + allArtifacts[artifactIndex]);
                 }
 
                 // Equip new spell
@@ -240,19 +248,19 @@ public class GameManager : MonoBehaviour
                     artifactIndex--;
 
                     if (artifactIndex < 0)
-                        artifactIndex = testArtifacts.Count - 1;
+                        artifactIndex = allArtifacts.Count - 1;
 
-                    Debug.Log("Selected: " + testArtifacts[artifactIndex]);
+                    Debug.Log("Selected: " + allArtifacts[artifactIndex]);
                 }
 
                 if (Input.GetKeyDown(KeyCode.Alpha1))
                 {
-                    AddArtifact(testArtifacts[artifactIndex]);
+                    AddArtifact(allArtifacts[artifactIndex]);
                 }
 
                 if (Input.GetKeyDown(KeyCode.Alpha2))
                 {
-                    RemoveArtifact(testArtifacts[artifactIndex]);
+                    RemoveArtifact(allArtifacts[artifactIndex]);
                 }
 
                 break;
@@ -264,10 +272,10 @@ public class GameManager : MonoBehaviour
                 {
                     bookIndex++;
 
-                    if (bookIndex > testBooks.Count - 1)
+                    if (bookIndex > allBooks.Count - 1)
                         bookIndex = 0;
 
-                    Debug.Log("Selected: " + testBooks[bookIndex]);
+                    Debug.Log("Selected: " + allBooks[bookIndex]);
                 }
 
                 // Equip new spell
@@ -276,53 +284,37 @@ public class GameManager : MonoBehaviour
                     bookIndex--;
 
                     if (bookIndex < 0)
-                        bookIndex = testBooks.Count - 1;
+                        bookIndex = allBooks.Count - 1;
 
-                    Debug.Log("Selected: " + testBooks[bookIndex]);
+                    Debug.Log("Selected: " + allBooks[bookIndex]);
                 }
 
                 if (Input.GetKeyDown(KeyCode.Alpha1))
                 {
-                    SwapBooks(bookDisplayTracker.Keys.First(), testBooks[bookIndex]);
+                    SwapBooks(bookDisplayTracker.Keys.First(), allBooks[bookIndex]);
                 }
 
                 if (Input.GetKeyDown(KeyCode.Alpha2))
                 {
-                    RemoveBook(testBooks[bookIndex]);
+                    RemoveBook(allBooks[bookIndex]);
                 }
 
                 break;
         }
+    }
 
-        // Only allow for spell casts while in combat
-        if (CombatManager._Instance.InCombat && CombatManager._Instance.GetTurn() == Turn.Player)
+    public void AlterAllBookCharge(int alterBy)
+    {
+        // Alter Book Charge by
+        foreach (KeyValuePair<BookLabel, Book> kvp in equippedBooks)
         {
-            for (int i = 0; i < activeSpellBindings.Length; i++)
-            {
-                if (Input.GetKeyDown(activeSpellBindings[i]))
-                {
-                    ActiveSpell spellToCast = activeSpellDisplays[i].GetActiveSpell();
-                    // Debug.Log("Attempting to Cast: " + spellToCast);
-                    if (spellToCast.CanCast)
-                    {
-                        // Debug.Log("Adding: " + spellToCast + " to Queue");
-                        CombatManager._Instance.AddSpellToCastQueue(spellToCast);
-                    }
-                    else
-                    {
-                        Debug.Log("Can't Cast: " + spellToCast);
-                        if (spellToCast.OnCooldown)
-                        {
-                            Debug.Log("Spell: " + spellToCast + " Cooling Down: " + spellToCast.CooldownTracker);
-                        }
-                        if (!spellToCast.HasMana)
-                        {
-                            Debug.Log("Not Enough Mana to Cast Spell: " + spellToCast);
-                        }
-                    }
-                }
-            }
+            kvp.Value.AlterCharge(alterBy);
         }
+    }
+
+    public void AlterBookCharge(BookLabel label, int alterBy)
+    {
+        equippedBooks[label].AlterCharge(alterBy);
     }
 
     public void EquipSpell(SpellLabel label)
@@ -671,6 +663,24 @@ public class GameManager : MonoBehaviour
                 return new VoodooDoll();
             case ArtifactLabel.ZedsScalpel:
                 return new ZedsScalpel();
+            case ArtifactLabel.BarbariansBlade:
+                return new BarbariansBlade();
+            case ArtifactLabel.BlackPrism:
+                return new BlackPrism();
+            case ArtifactLabel.Boulder:
+                return new Boulder();
+            case ArtifactLabel.CaveMural:
+                return new CaveMural();
+            case ArtifactLabel.CheapStopwatch:
+                return new CheapStopwatch();
+            case ArtifactLabel.HiredHand:
+                return new HiredHand();
+            case ArtifactLabel.LizardSkinSilk:
+                return new LizardSkinSilk();
+            case ArtifactLabel.LuckyCoin:
+                return new LuckyCoin();
+            case ArtifactLabel.Telescope:
+                return new Telescope();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -680,26 +690,6 @@ public class GameManager : MonoBehaviour
     {
         switch (label)
         {
-            case BookLabel.BarbariansTactics:
-                return new BarbariansTactics();
-            case BookLabel.BookOfEffect:
-                return new BookOfEffect();
-            case BookLabel.CheatersConfessional:
-                return new CheatersConfessional();
-            case BookLabel.ForgiversOath:
-                return new ForgiversOath();
-            case BookLabel.MerchantsManual:
-                return new MerchantsManual();
-            case BookLabel.PhantasmalWhispers:
-                return new PhantasmalWhispers();
-            case BookLabel.ReplicatorsFables:
-                return new ReplicatorsFables();
-            case BookLabel.ToDoList:
-                return new ToDoList();
-            case BookLabel.TomeOfCleansing:
-                return new TomeOfCleansing();
-            case BookLabel.WrittenWarning:
-                return new WrittenWarning();
             case BookLabel.WitchesTravelGuide:
                 return new WitchesTravelGuide();
             default:
@@ -712,7 +702,10 @@ public class GameManager : MonoBehaviour
         Artifact artifact = GetArtifactOfType(type);
         artifact.OnEquip();
 
-        ItemDisplay spawned = Instantiate(artifactDisplay, artifactBar);
+        // Remove this artifact from the pool of available artifacts
+        allArtifacts.Remove(type);
+
+        ArtifactDisplay spawned = Instantiate(artifactDisplay, artifactBar);
         spawned.SetItem(artifact);
         spawned.name = "Artifact(" + type + ")";
 
@@ -734,11 +727,14 @@ public class GameManager : MonoBehaviour
     public void AddBook(BookLabel type)
     {
         Book book = GetBookOfType(type);
-        book.OnEquip();
+        book.SetParameters();
 
-        ItemDisplay spawned = Instantiate(artifactDisplay, bookBar);
+        // Remove this book from the pool of available books
+        allBooks.Remove(type);
+
+        BookDisplay spawned = Instantiate(bookDisplay, bookBar);
         spawned.SetItem(book);
-        spawned.name = "Artifact(" + type + ")";
+        spawned.name = "Book(" + type + ")";
 
         bookDisplayTracker.Add(book.GetLabel(), spawned);
         equippedBooks.Add(type, book);
@@ -747,7 +743,6 @@ public class GameManager : MonoBehaviour
     public void RemoveBook(BookLabel type)
     {
         Book book = equippedBooks[type];
-        book.OnUnequip();
 
         Destroy(bookDisplayTracker[type].gameObject);
         bookDisplayTracker.Remove(type);
@@ -918,12 +913,6 @@ public class GameManager : MonoBehaviour
 
     public void AlterCurrency(int amount)
     {
-        if (amount > 0 && HasBook(BookLabel.MerchantsManual))
-        {
-            amount = Mathf.CeilToInt(amount * MerchantsManual.CurrencyMultiplier);
-            AnimateBook(BookLabel.MerchantsManual);
-        }
-
         // Spawn Popup Text
         PopupText spawned = Instantiate(popupTextPrefab, currencyText.transform);
         spawned.Set(Utils.RoundTo(amount, 1).ToString(), Color.yellow);
@@ -1141,6 +1130,8 @@ public class GameManager : MonoBehaviour
     private List<EquipmentShopOffer> shopEquipmentList = new List<EquipmentShopOffer>();
 
     [SerializeField] private SerializableDictionary<TavernScreen, TavernScreenInformation> tavernScreens = new SerializableDictionary<TavernScreen, TavernScreenInformation>();
+    [SerializeField] private SerializableDictionary<Rarity, Vector2> minMaxArtifactCostDict = new SerializableDictionary<Rarity, Vector2>();
+    [SerializeField] private Vector2 minMaxIngredientCost;
 
     [SerializeField] private GameObject[] turnOnForBrowseWaresScreen;
 
@@ -1201,7 +1192,9 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < numArtifactShopOffers; i++)
         {
             ArtifactShopOffer offer = Instantiate(artifactShopOfferPrefab, merchantInfo.parentSpawnsTo);
-            offer.Set(GetRandomArtifact(), 100, null);
+            ArtifactLabel offered = GetRandomArtifact();
+            Rarity rarity = artifactRarityMap[offered];
+            offer.Set(offered, Mathf.RoundToInt(RandomHelper.RandomFloat(minMaxArtifactCostDict[rarity])), null);
             shopArtifactList.Add(offer);
         }
 
@@ -1209,7 +1202,7 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < numPotionIngredientShopOffers; i++)
         {
             IngredientShopOffer offer = Instantiate(ingredientShopOfferPrefab, innkeeperInfo.parentSpawnsTo);
-            offer.Set(GetRandomPotionIngredient(), 100, null);
+            offer.Set(GetRandomPotionIngredient(), Mathf.RoundToInt(RandomHelper.RandomFloat(minMaxIngredientCost)), null);
             shopIngredientList.Add(offer);
         }
 
@@ -1501,7 +1494,21 @@ public class GameManager : MonoBehaviour
 
     public ArtifactLabel GetRandomArtifact()
     {
-        return RandomHelper.GetRandomFromList(testArtifacts);
+        Rarity rarity = artifactRarityOdds.GetOption();
+        return GetRandomArtifactOfRarity(rarity);
+    }
+
+    private ArtifactLabel GetRandomArtifactOfRarity(Rarity r)
+    {
+        List<ArtifactLabel> options = new List<ArtifactLabel>();
+        foreach (ArtifactLabel l in allArtifacts)
+        {
+            if (artifactRarityMap[l] == r)
+            {
+                options.Add(l);
+            }
+        }
+        return RandomHelper.GetRandomFromList(options);
     }
 
     public void AddRandomArtifact()
@@ -1511,7 +1518,7 @@ public class GameManager : MonoBehaviour
 
     public BookLabel GetRandomBook()
     {
-        return RandomHelper.GetRandomFromList(testBooks);
+        return RandomHelper.GetRandomFromList(allBooks);
     }
 
     public void AddRandomBook()
@@ -1540,18 +1547,15 @@ public class GameManager : MonoBehaviour
         ResolveCurrentEvent();
     }
 
+    private BookLabel libraryBookOffer;
+
     public void OpenSwapBookScreen()
     {
         SwitchUIScreens(turnOnForSwapBookScreen, turnOffForSwapBookScreen);
 
         SwapBookButton spawned = Instantiate(swapBookButtonPrefab, swapBookOptionList);
-        BookLabel swapTo = GetRandomBook();
-        spawned.Set(swapTo, delegate
-        {
-            SwapBooks(GetRandomOwnedBook(), swapTo);
-            CloseSwapBookScreen();
-            ResolveCurrentEvent();
-        });
+        libraryBookOffer = GetRandomBook();
+        spawned.Set(libraryBookOffer, null);
         spawnedSwapBookButtons.Add(spawned);
     }
 
@@ -1575,6 +1579,13 @@ public class GameManager : MonoBehaviour
 
     public void RejectBookSwap()
     {
+        CloseSwapBookScreen();
+        ResolveCurrentEvent();
+    }
+
+    public void AcceptBookSwap()
+    {
+        SwapBooks(GetRandomOwnedBook(), libraryBookOffer);
         CloseSwapBookScreen();
         ResolveCurrentEvent();
     }

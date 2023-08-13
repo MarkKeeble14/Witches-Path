@@ -25,7 +25,7 @@ MonoBehaviour:
       - key:
           resultText: The traveller stops, opens his bag and out pops a trinket alongside
             a card from your mother wishing you good luck.
-          codeString: AddRandomArtifact;AlterGold:{LoseGoldAmount}
+          codeString: AddRandomArtifact;AlterGold:-{LoseGoldAmount}
         value: 100
   - hintText: Rob the traveller
     effectText: '50%: Gain a Random Artifact, Gain {GainGoldAmount} Gold, 50%: Lose

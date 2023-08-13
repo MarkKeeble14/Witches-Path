@@ -20,4 +20,13 @@
     DoctorsReport,
     RustyCannon,
     VoodooDoll,
+    CaveMural,
+    BarbariansBlade,
+    LizardSkinSilk,
+    LuckyCoin,
+    HiredHand,
+    BlackPrism,
+    Telescope,
+    CheapStopwatch,
+    Boulder,
 }
