@@ -16,7 +16,9 @@ public abstract class SpellDisplay : MonoBehaviour
     [SerializeField] private float regularScale;
     [SerializeField] private float maxScale;
 
-    [SerializeField] private float toolTipXOffset;
+    [SerializeField] private Vector2 toolTipOffset;
+    private GameObject spawnedToolTip;
+    protected string finalizedToolTipText;
 
     private float targetScale;
 
@@ -61,12 +63,9 @@ public abstract class SpellDisplay : MonoBehaviour
 
     public abstract Spell GetSpell();
 
-    private ToolTip spawnedToolTip;
-    protected string finalizedToolTipText;
-
     public void SpawnToolTip()
     {
-        spawnedToolTip = UIManager._Instance.SpawnToolTip(finalizedToolTipText, transform, new Vector3(toolTipXOffset, 0, 0));
+        spawnedToolTip = UIManager._Instance.SpawnToolTips(GetSpell(), transform);
     }
 
     public void DestroyToolTip()

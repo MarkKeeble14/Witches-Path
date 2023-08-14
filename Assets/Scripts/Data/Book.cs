@@ -6,6 +6,9 @@ using UnityEngine;
 public enum BookLabel
 {
     WitchesTravelGuide,
+    MedicalNovella,
+    MerchantsManual,
+    BusinessTextbook,
 }
 
 public abstract class Book : PowerupItem
@@ -18,8 +21,14 @@ public abstract class Book : PowerupItem
     protected virtual int MaxLevel => 3;
 
     public int currentCharge { get; private set; }
-    public abstract int MaxCharge { get; }
-    public bool CanActivate => currentCharge >= MaxCharge;
+    public int MaxCharge { get; private set; }
+    public virtual bool CanActivate => currentCharge >= MaxCharge;
+
+    public Book()
+    {
+        SetBaseParameters();
+        SetAdditionalParameters();
+    }
 
     // Charge
 
@@ -76,7 +85,12 @@ public abstract class Book : PowerupItem
         }
     }
 
-    public abstract void SetParameters();
+    private void SetBaseParameters()
+    {
+        MaxCharge = (int)GetBookSpec("MaxCharge");
+    }
+
+    public abstract void SetAdditionalParameters();
 
     protected abstract void LevelUp();
 
@@ -128,12 +142,10 @@ public class WitchesTravelGuide : Book
 
     public override string ToolTipText => "Gain " + currencyAmount + " Gold";
 
-    public override int MaxCharge => 12;
-
     private int currencyAmount;
     private int increaseOnLevelUp;
 
-    public override void SetParameters()
+    public override void SetAdditionalParameters()
     {
         currencyAmount = (int)GetBookSpec("CurrencyAmount");
         increaseOnLevelUp = (int)GetLevelUpSpec("CurrencyAmount");
@@ -147,6 +159,95 @@ public class WitchesTravelGuide : Book
     protected override void LevelUp()
     {
         currencyAmount += increaseOnLevelUp;
+    }
+}
+
+
+public class MedicalNovella : Book
+{
+    protected override BookLabel Label => BookLabel.MedicalNovella;
+
+    public override string ToolTipText => "Heal " + healAmount + " HP";
+
+    private int healAmount;
+    private int increaseOnLevelUp;
+
+    public override void SetAdditionalParameters()
+    {
+        healAmount = (int)GetBookSpec("HealAmount");
+        increaseOnLevelUp = (int)GetLevelUpSpec("HealAmount");
+    }
+
+    protected override void Effect()
+    {
+        GameManager._Instance.AlterPlayerHP(healAmount, DamageType.Heal);
+    }
+
+    protected override void LevelUp()
+    {
+        healAmount += increaseOnLevelUp;
+    }
+}
+
+
+public class MerchantsManual : Book
+{
+    protected override BookLabel Label => BookLabel.MerchantsManual;
+
+    public override string ToolTipText => "Shop Prices become " + costReduction + "% Cheaper";
+
+    private int costReduction;
+    private int costReductionChangeOnLevelUp;
+
+    public override void SetAdditionalParameters()
+    {
+        costReduction = (int)GetBookSpec("CostReduction");
+        costReductionChangeOnLevelUp = (int)GetLevelUpSpec("CostReduction");
+    }
+
+    protected override void Effect()
+    {
+        //
+        GameManager._Instance.MultiplyCosts((100 - costReduction) / 100);
+    }
+
+    protected override void LevelUp()
+    {
+        costReduction += costReductionChangeOnLevelUp;
+    }
+}
+
+
+
+public class BusinessTextBook : Book
+{
+    protected override BookLabel Label => BookLabel.BusinessTextbook;
+
+    public override string ToolTipText => "Lose " + currencyAmount + " Gold, Deal " + damageAmount + " Damage to the Enemy";
+
+    public override bool CanActivate => base.CanActivate && CombatManager._Instance.InCombat;
+
+    private int currencyAmount;
+
+    private int damageAmount;
+    private int damageAmountChangeOnLevelUp;
+
+    public override void SetAdditionalParameters()
+    {
+        currencyAmount = (int)GetBookSpec("CurrencyAmount");
+        damageAmount = (int)GetBookSpec("DamageAmount");
+        damageAmountChangeOnLevelUp = (int)GetLevelUpSpec("DamageAmount");
+    }
+
+    protected override void Effect()
+    {
+        GameManager._Instance.AlterCurrency(currencyAmount);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.Book);
+    }
+
+    protected override void LevelUp()
+    {
+        damageAmount += damageAmountChangeOnLevelUp;
     }
 }
 

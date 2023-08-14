@@ -1237,7 +1237,7 @@ MonoBehaviour:
   itemText: {fileID: 934464052226187708}
   costText: {fileID: 2471775640850196840}
   cv: {fileID: 8578559921297303935}
-  toolTipOffset: 25
+  toolTipOffset: {x: 100, y: 0}
   attackBonus: {fileID: 1470840066069870932}
   defenseBonus: {fileID: 2326189315342401641}
   manaBonus: {fileID: 3298029136596834478}

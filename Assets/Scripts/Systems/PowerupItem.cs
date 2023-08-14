@@ -4,6 +4,10 @@ public abstract class PowerupItem
 {
     protected abstract string SpritePath { get; }
 
+    public virtual ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+
+    public virtual AfflictionType[] AfflictionKeywords => new AfflictionType[] { };
+
     public virtual string GetAdditionalText()
     {
         return "";

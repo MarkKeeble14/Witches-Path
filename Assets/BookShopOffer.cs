@@ -16,11 +16,11 @@ public class BookShopOffer : ShopOffer
         itemText.text = setTo.ToString();
         costText.text = cost.ToString();
 
-        ToolTip spawnedToolTip = null;
-        string finalizedToolTipText = GameManager._Instance.GetBookOfType(setTo).ToolTipText;
+        GameObject spawnedToolTip = null;
+        Book book = GameManager._Instance.GetBookOfType(setTo);
         onPointerEnter += delegate
         {
-            spawnedToolTip = UIManager._Instance.SpawnToolTip(finalizedToolTipText, transform, new Vector3(toolTipOffset, 0, 0));
+            spawnedToolTip = UIManager._Instance.SpawnToolTipsForBook(book, transform);
         };
         onPointerExit += delegate
         {

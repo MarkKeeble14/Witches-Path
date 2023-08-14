@@ -15,4 +15,5 @@ MonoBehaviour:
   damageChange: 1
   defenseChange: 0
   manaChange: 0
+  keywords: 
   comesWithSpells: 00000000

@@ -71,22 +71,9 @@ public class BalenceManager : MonoBehaviour
         return bookSpecDict[bookLabel.ToString()][specIdentifier];
     }
 
-    // Automatically divides the value by 100 to create a percentage
-    public float GetPercentValue(BookLabel bookLabel, string identifier)
-    {
-        return bookSpecDict[bookLabel.ToString()][identifier] / 100;
-    }
-
-    // Simply returns the value found in the dict
     public int GetValue(AfflictionType afflictionType, string identifier)
     {
         return afflictionSpecDict[afflictionType.ToString()][identifier];
-    }
-
-    // Automatically divides the value by 100 to create a percentage
-    public float GetPercentValue(AfflictionType afflictionType, string identifier)
-    {
-        return afflictionSpecDict[afflictionType.ToString()][identifier] / 100;
     }
 
     public int GetValue(SpellLabel spellLabel, string identifier)

@@ -356,7 +356,7 @@ MonoBehaviour:
   regularScale: 1
   maxScale: 2
   changeScaleSpeed: 2.5
-  toolTipXOffset: 125
+  toolTipOffset: {x: 90, y: 0}
   pipDisplay: {fileID: 5294746627866713120}
   pip: {fileID: 9056464791004000356, guid: b9dfbc57b84c86a4dbee375e2ae95eb7, type: 3}
   mainImage: {fileID: 5580262284394836984}

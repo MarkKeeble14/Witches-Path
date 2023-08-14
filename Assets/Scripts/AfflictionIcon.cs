@@ -12,9 +12,38 @@ public class AfflictionIcon : MonoBehaviour
 
     private Affliction setTo;
 
+    [Header("Animations")]
+    [SerializeField] private float regularScale;
+    [SerializeField] private float maxScale;
+    private float targetScale;
+    [SerializeField] private float changeScaleSpeed = 1f;
+
+    private GameObject spawnedToolTip;
+
+    private void Awake()
+    {
+        // Set Target Scale Initially
+        targetScale = regularScale;
+    }
+
     private void Update()
     {
+        // Allow target scale to fall back to regular scale
+        if (targetScale != regularScale)
+        {
+            targetScale = Mathf.MoveTowards(targetScale, regularScale, changeScaleSpeed * Time.deltaTime);
+        }
+
+        // Set Transforms Actual Scale Scale
+        image.transform.localScale = targetScale * Vector3.one;
+
+
         SetStacksRemaining(Utils.RoundTo(setTo.GetStacks(), 0).ToString());
+    }
+
+    public void AnimateScale()
+    {
+        targetScale = maxScale;
     }
 
     public void SetAffliction(Affliction aff)
@@ -36,5 +65,16 @@ public class AfflictionIcon : MonoBehaviour
     public void SetStacksRemaining(string s)
     {
         stacksRemaining.text = s;
+    }
+
+    public void SpawnToolTip()
+    {
+        Debug.Log("Spawn ToolTip");
+        spawnedToolTip = UIManager._Instance.SpawnToolTips(setTo, transform);
+    }
+
+    public void DestroyToolTip()
+    {
+        Destroy(spawnedToolTip);
     }
 }

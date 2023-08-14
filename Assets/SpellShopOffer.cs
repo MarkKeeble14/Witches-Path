@@ -12,11 +12,11 @@ public class SpellShopOffer : ShopOffer
         itemText.text = setTo.ToString();
         costText.text = cost.ToString();
 
-        ToolTip spawnedToolTip = null;
-        string finalizedToolTipText = GameManager._Instance.GetSpellOfType(setTo).ToolTipText;
+        GameObject spawnedToolTip = null;
+        Spell spell = GameManager._Instance.GetSpellOfType(setTo);
         onPointerEnter += delegate
         {
-            spawnedToolTip = UIManager._Instance.SpawnToolTip(finalizedToolTipText, transform, new Vector3(toolTipOffset, 0, 0));
+            spawnedToolTip = UIManager._Instance.SpawnToolTips(spell, transform);
         };
         onPointerExit += delegate
         {

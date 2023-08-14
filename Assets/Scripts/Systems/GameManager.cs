@@ -5,6 +5,11 @@ using TMPro;
 using System.Collections.Generic;
 using System.Linq;
 
+public enum ToolTipKeyword
+{
+    Affliction,
+}
+
 public enum ContentType
 {
     Artifact,
@@ -88,9 +93,9 @@ public class GameManager : MonoBehaviour
     [Header("Test")]
     [SerializeField] private ContentType currentlyTesting;
 
-
     [Header("Visual")]
     [SerializeField] private SerializableDictionary<DamageType, Color> damageSourceColorDict = new SerializableDictionary<DamageType, Color>();
+    [SerializeField] private SerializableDictionary<ToolTipKeyword, string> keyWordData = new SerializableDictionary<ToolTipKeyword, string>();
 
     [Header("References")]
     [SerializeField] private TextMeshProUGUI hpText;
@@ -307,12 +312,41 @@ public class GameManager : MonoBehaviour
         }
     }
 
+
+    public void TriggerRandomPassiveSpell()
+    {
+        if (CombatManager._Instance.InCombat)
+        {
+            if (equippedPassiveSpells.Count > 0)
+            {
+                PassiveSpell spell = RandomHelper.GetRandomFromArray(equippedPassiveSpells.Values.ToArray());
+                spell.Proc(true);
+                Debug.Log("Triggered: " + spell);
+            }
+        }
+    }
+
+    public string GetKeyWordText(ToolTipKeyword toolTipKeyword)
+    {
+        return keyWordData[toolTipKeyword];
+    }
+
     public void AlterAllBookCharge(int alterBy)
     {
         // Alter Book Charge by
         foreach (KeyValuePair<BookLabel, Book> kvp in equippedBooks)
         {
             kvp.Value.AlterCharge(alterBy);
+        }
+    }
+
+    [ContextMenu("Fill All Book Charges")]
+    public void FillAllBookCharges()
+    {
+        // Alter Book Charge by
+        foreach (KeyValuePair<BookLabel, Book> kvp in equippedBooks)
+        {
+            kvp.Value.AlterCharge(kvp.Value.MaxCharge);
         }
     }
 
@@ -701,6 +735,12 @@ public class GameManager : MonoBehaviour
         {
             case BookLabel.WitchesTravelGuide:
                 return new WitchesTravelGuide();
+            case BookLabel.MedicalNovella:
+                return new MedicalNovella();
+            case BookLabel.MerchantsManual:
+                return new MerchantsManual();
+            case BookLabel.BusinessTextbook:
+                return new BusinessTextBook();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -744,7 +784,6 @@ public class GameManager : MonoBehaviour
     public void AddBook(BookLabel type)
     {
         Book book = GetBookOfType(type);
-        book.SetParameters();
 
         BookDisplay spawned = Instantiate(bookDisplay, bookBar);
         spawned.SetItem(book);
@@ -929,7 +968,7 @@ public class GameManager : MonoBehaviour
     {
         // Spawn Popup Text
         PopupText spawned = Instantiate(popupTextPrefab, currencyText.transform);
-        spawned.Set(Utils.RoundTo(amount, 1).ToString(), Color.yellow);
+        spawned.Set((amount > 0 ? "+" : "") + Utils.RoundTo(amount, 1).ToString(), Color.yellow);
 
         currentPlayerCurrency += amount;
     }
@@ -938,7 +977,7 @@ public class GameManager : MonoBehaviour
     {
         // Spawn Popup Text
         PopupText spawned = Instantiate(popupTextPrefab, clothierCurrencyText.transform);
-        spawned.Set(Utils.RoundTo(amount, 1).ToString(), Color.blue);
+        spawned.Set((amount > 0 ? "+" : "") + Utils.RoundTo(amount, 1).ToString(), Color.blue);
 
         currentPlayerClothierCurrency += amount;
     }
@@ -961,7 +1000,7 @@ public class GameManager : MonoBehaviour
         if (spawnPopupText)
         {
             PopupText spawned = Instantiate(popupTextPrefab, hpText.transform);
-            spawned.Set(Utils.RoundTo(amount, 1).ToString(), GetColorByDamageSource(damageSource));
+            spawned.Set((amount > 0 ? "+" : "") + Utils.RoundTo(amount, 1).ToString(), GetColorByDamageSource(damageSource));
         }
 
         if (currentPlayerHP + amount > maxPlayerHP)
@@ -1112,7 +1151,9 @@ public class GameManager : MonoBehaviour
 
     public void RestAtCampfire()
     {
-        AlterPlayerHP(Mathf.CeilToInt((BalenceManager._Instance.GetValue(MapNodeType.Campfire, "HealPercent") / 100) * maxPlayerHP), DamageType.Heal);
+        float value = BalenceManager._Instance.GetValue(MapNodeType.Campfire, "HealPercent");
+        float percentHP = value / 100;
+        AlterPlayerHP(Mathf.CeilToInt(maxPlayerHP * percentHP), DamageType.Heal);
         ResolveCurrentEvent();
     }
 
@@ -1157,6 +1198,24 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Vector2 minMaxIngredientCost;
 
     [SerializeField] private GameObject[] turnOnForBrowseWaresScreen;
+
+    public void MultiplyCosts(float multBy)
+    {
+        foreach (ShopOffer offer in shopArtifactList)
+        {
+            offer.MultiplyCost(multBy);
+        }
+
+        foreach (ShopOffer offer in shopIngredientList)
+        {
+            offer.MultiplyCost(multBy);
+        }
+
+        foreach (ShopOffer offer in shopEquipmentList)
+        {
+            offer.MultiplyCost(multBy);
+        }
+    }
 
     public void OpenBrowseWaresScreen()
     {
@@ -1620,6 +1679,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private SwapBookButton swapBookButtonPrefab;
     private List<SwapBookButton> spawnedSwapBookButtons = new List<SwapBookButton>();
 
+    private BookLabel libraryBookOffer;
+
     public void UpgradeBooks()
     {
         foreach (KeyValuePair<BookLabel, Book> b in equippedBooks)
@@ -1629,8 +1690,6 @@ public class GameManager : MonoBehaviour
 
         ResolveCurrentEvent();
     }
-
-    private BookLabel libraryBookOffer;
 
     public void OpenSwapBookScreen()
     {
@@ -1658,6 +1717,7 @@ public class GameManager : MonoBehaviour
     {
         RemoveBook(swappingOut);
         AddBook(swappingTo);
+        AnimateBook(swappingTo);
     }
 
     public void RejectBookSwap()
@@ -1677,6 +1737,7 @@ public class GameManager : MonoBehaviour
 
     #region Clothier
 
+    [Header("Clothier")]
     [Header("Select Equipment Screen")]
     [SerializeField] private GameObject selectEquipmentScreen;
     [SerializeField] private SelectEquipmentButton selectEquipmentButtonPrefab;
@@ -1685,9 +1746,9 @@ public class GameManager : MonoBehaviour
 
     [Header("Select Stat Screen")]
     [SerializeField] private GameObject selectStatScreen;
-    [SerializeField] private SelectButton selectButtonPrefab;
+    [SerializeField] private SelectStatButton selectStatButtonPrefab;
     [SerializeField] private Transform selectStatList;
-    private List<SelectButton> spawnedSelectStatButtons = new List<SelectButton>();
+    private List<SelectStatButton> spawnedSelectStatButtons = new List<SelectStatButton>();
 
     private Equipment selectedEquipment;
     private bool hasSelectedStat;
@@ -1696,7 +1757,7 @@ public class GameManager : MonoBehaviour
     private bool exitSelectEquipmentScreen;
     private bool exitSelectStatScreen;
 
-    public void OpenSelectEquipmentScreen()
+    public void OpenSelectEquipmentScreen(bool showCost, string label)
     {
         selectEquipmentScreen.SetActive(true);
 
@@ -1708,6 +1769,13 @@ public class GameManager : MonoBehaviour
 
         SelectEquipmentButton spawnedForWand = Instantiate(selectEquipmentButtonPrefab, selectEquipmentList);
         spawnedForWand.Set(playerEquippedWand, () => selectedEquipment = playerEquippedWand);
+
+        if (showCost)
+        {
+            spawnedForHat.ShowCost(1, label);
+            spawnedForRobe.ShowCost(1, label);
+            spawnedForWand.ShowCost(1, label);
+        }
 
         spawnedSelectEquipmentButtons.Add(spawnedForHat);
         spawnedSelectEquipmentButtons.Add(spawnedForRobe);
@@ -1726,18 +1794,24 @@ public class GameManager : MonoBehaviour
         selectEquipmentScreen.SetActive(false);
     }
 
-    public void OpenSelectStatScreen()
+    public void OpenSelectStatScreen(bool showCost, string label)
     {
         selectStatScreen.SetActive(true);
 
         foreach (BaseStat stat in Enum.GetValues(typeof(BaseStat)))
         {
-            SelectButton spawned = Instantiate(selectButtonPrefab, selectStatList);
+            SelectStatButton spawned = Instantiate(selectStatButtonPrefab, selectStatList);
             spawned.Set(stat.ToString(), delegate
             {
                 selectedStat = stat;
                 hasSelectedStat = true;
             });
+
+            if (showCost)
+            {
+                spawned.ShowCost(1, label);
+            }
+
             spawnedSelectStatButtons.Add(spawned);
         }
     }
@@ -1756,14 +1830,12 @@ public class GameManager : MonoBehaviour
 
     public void ReforgeEquipmentSelected()
     {
-        if (currentPlayerClothierCurrency <= 0) return;
-
         StartCoroutine(ReforgeEquipmentSequence());
     }
 
     private IEnumerator ReforgeEquipmentSequence()
     {
-        OpenSelectEquipmentScreen();
+        OpenSelectEquipmentScreen(true, "Refroge");
 
         while (!exitSelectEquipmentScreen)
         {
@@ -1773,6 +1845,13 @@ public class GameManager : MonoBehaviour
             {
                 selectedEquipment = null;
                 break;
+            }
+
+            // No Moneys
+            if (currentPlayerClothierCurrency <= 0)
+            {
+                selectedEquipment = null;
+                continue;
             }
 
             // Reforge
@@ -1792,14 +1871,12 @@ public class GameManager : MonoBehaviour
 
     public void StrengthenEquipmentSelected()
     {
-        if (currentPlayerClothierCurrency <= 0) return;
-
         StartCoroutine(StrengthenEquipmentSequence());
     }
 
     private IEnumerator StrengthenEquipmentSequence()
     {
-        OpenSelectEquipmentScreen();
+        OpenSelectEquipmentScreen(false, "");
 
         while (!exitSelectEquipmentScreen)
         {
@@ -1811,7 +1888,7 @@ public class GameManager : MonoBehaviour
                 break;
             }
 
-            OpenSelectStatScreen();
+            OpenSelectStatScreen(true, "Strengthen");
 
             while (!exitSelectStatScreen)
             {
@@ -1823,6 +1900,14 @@ public class GameManager : MonoBehaviour
                     hasSelectedStat = false;
                     CloseSelectStatScreen();
                     break;
+                }
+
+                // No Moneys
+                if (currentPlayerClothierCurrency <= 0)
+                {
+                    selectedEquipment = null;
+                    hasSelectedStat = false;
+                    continue;
                 }
 
                 // Reforge

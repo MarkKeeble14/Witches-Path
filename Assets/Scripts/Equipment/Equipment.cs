@@ -39,6 +39,16 @@ public abstract class Equipment : ScriptableObject
     [SerializeField] private int manaChange;
     private int manaBoost;
 
+    [SerializeField] private ToolTipKeyword[] keywords = new ToolTipKeyword[0];
+    [SerializeField]
+    public ToolTipKeyword[] Keywords
+    {
+        get
+        {
+            return keywords;
+        }
+    }
+
     public string ToolTipText => Name + "\n" + GetStatList() + "\n" + GetSpellList();
 
     private string GetStatList()
@@ -59,6 +69,8 @@ public abstract class Equipment : ScriptableObject
         }
         return s;
     }
+
+    public List<SpellLabel> ComesWithSpells => comesWithSpells;
 
     [SerializeField] private List<SpellLabel> comesWithSpells = new List<SpellLabel>();
 

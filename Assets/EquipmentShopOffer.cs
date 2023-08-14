@@ -21,10 +21,10 @@ public class EquipmentShopOffer : ShopOffer
         defenseBonus.text = setTo.GetStat(BaseStat.Defense).ToString();
         manaBonus.text = setTo.GetStat(BaseStat.Mana).ToString();
 
-        ToolTip spawnedToolTip = null;
+        GameObject spawnedToolTip = null;
         onPointerEnter += delegate
         {
-            spawnedToolTip = UIManager._Instance.SpawnToolTip(setTo.ToolTipText, transform, new Vector3(toolTipOffset, 0, 0));
+            spawnedToolTip = UIManager._Instance.SpawnToolTips(setTo, transform);
         };
         onPointerExit += delegate
         {

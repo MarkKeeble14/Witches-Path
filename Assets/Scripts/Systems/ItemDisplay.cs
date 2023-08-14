@@ -16,15 +16,13 @@ public class ItemDisplay : MonoBehaviour
     [SerializeField] private float changeScaleSpeed = 1f;
 
     private PowerupItem setTo;
-    private ToolTip spawnedToolTip;
+    private GameObject spawnedToolTip;
 
-    [SerializeField] private float toolTipXOffset;
-    private string finalizedToolTipText;
-
-    protected void Start()
+    private void Awake()
     {
         // Set Target Scale Initially
         targetScale = regularScale;
+
     }
 
     protected void Update()
@@ -70,7 +68,15 @@ public class ItemDisplay : MonoBehaviour
 
     public void SpawnToolTip()
     {
-        spawnedToolTip = UIManager._Instance.SpawnToolTip(setTo.ToolTipText, transform, new Vector3(toolTipXOffset, 0, 0));
+        switch (setTo)
+        {
+            case Artifact artifact:
+                spawnedToolTip = UIManager._Instance.SpawnToolTips(artifact, transform);
+                break;
+            case Book book:
+                spawnedToolTip = UIManager._Instance.SpawnToolTipsForBook(book, transform);
+                break;
+        }
     }
 
     public void DestroyToolTip()

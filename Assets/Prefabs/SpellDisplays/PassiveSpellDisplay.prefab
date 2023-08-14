@@ -176,7 +176,7 @@ MonoBehaviour:
   main: {fileID: 4997572235486677794}
   regularScale: 1
   maxScale: 1.75
-  toolTipXOffset: 150
+  toolTipOffset: {x: 0, y: 25}
   changeScaleSpeed: 2.5
   defaultSprite: {fileID: -2413806693520163455, guid: 36a0f126a9869ea4983b3b972c87b73c, type: 3}
   infoBlock: {fileID: 9197949876086430732}

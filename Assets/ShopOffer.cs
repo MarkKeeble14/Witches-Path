@@ -16,7 +16,12 @@ public abstract class ShopOffer : MonoBehaviour
 
     protected Action onPointerEnter;
     protected Action onPointerExit;
-    [SerializeField] protected float toolTipOffset = 50;
+    [SerializeField] protected Vector2 toolTipOffset;
+
+    public void MultiplyCost(float multBy)
+    {
+        cost *= Mathf.CeilToInt(multBy);
+    }
 
     public void OnPointerEnter()
     {
