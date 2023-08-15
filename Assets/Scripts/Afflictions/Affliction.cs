@@ -10,9 +10,9 @@ public abstract class Affliction
 {
     public abstract AfflictionType Type { get; }
     public abstract AfflictionSign Sign { get; }
-    public abstract string ToolTipText { get; }
+    protected abstract string toolTipText { get; }
 
-    public abstract ToolTipKeyword[] Keywords { get; }
+    public virtual ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
     public bool CanBeCleared => stacks <= 0;
     private int stacks;
 
@@ -30,13 +30,16 @@ public abstract class Affliction
     {
         return stacks;
     }
+
+    public string GetToolTipText()
+    {
+        return UIManager._Instance.HighlightKeywords(toolTipText);
+    }
 }
 
 public class Emboldened : Affliction
 {
-    public override string ToolTipText => "Emboldened Combatents Deal More Damage";
-
-    public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    protected override string toolTipText => "Emboldened Combatents Deal More Damage";
 
     public override AfflictionType Type => AfflictionType.Emboldened;
 
@@ -45,9 +48,7 @@ public class Emboldened : Affliction
 
 public class Weakened : Affliction
 {
-    public override string ToolTipText => "Weakened Combatents Deal Less Damage";
-
-    public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    protected override string toolTipText => "Weakened Combatents Deal Less Damage";
 
     public override AfflictionType Type => AfflictionType.Weakened;
 
@@ -56,9 +57,7 @@ public class Weakened : Affliction
 
 public class Vulnerable : Affliction
 {
-    public override string ToolTipText => "Vulnerable Combatents Recieve More Damage";
-
-    public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    protected override string toolTipText => "Vulnerable Combatents Recieve More Damage";
 
     public override AfflictionType Type => AfflictionType.Vulnerable;
 
@@ -67,9 +66,7 @@ public class Vulnerable : Affliction
 
 public class Guarded : Affliction
 {
-    public override string ToolTipText => "Guarded Combatents Reduce incoming damage";
-
-    public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    protected override string toolTipText => "Guarded Combatents Reduce incoming damage";
 
     public override AfflictionType Type => AfflictionType.Guarded;
 
@@ -78,9 +75,7 @@ public class Guarded : Affliction
 
 public class Bandaged : Affliction
 {
-    public override string ToolTipText => "At the end of Combat, Gain HP equal to the number of Bandaged";
-
-    public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    protected override string toolTipText => "At the end of Combat, Heal HP equal to the number of Bandaged";
 
     public override AfflictionType Type => AfflictionType.Bandaged;
 
@@ -90,9 +85,7 @@ public class Bandaged : Affliction
 
 public class Retribution : Affliction
 {
-    public override string ToolTipText => "Retribution Causes any who attack the afflicted to recieve damage";
-
-    public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    protected override string toolTipText => "Retribution Causes any who attack the afflicted to recieve damage";
 
     public override AfflictionType Type => AfflictionType.Retribution;
 
@@ -102,9 +95,7 @@ public class Retribution : Affliction
 
 public class Prepared : Affliction
 {
-    public override string ToolTipText => "A Prepared Combatent will reduce any instance of damage taken to 1";
-
-    public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    protected override string toolTipText => "A Prepared Combatent will reduce any instance of damage taken to 1";
 
     public override AfflictionType Type => AfflictionType.Prepared;
 
@@ -114,9 +105,7 @@ public class Prepared : Affliction
 
 public class Parry : Affliction
 {
-    public override string ToolTipText => "Parry Causes the next attack taken against the afflicted to instead be applied to their opponent";
-
-    public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    protected override string toolTipText => "Parry Causes the next attack taken against the afflicted to instead be applied to their opponent";
 
     public override AfflictionType Type => AfflictionType.Parry;
 
@@ -126,9 +115,7 @@ public class Parry : Affliction
 
 public class Echo : Affliction
 {
-    public override string ToolTipText => "Echo Causes the next active spell casted to activate twice";
-
-    public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    protected override string toolTipText => "Echo Causes the next active spell casted to activate twice";
 
     public override AfflictionType Type => AfflictionType.Echo;
 
@@ -138,9 +125,7 @@ public class Echo : Affliction
 
 public class Blight : Affliction
 {
-    public override string ToolTipText => "Blight deals damage equal to the number of blight stacks at the beginning of the combatents turn.The number of Blight stacks is increased by 1 when triggered";
-
-    public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    protected override string toolTipText => "Blight deals damage equal to the number of blight stacks at the beginning of the combatents turn.The number of Blight stacks is increased by 1 when triggered";
 
     public override AfflictionType Type => AfflictionType.Blight;
 
@@ -149,9 +134,7 @@ public class Blight : Affliction
 }
 public class Poison : Affliction
 {
-    public override string ToolTipText => "Poison deals damage equal to the number of poison stacks whenever a spell is cast. The number of Poison stacks is reduced by 1 when triggered";
-
-    public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    protected override string toolTipText => "Poison deals damage equal to the number of poison stacks whenever a spell is cast. The number of Poison stacks is reduced by 1 when triggered";
 
     public override AfflictionType Type => AfflictionType.Poison;
 
@@ -159,9 +142,7 @@ public class Poison : Affliction
 }
 public class Burn : Affliction
 {
-    public override string ToolTipText => "Burn deals a flat amount of damage at the beginning of the combatents turn. The number of Burn stacks is decreased by 1 when triggered";
-
-    public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    protected override string toolTipText => "Burn deals a flat amount of damage at the beginning of the combatents turn. The number of Burn stacks is decreased by 1 when triggered";
 
     public override AfflictionType Type => AfflictionType.Burn;
 
@@ -170,9 +151,7 @@ public class Burn : Affliction
 
 public class Paralyzed : Affliction
 {
-    public override string ToolTipText => "Paralyzed Causes the next attack to be taken to fizzle out";
-
-    public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    protected override string toolTipText => "Paralyzed Causes the next attack to be taken to fizzle out";
 
     public override AfflictionType Type => AfflictionType.Paralyzed;
 

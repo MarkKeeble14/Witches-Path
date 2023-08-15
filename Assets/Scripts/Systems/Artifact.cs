@@ -49,7 +49,7 @@ public class GreedyHands : Artifact
     private int procAfter;
     private int currencyAmount;
 
-    public override string ToolTipText => "On every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, gain " + currencyAmount + " Gold";
+    protected override string toolTipText => "On every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, gain " + currencyAmount + " Gold";
 
     protected override void SetParameters()
     {
@@ -89,7 +89,7 @@ public class CanyonChunk : Artifact
     protected override ArtifactLabel Label => ArtifactLabel.CanyonChunk;
 
     public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Echo };
-    public override string ToolTipText => "On Combat Start, gain " + stackAmount + " Echo";
+    protected override string toolTipText => "On Combat Start, gain " + stackAmount + " Echo";
 
     private int stackAmount;
 
@@ -119,7 +119,7 @@ public class Plaguebringer : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.Plaguebringer;
 
-    public override string ToolTipText => "On Combat Start, Apply " + stackAmount + " Blight to the Enemy";
+    protected override string toolTipText => "On Combat Start, Apply " + stackAmount + " Blight to the Enemy";
     public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Blight };
 
     private int stackAmount;
@@ -150,7 +150,7 @@ public class MedicineKit : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.MedicineKit;
 
-    public override string ToolTipText => "Upon Entering a new room, Heal " + healAmount + " HP";
+    protected override string toolTipText => "Upon Entering a new room, Heal " + healAmount + " HP";
 
     private int healAmount;
 
@@ -180,7 +180,7 @@ public class BoldInvestments : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.BoldInvestments;
 
-    public override string ToolTipText => "Upon Entering a Combat, Gain " + currencyAmount + " Gold";
+    protected override string toolTipText => "Upon Entering a Combat, Gain " + currencyAmount + " Gold";
 
     private int currencyAmount;
 
@@ -210,7 +210,7 @@ public class SmokeShroud : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.SmokeShroud;
 
-    public override string ToolTipText => "On Combat Start, Apply " + stackAmount + " Weakened to the Enemy";
+    protected override string toolTipText => "On Combat Start, Apply " + stackAmount + " Weakened to the Enemy";
 
     public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Weakened };
 
@@ -242,7 +242,7 @@ public class BankCard : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.BankCard;
 
-    public override string ToolTipText => "Upon Entering a Tavern, Gain " + currencyAmount + " Gold";
+    protected override string toolTipText => "Upon Entering a Tavern, Gain " + currencyAmount + " Gold";
 
     private int currencyAmount;
 
@@ -272,7 +272,7 @@ public class LooseTrigger : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.LooseTrigger;
 
-    public override string ToolTipText => "Upon Losing HP, trigger one of your passive spells at random";
+    protected override string toolTipText => "Upon Losing HP, trigger one of your passive spells at random";
 
     protected override void SetParameters()
     {
@@ -299,7 +299,7 @@ public class MolatovCocktail : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.MolatovCocktail;
 
-    public override string ToolTipText => "For " + repetitions + " Turns after combat starts, Apply " + stackAmount + " Burn to the Enemy at the beginning of your turn";
+    protected override string toolTipText => "For " + repetitions + " Turns after combat starts, Apply " + stackAmount + " Burn to the Enemy at the beginning of your turn";
 
     public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Burn };
 
@@ -351,7 +351,7 @@ public class BlueMantis : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.BlueMantis;
 
-    public override string ToolTipText => "Upon Recieving Damage, Apply " + stackAmount + " Paralyzed to the Enemy";
+    protected override string toolTipText => "Upon Recieving Damage, Apply " + stackAmount + " Paralyzed to the Enemy";
     public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Paralyzed };
 
     private int stackAmount;
@@ -383,7 +383,7 @@ public class HealthInsurance : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.HealthInsurance;
 
-    public override string ToolTipText => "Upon Entering a New Room, Heal " + healAmount + "HP. Entering a combat will permanantly disable this effect";
+    protected override string toolTipText => "Upon Entering a New Room, Heal " + healAmount + " HP. Entering a combat will permanantly disable this effect";
 
     private int healAmount;
     private bool active = true;
@@ -428,7 +428,7 @@ public class InvertedPolaroid : Artifact
 
     public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Retribution };
 
-    public override string ToolTipText => "Upon Entering Combat, Gain " + stackAmount + " Retribution";
+    protected override string toolTipText => "Upon Entering Combat, Gain " + stackAmount + " Retribution";
 
     private int stackAmount;
 
@@ -459,7 +459,7 @@ public class HalfLitFirework : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.HalfLitFirework;
 
-    public override string ToolTipText => "Upon Recieving Damage, Fire a Projectile at the Enemy";
+    protected override string toolTipText => "Upon Recieving Damage, Fire a Projectile at the Enemy";
 
     protected override void SetParameters()
     {
@@ -487,7 +487,7 @@ public class ZedsScalpel : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.ZedsScalpel;
 
-    public override string ToolTipText => "Upon Recieving Damage, Heal " + healAmount + " HP";
+    protected override string toolTipText => "Upon Recieving Damage, Heal " + healAmount + " HP";
 
     private int healAmount;
 
@@ -518,7 +518,7 @@ public class Barricade : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.Barricade;
 
-    public override string ToolTipText => "Upon Recieving Damage, Reduce that Damage by " + reductionAmount;
+    protected override string toolTipText => "Upon Recieving Damage, Reduce that Damage by " + reductionAmount;
 
     private int reductionAmount;
 
@@ -547,7 +547,7 @@ public class DoctorsReport : Artifact
 
     public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Bandaged };
 
-    public override string ToolTipText => "Upon Damaging the Enemy, if the amount of Damage Dealt was Above " + mustBeOver + ", Gain " + stackAmount + " Bandaged";
+    protected override string toolTipText => "Upon Damaging the Enemy, if the amount of Damage Dealt was Above " + mustBeOver + ", Gain " + stackAmount + " Bandaged";
 
     private int mustBeOver;
     private int stackAmount;
@@ -576,7 +576,7 @@ public class RustyCannon : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.RustyCannon;
 
-    public override string ToolTipText => numTurns + " Turns after Combat Begins, Deal " + damageAmount + " Damage to the Enemy";
+    protected override string toolTipText => numTurns + " Turns after Combat Begins, Deal " + damageAmount + " Damage to the Enemy";
 
     private int damageAmount;
     private int numTurns;
@@ -622,7 +622,7 @@ public class VoodooDoll : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.VoodooDoll;
 
-    public override string ToolTipText => "Upon Gaining a New Affliction, Deal " + damageAmount + " Damage to the Enemy";
+    protected override string toolTipText => "Upon Gaining a New Affliction, Deal " + damageAmount + " Damage to the Enemy";
 
     public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { ToolTipKeyword.Affliction };
 
@@ -656,7 +656,7 @@ public class SpecialSpinach : Artifact
 
     public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Weakened };
 
-    public override string ToolTipText => "You can no longer become Weakened";
+    protected override string toolTipText => "You can no longer become Weakened";
 
     protected override void SetParameters()
     {
@@ -681,7 +681,7 @@ public class HolyShield : Artifact
 
     public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Vulnerable };
 
-    public override string ToolTipText => "You can no longer become Vulnerable";
+    protected override string toolTipText => "You can no longer become Vulnerable";
 
     protected override void SetParameters()
     {
@@ -704,7 +704,7 @@ public class CaveMural : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.CaveMural;
 
-    public override string ToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Passive Spell Activated will Duplicate it's Effect";
+    protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Passive Spell Activated will Duplicate it's Effect";
 
     private int tracker;
     private int procAfter;
@@ -740,7 +740,7 @@ public class BarbariansBlade : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.BarbariansBlade;
 
-    public override string ToolTipText => "All instances of In-Combat Damage are Increased by " + DamageIncrease;
+    protected override string toolTipText => "All instances of In-Combat Damage are Increased by " + DamageIncrease;
 
     public static int DamageIncrease { get; private set; }
 
@@ -766,7 +766,7 @@ public class LizardSkinSilk : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.LizardSkinSilk;
 
-    public override string ToolTipText => "Losing HP has a " + Mathf.RoundToInt((chanceToActivate.x / chanceToActivate.y) * 100) + "% Chance of Removing a Random Negative Affliction";
+    protected override string toolTipText => "Losing HP has a " + Mathf.RoundToInt((chanceToActivate.x / chanceToActivate.y) * 100) + "% Chance of Removing a Random Negative Affliction";
     public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { ToolTipKeyword.Affliction };
 
     private Vector2 chanceToActivate;
@@ -800,7 +800,7 @@ public class LuckyCoin : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.LuckyCoin;
 
-    public override string ToolTipText => "All Gold Rewards are Increased by " + CurrencyMultiplier + "%";
+    protected override string toolTipText => "All Gold Rewards are Increased by " + CurrencyMultiplier + "%";
 
     public static float CurrencyMultiplier { get; private set; }
 
@@ -827,7 +827,7 @@ public class HiredHand : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.HiredHand;
 
-    public override string ToolTipText => "Enemies Begin Combat with " + PercentHP + "% HP";
+    protected override string toolTipText => "Enemies Begin Combat with " + PercentHP + "% HP";
 
     public static float PercentHP { get; private set; }
 
@@ -854,7 +854,7 @@ public class BlackPrism : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.BlackPrism;
 
-    public override string ToolTipText => "Active Spells do " + DamageMultiplier + "% Damage";
+    protected override string toolTipText => "Active Spells do " + DamageMultiplier + "% Damage";
 
     public static float DamageMultiplier { get; private set; }
 
@@ -880,7 +880,7 @@ public class Telescope : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.Telescope;
 
-    public override string ToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Turn, Gain " + stackAmount + " Prepared";
+    protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Turn, Gain " + stackAmount + " Prepared";
 
     public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Prepared };
 
@@ -920,7 +920,7 @@ public class CheapStopwatch : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.CheapStopwatch;
 
-    public override string ToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Active Spell Queued makes the next Active Spell Free";
+    protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Active Spell Queued makes the next Active Spell Free";
 
     private int tracker;
     private int procAfter;
@@ -956,8 +956,8 @@ public class Boulder : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.Boulder;
 
-    public override string ToolTipText => "Whenever you Basic Attack " + procAfter + " times, fire an Additional Projectile Dealing " + damageAmount
-        + " Damage to the Enemy. Every time this effect is activated, the Damage Increases by " + damageIncrease;
+    protected override string toolTipText => "Whenever you Basic Attack " + procAfter + " times, fire an Additional Projectile Dealing " + damageAmount
+         + " Damage to the Enemy. Every time this effect is activated, the Damage Increases by " + damageIncrease;
 
     private int tracker;
     private int procAfter;
@@ -998,7 +998,7 @@ public class Crown : Artifact
 {
     protected override ArtifactLabel Label => ArtifactLabel.Crown;
 
-    public override string ToolTipText => "Polished, but quite impractical";
+    protected override string toolTipText => "Polished, but quite impractical";
 
     protected override void SetParameters()
     {

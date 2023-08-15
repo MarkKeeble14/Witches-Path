@@ -58,8 +58,6 @@ public class ActiveSpellDisplay : SpellDisplay
         keyBindingText.text = binding.ToString();
 
         isAvailable = false;
-
-        finalizedToolTipText = spell.ToolTipText;
     }
 
     private new void Update()

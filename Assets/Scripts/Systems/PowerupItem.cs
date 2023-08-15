@@ -17,5 +17,10 @@ public abstract class PowerupItem
 
     public abstract string Name { get; }
 
-    public abstract string ToolTipText { get; }
+    protected abstract string toolTipText { get; }
+
+    public virtual string GetToolTipText()
+    {
+        return UIManager._Instance.HighlightKeywords(toolTipText);
+    }
 }

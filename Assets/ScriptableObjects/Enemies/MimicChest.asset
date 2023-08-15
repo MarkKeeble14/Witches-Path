@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b31adb0cf191c0a429a2c11ce960a977, type: 3}
   m_Name: MimicChest
   m_EditorClassIdentifier: 
-  combatSprite: {fileID: 0}
+  combatSprite: {fileID: 21300000, guid: c84821376df5741479c3100d970e10ba, type: 3}
+  name: Mimic
   maxHP: 150
   startingHP: 150
   basicAttackDamage: 6

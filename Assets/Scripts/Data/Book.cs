@@ -20,9 +20,14 @@ public abstract class Book : PowerupItem
     protected int currentLevel = 1;
     protected virtual int MaxLevel => 3;
 
-    public int currentCharge { get; private set; }
+    public int CurrentCharge { get; private set; }
     public int MaxCharge { get; private set; }
-    public virtual bool CanActivate => currentCharge >= MaxCharge;
+    public virtual bool CanActivate => CurrentCharge >= MaxCharge;
+
+    public override string GetToolTipText()
+    {
+        return base.GetToolTipText() + "\nCharge: " + CurrentCharge + "/" + MaxCharge;
+    }
 
     public Book()
     {
@@ -34,21 +39,21 @@ public abstract class Book : PowerupItem
 
     public void AlterCharge(int alterBy)
     {
-        if (currentCharge + alterBy > MaxCharge)
+        if (CurrentCharge + alterBy > MaxCharge)
         {
-            currentCharge = MaxCharge;
+            CurrentCharge = MaxCharge;
         }
-        else if (currentCharge + alterBy < 0)
+        else if (CurrentCharge + alterBy < 0)
         {
-            currentCharge = 0;
+            CurrentCharge = 0;
         }
         else
         {
-            currentCharge += alterBy;
+            CurrentCharge += alterBy;
         }
 
         // Show that the Book is Ready for Use 
-        if (currentCharge >= MaxCharge)
+        if (CurrentCharge >= MaxCharge)
         {
             ShowBookReady();
         }
@@ -140,7 +145,7 @@ public class WitchesTravelGuide : Book
 {
     protected override BookLabel Label => BookLabel.WitchesTravelGuide;
 
-    public override string ToolTipText => "Gain " + currencyAmount + " Gold";
+    protected override string toolTipText => "Gain " + currencyAmount + " Gold";
 
     private int currencyAmount;
     private int increaseOnLevelUp;
@@ -167,7 +172,7 @@ public class MedicalNovella : Book
 {
     protected override BookLabel Label => BookLabel.MedicalNovella;
 
-    public override string ToolTipText => "Heal " + healAmount + " HP";
+    protected override string toolTipText => "Heal " + healAmount + " HP";
 
     private int healAmount;
     private int increaseOnLevelUp;
@@ -194,7 +199,7 @@ public class MerchantsManual : Book
 {
     protected override BookLabel Label => BookLabel.MerchantsManual;
 
-    public override string ToolTipText => "Shop Prices become " + costReduction + "% Cheaper";
+    protected override string toolTipText => "Shop Prices become " + costReduction + "% Cheaper";
 
     private int costReduction;
     private int costReductionChangeOnLevelUp;
@@ -208,7 +213,9 @@ public class MerchantsManual : Book
     protected override void Effect()
     {
         //
-        GameManager._Instance.MultiplyCosts((100 - costReduction) / 100);
+        float multBy = (float)(100 - costReduction) / 100;
+        Debug.Log(multBy);
+        GameManager._Instance.MultiplyCosts(multBy);
     }
 
     protected override void LevelUp()
@@ -217,31 +224,29 @@ public class MerchantsManual : Book
     }
 }
 
-
-
 public class BusinessTextBook : Book
 {
     protected override BookLabel Label => BookLabel.BusinessTextbook;
 
-    public override string ToolTipText => "Lose " + currencyAmount + " Gold, Deal " + damageAmount + " Damage to the Enemy";
+    protected override string toolTipText => "Lose " + useCost + " Gold, Deal " + damageAmount + " Damage to the Enemy";
 
     public override bool CanActivate => base.CanActivate && CombatManager._Instance.InCombat;
 
-    private int currencyAmount;
+    private int useCost;
 
     private int damageAmount;
     private int damageAmountChangeOnLevelUp;
 
     public override void SetAdditionalParameters()
     {
-        currencyAmount = (int)GetBookSpec("CurrencyAmount");
+        useCost = (int)GetBookSpec("UseCost");
         damageAmount = (int)GetBookSpec("DamageAmount");
         damageAmountChangeOnLevelUp = (int)GetLevelUpSpec("DamageAmount");
     }
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterCurrency(currencyAmount);
+        GameManager._Instance.AlterCurrency(-useCost);
         CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.Book);
     }
 

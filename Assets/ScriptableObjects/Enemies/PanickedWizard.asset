@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b31adb0cf191c0a429a2c11ce960a977, type: 3}
   m_Name: PanickedWizard
   m_EditorClassIdentifier: 
-  combatSprite: {fileID: 0}
+  combatSprite: {fileID: 21300000, guid: d02ac31126cfd4b408a2ab6d8ff409d6, type: 3}
+  name: Panicked Wizard
   maxHP: 200
   startingHP: 200
   basicAttackDamage: 9

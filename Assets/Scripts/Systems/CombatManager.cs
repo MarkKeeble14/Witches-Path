@@ -6,6 +6,7 @@ using UnityEditor;
 using System.IO;
 using UnityEngine.UI;
 using UnityEngine.Pool;
+using TMPro;
 
 public enum Turn
 {
@@ -102,6 +103,7 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private CombatentHPBar characterHPBar;
     [SerializeField] private CombatentHPBar enemyHPBar;
     [SerializeField] private IntentDisplay enemyIntentDisplay;
+    [SerializeField] private TextMeshProUGUI enemyNameText;
     [SerializeField] private Image characterCombatSprite;
     [SerializeField] private Image enemyCombatSprite;
     [SerializeField] private TurnDisplay turnDisplay;
@@ -159,7 +161,8 @@ public partial class CombatManager : MonoBehaviour
         // Enemy Stuff
         currentEnemy = combat.Enemy;
         maxEnemyHP = currentEnemy.GetMaxHP();
-
+        enemyCombatSprite.sprite = currentEnemy.GetCombatSprite();
+        enemyNameText.text = currentEnemy.Name;
         // Hired Hand Effect
         if (GameManager._Instance.HasArtifact(ArtifactLabel.HiredHand))
         {
@@ -170,8 +173,6 @@ public partial class CombatManager : MonoBehaviour
         {
             currentEnemyHP = maxEnemyHP;
         }
-
-        enemyCombatSprite.sprite = currentEnemy.GetCombatSprite();
         enemyHPBar.Set(currentEnemyHP, maxEnemyHP);
 
         // Player Stuff
@@ -197,6 +198,8 @@ public partial class CombatManager : MonoBehaviour
         }
         else
         {
+            yield return new WaitForSeconds(1);
+
             // Bandaged Effect
             if (TargetHasAffliction(AfflictionType.Bandaged, Target.Character))
             {
@@ -454,7 +457,7 @@ public partial class CombatManager : MonoBehaviour
 
         ResetCombatentWard(Target.Enemy);
 
-        EnemyAttack();
+        yield return StartCoroutine(EnemyAttack());
 
         // Clear Enemy Intent
         enemyIntentDisplay.ClearIntents();
@@ -690,7 +693,7 @@ public partial class CombatManager : MonoBehaviour
         sfxSource.PlayOneShot(hitSound);
         noteCount++;
 
-        PlayerAttack();
+        PlayerBasicAttack();
     }
 
     public void OnNoteMiss()
@@ -698,8 +701,6 @@ public partial class CombatManager : MonoBehaviour
         if (playSFXOnMiss)
             sfxSource.PlayOneShot(missSound);
         noteCount++;
-
-        EnemyAttack();
     }
 
     #region Afflictions
@@ -932,7 +933,14 @@ public partial class CombatManager : MonoBehaviour
 
     #region Attacks
 
-    private void PlayerAttack()
+    [Header("Attack Slide Animation")]
+    [SerializeField] private RectTransform enemyCombatSpriteRect;
+    [SerializeField] private int spriteOffset = 50;
+    [SerializeField] private float baseEnemyCombatSpriteAnimationSpeed = 25;
+    [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierStart = 1;
+    [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierGain = 1;
+
+    private void PlayerBasicAttack()
     {
         // Simple way of attacking for now
         AttackCombatent(-GameManager._Instance.GetBasicAttackDamage(), Target.Character, Target.Enemy, DamageType.Default, DamageSource.BasicAttack);
@@ -940,10 +948,34 @@ public partial class CombatManager : MonoBehaviour
         OnPlayerAttack?.Invoke();
     }
 
-    private void EnemyAttack()
+    private IEnumerator AnimateEnemySprite()
+    {
+        Vector2 originalPos = enemyCombatSpriteRect.anchoredPosition;
+        Vector2 newPos = originalPos - new Vector2(spriteOffset, 0);
+        float animationSpeedMultiplier = enemyCombatSpriteAnimationSpeedMultiplierStart;
+        while (enemyCombatSpriteRect.anchoredPosition.x > newPos.x)
+        {
+            Debug.Log("Moving To");
+            enemyCombatSpriteRect.anchoredPosition = Vector2.MoveTowards(enemyCombatSpriteRect.anchoredPosition, newPos, Time.deltaTime * baseEnemyCombatSpriteAnimationSpeed * animationSpeedMultiplier);
+            animationSpeedMultiplier += Time.deltaTime * enemyCombatSpriteAnimationSpeedMultiplierGain;
+            yield return null;
+        }
+
+        while (enemyCombatSpriteRect.anchoredPosition.x < originalPos.x)
+        {
+            Debug.Log("Moving From");
+            enemyCombatSpriteRect.anchoredPosition = Vector2.MoveTowards(enemyCombatSpriteRect.anchoredPosition, originalPos, Time.deltaTime * baseEnemyCombatSpriteAnimationSpeed * animationSpeedMultiplier);
+            yield return null;
+        }
+    }
+
+    private IEnumerator EnemyAttack()
     {
         // Simple way of attacking for now
         // Damage increase from equipment is built into basic attack damage
+
+        yield return StartCoroutine(AnimateEnemySprite());
+
         if (!AttackCombatent(-currentEnemy.GetBasicAttackDamage(), Target.Enemy, Target.Character, DamageType.Default, DamageSource.BasicAttack))
         {
             // Player Died

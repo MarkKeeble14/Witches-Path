@@ -6,10 +6,24 @@ using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+public enum ToolTipKeyword
+{
+    Affliction,
+    Ward,
+    Heal,
+    Gold
+}
+
+public enum TextDecorationLabel
+{
+    Keyword,
+    Affliction,
+    Number
+}
+
 public class UIManager : MonoBehaviour
 {
     private bool paused;
-
     public static UIManager _Instance { get; set; }
 
     private int UILayer = 5;
@@ -18,16 +32,101 @@ public class UIManager : MonoBehaviour
 
     [Header("Prefabs")]
     [SerializeField] private ToolTipList toolTipList;
+
     [SerializeField] private ToolTip toolTipPrefab;
 
+    [Header("Tool Tips")]
     [SerializeField] private int toolTipWidth;
     [SerializeField] private int toolTipHeight;
     [SerializeField] private float toolTipSpacing;
     [SerializeField] private float offset;
 
+    [SerializeField] SerializableDictionary<TextDecorationLabel, Color> textDecorationColorMap = new SerializableDictionary<TextDecorationLabel, Color>();
+
+    [SerializeField] private SerializableDictionary<string, string> keyWordData = new SerializableDictionary<string, string>();
+    private List<string> afflictionTypes = new List<string>();
+
+    public string GetKeyWordText(string keyword)
+    {
+        return keyWordData[keyword];
+    }
+
+    // Will Highlight text if it is an...
+    // Affliction
+    // Keyword
+    // Number (Percent or Int)
+    public string HighlightKeywords(string toolTipText)
+    {
+        string res = "";
+        string[] toolTipTextTokens = toolTipText.Split(' ');
+        for (int i = 0; i < toolTipTextTokens.Length; i++)
+        {
+            string token = toolTipTextTokens[i];
+
+            int number;
+            if (keyWordData.ContainsKey(token))
+            {
+                res += DecorateTextWithAppropriateColor(TextDecorationLabel.Keyword, token);
+            }
+            else if (afflictionTypes.Contains(token))
+            {
+                res += DecorateTextWithAppropriateColor(TextDecorationLabel.Affliction, token);
+            }
+            else if (int.TryParse(token, out number))
+            {
+                res += DecorateTextWithAppropriateColor(TextDecorationLabel.Number, number.ToString());
+            }
+            else if (token[token.Length - 1] == '%')
+            {
+                string sub = token.Substring(0, token.Length - 1);
+                if (int.TryParse(sub, out number))
+                {
+                    res += DecorateTextWithAppropriateColor(TextDecorationLabel.Number, token);
+                }
+                else
+                {
+                    res += token;
+                }
+            }
+            else if (token[token.Length - 1] == ',')
+            {
+                string sub = token.Substring(0, token.Length - 1);
+                if (int.TryParse(sub, out number))
+                {
+                    res += DecorateTextWithAppropriateColor(TextDecorationLabel.Number, number.ToString()) + ",";
+                }
+                else
+                {
+                    res += token;
+                }
+            }
+            else
+            {
+                res += token;
+            }
+
+            if (i < toolTipTextTokens.Length - 1)
+            {
+                res += " ";
+            }
+        }
+        return res;
+    }
+
+    private string DecorateTextWithAppropriateColor(TextDecorationLabel label, string text)
+    {
+        return "<#" + ColorUtility.ToHtmlStringRGB(textDecorationColorMap[label]) + ">" + text + "</color>";
+    }
+
     private void Awake()
     {
         _Instance = this;
+
+        // Populate List
+        foreach (AfflictionType type in Enum.GetValues(typeof(AfflictionType)))
+        {
+            afflictionTypes.Add(type.ToString());
+        }
     }
 
     public void Restart()
@@ -108,7 +207,7 @@ public class UIManager : MonoBehaviour
 
     public GameObject SpawnToolTipsForBook(Book book, Transform transform)
     {
-        return SpawnToolTips(book, transform, "On Use: \n");
+        return SpawnToolTips(book, transform, "On Use: ");
     }
 
     public GameObject SpawnToolTips(PowerupItem item, Transform transform, string toolTipTextPrefix = "")
@@ -119,26 +218,26 @@ public class UIManager : MonoBehaviour
 
         ToolTipList list = SpawnToolTipList(transform, numToolTips);
         Transform vLayout = list.GetVerticalLayoutGroup().transform;
-        SpawnToolTip(toolTipTextPrefix + item.ToolTipText, vLayout);
+        SpawnToolTip(item.Name, toolTipTextPrefix + item.GetToolTipText(), vLayout);
 
         // Spawn ToolTips for Affliction Keywords
         for (int i = 0; i < additionalAfflictionToolTips.Length; i++)
         {
             AfflictionType affliction = additionalAfflictionToolTips[i];
-            SpawnToolTip(affliction + ": " + CombatManager._Instance.GetAfflictionOfType(affliction).ToolTipText, vLayout);
+            SpawnToolTip(affliction.ToString(), CombatManager._Instance.GetAfflictionOfType(affliction).GetToolTipText(), vLayout);
         }
 
         // Spawn ToolTips for Additional Keywords
         for (int i = 0; i < additionalKeyWords.Length; i++)
         {
             ToolTipKeyword keyword = additionalKeyWords[i];
-            SpawnToolTip(keyword + ": " + GameManager._Instance.GetKeyWordText(keyword), vLayout);
+            SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), vLayout);
         }
 
         return list.gameObject;
     }
 
-    public GameObject SpawnToolTips(Affliction affliction, Transform transform, string toolTipTextPrefix = "")
+    public GameObject SpawnToolTips(Affliction affliction, Transform transform)
     {
         ToolTipKeyword[] additionalKeyWords = affliction.Keywords;
 
@@ -146,13 +245,13 @@ public class UIManager : MonoBehaviour
 
         ToolTipList list = SpawnToolTipList(transform, numToolTips);
         Transform vLayout = list.GetVerticalLayoutGroup().transform;
-        SpawnToolTip(toolTipTextPrefix + affliction.ToolTipText, vLayout);
+        SpawnToolTip(affliction.ToString(), affliction.GetToolTipText(), vLayout);
 
         // Spawn ToolTips for Additional Keywords
         for (int i = 0; i < additionalKeyWords.Length; i++)
         {
             ToolTipKeyword keyword = additionalKeyWords[i];
-            SpawnToolTip(keyword + ": " + GameManager._Instance.GetKeyWordText(keyword), vLayout);
+            SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), vLayout);
         }
 
         return list.gameObject;
@@ -167,20 +266,20 @@ public class UIManager : MonoBehaviour
 
         ToolTipList list = SpawnToolTipList(transform, numToolTips);
         Transform vLayout = list.GetVerticalLayoutGroup().transform;
-        SpawnToolTip(spell.ToolTipText, vLayout);
+        SpawnToolTip(spell.ToString(), spell.GetToolTipText(), vLayout);
 
         // Spawn ToolTips for Affliction Keywords
         for (int i = 0; i < additionalAfflictionToolTips.Length; i++)
         {
             AfflictionType affliction = additionalAfflictionToolTips[i];
-            SpawnToolTip(affliction + ": " + CombatManager._Instance.GetAfflictionOfType(affliction).ToolTipText, vLayout);
+            SpawnToolTip(affliction.ToString(), CombatManager._Instance.GetAfflictionOfType(affliction).GetToolTipText(), vLayout);
         }
 
         // Spawn ToolTips for Additional Keywords
         for (int i = 0; i < additionalKeyWords.Length; i++)
         {
             ToolTipKeyword keyword = additionalKeyWords[i];
-            SpawnToolTip(keyword + ": " + GameManager._Instance.GetKeyWordText(keyword), vLayout);
+            SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), vLayout);
         }
 
         return list.gameObject;
@@ -207,7 +306,7 @@ public class UIManager : MonoBehaviour
 
         ToolTipList list = SpawnToolTipList(transform, numToolTips);
         Transform vLayout = list.GetVerticalLayoutGroup().transform;
-        SpawnToolTip(e.ToolTipText, vLayout);
+        SpawnToolTip("", e.ToolTipText, vLayout);
 
         // Spawns ToolTips for Spells
         for (int i = 0; i < equipmentSpells.Count; i++)
@@ -215,7 +314,7 @@ public class UIManager : MonoBehaviour
             SpellLabel label = equipmentSpells[i];
             Spell spell = GameManager._Instance.GetSpellOfType(equipmentSpells[i]);
 
-            SpawnToolTip(label + ": " + GameManager._Instance.GetSpellOfType(label).ToolTipText, vLayout);
+            SpawnToolTip(label.ToString(), GameManager._Instance.GetSpellOfType(label).GetToolTipText(), vLayout);
 
             // Spawn ToolTips for Afflictions within Spells
             AfflictionType[] additionalAfflictionToolTips = spell.AfflictionKeywords;
@@ -223,7 +322,7 @@ public class UIManager : MonoBehaviour
             {
                 if (additionalAfflictionKeywords.Contains(aff))
                 {
-                    SpawnToolTip(aff + ": " + CombatManager._Instance.GetAfflictionOfType(aff).ToolTipText, vLayout);
+                    SpawnToolTip(aff.ToString(), CombatManager._Instance.GetAfflictionOfType(aff).GetToolTipText(), vLayout);
                 }
             }
         }
@@ -232,7 +331,7 @@ public class UIManager : MonoBehaviour
         for (int i = 0; i < additionalKeyWords.Length; i++)
         {
             ToolTipKeyword keyword = additionalKeyWords[i];
-            SpawnToolTip(keyword + " : " + GameManager._Instance.GetKeyWordText(keyword), vLayout);
+            SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), vLayout);
         }
 
         return list.gameObject;
@@ -354,12 +453,12 @@ public class UIManager : MonoBehaviour
         return spawned;
     }
 
-    private GameObject SpawnToolTip(string text, Transform transform)
+    private GameObject SpawnToolTip(string label, string content, Transform transform)
     {
         ToolTip spawned = Instantiate(toolTipPrefab, transform);
         RectTransform spawnedRect = spawned.GetComponent<RectTransform>();
         spawnedRect.sizeDelta = new Vector2(spawnedRect.sizeDelta.x, toolTipHeight);
-        spawned.Set(text);
+        spawned.Set(label, content);
         return spawned.gameObject;
     }
 

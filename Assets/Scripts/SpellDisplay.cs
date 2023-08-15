@@ -18,7 +18,6 @@ public abstract class SpellDisplay : MonoBehaviour
 
     [SerializeField] private Vector2 toolTipOffset;
     private GameObject spawnedToolTip;
-    protected string finalizedToolTipText;
 
     private float targetScale;
 

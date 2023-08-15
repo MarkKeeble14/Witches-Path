@@ -5,11 +5,6 @@ using TMPro;
 using System.Collections.Generic;
 using System.Linq;
 
-public enum ToolTipKeyword
-{
-    Affliction,
-}
-
 public enum ContentType
 {
     Artifact,
@@ -95,7 +90,6 @@ public class GameManager : MonoBehaviour
 
     [Header("Visual")]
     [SerializeField] private SerializableDictionary<DamageType, Color> damageSourceColorDict = new SerializableDictionary<DamageType, Color>();
-    [SerializeField] private SerializableDictionary<ToolTipKeyword, string> keyWordData = new SerializableDictionary<ToolTipKeyword, string>();
 
     [Header("References")]
     [SerializeField] private TextMeshProUGUI hpText;
@@ -324,11 +318,6 @@ public class GameManager : MonoBehaviour
                 Debug.Log("Triggered: " + spell);
             }
         }
-    }
-
-    public string GetKeyWordText(ToolTipKeyword toolTipKeyword)
-    {
-        return keyWordData[toolTipKeyword];
     }
 
     public void AlterAllBookCharge(int alterBy)

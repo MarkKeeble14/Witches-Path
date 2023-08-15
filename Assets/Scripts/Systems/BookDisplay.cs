@@ -47,7 +47,7 @@ public class BookDisplay : ItemDisplay
         // Update Color of Pips Depending on Books Current Charge
         for (int i = 0; i < pips.Length; i++)
         {
-            pips[i].color = (i >= repBook.currentCharge ? Color.grey : Color.black);
+            pips[i].color = (i >= repBook.CurrentCharge ? Color.grey : Color.black);
         }
 
         // Set color of main book

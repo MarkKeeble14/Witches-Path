@@ -258,9 +258,19 @@ public class Utils
         rt.offsetMin = new Vector2(left, rt.offsetMin.y);
     }
 
+    public static float GetLeft(RectTransform rt)
+    {
+        return rt.offsetMin.x;
+    }
+
     public static void SetRight(RectTransform rt, float right)
     {
         rt.offsetMax = new Vector2(-right, rt.offsetMax.y);
+    }
+
+    public static float GetRight(RectTransform rt)
+    {
+        return rt.offsetMax.x;
     }
 
     public static void SetTop(RectTransform rt, float top)
@@ -268,8 +278,18 @@ public class Utils
         rt.offsetMax = new Vector2(rt.offsetMax.x, -top);
     }
 
+    public static float GetTop(RectTransform rt)
+    {
+        return rt.offsetMax.y;
+    }
+
     public static void SetBottom(RectTransform rt, float bottom)
     {
         rt.offsetMin = new Vector2(rt.offsetMin.x, bottom);
+    }
+
+    public static float GetBottom(RectTransform rt)
+    {
+        return rt.offsetMin.y;
     }
 }

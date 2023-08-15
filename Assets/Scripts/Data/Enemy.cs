@@ -4,11 +4,14 @@
 public class Enemy : ScriptableObject
 {
     [SerializeField] private Sprite combatSprite;
+    [SerializeField] private new string name;
 
     [Header("Combat Settings")]
     [SerializeField] private int maxHP;
     [SerializeField] private int startingHP;
     [SerializeField] private int basicAttackDamage;
+
+    public string Name => name;
 
     public int GetMaxHP()
     {

@@ -12,8 +12,6 @@ public class PassiveSpellDisplay : SpellDisplay
         spellIcon.sprite = spell.GetSpellSprite();
         nameText.text = spell.Label.ToString();
         isAvailable = false;
-
-        finalizedToolTipText = spell.ToolTipText;
     }
 
     private new void Update()
