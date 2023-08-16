@@ -10,10 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98534009e97ceb5448ac9e327d399c94, type: 3}
-  m_Name: FieryWig
+  m_Name: WellWornHat
   m_EditorClassIdentifier: 
-  damageChange: 1
+  name: Well Worn Hat
+  rarity: 0
+  damageChange: 0
   defenseChange: 0
-  manaChange: 5
-  keywords: 
-  comesWithSpells: 06000000
+  manaChange: 0
+  comesWithSpells: 
+  AfflictionKeywords: 
+  GeneralKeywords: 

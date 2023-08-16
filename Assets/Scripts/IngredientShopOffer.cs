@@ -9,7 +9,7 @@ public class IngredientShopOffer : ShopOffer
     {
         label = setTo;
         this.cost = cost;
-        itemText.text = setTo.ToString();
+        itemText.text = Utils.SplitOnCapitalLetters(setTo.ToString());
 
         onClick?.Invoke();
     }

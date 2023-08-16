@@ -2703,8 +2703,8 @@ MonoBehaviour:
   parentToolTipsTo: {fileID: 8135145375364119913}
   toolTipList: {fileID: 2273652729997376814, guid: 1220c97a2736e5b469fbefd61c21c72e, type: 3}
   toolTipPrefab: {fileID: 1666260707980554480, guid: 5b2b3e71842c8e64f8cfe19261492ae7, type: 3}
-  toolTipWidth: 600
-  toolTipHeight: 175
+  toolTipWidth: 800
+  toolTipHeight: 125
   toolTipSpacing: 12.5
   offset: 25
   textDecorationColorMap:
@@ -5094,7 +5094,7 @@ MonoBehaviour:
     forcedNodeIndices:
       dictionary:
       - key: 0
-        value: 2
+        value: 4
       - key: 5
         value: 3
       - key: 9
@@ -5222,6 +5222,7 @@ GameObject:
   m_Component:
   - component: {fileID: 898360691184281367}
   - component: {fileID: 8366237611422364677}
+  - component: {fileID: 6500740643650686716}
   m_Layer: 0
   m_Name: EnemyCombatSpriteContainer
   m_TagString: Untagged
@@ -5258,6 +5259,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2726084419924974722}
   m_CullTransparentMesh: 1
+--- !u!225 &6500740643650686716
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2726084419924974722}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &2759921436021471853
 GameObject:
   m_ObjectHideFlags: 0
@@ -5542,6 +5555,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3338561116977623879}
+  - component: {fileID: 195885119128770874}
+  - component: {fileID: 5773641905214590085}
   m_Layer: 0
   m_Name: SelectStatScreen
   m_TagString: Untagged
@@ -5570,6 +5585,44 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &195885119128770874
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2839301958054276083}
+  m_CullTransparentMesh: 1
+--- !u!114 &5773641905214590085
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2839301958054276083}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.1882353, g: 0.1882353, b: 0.1882353, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &2953529494450362144
 GameObject:
   m_ObjectHideFlags: 0
@@ -6149,6 +6202,7 @@ MonoBehaviour:
   enemyNameText: {fileID: 5358287479645666994}
   characterCombatSprite: {fileID: 6785791176642955360}
   enemyCombatSprite: {fileID: 4221743365061277093}
+  enemyCombatSpriteCV: {fileID: 6500740643650686716}
   turnDisplay: {fileID: 5806005586209972122}
   popupTextPrefab: {fileID: 418672499888249726, guid: 358209328adec51469abadcee19b5593, type: 3}
   playSFXOnMiss: 0
@@ -6166,6 +6220,7 @@ MonoBehaviour:
   baseEnemyCombatSpriteAnimationSpeed: 75
   enemyCombatSpriteAnimationSpeedMultiplierStart: 2.5
   enemyCombatSpriteAnimationSpeedMultiplierGain: 25
+  enemyCombatSpriteDieAnimationSpeed: 5
 --- !u!1 &3456573662714586874
 GameObject:
   m_ObjectHideFlags: 0
@@ -6948,7 +7003,7 @@ MonoBehaviour:
       value:
         dictionary:
         - key: WardAmount
-          value: 2
+          value: 3
         - key: Cooldown
           value: 2
         - key: ManaCost
@@ -6989,13 +7044,17 @@ MonoBehaviour:
         StatChange: 0
     - key: 1
       value:
-        AffectedStat: 1
-        StatChange: 1
+        AffectedStat: 0
+        StatChange: 0
     - key: 2
       value:
-        AffectedStat: 2
-        StatChange: 5
+        AffectedStat: 1
+        StatChange: 1
     - key: 3
+      value:
+        AffectedStat: 2
+        StatChange: 3
+    - key: 4
       value:
         AffectedStat: 0
         StatChange: 1
@@ -9264,6 +9323,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 161385577656264908}
+  - component: {fileID: 2784943491355818083}
+  - component: {fileID: 4008248273326974669}
   m_Layer: 0
   m_Name: SelectEquipmentScreen
   m_TagString: Untagged
@@ -9292,6 +9353,44 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &2784943491355818083
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4879774298942352962}
+  m_CullTransparentMesh: 1
+--- !u!114 &4008248273326974669
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4879774298942352962}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.1882353, g: 0.1882353, b: 0.1882353, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &4906956517814060677
 GameObject:
   m_ObjectHideFlags: 0

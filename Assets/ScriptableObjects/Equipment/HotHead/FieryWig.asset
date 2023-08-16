@@ -10,9 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98534009e97ceb5448ac9e327d399c94, type: 3}
-  m_Name: VenomessesBeret
+  m_Name: FieryWig
   m_EditorClassIdentifier: 
-  damageChange: 0
-  defenseChange: 0
-  manaChange: 5
-  comesWithSpells: 08000000
+  name: Fiery Wig
+  rarity: 0
+  damageChange: 2
+  defenseChange: -1
+  manaChange: -1
+  comesWithSpells: 06000000
+  AfflictionKeywords: 0a000000
+  GeneralKeywords: 

@@ -10,9 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e107375991846b644afe7984edf3230f, type: 3}
-  m_Name: WanderersRobe
+  m_Name: SnakeskinCarcass
   m_EditorClassIdentifier: 
-  damageChange: 0
-  defenseChange: 0
-  manaChange: -5
-  comesWithSpells: 
+  name: Snakeskin Carcass
+  rarity: 0
+  damageChange: -2
+  defenseChange: 2
+  manaChange: 1
+  comesWithSpells: 07000000
+  AfflictionKeywords: 08000000
+  GeneralKeywords: 

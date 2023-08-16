@@ -6,6 +6,30 @@ using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+public struct ToolTippableComparisonData
+{
+    public string AdditionalLabel;
+    public ToolTippable ToolTippable;
+
+    public ToolTippableComparisonData(string additionalLabel, ToolTippable toolTippable)
+    {
+        AdditionalLabel = additionalLabel;
+        ToolTippable = toolTippable;
+    }
+}
+
+public interface ToolTippable
+{
+    public List<AfflictionType> GetAfflictionKeyWords();
+
+    public List<ToolTipKeyword> GetGeneralKeyWords();
+
+    public List<ToolTippable> GetOtherToolTippables();
+
+    public string GetToolTipLabel();
+
+    public string GetToolTipText();
+}
 
 public enum ToolTipKeyword
 {
@@ -48,6 +72,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private SerializableDictionary<string, string> keyWordData = new SerializableDictionary<string, string>();
     private List<string> afflictionTypes = new List<string>();
 
+    private List<string> numericalSuffixes => new List<string>() { "st", "nd", "rd", "th" };
+
     public string GetKeyWordText(string keyword)
     {
         return keyWordData[keyword];
@@ -66,51 +92,69 @@ public class UIManager : MonoBehaviour
             string token = toolTipTextTokens[i];
 
             int number;
+
+            // Add space
+            if (i > 0)
+            {
+                res += " ";
+            }
+
+            // Token is a Keyword
             if (keyWordData.ContainsKey(token))
             {
                 res += DecorateTextWithAppropriateColor(TextDecorationLabel.Keyword, token);
+                continue;
             }
-            else if (afflictionTypes.Contains(token))
+
+            // Token is an Affliction
+            if (afflictionTypes.Contains(token))
             {
                 res += DecorateTextWithAppropriateColor(TextDecorationLabel.Affliction, token);
+                continue;
             }
-            else if (int.TryParse(token, out number))
+
+            // Token is a Number
+            if (int.TryParse(token, out number))
             {
                 res += DecorateTextWithAppropriateColor(TextDecorationLabel.Number, number.ToString());
+                continue;
             }
-            else if (token[token.Length - 1] == '%')
+
+            // Token is a Number but with a Percent (%)
+            if (token[token.Length - 1] == '%')
             {
                 string sub = token.Substring(0, token.Length - 1);
                 if (int.TryParse(sub, out number))
                 {
                     res += DecorateTextWithAppropriateColor(TextDecorationLabel.Number, token);
-                }
-                else
-                {
-                    res += token;
+                    continue;
                 }
             }
-            else if (token[token.Length - 1] == ',')
+
+            // Token is a Number with a Comma (,) or Period (.)
+            if (token[token.Length - 1] == ',' || token[token.Length - 1] == '.')
             {
                 string sub = token.Substring(0, token.Length - 1);
                 if (int.TryParse(sub, out number))
                 {
-                    res += DecorateTextWithAppropriateColor(TextDecorationLabel.Number, number.ToString()) + ",";
+                    res += DecorateTextWithAppropriateColor(TextDecorationLabel.Number, number.ToString()) + token[token.Length - 1];
+                    continue;
                 }
-                else
-                {
-                    res += token;
-                }
-            }
-            else
-            {
-                res += token;
             }
 
-            if (i < toolTipTextTokens.Length - 1)
+            // Token is a Number with some numerical suffix (st, nd, rd, th)
+            if (token.Length > 2 && numericalSuffixes.Contains(token.Substring(token.Length - 2, 2)))
             {
-                res += " ";
+                string suffix = token.Substring(token.Length - 2, 2);
+                string sub = token.Substring(0, token.Length - 2);
+                if (int.TryParse(sub, out number))
+                {
+                    res += DecorateTextWithAppropriateColor(TextDecorationLabel.Number, number.ToString() + suffix);
+                    continue;
+                }
             }
+
+            res += token;
         }
         return res;
     }
@@ -207,206 +251,96 @@ public class UIManager : MonoBehaviour
         }
     }
 
-
-    // Should absolutely refactor tool tips at some point, but everything works
-    public GameObject SpawnToolTipsForBook(Book book, Transform transform)
+    public GameObject SpawnGenericToolTips(ToolTippable spawningFor, Transform spawningOn)
     {
-        return SpawnToolTips(book, transform, "On Use: ");
-    }
+        // Determine how many tool tips we're spawning
+        List<ToolTipKeyword> generalKeywords = spawningFor.GetGeneralKeyWords();
+        List<AfflictionType> afflictionKeywords = spawningFor.GetAfflictionKeyWords();
+        List<ToolTippable> otherToolTippables = spawningFor.GetOtherToolTippables();
+        int numToolTips = generalKeywords.Count + afflictionKeywords.Count + otherToolTippables.Count + 1;
 
-    public GameObject SpawnToolTips(PowerupItem item, Transform transform, string toolTipTextPrefix = "")
-    {
-        List<ToolTipKeyword> additionalKeyWords = item.GeneralKeywords;
-        List<AfflictionType> additionalAfflictionToolTips = item.AfflictionKeywords;
-        int numToolTips = additionalKeyWords.Count + additionalAfflictionToolTips.Count + 1;
-
-        ToolTipList list = SpawnToolTipList(transform, numToolTips, 1, 0);
+        // Spawn the ToolTipList object that will house all of our other tooltips
+        ToolTipList list = SpawnToolTipList(spawningOn, numToolTips, 1);
         Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
-        SpawnToolTip(item.Name, toolTipTextPrefix + item.GetToolTipText(), vLayout);
+        SpawnToolTip(spawningFor.GetToolTipLabel(), spawningFor.GetToolTipText(), vLayout);
+
+        // Spawn ToolTips for Additional Keywords
+        for (int i = 0; i < otherToolTippables.Count; i++)
+        {
+            ToolTippable tt = otherToolTippables[i];
+            SpawnToolTip(tt.GetToolTipLabel(), tt.GetToolTipText(), vLayout);
+        }
 
         // Spawn ToolTips for Affliction Keywords
-        for (int i = 0; i < additionalAfflictionToolTips.Count; i++)
+        for (int i = 0; i < generalKeywords.Count; i++)
         {
-            AfflictionType affliction = additionalAfflictionToolTips[i];
-            SpawnToolTip(affliction.ToString(), CombatManager._Instance.GetAfflictionOfType(affliction).GetToolTipText(), vLayout);
-        }
-
-        // Spawn ToolTips for Additional Keywords
-        for (int i = 0; i < additionalKeyWords.Count; i++)
-        {
-            ToolTipKeyword keyword = additionalKeyWords[i];
+            ToolTipKeyword keyword = generalKeywords[i];
             SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), vLayout);
         }
 
+        // Spawn ToolTips for Additional Keywords
+        for (int i = 0; i < afflictionKeywords.Count; i++)
+        {
+            AfflictionType keyword = afflictionKeywords[i];
+            SpawnToolTip(keyword.ToString(), CombatManager._Instance.GetAfflictionOfType(keyword).GetToolTipText(), vLayout);
+        }
+
         return list.gameObject;
     }
 
-    public GameObject SpawnToolTips(Affliction affliction, Transform transform)
+    public GameObject SpawnComparisonToolTips(ToolTippableComparisonData[] spawningFor, Transform spawningOn)
     {
-        ToolTipKeyword[] additionalKeyWords = affliction.Keywords;
-
-        int numToolTips = additionalKeyWords.Length + 1;
-
-        ToolTipList list = SpawnToolTipList(transform, numToolTips, 1, 0);
-        Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
-        SpawnToolTip(affliction.ToString(), affliction.GetToolTipText(), vLayout);
-
-        // Spawn ToolTips for Additional Keywords
-        for (int i = 0; i < additionalKeyWords.Length; i++)
+        int numToolTips = 0;
+        // Determine how many tool tips we're spawning
+        for (int i = 0; i < spawningFor.Length; i++)
         {
-            ToolTipKeyword keyword = additionalKeyWords[i];
-            SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), vLayout);
+            ToolTippable tt = spawningFor[i].ToolTippable;
+            List<ToolTipKeyword> generalKeywords = tt.GetGeneralKeyWords();
+            List<AfflictionType> afflictionKeywords = tt.GetAfflictionKeyWords();
+            List<ToolTippable> otherToolTippables = tt.GetOtherToolTippables();
+            int ttNumToolTips = generalKeywords.Count + afflictionKeywords.Count + otherToolTippables.Count + 1;
+            if (ttNumToolTips > numToolTips)
+                numToolTips = ttNumToolTips;
+        }
+
+        // Spawn the ToolTipList object that will house all of our other tooltips
+        ToolTipList list = SpawnToolTipList(spawningOn, numToolTips, spawningFor.Length);
+
+        for (int i = 0; i < spawningFor.Length; i++)
+        {
+            ToolTippable tt = spawningFor[i].ToolTippable;
+            List<ToolTipKeyword> generalKeywords = tt.GetGeneralKeyWords();
+            List<AfflictionType> afflictionKeywords = tt.GetAfflictionKeyWords();
+            List<ToolTippable> otherToolTippables = tt.GetOtherToolTippables();
+            Transform vLayout = list.GetVerticalLayoutGroup(i).transform;
+            SpawnToolTip(spawningFor[i].AdditionalLabel + tt.GetToolTipLabel(), tt.GetToolTipText(), vLayout);
+
+            // Spawn ToolTips for Other ToolTippables
+            for (int p = 0; p < otherToolTippables.Count; p++)
+            {
+                ToolTippable otherTt = otherToolTippables[p];
+                SpawnToolTip(otherTt.GetToolTipLabel(), otherTt.GetToolTipText(), vLayout);
+            }
+
+            // Spawn ToolTips for Affliction Keywords
+            for (int p = 0; p < generalKeywords.Count; p++)
+            {
+                ToolTipKeyword keyword = generalKeywords[p];
+                SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), vLayout);
+            }
+
+            // Spawn ToolTips for Additional Keywords
+            for (int p = 0; p < afflictionKeywords.Count; p++)
+            {
+                AfflictionType keyword = afflictionKeywords[p];
+                SpawnToolTip(keyword.ToString(), CombatManager._Instance.GetAfflictionOfType(keyword).GetToolTipText(), vLayout);
+            }
         }
 
         return list.gameObject;
     }
 
-    public GameObject SpawnToolTips(Spell spell, Transform transform)
-    {
-        ToolTipKeyword[] additionalKeyWords = spell.Keywords;
-        AfflictionType[] additionalAfflictionToolTips = spell.AfflictionKeywords;
-        int numToolTips = additionalKeyWords.Length + additionalAfflictionToolTips.Length + 1;
-        Debug.Log(numToolTips);
-
-        ToolTipList list = SpawnToolTipList(transform, numToolTips, 1, 0);
-        Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
-        SpawnToolTip(spell.ToString(), spell.GetToolTipText(), vLayout);
-
-        // Spawn ToolTips for Affliction Keywords
-        for (int i = 0; i < additionalAfflictionToolTips.Length; i++)
-        {
-            AfflictionType affliction = additionalAfflictionToolTips[i];
-            SpawnToolTip(affliction.ToString(), CombatManager._Instance.GetAfflictionOfType(affliction).GetToolTipText(), vLayout);
-        }
-
-        // Spawn ToolTips for Additional Keywords
-        for (int i = 0; i < additionalKeyWords.Length; i++)
-        {
-            ToolTipKeyword keyword = additionalKeyWords[i];
-            SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), vLayout);
-        }
-
-        return list.gameObject;
-    }
-
-    public GameObject SpawnToolTips(Equipment newEquipment, Equipment oldEquipment, Transform transform, bool isShopOffer)
-    {
-        // Spawn ToolTips for new Equipment
-        ToolTipKeyword[] additionalKeyWords = newEquipment.Keywords;
-        List<SpellLabel> equipmentSpells = newEquipment.ComesWithSpells;
-        List<AfflictionType> additionalAfflictionKeywords = new List<AfflictionType>();
-        for (int i = 0; i < equipmentSpells.Count; i++)
-        {
-            Spell spell = GameManager._Instance.GetSpellOfType(equipmentSpells[i]);
-            AfflictionType[] additionalAfflictionToolTips = spell.AfflictionKeywords;
-            foreach (AfflictionType aff in additionalAfflictionToolTips)
-            {
-                if (!additionalAfflictionKeywords.Contains(aff))
-                {
-                    additionalAfflictionKeywords.Add(aff);
-                }
-            }
-        }
-        int numToolTips = additionalKeyWords.Length + equipmentSpells.Count + additionalAfflictionKeywords.Count + 1;
-
-        ToolTipList list = null;
-        if (isShopOffer)
-        {
-            list = SpawnToolTipList(transform, numToolTips, 2, toolTipWidth + toolTipSpacing);
-
-        }
-        else
-        {
-            list = SpawnToolTipList(transform, numToolTips, 1, 0);
-        }
-
-        Transform listOne = list.GetVerticalLayoutGroup(0).transform;
-        SpawnToolTip(isShopOffer ? "Offered: " : "", newEquipment.ToolTipText, listOne);
-
-        // Spawns ToolTips for Spells
-        for (int i = 0; i < equipmentSpells.Count; i++)
-        {
-            SpellLabel label = equipmentSpells[i];
-            Spell spell = GameManager._Instance.GetSpellOfType(equipmentSpells[i]);
-
-            SpawnToolTip(label.ToString(), GameManager._Instance.GetSpellOfType(label).GetToolTipText(), listOne);
-
-            // Spawn ToolTips for Afflictions within Spells
-            AfflictionType[] additionalAfflictionToolTips = spell.AfflictionKeywords;
-            foreach (AfflictionType aff in additionalAfflictionToolTips)
-            {
-                if (additionalAfflictionKeywords.Contains(aff))
-                {
-                    SpawnToolTip(aff.ToString(), CombatManager._Instance.GetAfflictionOfType(aff).GetToolTipText(), listOne);
-                }
-            }
-        }
-
-        // Spawn ToolTips for Additional Keywords
-        for (int i = 0; i < additionalKeyWords.Length; i++)
-        {
-            ToolTipKeyword keyword = additionalKeyWords[i];
-            SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), listOne);
-        }
-
-        if (!isShopOffer)
-        {
-            return list.gameObject;
-        }
-
-        // Close your eyes
-        // Spawn ToolTips for new Equipment
-        additionalKeyWords = oldEquipment.Keywords;
-        equipmentSpells = oldEquipment.ComesWithSpells;
-        additionalAfflictionKeywords = new List<AfflictionType>();
-        for (int i = 0; i < equipmentSpells.Count; i++)
-        {
-            Spell spell = GameManager._Instance.GetSpellOfType(equipmentSpells[i]);
-            AfflictionType[] additionalAfflictionToolTips = spell.AfflictionKeywords;
-            foreach (AfflictionType aff in additionalAfflictionToolTips)
-            {
-                if (!additionalAfflictionKeywords.Contains(aff))
-                {
-                    additionalAfflictionKeywords.Add(aff);
-                }
-            }
-        }
-        numToolTips = additionalKeyWords.Length + equipmentSpells.Count + additionalAfflictionKeywords.Count + 1;
-
-        Transform listTwo = list.GetVerticalLayoutGroup(1).transform;
-        SpawnToolTip(isShopOffer ? "Currently Equipped: " : "", oldEquipment.ToolTipText, listTwo);
-
-        // Spawns ToolTips for Spells
-        for (int i = 0; i < equipmentSpells.Count; i++)
-        {
-            SpellLabel label = equipmentSpells[i];
-            Spell spell = GameManager._Instance.GetSpellOfType(equipmentSpells[i]);
-
-            SpawnToolTip(label.ToString(), GameManager._Instance.GetSpellOfType(label).GetToolTipText(), listTwo);
-
-            // Spawn ToolTips for Afflictions within Spells
-            AfflictionType[] additionalAfflictionToolTips = spell.AfflictionKeywords;
-            foreach (AfflictionType aff in additionalAfflictionToolTips)
-            {
-                if (additionalAfflictionKeywords.Contains(aff))
-                {
-                    SpawnToolTip(aff.ToString(), CombatManager._Instance.GetAfflictionOfType(aff).GetToolTipText(), listTwo);
-                }
-            }
-        }
-
-        // Spawn ToolTips for Additional Keywords
-        for (int i = 0; i < additionalKeyWords.Length; i++)
-        {
-            ToolTipKeyword keyword = additionalKeyWords[i];
-            SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), listTwo);
-        }
-
-
-        return list.gameObject;
-    }
-
-    private ToolTipList SpawnToolTipList(Transform spawningFor, int numToolTips, int numLists, float increaseWidthBy)
+    private ToolTipList SpawnToolTipList(Transform spawningFor, int numToolTips, int numLists)
     {
         RectTransform spawningForRect = spawningFor.GetComponent<RectTransform>();
         float spawningForWidth = spawningForRect.sizeDelta.x;
@@ -454,7 +388,8 @@ public class UIManager : MonoBehaviour
 
         // Calculate List Height
         float listHeight = (numToolTips * toolTipHeight) + ((numToolTips - 1) * toolTipSpacing);
-        listRect.sizeDelta = new Vector2(toolTipWidth + increaseWidthBy, listHeight);
+        float listWidth = (numLists * toolTipWidth) + ((numLists - 1) * toolTipSpacing);
+        listRect.sizeDelta = new Vector2(listWidth, listHeight);
 
         // Depending on where the mouse is, splitting the screen up into two rows of 3 (so six sections total), we set the Layout Groups Child Alignment Property
         // Top Left = Upper Left
@@ -512,6 +447,7 @@ public class UIManager : MonoBehaviour
                 }
                 break;
         }
+
         // Set Position
         Vector3 offset = new Vector3(horizontalOffset, verticalOffset, 0);
         listRect.localPosition = offset;

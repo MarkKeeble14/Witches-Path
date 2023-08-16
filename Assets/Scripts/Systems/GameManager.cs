@@ -129,9 +129,22 @@ public class GameManager : MonoBehaviour
             OnEnterSpecificRoomActionMap.Add(type, null);
         }
 
+        // Set equipment Tool Tippables
+        SetEquipmentToolTippables(equippableHats.Cast<Equipment>().ToList());
+        SetEquipmentToolTippables(equippableRobes.Cast<Equipment>().ToList());
+        SetEquipmentToolTippables(equippableWands.Cast<Equipment>().ToList());
+
         LoadMap();
         StartCoroutine(GameLoop());
         EquipCharacterLoadout(playerCharacter);
+    }
+
+    private void SetEquipmentToolTippables(List<Equipment> equipment)
+    {
+        foreach (Equipment e in equipment)
+        {
+            e.PrepEquipment();
+        }
     }
 
     private void Update()
@@ -410,7 +423,7 @@ public class GameManager : MonoBehaviour
         spawned.SetPassiveSpell(newSpell);
         loadedSpellDisplays.Add(label, spawned);
 
-        Debug.Log("Equipped: " + newSpell);
+        // Debug.Log("Equipped: " + newSpell);
     }
 
     public void UnequipPassiveSpell(SpellLabel label)
@@ -428,7 +441,7 @@ public class GameManager : MonoBehaviour
         loadedSpellDisplays.Remove(label);
         Destroy(loaded.gameObject);
 
-        Debug.Log("Unequipped: " + label.ToString());
+        // Debug.Log("Unequipped: " + label.ToString());
     }
 
     public void EquipActiveSpell(SpellLabel label)
@@ -443,7 +456,7 @@ public class GameManager : MonoBehaviour
         loadedSpellDisplays.Add(label, spawned);
         activeSpellDisplays.Add(spawned);
 
-        Debug.Log("Equipped: " + newSpell);
+        // Debug.Log("Equipped: " + newSpell);
     }
 
     public void UnequipActiveSpell(SpellLabel label)
@@ -463,7 +476,7 @@ public class GameManager : MonoBehaviour
 
         Destroy(loaded.gameObject);
 
-        Debug.Log("Unequipped: " + label.ToString());
+        // Debug.Log("Unequipped: " + label.ToString());
     }
 
     public void ReduceActiveSpellCooldowns(int reduceBy)
@@ -540,6 +553,7 @@ public class GameManager : MonoBehaviour
         characterMaxMana = c.GetMaxMana();
         maxPlayerMana = characterMaxMana + manaFromEquipment;
         currentPlayerCurrency = c.GetStartingCurrency();
+        currentPlayerClothierCurrency = c.GetStartingClothierCurrency();
         currentPlayerHP = c.GetStartingHP();
         currentPlayerMana = maxPlayerMana;
     }
@@ -766,7 +780,7 @@ public class GameManager : MonoBehaviour
             case BookLabel.MerchantsManual:
                 return new MerchantsManual();
             case BookLabel.BusinessTextbook:
-                return new BusinessTextBook();
+                return new BusinessTextbook();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -929,7 +943,6 @@ public class GameManager : MonoBehaviour
 
     public void LoadMap()
     {
-        Debug.Log("Loading Map");
         MapManager._Instance.Generate();
     }
 
@@ -1782,6 +1795,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private SelectStatButton selectStatButtonPrefab;
     [SerializeField] private Transform selectStatList;
     private List<SelectStatButton> spawnedSelectStatButtons = new List<SelectStatButton>();
+    private SelectStatButton pressedSelectStatButton;
 
     private Equipment selectedEquipment;
     private bool hasSelectedStat;
@@ -1838,11 +1852,12 @@ public class GameManager : MonoBehaviour
             {
                 selectedStat = stat;
                 hasSelectedStat = true;
+                pressedSelectStatButton = spawned;
             });
 
             if (showCost)
             {
-                spawned.ShowCost(1, label);
+                spawned.ShowCost(selectedEquipment, label);
             }
 
             spawnedSelectStatButtons.Add(spawned);
@@ -1891,7 +1906,7 @@ public class GameManager : MonoBehaviour
             selectedEquipment.Reforge();
 
             // Use Currency
-            currentPlayerClothierCurrency -= 1;
+            AlterClothierCurrency(-1);
 
             // Reset
             selectedEquipment = null;
@@ -1936,21 +1951,24 @@ public class GameManager : MonoBehaviour
                 }
 
                 // No Moneys
-                if (currentPlayerClothierCurrency <= 0)
+                if (currentPlayerClothierCurrency < selectedEquipment.GetCostToBoost())
                 {
-                    selectedEquipment = null;
                     hasSelectedStat = false;
                     continue;
                 }
 
+                // Use Currency
+                AlterClothierCurrency(-selectedEquipment.GetCostToBoost());
+
                 // Reforge
                 selectedEquipment.Strengthen(selectedStat, 1);
 
-                // Use Currency
-                currentPlayerClothierCurrency -= 1;
-
                 // Reset
                 hasSelectedStat = false;
+
+                // Reset
+                pressedSelectStatButton.ReupToolTip();
+                pressedSelectStatButton = null;
             }
 
             selectedEquipment = null;

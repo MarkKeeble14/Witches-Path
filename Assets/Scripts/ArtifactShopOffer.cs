@@ -9,13 +9,14 @@ public class ArtifactShopOffer : ShopOffer
     {
         label = setTo;
         this.cost = cost;
-        itemText.text = setTo.ToString();
+
+        Artifact artifact = GameManager._Instance.GetArtifactOfType(setTo);
+        itemText.text = artifact.Name;
 
         GameObject spawnedToolTip = null;
-        Artifact artifact = GameManager._Instance.GetArtifactOfType(setTo);
         onPointerEnter += delegate
         {
-            spawnedToolTip = UIManager._Instance.SpawnToolTips(artifact, transform);
+            spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(artifact, transform);
         };
         onPointerExit += delegate
         {

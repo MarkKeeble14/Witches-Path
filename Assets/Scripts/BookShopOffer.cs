@@ -13,13 +13,14 @@ public class BookShopOffer : ShopOffer
     {
         label = setTo;
         this.cost = cost;
-        itemText.text = setTo.ToString();
+
+        Book book = GameManager._Instance.GetBookOfType(setTo);
+        itemText.text = book.Name;
 
         GameObject spawnedToolTip = null;
-        Book book = GameManager._Instance.GetBookOfType(setTo);
         onPointerEnter += delegate
         {
-            spawnedToolTip = UIManager._Instance.SpawnToolTipsForBook(book, transform);
+            spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(book, transform);
         };
         onPointerExit += delegate
         {

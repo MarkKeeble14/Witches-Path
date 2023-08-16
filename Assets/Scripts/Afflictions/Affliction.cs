@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 public enum AfflictionSign
 {
@@ -6,42 +7,80 @@ public enum AfflictionSign
     Negative
 }
 
-public abstract class Affliction
+public abstract class Affliction : ToolTippable
 {
     public abstract AfflictionType Type { get; }
     public abstract AfflictionSign Sign { get; }
     protected abstract string specificToolTipText { get; }
     protected abstract string genericToolTipText { get; }
 
-    public virtual ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    // Determines whether or not to remove the affliction
     public bool CanBeCleared => stacks <= 0;
     private int stacks;
+
+    // Who does this specific instance of affliction belong to
     protected Target owner;
 
+    // A list of general keywords
+    protected List<ToolTipKeyword> GeneralKeywords = new List<ToolTipKeyword>();
+
+    public Affliction()
+    {
+        SetKeywords();
+    }
+
+    // Sets the Keywords of the Affliction
+    protected abstract void SetKeywords();
+
+    // Setter
     public void SetStacks(int v)
     {
         stacks = v;
     }
 
+    // Setter
     public void AlterStacks(int v)
     {
         stacks += v;
     }
 
-
+    // Setter
     public void SetOwner(Target owner)
     {
         this.owner = owner;
     }
 
+    // Getter
     public Target GetOwner()
     {
         return owner;
     }
 
+    // Getter
     public int GetStacks()
     {
         return stacks;
+    }
+
+    // Balence Manager Getter
+    protected int GetAfflictionSpec(string specIdentifier)
+    {
+        return BalenceManager._Instance.GetValue(Type, specIdentifier);
+    }
+
+    public List<AfflictionType> GetAfflictionKeyWords()
+    {
+        return new List<AfflictionType>() { Type };
+    }
+
+    public List<ToolTipKeyword> GetGeneralKeyWords()
+    {
+        return GeneralKeywords;
+    }
+
+    public string GetToolTipLabel()
+    {
+        return Type.ToString();
     }
 
     public string GetToolTipText()
@@ -49,9 +88,9 @@ public abstract class Affliction
         return UIManager._Instance.HighlightKeywords(stacks > 0 ? specificToolTipText : genericToolTipText);
     }
 
-    protected int GetAfflictionSpec(string specIdentifier)
+    public List<ToolTippable> GetOtherToolTippables()
     {
-        return BalenceManager._Instance.GetValue(Type, specIdentifier);
+        return new List<ToolTippable>();
     }
 }
 
@@ -64,6 +103,10 @@ public class Embolden : Affliction
 
     public override AfflictionSign Sign => AfflictionSign.Positive;
 
+    protected override void SetKeywords()
+    {
+    }
+
 }
 
 public class Weak : Affliction
@@ -74,6 +117,10 @@ public class Weak : Affliction
     public override AfflictionType Type => AfflictionType.Weak;
 
     public override AfflictionSign Sign => AfflictionSign.Negative;
+
+    protected override void SetKeywords()
+    {
+    }
 }
 
 public class Vulnerable : Affliction
@@ -84,6 +131,10 @@ public class Vulnerable : Affliction
     public override AfflictionType Type => AfflictionType.Vulnerable;
 
     public override AfflictionSign Sign => AfflictionSign.Negative;
+
+    protected override void SetKeywords()
+    {
+    }
 }
 
 public class OnGuard : Affliction
@@ -94,6 +145,10 @@ public class OnGuard : Affliction
     public override AfflictionType Type => AfflictionType.OnGuard;
 
     public override AfflictionSign Sign => AfflictionSign.Positive;
+
+    protected override void SetKeywords()
+    {
+    }
 }
 
 public class Bandages : Affliction
@@ -104,6 +159,11 @@ public class Bandages : Affliction
     public override AfflictionType Type => AfflictionType.Bandages;
 
     public override AfflictionSign Sign => AfflictionSign.Positive;
+
+    protected override void SetKeywords()
+    {
+        GeneralKeywords.Add(ToolTipKeyword.Heal);
+    }
 
 }
 
@@ -116,6 +176,10 @@ public class Intangible : Affliction
 
     public override AfflictionSign Sign => AfflictionSign.Positive;
 
+    protected override void SetKeywords()
+    {
+    }
+
 }
 
 public class Echo : Affliction
@@ -127,6 +191,10 @@ public class Echo : Affliction
 
     public override AfflictionSign Sign => AfflictionSign.Positive;
 
+    protected override void SetKeywords()
+    {
+    }
+
 }
 
 public class Blight : Affliction
@@ -137,6 +205,10 @@ public class Blight : Affliction
     public override AfflictionType Type => AfflictionType.Blight;
 
     public override AfflictionSign Sign => AfflictionSign.Negative;
+
+    protected override void SetKeywords()
+    {
+    }
 
 }
 
@@ -150,6 +222,10 @@ public class Poison : Affliction
     public override AfflictionType Type => AfflictionType.Poison;
 
     public override AfflictionSign Sign => AfflictionSign.Negative;
+
+    protected override void SetKeywords()
+    {
+    }
 }
 
 public class Burn : Affliction
@@ -160,6 +236,10 @@ public class Burn : Affliction
     public override AfflictionType Type => AfflictionType.Burn;
 
     public override AfflictionSign Sign => AfflictionSign.Negative;
+
+    protected override void SetKeywords()
+    {
+    }
 }
 
 public class Paralyze : Affliction
@@ -170,6 +250,10 @@ public class Paralyze : Affliction
     public override AfflictionType Type => AfflictionType.Paralyze;
 
     public override AfflictionSign Sign => AfflictionSign.Negative;
+
+    protected override void SetKeywords()
+    {
+    }
 }
 
 public class Thorns : Affliction
@@ -180,16 +264,24 @@ public class Thorns : Affliction
     public override AfflictionType Type => AfflictionType.Thorns;
 
     public override AfflictionSign Sign => AfflictionSign.Positive;
+
+    protected override void SetKeywords()
+    {
+    }
 }
 
 public class Power : Affliction
 {
     protected override string specificToolTipText => "Basic Attacks do " + GetStacks() + " more Damage";
-    protected override string genericToolTipText => "Basic Attacks do  more Damage equal to the Number of Power Stacks";
+    protected override string genericToolTipText => "Basic Attacks do more Damage equal to the Number of Power Stacks";
 
     public override AfflictionType Type => AfflictionType.Power;
 
     public override AfflictionSign Sign => AfflictionSign.Positive;
+
+    protected override void SetKeywords()
+    {
+    }
 }
 
 public class Protection : Affliction
@@ -200,4 +292,8 @@ public class Protection : Affliction
     public override AfflictionType Type => AfflictionType.Protection;
 
     public override AfflictionSign Sign => AfflictionSign.Positive;
+
+    protected override void SetKeywords()
+    {
+    }
 }

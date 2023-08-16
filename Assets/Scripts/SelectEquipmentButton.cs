@@ -19,7 +19,7 @@ public class SelectEquipmentButton : SelectButton
     public void Set(Equipment e, Action a)
     {
         representingEquipment = e;
-        Set(e.Name, a);
+        Set(e.GetName(), a);
     }
 
     public void ShowCost(int cost, string label)
@@ -33,12 +33,12 @@ public class SelectEquipmentButton : SelectButton
 
     private void Update()
     {
-        SetText(representingEquipment.Name);
+        SetText(representingEquipment.GetName());
     }
 
     public void SpawnToolTip()
     {
-        spawnedToolTip = UIManager._Instance.SpawnToolTips(representingEquipment, GameManager._Instance.GetEquippedEquipmentOfSameType(representingEquipment), transform, false);
+        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(representingEquipment, transform);
     }
 
     public void DestroyToolTip()

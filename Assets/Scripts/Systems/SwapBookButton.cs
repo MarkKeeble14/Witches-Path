@@ -24,7 +24,7 @@ public class SwapBookButton : MonoBehaviour
         // Add Callbacks
         onEnter += delegate
         {
-            spawnedToolTip = UIManager._Instance.SpawnToolTipsForBook(book, transform);
+            spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(book, transform);
         };
 
         onExit += delegate

@@ -1,33 +1,52 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class PowerupItem
+public abstract class PowerupItem : ToolTippable
 {
+    public abstract string Name { get; }
     protected abstract string SpritePath { get; }
+    protected abstract string toolTipText { get; }
 
-    public List<ToolTipKeyword> GeneralKeywords = new List<ToolTipKeyword>();
-    public List<AfflictionType> AfflictionKeywords = new List<AfflictionType>();
+    protected List<ToolTipKeyword> GeneralKeywords = new List<ToolTipKeyword>();
+    protected List<AfflictionType> AfflictionKeywords = new List<AfflictionType>();
 
-    protected abstract void SetKeywords();
+    public abstract Sprite GetSprite();
 
     public PowerupItem()
     {
         SetKeywords();
     }
 
+    protected abstract void SetKeywords();
+
     public virtual string GetAdditionalText()
     {
         return "";
     }
 
-    public abstract Sprite GetSprite();
+    // ToolTippable
+    public List<AfflictionType> GetAfflictionKeyWords()
+    {
+        return AfflictionKeywords;
+    }
 
-    public abstract string Name { get; }
+    public List<ToolTipKeyword> GetGeneralKeyWords()
+    {
+        return GeneralKeywords;
+    }
 
-    protected abstract string toolTipText { get; }
+    public string GetToolTipLabel()
+    {
+        return Name;
+    }
 
     public virtual string GetToolTipText()
     {
         return UIManager._Instance.HighlightKeywords(toolTipText);
+    }
+
+    public List<ToolTippable> GetOtherToolTippables()
+    {
+        return new List<ToolTippable>();
     }
 }

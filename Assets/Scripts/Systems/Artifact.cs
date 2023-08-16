@@ -5,7 +5,6 @@ public abstract class Artifact : PowerupItem
 {
     protected abstract ArtifactLabel Label { get; }
 
-    public override string Name => Utils.SplitOnCapitalLetters(Label.ToString());
     protected override string SpritePath => "Artifacts/" + Label.ToString().ToLower();
 
     public Artifact()
@@ -44,6 +43,7 @@ public abstract class Artifact : PowerupItem
 
 public class GreedyHands : Artifact
 {
+    public override string Name => "Greedy Hands";
     protected override ArtifactLabel Label => ArtifactLabel.GreedyHands;
 
     private int tracker;
@@ -92,6 +92,7 @@ public class GreedyHands : Artifact
 
 public class CanyonChunk : Artifact
 {
+    public override string Name => "Canyon Chunk";
     protected override ArtifactLabel Label => ArtifactLabel.CanyonChunk;
     protected override string toolTipText => "On Combat Start, gain " + stackAmount + " Echo";
 
@@ -126,6 +127,7 @@ public class CanyonChunk : Artifact
 
 public class Plaguebringer : Artifact
 {
+    public override string Name => "Plaguebringer";
     protected override ArtifactLabel Label => ArtifactLabel.Plaguebringer;
 
     protected override string toolTipText => "On Combat Start, Apply " + stackAmount + " Blight to the Enemy";
@@ -161,6 +163,7 @@ public class Plaguebringer : Artifact
 
 public class MedicineKit : Artifact
 {
+    public override string Name => "Medicine Kit";
     protected override ArtifactLabel Label => ArtifactLabel.MedicineKit;
 
     protected override string toolTipText => "Upon Entering a new room, Heal " + healAmount + " HP";
@@ -196,6 +199,7 @@ public class MedicineKit : Artifact
 
 public class BoldInvestments : Artifact
 {
+    public override string Name => "Bold Investments";
     protected override ArtifactLabel Label => ArtifactLabel.BoldInvestments;
 
     protected override string toolTipText => "Upon Entering a Combat, Gain " + currencyAmount + " Gold";
@@ -231,6 +235,7 @@ public class BoldInvestments : Artifact
 
 public class SmokeShroud : Artifact
 {
+    public override string Name => "Smoke Shroud";
     protected override ArtifactLabel Label => ArtifactLabel.SmokeShroud;
 
     protected override string toolTipText => "On Combat Start, Apply " + stackAmount + " Weak to the Enemy";
@@ -266,6 +271,8 @@ public class SmokeShroud : Artifact
 
 public class VIPCard : Artifact
 {
+    public override string Name => "VIP Card";
+
     protected override ArtifactLabel Label => ArtifactLabel.VIPCard;
 
     protected override string toolTipText => "Upon Entering a Tavern, Gain " + currencyAmount + " Gold";
@@ -301,6 +308,8 @@ public class VIPCard : Artifact
 
 public class LooseTrigger : Artifact
 {
+    public override string Name => "Loose Trigger";
+
     protected override ArtifactLabel Label => ArtifactLabel.LooseTrigger;
 
     protected override string toolTipText => "Upon Losing HP, trigger one of your passive spells at random";
@@ -332,6 +341,7 @@ public class LooseTrigger : Artifact
 
 public class MolatovCocktail : Artifact
 {
+    public override string Name => "Molatov Cocktail";
     protected override ArtifactLabel Label => ArtifactLabel.MolatovCocktail;
 
     protected override string toolTipText => "For " + repetitions + " Turns after combat starts, Apply " + stackAmount + " Burn to the Enemy at the beginning of your turn";
@@ -387,6 +397,8 @@ public class MolatovCocktail : Artifact
 
 public class BlueMantis : Artifact
 {
+    public override string Name => "Blue Mantis";
+
     protected override ArtifactLabel Label => ArtifactLabel.BlueMantis;
 
     protected override string toolTipText => "Upon Recieving Damage, Apply " + stackAmount + " Paralyze to the Enemy";
@@ -423,6 +435,7 @@ public class BlueMantis : Artifact
 
 public class HealthInsurance : Artifact
 {
+    public override string Name => "Health Insurance";
     protected override ArtifactLabel Label => ArtifactLabel.HealthInsurance;
 
     protected override string toolTipText => "Upon Entering a New Room, Heal " + healAmount + " HP. Entering a combat will permanantly disable this effect";
@@ -471,6 +484,7 @@ public class HealthInsurance : Artifact
 
 public class InvertedPolaroid : Artifact
 {
+    public override string Name => "Inverted Polaroid";
     protected override ArtifactLabel Label => ArtifactLabel.InvertedPolaroid;
 
     protected override void SetKeywords()
@@ -510,6 +524,7 @@ public class InvertedPolaroid : Artifact
 
 public class HalfLitFirework : Artifact
 {
+    public override string Name => "Half Lit Firework";
     protected override ArtifactLabel Label => ArtifactLabel.HalfLitFirework;
 
     protected override string toolTipText => "Upon Recieving Damage, Fire a Projectile at the Enemy";
@@ -542,6 +557,7 @@ public class HalfLitFirework : Artifact
 
 public class ZedsScalpel : Artifact
 {
+    public override string Name => "Zed's Scalpel";
     protected override ArtifactLabel Label => ArtifactLabel.ZedsScalpel;
 
     protected override string toolTipText => "Upon Recieving Damage, Heal " + healAmount + " HP";
@@ -578,6 +594,7 @@ public class ZedsScalpel : Artifact
 
 public class Barricade : Artifact
 {
+    public override string Name => "Barricade";
     protected override ArtifactLabel Label => ArtifactLabel.Barricade;
 
     protected override string toolTipText => "Upon Recieving Damage, Reduce that Damage by " + reductionAmount;
@@ -609,6 +626,7 @@ public class Barricade : Artifact
 
 public class DoctorsReport : Artifact
 {
+    public override string Name => "Doctors Report";
     protected override ArtifactLabel Label => ArtifactLabel.DoctorsReport;
 
     protected override string toolTipText => "Upon Damaging the Enemy, if the amount of Damage Dealt was Above " + mustBeOver + ", Gain " + stackAmount + " Bandages";
@@ -643,6 +661,7 @@ public class DoctorsReport : Artifact
 
 public class RustyCannon : Artifact
 {
+    public override string Name => "Rusty Cannon";
     protected override ArtifactLabel Label => ArtifactLabel.RustyCannon;
 
     protected override string toolTipText => numTurns + " Turns after Combat Begins, Deal " + damageAmount + " Damage to the Enemy";
@@ -693,6 +712,7 @@ public class RustyCannon : Artifact
 
 public class VoodooDoll : Artifact
 {
+    public override string Name => "Voodoo Doll";
     protected override ArtifactLabel Label => ArtifactLabel.VoodooDoll;
 
     protected override string toolTipText => "Upon Gaining a New Affliction, Deal " + damageAmount + " Damage to the Enemy";
@@ -728,6 +748,7 @@ public class VoodooDoll : Artifact
 
 public class SpecialSpinach : Artifact
 {
+    public override string Name => "Special Spinach";
     protected override ArtifactLabel Label => ArtifactLabel.SpecialSpinich;
 
     protected override void SetKeywords()
@@ -756,6 +777,7 @@ public class SpecialSpinach : Artifact
 
 public class HolyShield : Artifact
 {
+    public override string Name => "Holy Shield";
     protected override ArtifactLabel Label => ArtifactLabel.HolyShield;
 
     protected override void SetKeywords()
@@ -784,6 +806,7 @@ public class HolyShield : Artifact
 
 public class CaveMural : Artifact
 {
+    public override string Name => "Cave Mural";
     protected override ArtifactLabel Label => ArtifactLabel.CaveMural;
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Passive Spell Activated will Duplicate it's Effect";
@@ -824,6 +847,7 @@ public class CaveMural : Artifact
 
 public class BarbariansBlade : Artifact
 {
+    public override string Name => "Barbarians Blade";
     protected override ArtifactLabel Label => ArtifactLabel.BarbariansBlade;
 
     protected override string toolTipText => "All instances of In-Combat Damage are Increased by " + DamageIncrease;
@@ -854,6 +878,7 @@ public class BarbariansBlade : Artifact
 
 public class LizardSkinSilk : Artifact
 {
+    public override string Name => "Lizard Skin Silk";
     protected override ArtifactLabel Label => ArtifactLabel.LizardSkinSilk;
 
     protected override string toolTipText => "Losing HP has a " + Mathf.RoundToInt((chanceToActivate.x / chanceToActivate.y) * 100) + "% Chance of Removing a Random Negative Affliction";
@@ -892,6 +917,8 @@ public class LizardSkinSilk : Artifact
 
 public class LuckyCoin : Artifact
 {
+    public override string Name => "Lucky Coin";
+
     protected override ArtifactLabel Label => ArtifactLabel.LuckyCoin;
 
     protected override string toolTipText => "All Gold Rewards are Increased by " + CurrencyMultiplier + "%";
@@ -924,6 +951,7 @@ public class LuckyCoin : Artifact
 
 public class HiredHand : Artifact
 {
+    public override string Name => "Hired Hand";
     protected override ArtifactLabel Label => ArtifactLabel.HiredHand;
 
     protected override string toolTipText => "Enemies Begin Combat with " + PercentHP + "% HP";
@@ -955,6 +983,7 @@ public class HiredHand : Artifact
 
 public class BlackPrism : Artifact
 {
+    public override string Name => "Black Prism";
     protected override ArtifactLabel Label => ArtifactLabel.BlackPrism;
 
     protected override string toolTipText => "Active Spells do " + DamageMultiplier + "% Damage";
@@ -985,6 +1014,7 @@ public class BlackPrism : Artifact
 
 public class Telescope : Artifact
 {
+    public override string Name => "Telescope";
     protected override ArtifactLabel Label => ArtifactLabel.Telescope;
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Turn, Gain " + stackAmount + " Intangible";
@@ -1028,6 +1058,7 @@ public class Telescope : Artifact
 
 public class CheapStopwatch : Artifact
 {
+    public override string Name => "Cheap Stopwatch";
     protected override ArtifactLabel Label => ArtifactLabel.CheapStopwatch;
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Active Spell Queued makes the next Active Spell Free";
@@ -1068,6 +1099,7 @@ public class CheapStopwatch : Artifact
 
 public class Boulder : Artifact
 {
+    public override string Name => "Boulder";
     protected override ArtifactLabel Label => ArtifactLabel.Boulder;
 
     protected override string toolTipText => "Whenever you Basic Attack " + procAfter + " times, fire an Additional Projectile Dealing " + damageAmount
@@ -1114,6 +1146,7 @@ public class Boulder : Artifact
 
 public class Crown : Artifact
 {
+    public override string Name => "Crown";
     protected override ArtifactLabel Label => ArtifactLabel.Crown;
 
     protected override string toolTipText => "Polished and pretty, but quite impractical";

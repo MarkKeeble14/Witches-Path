@@ -4,6 +4,7 @@ using UnityEngine;
 
 public enum ReforgeModifier
 {
+    None,
     Unimpressive,
     Tough,
     Mystic,
@@ -30,59 +31,32 @@ public struct ReforgeModifierEffect
     }
 }
 
-public abstract class Equipment : ScriptableObject
+public abstract class Equipment : ScriptableObject, ToolTippable
 {
+    [SerializeField] private new string name;
+
+    // Rarity
+    [SerializeField] private Rarity rarity;
+
+    // Damage Boost as a result of having this equipment equipped
     [SerializeField] private int damageChange;
     private int damageBoost;
+    // Defense Boost as a result of having this equipment equipped
     [SerializeField] private int defenseChange;
     private int defenseBoost;
+    // Mana Boost as a result of having this equipment equipped
     [SerializeField] private int manaChange;
     private int manaBoost;
+    private int numTimesBoosted;
 
-    [SerializeField] private ToolTipKeyword[] keywords = new ToolTipKeyword[0];
-    [SerializeField]
-    public ToolTipKeyword[] Keywords
-    {
-        get
-        {
-            return keywords;
-        }
-    }
-
-    [SerializeField] private Rarity rarity;
-    public Rarity GetRarity()
-    {
-        return rarity;
-    }
-
-    public string ToolTipText => Name + "\n" + GetStatList() + "\n" + GetSpellList();
-
-    private string GetStatList()
-    {
-        return "Damage: " + damageChange + ", Defense: " + defenseChange + ", Mana: " + manaChange;
-    }
-
-    private string GetSpellList()
-    {
-        string s = "";
-        for (int i = 0; i < comesWithSpells.Count; i++)
-        {
-            s += comesWithSpells[i].ToString();
-            if (i < comesWithSpells.Count - 1)
-            {
-                s += ", ";
-            }
-        }
-        return s;
-    }
+    // Tool Tips
+    [SerializeField] private List<SpellLabel> comesWithSpells = new List<SpellLabel>();
+    [SerializeField] protected List<AfflictionType> AfflictionKeywords = new List<AfflictionType>();
+    [SerializeField] protected List<ToolTipKeyword> GeneralKeywords = new List<ToolTipKeyword>();
+    protected List<ToolTippable> OtherToolTippables;
 
     public List<SpellLabel> ComesWithSpells => comesWithSpells;
-
-    [SerializeField] private List<SpellLabel> comesWithSpells = new List<SpellLabel>();
-
     private ReforgeModifier currentReforgeModifier;
-
-    public string Name => currentReforgeModifier.ToString() + " " + base.ToString();
 
     public int GetStat(BaseStat stat)
     {
@@ -105,7 +79,7 @@ public abstract class Equipment : ScriptableObject
         damageBoost = 0;
         defenseBoost = 0;
         manaBoost = 0;
-        currentReforgeModifier = ReforgeModifier.Unimpressive;
+        currentReforgeModifier = ReforgeModifier.None;
 
         // Add equipment stats
         GameManager._Instance.DamageFromEquipment += damageChange + damageBoost;
@@ -153,14 +127,15 @@ public abstract class Equipment : ScriptableObject
         }
 
         List<ReforgeModifier> possibleModifiers = new List<ReforgeModifier>((ReforgeModifier[])Enum.GetValues(typeof(ReforgeModifier)));
-        possibleModifiers.Remove(ReforgeModifier.Unimpressive);
+        possibleModifiers.Remove(ReforgeModifier.None);
+        // possibleModifiers.Remove(ReforgeModifier.Unimpressive);
         possibleModifiers.Remove(currentReforgeModifier);
 
         if (possibleModifiers.Count == 0) return false;
 
         currentReforgeModifier = RandomHelper.GetRandomFromList(possibleModifiers);
         ApplyReforgeModifierEffect(currentReforgeModifier, 1);
-        Debug.Log("Reforge Result: " + Name + " - " + currentReforgeModifier);
+        Debug.Log("Reforge Result: " + name + " - " + currentReforgeModifier);
         return true;
     }
 
@@ -202,6 +177,102 @@ public abstract class Equipment : ScriptableObject
             default:
                 throw new UnhandledSwitchCaseException();
         }
-        Debug.Log("Strengthen Result: " + Name + " - Damage = " + (damageChange + damageBoost) + ", Defense = " + (defenseChange + defenseBoost) + ", Mana = " + (manaChange + manaBoost));
+        numTimesBoosted++;
+        Debug.Log("Strengthen Result: " + name + " - Damage = " + (damageChange + damageBoost) + ", Defense = " + (defenseChange + defenseBoost) + ", Mana = " + (manaChange + manaBoost));
+    }
+
+    // Setter
+    public void PrepEquipment()
+    {
+        // Reset num times boosted
+        numTimesBoosted = 0;
+
+        // if this has already been called, return and do no more
+        if (OtherToolTippables != null)
+        {
+            return;
+        }
+
+        // otherwise, instantiate and populate OtherToolTippables
+        OtherToolTippables = new List<ToolTippable>();
+        foreach (SpellLabel l in comesWithSpells)
+        {
+            OtherToolTippables.Add(GameManager._Instance.GetSpellOfType(l));
+        }
+    }
+
+    // Getter
+    public Rarity GetRarity()
+    {
+        return rarity;
+    }
+
+    // Getter For Printing
+    private string GetStatList()
+    {
+        return "Damage: " + (damageChange + damageBoost) + ", Defense: " + (defenseChange + defenseBoost) + ", Mana: " + (manaChange + manaBoost);
+    }
+
+    // Getter For Printing
+    private string GetSpellList()
+    {
+        string s = "";
+        for (int i = 0; i < comesWithSpells.Count; i++)
+        {
+            s += comesWithSpells[i].ToString();
+            if (i < comesWithSpells.Count - 1)
+            {
+                s += ", ";
+            }
+        }
+        return s;
+    }
+
+    // Tool Tip Getter
+    public List<AfflictionType> GetAfflictionKeyWords()
+    {
+        return AfflictionKeywords;
+    }
+
+    // Tool Tip Getter
+    public List<ToolTipKeyword> GetGeneralKeyWords()
+    {
+        return GeneralKeywords;
+    }
+
+    // Tool Tip Getter
+    public string GetToolTipLabel()
+    {
+        return GetName();
+    }
+
+    // Tool Tip Getter
+    public string GetToolTipText()
+    {
+        return GetStatList() + "\n" + GetSpellList();
+    }
+
+    // Tool Tip Getter
+    public List<ToolTippable> GetOtherToolTippables()
+    {
+        return OtherToolTippables;
+    }
+
+    public string GetName()
+    {
+        string reforgeModifierString = currentReforgeModifier == ReforgeModifier.None ? "" : currentReforgeModifier.ToString();
+        if (reforgeModifierString.Length > 0)
+        {
+            return reforgeModifierString + " " + name;
+        }
+        else
+        {
+            return name;
+        }
+    }
+
+    public int GetCostToBoost()
+    {
+        return numTimesBoosted + 1;
     }
 }

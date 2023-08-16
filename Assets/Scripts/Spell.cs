@@ -33,53 +33,83 @@ public enum SpellLabel
 }
 
 [System.Serializable]
-public abstract class Spell
+public abstract class Spell : ToolTippable
 {
+    public string Name => Label.ToString();
     public abstract SpellLabel Label { get; }
 
     public string SpritePath => "Spells/" + Label.ToString().ToLower();
 
-    public string name => Label.ToString();
-
     protected abstract string toolTipText { get; }
 
-    public string GetToolTipText()
-    {
-        return UIManager._Instance.HighlightKeywords(toolTipText);
-    }
-
-    public virtual ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
-
-    public virtual AfflictionType[] AfflictionKeywords => new AfflictionType[] { };
-
-    public abstract void SetParameters();
+    protected List<ToolTipKeyword> GeneralKeywords = new List<ToolTipKeyword>();
+    protected List<AfflictionType> AfflictionKeywords = new List<AfflictionType>();
 
     public Spell()
     {
         SetParameters();
+        SetKeywords();
     }
 
+    // Sets the Keywords of the Spell
+    protected abstract void SetKeywords();
 
+    // Sets Parameters of the Spell
+    protected abstract void SetParameters();
+
+    // Overridable Functions to determine Spell Effect
+    // Determines the actual effect of using the book
+    // Should not be called directly but rather through the CallEffect function
     protected abstract void Effect();
 
+    // Will call the Effect
     public abstract void CallEffect();
 
+    // Will activate on equipping the Spell
+    public abstract void OnEquip();
+
+    // Animations
+    protected void ShowSpellProc()
+    {
+        GameManager._Instance.AnimateSpell(Label);
+    }
+
+    // Balence Manager Getters
     protected int GetSpellSpec(string specIdentifier)
     {
         // Debug.Log("GetSpellSpec Called for: " + Label + " - " + specIdentifier);
         return BalenceManager._Instance.GetValue(Label, specIdentifier);
     }
 
-    public abstract void OnEquip();
-
-    protected void ShowSpellProc()
-    {
-        GameManager._Instance.AnimateSpell(Label);
-    }
-
+    // Getters
     public Sprite GetSpellSprite()
     {
         return Resources.Load<Sprite>(SpritePath);
+    }
+
+    public List<AfflictionType> GetAfflictionKeyWords()
+    {
+        return AfflictionKeywords;
+    }
+
+    public List<ToolTipKeyword> GetGeneralKeyWords()
+    {
+        return GeneralKeywords;
+    }
+
+    public string GetToolTipLabel()
+    {
+        return Name;
+    }
+
+    public string GetToolTipText()
+    {
+        return UIManager._Instance.HighlightKeywords(toolTipText);
+    }
+
+    public List<ToolTippable> GetOtherToolTippables()
+    {
+        return new List<ToolTippable>();
     }
 }
 
@@ -87,20 +117,25 @@ public abstract class Spell
 
 public abstract class PassiveSpell : Spell
 {
+    // A Global variable determining whether or not a passive spell being activated should duplicate itself
     public static int NumDuplicateProcs { get; set; }
 
+    // Called when the spell is unequipped
     public abstract void OnUnequip();
 
+    // Unless overriden will return an empty string. If returning a non-empty string, the passive spell display will include this information
     public virtual string GetSecondaryText()
     {
         return "";
     }
 
+    // Calls the effect, could also be used to trigger other function calls or another thing at the same time (even if it's just Debugging) as calling Effect
     public override void CallEffect()
     {
         Effect();
     }
 
+    // Activates the spell
     public virtual void Proc(bool canDupe)
     {
         CombatManager._Instance.OnPassiveSpellProc?.Invoke();
@@ -121,11 +156,14 @@ public class PoisonTips : PassiveSpell
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Poison";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Poison };
-
     public override SpellLabel Label => SpellLabel.PoisonTips;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Poison);
+    }
+
+    protected override void SetParameters()
     {
         procAfter = (int)GetSpellSpec("ProcAfter");
         stackAmount = (int)GetSpellSpec("StackAmount");
@@ -175,13 +213,16 @@ public class StaticField : PassiveSpell
 
     protected override string toolTipText => "Every " + procAfter + " Turn" + (procAfter > 1 ? "s" : "") + ", Apply " + stackAmount + " Paralyze to the Enemy";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Protection };
-
     private int tracker;
     private int procAfter;
     private int stackAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Paralyze);
+    }
+
+    protected override void SetParameters()
     {
         stackAmount = (int)GetSpellSpec("StackAmount");
         procAfter = (int)GetSpellSpec("ProcAfter");
@@ -225,13 +266,16 @@ public class Inferno : PassiveSpell
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Burn";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Burn };
-
     private int stackAmount;
-    int procAfter;
-    int tracker;
+    private int procAfter;
+    private int tracker;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Burn);
+    }
+
+    protected override void SetParameters()
     {
         procAfter = (int)GetSpellSpec("ProcAfter");
         stackAmount = (int)GetSpellSpec("StackAmount");
@@ -275,14 +319,16 @@ public class BattleTrance : PassiveSpell
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain " + stackAmount + " Embolden";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Embolden };
-
-
     private int stackAmount;
-    int procAfter;
-    int tracker;
+    private int procAfter;
+    private int tracker;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Embolden);
+    }
+
+    protected override void SetParameters()
     {
         procAfter = (int)GetSpellSpec("ProcAfter");
         stackAmount = (int)GetSpellSpec("StackAmount");
@@ -325,12 +371,16 @@ public class MagicRain : PassiveSpell
     public override SpellLabel Label => SpellLabel.MagicRain;
 
     protected override string toolTipText => "Every " + procAfter + " Turn" + (procAfter > 1 ? "s" : "") + ", Fire a Projectile Dealing " + damageAmount + " Damage to the Enemy";
+
     private float damageAmount;
+    private int procAfter;
+    private int tracker;
 
-    int procAfter;
-    int tracker;
+    protected override void SetKeywords()
+    {
+    }
 
-    public override void SetParameters()
+    protected override void SetParameters()
     {
         procAfter = (int)GetSpellSpec("ProcAfter");
     }
@@ -373,13 +423,16 @@ public class CrushJoints : PassiveSpell
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Vulnerable";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Vulnerable };
-
     private int tracker;
     private int procAfter;
     private int stackAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Vulnerable);
+    }
+
+    protected override void SetParameters()
     {
         procAfter = (int)GetSpellSpec("ProcAfter");
         stackAmount = (int)GetSpellSpec("StackAmount");
@@ -527,12 +580,15 @@ public class Fireball : ActiveSpell
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage, Apply " + stackAmount + " Burn";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Burn };
-
     private int damageAmount;
     private int stackAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Burn);
+    }
+
+    protected override void SetParameters()
     {
         damageAmount = (int)GetSpellSpec("DamageAmount");
         stackAmount = (int)GetSpellSpec("StackAmount");
@@ -551,12 +607,15 @@ public class Shock : ActiveSpell
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage, Apply " + stackAmount + " Paralyze";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Protection };
-
     private int damageAmount;
     private int stackAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Paralyze);
+    }
+
+    protected override void SetParameters()
     {
         damageAmount = (int)GetSpellSpec("DamageAmount");
         stackAmount = (int)GetSpellSpec("StackAmount");
@@ -575,11 +634,14 @@ public class Singe : ActiveSpell
 
     protected override string toolTipText => "Apply " + stackAmount + " Burn";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Burn };
-
     private int stackAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Burn);
+    }
+
+    protected override void SetParameters()
     {
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
@@ -596,11 +658,14 @@ public class Plague : ActiveSpell
 
     protected override string toolTipText => "Apply " + stackAmount + " Poison";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Poison };
-
     private int stackAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Poison);
+    }
+
+    protected override void SetParameters()
     {
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
@@ -617,12 +682,15 @@ public class Toxify : ActiveSpell
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage, Apply " + stackAmount + " Poison";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Poison };
-
     private int damageAmount;
     private int stackAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Poison);
+    }
+
+    protected override void SetParameters()
     {
         damageAmount = (int)GetSpellSpec("DamageAmount");
         stackAmount = (int)GetSpellSpec("StackAmount");
@@ -643,7 +711,11 @@ public class Jarkai : ActiveSpell
 
     private int damageAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+    }
+
+    protected override void SetParameters()
     {
         damageAmount = (int)GetSpellSpec("DamageAmount");
     }
@@ -661,11 +733,14 @@ public class Flurry : ActiveSpell
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage " + hitAmount + " Times";
 
-
     private int damageAmount;
     private int hitAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+    }
+
+    protected override void SetParameters()
     {
         damageAmount = (int)GetSpellSpec("DamageAmount");
         hitAmount = (int)GetSpellSpec("HitAmount");
@@ -686,12 +761,16 @@ public class Electrifry : ActiveSpell
 
     protected override string toolTipText => "Apply " + paralyzeAmount + " Paralyze, Apply " + burnAmount + " Burn";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Protection, AfflictionType.Burn };
-
     private int paralyzeAmount;
     private int burnAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Poison);
+        AfflictionKeywords.Add(AfflictionType.Burn);
+    }
+
+    protected override void SetParameters()
     {
         paralyzeAmount = (int)GetSpellSpec("ParalyzeAmount");
         burnAmount = (int)GetSpellSpec("BurnAmount");
@@ -710,13 +789,15 @@ public class ExposedFlesh : ActiveSpell
 
     protected override string toolTipText => "Apply " + stackAmount + " Vulnerable, Deal " + damageAmount + " Damage";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Vulnerable };
-
-
     private int damageAmount;
     private int stackAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Vulnerable);
+    }
+
+    protected override void SetParameters()
     {
         damageAmount = (int)GetSpellSpec("DamageAmount");
         stackAmount = (int)GetSpellSpec("StackAmount");
@@ -740,12 +821,15 @@ public class Cripple : ActiveSpell
 
     protected override string toolTipText => "Apply " + stackAmount + " Weak, Deal " + damageAmount + " Damage";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Weak };
-
     private int damageAmount;
     private int stackAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Weak);
+    }
+
+    protected override void SetParameters()
     {
         damageAmount = (int)GetSpellSpec("DamageAmount");
         stackAmount = (int)GetSpellSpec("StackAmount");
@@ -767,7 +851,11 @@ public class BloodTrade : ActiveSpell
     private int selfDamageAmount;
     private int otherDamageAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+    }
+
+    protected override void SetParameters()
     {
         selfDamageAmount = (int)GetSpellSpec("SelfDamageAmount");
         otherDamageAmount = (int)GetSpellSpec("OtherDamageAmount");
@@ -786,12 +874,14 @@ public class Excite : ActiveSpell
 
     protected override string toolTipText => "Gain " + stackAmount + " Embolden";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Embolden };
-
-
     private int stackAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Embolden);
+    }
+
+    protected override void SetParameters()
     {
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
@@ -808,12 +898,16 @@ public class Overexcite : ActiveSpell
 
     protected override string toolTipText => "Gain " + emboldenedAmount + " Embolden, Gain " + vulnerableAmount + " Vulnerable, ";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Embolden, AfflictionType.Vulnerable };
-
     private int emboldenedAmount;
     private int vulnerableAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Embolden);
+        AfflictionKeywords.Add(AfflictionType.Vulnerable);
+    }
+
+    protected override void SetParameters()
     {
         emboldenedAmount = (int)GetSpellSpec("EmboldenedAmount");
         vulnerableAmount = (int)GetSpellSpec("VulnerableAmount");
@@ -832,11 +926,14 @@ public class Forethought : ActiveSpell
 
     protected override string toolTipText => "Gain " + stackAmount + " Intangible";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Intangible };
-
     private int stackAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Intangible);
+    }
+
+    protected override void SetParameters()
     {
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
@@ -853,11 +950,14 @@ public class Reverberations : ActiveSpell
 
     protected override string toolTipText => "Gain " + stackAmount + " Echo";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Echo };
-
     private int stackAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Echo);
+    }
+
+    protected override void SetParameters()
     {
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
@@ -876,7 +976,12 @@ public class ImpartialAid : ActiveSpell
 
     private int healAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        GeneralKeywords.Add(ToolTipKeyword.Heal);
+    }
+
+    protected override void SetParameters()
     {
         healAmount = (int)GetSpellSpec("HealAmount");
     }
@@ -896,7 +1001,11 @@ public class WitchesWill : ActiveSpell
 
     private int damageAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+    }
+
+    protected override void SetParameters()
     {
         damageAmount = (int)GetSpellSpec("DamageAmount");
     }
@@ -913,11 +1022,14 @@ public class WitchesWard : ActiveSpell
 
     protected override string toolTipText => "Gain " + wardAmount + " Ward";
 
-    public override ToolTipKeyword[] Keywords => new ToolTipKeyword[] { ToolTipKeyword.Ward };
-
     private int wardAmount;
 
-    public override void SetParameters()
+    protected override void SetKeywords()
+    {
+        GeneralKeywords.Add(ToolTipKeyword.Ward);
+    }
+
+    protected override void SetParameters()
     {
         wardAmount = (int)GetSpellSpec("WardAmount");
     }

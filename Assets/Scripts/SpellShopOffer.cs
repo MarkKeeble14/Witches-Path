@@ -9,14 +9,16 @@ public class SpellShopOffer : ShopOffer
     {
         label = setTo;
         this.cost = cost;
-        itemText.text = setTo.ToString();
+
+        itemText.text = Utils.SplitOnCapitalLetters(setTo.ToString());
         costText.text = cost.ToString();
 
-        GameObject spawnedToolTip = null;
         Spell spell = GameManager._Instance.GetSpellOfType(setTo);
+
+        GameObject spawnedToolTip = null;
         onPointerEnter += delegate
         {
-            spawnedToolTip = UIManager._Instance.SpawnToolTips(spell, transform);
+            spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(spell, transform);
         };
         onPointerExit += delegate
         {

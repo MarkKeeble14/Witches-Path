@@ -15,13 +15,19 @@ public class Character : ScriptableObject
     [SerializeField] private SpellLabel[] startingSpells;
 
     [SerializeField] private int startingCurrency;
+    [SerializeField] private int startingClothierCurrency;
 
     [Header("Combat Settings")]
+    [Header("Health")]
     [SerializeField] private int maxHP;
     [SerializeField] private int startingHP;
+
+    [Header("Strength")]
+    [SerializeField] private int basicAttackDamage;
+
+    [Header("Mana")]
     [SerializeField] private int maxMana;
     [SerializeField] private int startingMana;
-    [SerializeField] private int basicAttackDamage;
     [SerializeField] private int manaPerTurn;
 
     public int GetMaxHP()
@@ -57,6 +63,11 @@ public class Character : ScriptableObject
     public int GetStartingCurrency()
     {
         return startingCurrency;
+    }
+
+    public int GetStartingClothierCurrency()
+    {
+        return startingClothierCurrency;
     }
 
     public Robe GetStartingRobe()

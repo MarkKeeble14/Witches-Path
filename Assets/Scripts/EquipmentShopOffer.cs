@@ -4,26 +4,31 @@ using TMPro;
 
 public class EquipmentShopOffer : ShopOffer
 {
-
     [SerializeField] private TextMeshProUGUI attackBonus;
     [SerializeField] private TextMeshProUGUI defenseBonus;
     [SerializeField] private TextMeshProUGUI manaBonus;
+    private Equipment representingEquipment;
 
-    private Equipment setTo;
-    public void Set(Equipment setTo, int cost)
+    public void Set(Equipment e, int cost)
     {
-        this.setTo = setTo;
+        this.representingEquipment = e;
         this.cost = cost;
-        itemText.text = setTo.ToString();
+        itemText.text = e.GetName();
 
-        attackBonus.text = setTo.GetStat(BaseStat.Damage).ToString();
-        defenseBonus.text = setTo.GetStat(BaseStat.Defense).ToString();
-        manaBonus.text = setTo.GetStat(BaseStat.Mana).ToString();
+        attackBonus.text = e.GetStat(BaseStat.Damage).ToString();
+        defenseBonus.text = e.GetStat(BaseStat.Defense).ToString();
+        manaBonus.text = e.GetStat(BaseStat.Mana).ToString();
 
         GameObject spawnedToolTip = null;
         onPointerEnter += delegate
         {
-            spawnedToolTip = UIManager._Instance.SpawnToolTips(setTo, GameManager._Instance.GetEquippedEquipmentOfSameType(setTo), transform, true);
+            spawnedToolTip = UIManager._Instance.SpawnComparisonToolTips(
+                new ToolTippableComparisonData[]
+                    {
+                        new ToolTippableComparisonData("Offering: ", e),
+                        new ToolTippableComparisonData("Current: ", GameManager._Instance.GetEquippedEquipmentOfSameType(e))
+                    },
+                transform);
         };
         onPointerExit += delegate
         {
@@ -34,6 +39,6 @@ public class EquipmentShopOffer : ShopOffer
 
     protected override void Purchase()
     {
-        GameManager._Instance.EquipEquipment(setTo);
+        GameManager._Instance.EquipEquipment(representingEquipment);
     }
 }

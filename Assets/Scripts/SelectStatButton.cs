@@ -10,12 +10,38 @@ public class SelectStatButton : SelectButton
     [SerializeField] private TextMeshProUGUI labelText;
     [SerializeField] private GameObject costObj;
 
-    public void ShowCost(int cost, string label)
+    private Equipment representingEquipment;
+
+    private GameObject spawnedToolTip;
+
+    public void ReupToolTip()
+    {
+        DestroyToolTip();
+        SpawnToolTip();
+    }
+
+    public void ShowCost(Equipment representingEquipment, string label)
     {
         Utils.SetRight(mainRect, costObjWidth);
 
-        costText.text = cost.ToString();
+        this.representingEquipment = representingEquipment;
+
         labelText.text = label;
         costObj.SetActive(true);
+    }
+
+    private void Update()
+    {
+        costText.text = representingEquipment.GetCostToBoost().ToString();
+    }
+
+    public void SpawnToolTip()
+    {
+        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(representingEquipment, transform);
+    }
+
+    public void DestroyToolTip()
+    {
+        Destroy(spawnedToolTip);
     }
 }

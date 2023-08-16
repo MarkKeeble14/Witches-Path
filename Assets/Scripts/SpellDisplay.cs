@@ -64,7 +64,7 @@ public abstract class SpellDisplay : MonoBehaviour
 
     public void SpawnToolTip()
     {
-        spawnedToolTip = UIManager._Instance.SpawnToolTips(GetSpell(), transform);
+        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(GetSpell(), transform);
     }
 
     public void DestroyToolTip()

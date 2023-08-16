@@ -10,10 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7cbed65488024b2499d1beaa216d9242, type: 3}
-  m_Name: PythonsVenom
+  m_Name: MoltenRod
   m_EditorClassIdentifier: 
-  damageChange: 1
-  defenseChange: 0
+  name: Molten Rod
+  rarity: 0
+  damageChange: 3
+  defenseChange: -1
   manaChange: 0
-  keywords: 
-  comesWithSpells: 00000000
+  comesWithSpells: 02000000
+  AfflictionKeywords: 0a000000
+  GeneralKeywords: 

@@ -109,6 +109,7 @@ public partial class CombatManager : MonoBehaviour
 
     [SerializeField] private Image characterCombatSprite;
     [SerializeField] private Image enemyCombatSprite;
+    [SerializeField] private CanvasGroup enemyCombatSpriteCV;
     [SerializeField] private TurnDisplay turnDisplay;
 
     [Header("Game")]
@@ -162,6 +163,10 @@ public partial class CombatManager : MonoBehaviour
         // Set Up Combat
 
         // Enemy Stuff
+        // Reset enemy sprite CV from last Combat Dying
+        enemyCombatSpriteCV.alpha = 1;
+
+        // Set Current Variables
         currentEnemy = combat.Enemy;
         maxEnemyHP = currentEnemy.GetMaxHP();
         enemyCombatSprite.sprite = currentEnemy.GetCombatSprite();
@@ -201,8 +206,8 @@ public partial class CombatManager : MonoBehaviour
         }
         else
         {
-            // Ensure that the enemy HP Bar is updated
-            // enemyHPBar.SetCurrentHP(currentEnemyHP);
+            // Play Enemy Death Animation
+            StartCoroutine(AnimateEnemySpriteDeath());
 
             yield return new WaitForSeconds(1);
 
@@ -334,7 +339,7 @@ public partial class CombatManager : MonoBehaviour
     {
         // Spawn new display
         SpellQueueDisplay spawned = Instantiate(spellQueueDisplayPrefab, spellQueueDisplayList);
-        spawned.Set(spell.name, spell.GetSpellSprite());
+        spawned.Set(spell.Name, spell.GetSpellSprite());
         // Ensure only the most recent spell can be removed
 
         spellQueue.Add(new QueuedActiveSpell(spell, spawned, spellQueue.Count));
@@ -981,12 +986,13 @@ public partial class CombatManager : MonoBehaviour
 
     #region Attacks
 
-    [Header("Attack Slide Animation")]
+    [Header("Enemy Animations")]
     [SerializeField] private RectTransform enemyCombatSpriteRect;
     [SerializeField] private int spriteOffset = 50;
     [SerializeField] private float baseEnemyCombatSpriteAnimationSpeed = 25;
     [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierStart = 1;
     [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierGain = 1;
+    [SerializeField] private float enemyCombatSpriteDieAnimationSpeed = 5;
 
     // Basic Attack
     private void PlayerBasicAttack()
@@ -1016,14 +1022,13 @@ public partial class CombatManager : MonoBehaviour
         OnPlayerAttack?.Invoke();
     }
 
-    private IEnumerator AnimateEnemySprite()
+    private IEnumerator AnimateEnemySpriteAttack()
     {
         Vector2 originalPos = enemyCombatSpriteRect.anchoredPosition;
         Vector2 newPos = originalPos - new Vector2(spriteOffset, 0);
         float animationSpeedMultiplier = enemyCombatSpriteAnimationSpeedMultiplierStart;
         while (enemyCombatSpriteRect.anchoredPosition.x > newPos.x)
         {
-            Debug.Log("Moving To");
             enemyCombatSpriteRect.anchoredPosition = Vector2.MoveTowards(enemyCombatSpriteRect.anchoredPosition, newPos, Time.deltaTime * baseEnemyCombatSpriteAnimationSpeed * animationSpeedMultiplier);
             animationSpeedMultiplier += Time.deltaTime * enemyCombatSpriteAnimationSpeedMultiplierGain;
             yield return null;
@@ -1031,8 +1036,16 @@ public partial class CombatManager : MonoBehaviour
 
         while (enemyCombatSpriteRect.anchoredPosition.x < originalPos.x)
         {
-            Debug.Log("Moving From");
             enemyCombatSpriteRect.anchoredPosition = Vector2.MoveTowards(enemyCombatSpriteRect.anchoredPosition, originalPos, Time.deltaTime * baseEnemyCombatSpriteAnimationSpeed * animationSpeedMultiplier);
+            yield return null;
+        }
+    }
+
+    private IEnumerator AnimateEnemySpriteDeath()
+    {
+        while (enemyCombatSpriteCV.alpha > 0)
+        {
+            enemyCombatSpriteCV.alpha = Mathf.MoveTowards(enemyCombatSpriteCV.alpha, 0, Time.deltaTime * enemyCombatSpriteDieAnimationSpeed);
             yield return null;
         }
     }
@@ -1042,7 +1055,7 @@ public partial class CombatManager : MonoBehaviour
         // Simple way of attacking for now
         // Damage increase from equipment is built into basic attack damage
 
-        yield return StartCoroutine(AnimateEnemySprite());
+        yield return StartCoroutine(AnimateEnemySpriteAttack());
 
         if (!AttackCombatent(-currentEnemy.GetBasicAttackDamage(), Target.Enemy, Target.Character, DamageType.Default, DamageSource.BasicAttack))
         {

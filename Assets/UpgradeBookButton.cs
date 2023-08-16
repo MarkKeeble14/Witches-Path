@@ -9,7 +9,7 @@ public class UpgradeBookButton : MonoBehaviour
 
     private GameObject spawnedToolTip;
 
-    public void SpawnToolTip()
+    public void CheckIfShouldBeActive()
     {
         Book currentBook = GameManager._Instance.GetOwnedBook(0);
 
@@ -18,16 +18,31 @@ public class UpgradeBookButton : MonoBehaviour
             toSetInactive.SetActive(false);
             return;
         }
+    }
 
-        Book newBook = GameManager._Instance.GetBookOfType(currentBook.GetLabel());
+    public void SpawnToolTip()
+    {
+        // Get current book
+        Book currentBook = GameManager._Instance.GetOwnedBook(0);
 
-        int timesToLevel = currentBook.GetCurrentLevel() + 1;
+        // Get a new book of the same type
+        Book upgradedBook = GameManager._Instance.GetBookOfType(currentBook.GetLabel());
+
+        // Level that book up to the current books level, then one level more
+        int timesToLevel = currentBook.GetCurrentLevel();
         for (int i = 0; i < timesToLevel; i++)
         {
-            newBook.TryCallLevelUp();
+            upgradedBook.TryCallLevelUp();
         }
 
-        spawnedToolTip = UIManager._Instance.SpawnToolTips(newBook, transform);
+        // The new book is what we use for the comparison tooltip
+        spawnedToolTip = UIManager._Instance.SpawnComparisonToolTips(
+            new ToolTippableComparisonData[]
+                {
+                    new ToolTippableComparisonData("Current: ", currentBook),
+                    new ToolTippableComparisonData("Upgraded: ", upgradedBook)
+                },
+            transform);
     }
 
     public void DestroyToolTip()

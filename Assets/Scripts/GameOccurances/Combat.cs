@@ -100,8 +100,6 @@ public abstract class Combat : GameOccurance
         }
 
         yield return RewardManager._Instance.ShowRewardScreen();
-
-        Debug.Log("2");
     }
 
     protected override IEnumerator OnStart()

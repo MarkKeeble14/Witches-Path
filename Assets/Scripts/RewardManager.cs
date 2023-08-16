@@ -39,7 +39,7 @@ public class RewardManager : MonoBehaviour
                 Destroy(spawned.gameObject);
             }, delegate
             {
-                spawnedToolTip = UIManager._Instance.SpawnToolTips(artifact, spawned.transform);
+                spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(artifact, spawned.transform);
             }, delegate
             {
                 Destroy(spawnedToolTip.gameObject);
@@ -62,7 +62,7 @@ public class RewardManager : MonoBehaviour
                 Destroy(spawned.gameObject);
             }, delegate
             {
-                spawnedToolTip = UIManager._Instance.SpawnToolTipsForBook(book, spawned.transform);
+                spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(book, spawned.transform);
             }, delegate
             {
                 Destroy(spawnedToolTip.gameObject);

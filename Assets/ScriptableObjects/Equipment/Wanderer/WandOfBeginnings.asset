@@ -10,9 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7cbed65488024b2499d1beaa216d9242, type: 3}
-  m_Name: MoltenRod
+  m_Name: WandOfBeginnings
   m_EditorClassIdentifier: 
-  damageChange: 2
-  defenseChange: -2
+  name: Wand of Beginnings
+  rarity: 0
+  damageChange: 0
+  defenseChange: 0
   manaChange: 0
-  comesWithSpells: 02000000
+  comesWithSpells: 
+  AfflictionKeywords: 
+  GeneralKeywords: 

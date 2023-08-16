@@ -71,10 +71,10 @@ public class ItemDisplay : MonoBehaviour
         switch (setTo)
         {
             case Artifact artifact:
-                spawnedToolTip = UIManager._Instance.SpawnToolTips(artifact, transform);
+                spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(artifact, transform);
                 break;
             case Book book:
-                spawnedToolTip = UIManager._Instance.SpawnToolTipsForBook(book, transform);
+                spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(book, transform);
                 break;
         }
     }

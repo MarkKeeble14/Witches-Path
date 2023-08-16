@@ -16,33 +16,25 @@ public abstract class Book : PowerupItem
 {
     protected abstract BookLabel Label { get; }
     protected override string SpritePath => "Books/" + Label.ToString().ToLower();
-    public override string Name => Utils.SplitOnCapitalLetters(Label.ToString());
 
+    // Level
     protected int currentLevel = 1;
-
     protected virtual int MaxLevel => 3;
     public bool CanLevelUp => currentLevel < MaxLevel;
 
-    public int GetCurrentLevel()
-    {
-        return currentLevel;
-    }
-
+    // Charge
     public int CurrentCharge { get; private set; }
     public int MaxCharge { get; private set; }
     public virtual bool CanActivate => CurrentCharge >= MaxCharge;
 
-    public override string GetToolTipText()
-    {
-        return base.GetToolTipText() + "\nCharge: " + CurrentCharge + "/" + MaxCharge;
-    }
-
+    // Constructor which also calls several set methods
     public Book()
     {
         SetBaseParameters();
         SetAdditionalParameters();
     }
 
+    // Sets keywords common to all books
     protected override void SetKeywords()
     {
         GeneralKeywords.Add(ToolTipKeyword.Charge);
@@ -76,6 +68,7 @@ public abstract class Book : PowerupItem
 
     public bool TryCallLevelUp()
     {
+        // Can only level up if not at max level
         if (currentLevel >= MaxLevel)
         {
             return false;
@@ -88,8 +81,8 @@ public abstract class Book : PowerupItem
     }
 
 
-    // Activate
-    public void TryActivate()
+    // Try to Activate the book
+    public bool TryActivate()
     {
         // Can only Activate if the book has enough Chharge
         if (CanActivate)
@@ -100,34 +93,27 @@ public abstract class Book : PowerupItem
 
             // Remove Charge
             GameManager._Instance.AlterBookCharge(Label, -MaxCharge);
+            return true;
         }
+        return false;
     }
 
+    // Sets Parameters common to ALL books
     private void SetBaseParameters()
     {
         MaxCharge = (int)GetBookSpec("MaxCharge");
     }
 
+    // Sets Parameters belonging to only the specific book
     public abstract void SetAdditionalParameters();
 
+    // Levels up the book
     protected abstract void LevelUp();
 
+    // Determines the actual effect of using the book
     protected abstract void Effect();
 
-    protected float GetBookSpec(string specIdentifier)
-    {
-        return BalenceManager._Instance.GetValue(Label, specIdentifier);
-    }
-    protected float UpdateBookSpec(string specIdentifier, int changeBy)
-    {
-        return BalenceManager._Instance.UpdateValue(Label, specIdentifier, changeBy);
-    }
-
-    protected float GetLevelUpSpec(string specIdentifier)
-    {
-        return BalenceManager._Instance.GetValue(Label, "OnLevelUp" + specIdentifier);
-    }
-
+    // Animations
     protected void ShowBookReady()
     {
         GameManager._Instance.AnimateBook(Label);
@@ -143,25 +129,61 @@ public abstract class Book : PowerupItem
         GameManager._Instance.AnimateBook(Label);
     }
 
+    // Getters From Balence Manager
+    protected float GetBookSpec(string specIdentifier)
+    {
+        return BalenceManager._Instance.GetValue(Label, specIdentifier);
+    }
+    protected float UpdateBookSpec(string specIdentifier, int changeBy)
+    {
+        return BalenceManager._Instance.UpdateValue(Label, specIdentifier, changeBy);
+    }
+
+    protected float GetLevelUpSpec(string specIdentifier)
+    {
+        return BalenceManager._Instance.GetValue(Label, "OnLevelUp" + specIdentifier);
+    }
+
+    // Getter
     public BookLabel GetLabel()
     {
         return Label;
     }
 
+    // Getter
     public override Sprite GetSprite()
     {
         return Resources.Load<Sprite>(SpritePath);
+    }
+
+    // Getter
+    public int GetCurrentLevel()
+    {
+        return currentLevel;
+    }
+
+    // ToolTippable
+    public override string GetToolTipText()
+    {
+        return "On Use: " + base.GetToolTipText() + "\nCharge: " + CurrentCharge + "/" + MaxCharge;
     }
 }
 
 public class WitchesTravelGuide : Book
 {
+    public override string Name => "Witches Travel Guide";
     protected override BookLabel Label => BookLabel.WitchesTravelGuide;
 
     protected override string toolTipText => "Gain " + currencyAmount + " Gold";
 
     private int currencyAmount;
     private int increaseOnLevelUp;
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        GeneralKeywords.Add(ToolTipKeyword.Gold);
+    }
 
     public override void SetAdditionalParameters()
     {
@@ -183,12 +205,19 @@ public class WitchesTravelGuide : Book
 
 public class MedicalNovella : Book
 {
+    public override string Name => "Medical Novella";
     protected override BookLabel Label => BookLabel.MedicalNovella;
 
     protected override string toolTipText => "Heal " + healAmount + " HP";
 
     private int healAmount;
     private int increaseOnLevelUp;
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        GeneralKeywords.Add(ToolTipKeyword.Heal);
+    }
 
     public override void SetAdditionalParameters()
     {
@@ -210,6 +239,7 @@ public class MedicalNovella : Book
 
 public class MerchantsManual : Book
 {
+    public override string Name => "Merchants Manual";
     protected override BookLabel Label => BookLabel.MerchantsManual;
 
     protected override string toolTipText => "Shop Prices become " + costReduction + "% Cheaper";
@@ -237,8 +267,9 @@ public class MerchantsManual : Book
     }
 }
 
-public class BusinessTextBook : Book
+public class BusinessTextbook : Book
 {
+    public override string Name => "Business Textbook";
     protected override BookLabel Label => BookLabel.BusinessTextbook;
 
     protected override string toolTipText => "Lose " + useCost + " Gold, Deal " + damageAmount + " Damage to the Enemy";
@@ -246,9 +277,14 @@ public class BusinessTextBook : Book
     public override bool CanActivate => base.CanActivate && CombatManager._Instance.InCombat;
 
     private int useCost;
-
     private int damageAmount;
     private int damageAmountChangeOnLevelUp;
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        GeneralKeywords.Add(ToolTipKeyword.Gold);
+    }
 
     public override void SetAdditionalParameters()
     {
