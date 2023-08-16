@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public enum BookLabel
@@ -18,7 +19,14 @@ public abstract class Book : PowerupItem
     public override string Name => Utils.SplitOnCapitalLetters(Label.ToString());
 
     protected int currentLevel = 1;
+
     protected virtual int MaxLevel => 3;
+    public bool CanLevelUp => currentLevel < MaxLevel;
+
+    public int GetCurrentLevel()
+    {
+        return currentLevel;
+    }
 
     public int CurrentCharge { get; private set; }
     public int MaxCharge { get; private set; }
@@ -33,6 +41,11 @@ public abstract class Book : PowerupItem
     {
         SetBaseParameters();
         SetAdditionalParameters();
+    }
+
+    protected override void SetKeywords()
+    {
+        GeneralKeywords.Add(ToolTipKeyword.Charge);
     }
 
     // Charge

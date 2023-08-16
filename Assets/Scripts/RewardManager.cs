@@ -57,7 +57,7 @@ public class RewardManager : MonoBehaviour
         spawned.Set(label.ToString(), null,
             delegate
             {
-                GameManager._Instance.SwapBooks(GameManager._Instance.GetOwnedBook(0), label);
+                GameManager._Instance.SwapBooks(GameManager._Instance.GetOwnedBookLabel(0), label);
                 spawnedRewards.Remove(spawned);
                 Destroy(spawned.gameObject);
             }, delegate

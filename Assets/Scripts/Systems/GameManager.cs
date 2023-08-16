@@ -37,6 +37,7 @@ public class GameManager : MonoBehaviour
     [Header("Artifacts")]
     [SerializeField] private Transform artifactBar;
     [SerializeField] private SerializableDictionary<ArtifactLabel, Rarity> artifactRarityMap = new SerializableDictionary<ArtifactLabel, Rarity>();
+
     [SerializeField] private PercentageMap<Rarity> artifactRarityOdds = new PercentageMap<Rarity>();
     private Dictionary<ArtifactLabel, ArtifactDisplay> artifactDisplayTracker = new Dictionary<ArtifactLabel, ArtifactDisplay>();
     private Dictionary<ArtifactLabel, Artifact> equippedArtifacts = new Dictionary<ArtifactLabel, Artifact>();
@@ -77,7 +78,6 @@ public class GameManager : MonoBehaviour
     [Header("Equipment")]
     [SerializeField] private List<Hat> equippableHats = new List<Hat>();
     [SerializeField] private List<Robe> equippableRobes = new List<Robe>();
-
     [SerializeField] private List<Wand> equippableWands = new List<Wand>();
 
     [Header("Prefabs")]
@@ -130,7 +130,7 @@ public class GameManager : MonoBehaviour
         }
 
         LoadMap();
-        StartCoroutine(Begin());
+        StartCoroutine(GameLoop());
         EquipCharacterLoadout(playerCharacter);
     }
 
@@ -140,8 +140,30 @@ public class GameManager : MonoBehaviour
         manaText.text = Mathf.RoundToInt(currentPlayerMana).ToString() + "/" + Mathf.RoundToInt(maxPlayerMana).ToString();
         currencyText.text = Mathf.RoundToInt(currentPlayerCurrency).ToString();
         clothierCurrencyText.text = Mathf.RoundToInt(currentPlayerClothierCurrency).ToString();
-        damageText.text = GetBasicAttackDamage().ToString();
-        defenseText.text = Mathf.RoundToInt(DefenseFromEquipment).ToString();
+
+        // Guard Against Negatives
+        // The players basic attacks will deal their basic attack damage + DamageFromEquipment + Bonus Damage from their Power Affliction (if applicable)
+        int damageAmount = GetBasicAttackDamage() + DamageFromEquipment + CombatManager._Instance.GetPowerBonus(Target.Character);
+        // if the amount of damage a players basic attack will do is less than zero, consider it zero. This is accounted for in the CombatManager script manually as well
+        if (damageAmount >= 0)
+        {
+            damageText.text = damageAmount.ToString();
+        }
+        else
+        {
+            defenseText.text = 0.ToString();
+        }
+
+        // Guard Against Negatives
+        // if Defense from equipment is less than zero, we'll consider it zero. This is accounted for in the CombatManager script manually as well
+        if (DefenseFromEquipment >= 0)
+        {
+            defenseText.text = Mathf.RoundToInt(DefenseFromEquipment).ToString();
+        }
+        else
+        {
+            defenseText.text = 0.ToString();
+        }
 
         if (Input.GetKeyDown(KeyCode.Tab))
         {
@@ -468,7 +490,7 @@ public class GameManager : MonoBehaviour
 
     public int GetBasicAttackDamage()
     {
-        return Mathf.RoundToInt(playerCharacter.GetBasicAttackDamage() + DamageFromEquipment);
+        return playerCharacter.GetBasicAttackDamage();
     }
 
     public void ReduceActiveSpellCDsByPercent(float normalizedPercent)
@@ -511,7 +533,7 @@ public class GameManager : MonoBehaviour
         AddBook(c.GetStartingBook());
 
         // Remove Owned Book from All Books
-        allBooks.Remove(GetOwnedBook(0));
+        allBooks.Remove(GetOwnedBookLabel(0));
 
         // Set player stats
         maxPlayerHP = c.GetMaxHP();
@@ -568,6 +590,21 @@ public class GameManager : MonoBehaviour
             case Wand wand:
                 EquipWand(wand);
                 break;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
+
+    public Equipment GetEquippedEquipmentOfSameType(Equipment e)
+    {
+        switch (e)
+        {
+            case Robe robe:
+                return playerEquippedRobe;
+            case Hat hat:
+                return playerEquippedHat;
+            case Wand wand:
+                return playerEquippedWand;
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -653,8 +690,8 @@ public class GameManager : MonoBehaviour
     {
         switch (label)
         {
-            case ArtifactLabel.BankCard:
-                return new BankCard();
+            case ArtifactLabel.VIPCard:
+                return new VIPCard();
             case ArtifactLabel.Barricade:
                 return new Barricade();
             case ArtifactLabel.BlueMantis:
@@ -896,7 +933,7 @@ public class GameManager : MonoBehaviour
         MapManager._Instance.Generate();
     }
 
-    private IEnumerator Begin()
+    private IEnumerator GameLoop()
     {
         MapManager._Instance.NextRow();
 
@@ -1184,6 +1221,7 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private SerializableDictionary<TavernScreen, TavernScreenInformation> tavernScreens = new SerializableDictionary<TavernScreen, TavernScreenInformation>();
     [SerializeField] private SerializableDictionary<Rarity, Vector2> minMaxArtifactCostDict = new SerializableDictionary<Rarity, Vector2>();
+    [SerializeField] private SerializableDictionary<Rarity, Vector2> minMaxEquipmentCostDict = new SerializableDictionary<Rarity, Vector2>();
     [SerializeField] private Vector2 minMaxIngredientCost;
 
     [SerializeField] private GameObject[] turnOnForBrowseWaresScreen;
@@ -1283,7 +1321,7 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < numPotionIngredientShopOffers; i++)
         {
             IngredientShopOffer offer = Instantiate(ingredientShopOfferPrefab, innkeeperInfo.parentSpawnsTo);
-            offer.Set(GetRandomPotionIngredient(), Mathf.RoundToInt(RandomHelper.RandomFloat(minMaxIngredientCost)), null);
+            offer.Set(GetRandomPotionIngredient(), RandomHelper.RandomIntExclusive(minMaxIngredientCost), null);
             shopIngredientList.Add(offer);
         }
 
@@ -1291,7 +1329,8 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < numEquipmentShopOffers; i++)
         {
             EquipmentShopOffer offer = Instantiate(equipmentShopOfferPrefab, clothierInfo.parentSpawnsTo);
-            offer.Set(GetRandomEquipment(), 100);
+            Equipment oferred = GetRandomEquipment();
+            offer.Set(oferred, RandomHelper.RandomIntExclusive(minMaxEquipmentCostDict[oferred.GetRarity()]));
             shopEquipmentList.Add(offer);
         }
     }
@@ -1617,9 +1656,14 @@ public class GameManager : MonoBehaviour
         return RandomHelper.GetRandomFromList(equippedBooks.Keys.ToList());
     }
 
-    public BookLabel GetOwnedBook(int index)
+    public BookLabel GetOwnedBookLabel(int index)
     {
         return equippedBooks.Keys.ToList()[index];
+    }
+
+    public Book GetOwnedBook(int index)
+    {
+        return equippedBooks.Values.ToList()[index];
     }
 
     public BookLabel GetRandomBook(bool removeFromPool = true)

@@ -66,7 +66,7 @@ public abstract class Spell
 
     protected int GetSpellSpec(string specIdentifier)
     {
-        Debug.Log("GetSpellSpec Called for: " + Label + " - " + specIdentifier);
+        // Debug.Log("GetSpellSpec Called for: " + Label + " - " + specIdentifier);
         return BalenceManager._Instance.GetValue(Label, specIdentifier);
     }
 
@@ -173,9 +173,9 @@ public class StaticField : PassiveSpell
 {
     public override SpellLabel Label => SpellLabel.StaticField;
 
-    protected override string toolTipText => "Every " + procAfter + " Turn" + (procAfter > 1 ? "s" : "") + ", Apply " + stackAmount + " Paralyzed to the Enemy";
+    protected override string toolTipText => "Every " + procAfter + " Turn" + (procAfter > 1 ? "s" : "") + ", Apply " + stackAmount + " Paralyze to the Enemy";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Paralyzed };
+    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Protection };
 
     private int tracker;
     private int procAfter;
@@ -209,7 +209,7 @@ public class StaticField : PassiveSpell
 
     public override void Proc(bool canDupe)
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Paralyzed, stackAmount, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Protection, stackAmount, Target.Enemy);
         base.Proc(canDupe);
     }
 
@@ -273,9 +273,9 @@ public class BattleTrance : PassiveSpell
 {
     public override SpellLabel Label => SpellLabel.BattleTrance;
 
-    protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain " + stackAmount + " Emboldened";
+    protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain " + stackAmount + " Embolden";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Emboldened };
+    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Embolden };
 
 
     private int stackAmount;
@@ -310,7 +310,7 @@ public class BattleTrance : PassiveSpell
 
     public override void Proc(bool canDupe)
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Emboldened, stackAmount, Target.Character);
+        CombatManager._Instance.AddAffliction(AfflictionType.Embolden, stackAmount, Target.Character);
         base.Proc(canDupe);
     }
 
@@ -466,7 +466,7 @@ public abstract class ActiveSpell : Spell
             CallEffect();
             CallEffect();
             CombatManager._Instance.ConsumeAfflictionStack(AfflictionType.Echo, Target.Character);
-            CombatManager._Instance.ShowAfflictionProc(AfflictionType.Echo);
+            CombatManager._Instance.ShowAfflictionProc(AfflictionType.Echo, Target.Character);
         }
         else
         {
@@ -549,9 +549,9 @@ public class Shock : ActiveSpell
 {
     public override SpellLabel Label => SpellLabel.Shock;
 
-    protected override string toolTipText => "Deal " + damageAmount + " Damage, Apply " + stackAmount + " Paralyzed";
+    protected override string toolTipText => "Deal " + damageAmount + " Damage, Apply " + stackAmount + " Paralyze";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Paralyzed };
+    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Protection };
 
     private int damageAmount;
     private int stackAmount;
@@ -565,7 +565,7 @@ public class Shock : ActiveSpell
     protected override void Effect()
     {
         CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Electricity, DamageSource.ActiveSpell);
-        CombatManager._Instance.AddAffliction(AfflictionType.Paralyzed, stackAmount, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Protection, stackAmount, Target.Enemy);
     }
 }
 
@@ -684,9 +684,9 @@ public class Electrifry : ActiveSpell
 {
     public override SpellLabel Label => SpellLabel.Electrifry;
 
-    protected override string toolTipText => "Apply " + paralyzeAmount + " Paralyzed, Apply " + burnAmount + " Burn";
+    protected override string toolTipText => "Apply " + paralyzeAmount + " Paralyze, Apply " + burnAmount + " Burn";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Paralyzed, AfflictionType.Burn };
+    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Protection, AfflictionType.Burn };
 
     private int paralyzeAmount;
     private int burnAmount;
@@ -699,7 +699,7 @@ public class Electrifry : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Paralyzed, paralyzeAmount, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Protection, paralyzeAmount, Target.Enemy);
         CombatManager._Instance.AddAffliction(AfflictionType.Burn, burnAmount, Target.Enemy);
     }
 }
@@ -738,9 +738,9 @@ public class Cripple : ActiveSpell
 {
     public override SpellLabel Label => SpellLabel.Cripple;
 
-    protected override string toolTipText => "Apply " + stackAmount + " Weakened, Deal " + damageAmount + " Damage";
+    protected override string toolTipText => "Apply " + stackAmount + " Weak, Deal " + damageAmount + " Damage";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Weakened };
+    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Weak };
 
     private int damageAmount;
     private int stackAmount;
@@ -754,7 +754,7 @@ public class Cripple : ActiveSpell
     protected override void Effect()
     {
         CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
-        CombatManager._Instance.AddAffliction(AfflictionType.Weakened, stackAmount, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Weak, stackAmount, Target.Enemy);
     }
 }
 
@@ -784,9 +784,9 @@ public class Excite : ActiveSpell
 {
     public override SpellLabel Label => SpellLabel.Excite;
 
-    protected override string toolTipText => "Gain " + stackAmount + " Emboldened";
+    protected override string toolTipText => "Gain " + stackAmount + " Embolden";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Emboldened };
+    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Embolden };
 
 
     private int stackAmount;
@@ -798,7 +798,7 @@ public class Excite : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Emboldened, stackAmount, Target.Character);
+        CombatManager._Instance.AddAffliction(AfflictionType.Embolden, stackAmount, Target.Character);
     }
 }
 
@@ -806,9 +806,9 @@ public class Overexcite : ActiveSpell
 {
     public override SpellLabel Label => SpellLabel.Overexcite;
 
-    protected override string toolTipText => "Gain " + emboldenedAmount + " Emboldened, Gain " + vulnerableAmount + " Vulnerable, ";
+    protected override string toolTipText => "Gain " + emboldenedAmount + " Embolden, Gain " + vulnerableAmount + " Vulnerable, ";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Emboldened, AfflictionType.Vulnerable };
+    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Embolden, AfflictionType.Vulnerable };
 
     private int emboldenedAmount;
     private int vulnerableAmount;
@@ -821,7 +821,7 @@ public class Overexcite : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Emboldened, emboldenedAmount, Target.Character);
+        CombatManager._Instance.AddAffliction(AfflictionType.Embolden, emboldenedAmount, Target.Character);
         CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, vulnerableAmount, Target.Character);
     }
 }
@@ -830,9 +830,9 @@ public class Forethought : ActiveSpell
 {
     public override SpellLabel Label => SpellLabel.Forethought;
 
-    protected override string toolTipText => "Gain " + stackAmount + " Prepared";
+    protected override string toolTipText => "Gain " + stackAmount + " Intangible";
 
-    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Prepared };
+    public override AfflictionType[] AfflictionKeywords => new AfflictionType[] { AfflictionType.Intangible };
 
     private int stackAmount;
 
@@ -843,7 +843,7 @@ public class Forethought : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Prepared, stackAmount, Target.Character);
+        CombatManager._Instance.AddAffliction(AfflictionType.Intangible, stackAmount, Target.Character);
     }
 }
 

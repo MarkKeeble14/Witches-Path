@@ -6,12 +6,14 @@ using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+
 public enum ToolTipKeyword
 {
     Affliction,
     Ward,
     Heal,
-    Gold
+    Gold,
+    Charge
 }
 
 public enum TextDecorationLabel
@@ -205,6 +207,8 @@ public class UIManager : MonoBehaviour
         }
     }
 
+
+    // Should absolutely refactor tool tips at some point, but everything works
     public GameObject SpawnToolTipsForBook(Book book, Transform transform)
     {
         return SpawnToolTips(book, transform, "On Use: ");
@@ -212,23 +216,23 @@ public class UIManager : MonoBehaviour
 
     public GameObject SpawnToolTips(PowerupItem item, Transform transform, string toolTipTextPrefix = "")
     {
-        ToolTipKeyword[] additionalKeyWords = item.Keywords;
-        AfflictionType[] additionalAfflictionToolTips = item.AfflictionKeywords;
-        int numToolTips = additionalKeyWords.Length + additionalAfflictionToolTips.Length + 1;
+        List<ToolTipKeyword> additionalKeyWords = item.GeneralKeywords;
+        List<AfflictionType> additionalAfflictionToolTips = item.AfflictionKeywords;
+        int numToolTips = additionalKeyWords.Count + additionalAfflictionToolTips.Count + 1;
 
-        ToolTipList list = SpawnToolTipList(transform, numToolTips);
-        Transform vLayout = list.GetVerticalLayoutGroup().transform;
+        ToolTipList list = SpawnToolTipList(transform, numToolTips, 1, 0);
+        Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
         SpawnToolTip(item.Name, toolTipTextPrefix + item.GetToolTipText(), vLayout);
 
         // Spawn ToolTips for Affliction Keywords
-        for (int i = 0; i < additionalAfflictionToolTips.Length; i++)
+        for (int i = 0; i < additionalAfflictionToolTips.Count; i++)
         {
             AfflictionType affliction = additionalAfflictionToolTips[i];
             SpawnToolTip(affliction.ToString(), CombatManager._Instance.GetAfflictionOfType(affliction).GetToolTipText(), vLayout);
         }
 
         // Spawn ToolTips for Additional Keywords
-        for (int i = 0; i < additionalKeyWords.Length; i++)
+        for (int i = 0; i < additionalKeyWords.Count; i++)
         {
             ToolTipKeyword keyword = additionalKeyWords[i];
             SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), vLayout);
@@ -243,8 +247,8 @@ public class UIManager : MonoBehaviour
 
         int numToolTips = additionalKeyWords.Length + 1;
 
-        ToolTipList list = SpawnToolTipList(transform, numToolTips);
-        Transform vLayout = list.GetVerticalLayoutGroup().transform;
+        ToolTipList list = SpawnToolTipList(transform, numToolTips, 1, 0);
+        Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
         SpawnToolTip(affliction.ToString(), affliction.GetToolTipText(), vLayout);
 
         // Spawn ToolTips for Additional Keywords
@@ -264,8 +268,8 @@ public class UIManager : MonoBehaviour
         int numToolTips = additionalKeyWords.Length + additionalAfflictionToolTips.Length + 1;
         Debug.Log(numToolTips);
 
-        ToolTipList list = SpawnToolTipList(transform, numToolTips);
-        Transform vLayout = list.GetVerticalLayoutGroup().transform;
+        ToolTipList list = SpawnToolTipList(transform, numToolTips, 1, 0);
+        Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
         SpawnToolTip(spell.ToString(), spell.GetToolTipText(), vLayout);
 
         // Spawn ToolTips for Affliction Keywords
@@ -285,10 +289,11 @@ public class UIManager : MonoBehaviour
         return list.gameObject;
     }
 
-    public GameObject SpawnToolTips(Equipment e, Transform transform)
+    public GameObject SpawnToolTips(Equipment newEquipment, Equipment oldEquipment, Transform transform, bool isShopOffer)
     {
-        ToolTipKeyword[] additionalKeyWords = e.Keywords;
-        List<SpellLabel> equipmentSpells = e.ComesWithSpells;
+        // Spawn ToolTips for new Equipment
+        ToolTipKeyword[] additionalKeyWords = newEquipment.Keywords;
+        List<SpellLabel> equipmentSpells = newEquipment.ComesWithSpells;
         List<AfflictionType> additionalAfflictionKeywords = new List<AfflictionType>();
         for (int i = 0; i < equipmentSpells.Count; i++)
         {
@@ -304,9 +309,19 @@ public class UIManager : MonoBehaviour
         }
         int numToolTips = additionalKeyWords.Length + equipmentSpells.Count + additionalAfflictionKeywords.Count + 1;
 
-        ToolTipList list = SpawnToolTipList(transform, numToolTips);
-        Transform vLayout = list.GetVerticalLayoutGroup().transform;
-        SpawnToolTip("", e.ToolTipText, vLayout);
+        ToolTipList list = null;
+        if (isShopOffer)
+        {
+            list = SpawnToolTipList(transform, numToolTips, 2, toolTipWidth + toolTipSpacing);
+
+        }
+        else
+        {
+            list = SpawnToolTipList(transform, numToolTips, 1, 0);
+        }
+
+        Transform listOne = list.GetVerticalLayoutGroup(0).transform;
+        SpawnToolTip(isShopOffer ? "Offered: " : "", newEquipment.ToolTipText, listOne);
 
         // Spawns ToolTips for Spells
         for (int i = 0; i < equipmentSpells.Count; i++)
@@ -314,7 +329,7 @@ public class UIManager : MonoBehaviour
             SpellLabel label = equipmentSpells[i];
             Spell spell = GameManager._Instance.GetSpellOfType(equipmentSpells[i]);
 
-            SpawnToolTip(label.ToString(), GameManager._Instance.GetSpellOfType(label).GetToolTipText(), vLayout);
+            SpawnToolTip(label.ToString(), GameManager._Instance.GetSpellOfType(label).GetToolTipText(), listOne);
 
             // Spawn ToolTips for Afflictions within Spells
             AfflictionType[] additionalAfflictionToolTips = spell.AfflictionKeywords;
@@ -322,7 +337,7 @@ public class UIManager : MonoBehaviour
             {
                 if (additionalAfflictionKeywords.Contains(aff))
                 {
-                    SpawnToolTip(aff.ToString(), CombatManager._Instance.GetAfflictionOfType(aff).GetToolTipText(), vLayout);
+                    SpawnToolTip(aff.ToString(), CombatManager._Instance.GetAfflictionOfType(aff).GetToolTipText(), listOne);
                 }
             }
         }
@@ -331,13 +346,67 @@ public class UIManager : MonoBehaviour
         for (int i = 0; i < additionalKeyWords.Length; i++)
         {
             ToolTipKeyword keyword = additionalKeyWords[i];
-            SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), vLayout);
+            SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), listOne);
         }
+
+        if (!isShopOffer)
+        {
+            return list.gameObject;
+        }
+
+        // Close your eyes
+        // Spawn ToolTips for new Equipment
+        additionalKeyWords = oldEquipment.Keywords;
+        equipmentSpells = oldEquipment.ComesWithSpells;
+        additionalAfflictionKeywords = new List<AfflictionType>();
+        for (int i = 0; i < equipmentSpells.Count; i++)
+        {
+            Spell spell = GameManager._Instance.GetSpellOfType(equipmentSpells[i]);
+            AfflictionType[] additionalAfflictionToolTips = spell.AfflictionKeywords;
+            foreach (AfflictionType aff in additionalAfflictionToolTips)
+            {
+                if (!additionalAfflictionKeywords.Contains(aff))
+                {
+                    additionalAfflictionKeywords.Add(aff);
+                }
+            }
+        }
+        numToolTips = additionalKeyWords.Length + equipmentSpells.Count + additionalAfflictionKeywords.Count + 1;
+
+        Transform listTwo = list.GetVerticalLayoutGroup(1).transform;
+        SpawnToolTip(isShopOffer ? "Currently Equipped: " : "", oldEquipment.ToolTipText, listTwo);
+
+        // Spawns ToolTips for Spells
+        for (int i = 0; i < equipmentSpells.Count; i++)
+        {
+            SpellLabel label = equipmentSpells[i];
+            Spell spell = GameManager._Instance.GetSpellOfType(equipmentSpells[i]);
+
+            SpawnToolTip(label.ToString(), GameManager._Instance.GetSpellOfType(label).GetToolTipText(), listTwo);
+
+            // Spawn ToolTips for Afflictions within Spells
+            AfflictionType[] additionalAfflictionToolTips = spell.AfflictionKeywords;
+            foreach (AfflictionType aff in additionalAfflictionToolTips)
+            {
+                if (additionalAfflictionKeywords.Contains(aff))
+                {
+                    SpawnToolTip(aff.ToString(), CombatManager._Instance.GetAfflictionOfType(aff).GetToolTipText(), listTwo);
+                }
+            }
+        }
+
+        // Spawn ToolTips for Additional Keywords
+        for (int i = 0; i < additionalKeyWords.Length; i++)
+        {
+            ToolTipKeyword keyword = additionalKeyWords[i];
+            SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), listTwo);
+        }
+
 
         return list.gameObject;
     }
 
-    private ToolTipList SpawnToolTipList(Transform spawningFor, int numToolTips)
+    private ToolTipList SpawnToolTipList(Transform spawningFor, int numToolTips, int numLists, float increaseWidthBy)
     {
         RectTransform spawningForRect = spawningFor.GetComponent<RectTransform>();
         float spawningForWidth = spawningForRect.sizeDelta.x;
@@ -346,14 +415,15 @@ public class UIManager : MonoBehaviour
         // Determine where on the screen the mouse is
         int horizontalSlice = 0;
         int verticalSlice = 0;
+        Vector2 posFrom = spawningFor.position;
 
         // Get Either Left, Middle, or Right of Screen
-        if (Input.mousePosition.x < Screen.width / 3)
+        if (posFrom.x < Screen.width / 3)
         {
             // Left
             horizontalSlice = 0;
         }
-        else if (Input.mousePosition.x >= Screen.width / 3 && Input.mousePosition.x < (Screen.width / 3) * 2)
+        else if (posFrom.x >= Screen.width / 3 && posFrom.x < (Screen.width / 3) * 2)
         {
             // Middle
             horizontalSlice = 1;
@@ -365,7 +435,7 @@ public class UIManager : MonoBehaviour
         }
 
         // Get Either Top or Bottom of Screen
-        if (Input.mousePosition.y > Screen.height / 2)
+        if (posFrom.y > Screen.height / 2)
         {
             // Top
             verticalSlice = 0;
@@ -379,14 +449,12 @@ public class UIManager : MonoBehaviour
         // Spawn Tool Tip List
         ToolTipList spawned = Instantiate(toolTipList, spawningFor);
         RectTransform listRect = spawned.GetRect();
+        HorizontalLayoutGroup hLayout = spawned.GetHorizontalLayoutGroup();
+        hLayout.spacing = toolTipSpacing;
 
         // Calculate List Height
         float listHeight = (numToolTips * toolTipHeight) + ((numToolTips - 1) * toolTipSpacing);
-        listRect.sizeDelta = new Vector2(toolTipWidth, listHeight);
-
-        // Set vList Spacing
-        VerticalLayoutGroup vLayout = spawned.GetVerticalLayoutGroup();
-        vLayout.spacing = toolTipSpacing;
+        listRect.sizeDelta = new Vector2(toolTipWidth + increaseWidthBy, listHeight);
 
         // Depending on where the mouse is, splitting the screen up into two rows of 3 (so six sections total), we set the Layout Groups Child Alignment Property
         // Top Left = Upper Left
@@ -406,20 +474,20 @@ public class UIManager : MonoBehaviour
                 if (horizontalSlice == 0)
                 {
                     // Upper Left
-                    vLayout.childAlignment = TextAnchor.UpperLeft;
+                    hLayout.childAlignment = TextAnchor.UpperLeft;
                     verticalOffset = -verticalOffset;
                 }
                 else if (horizontalSlice == 1)
                 {
                     // Upper Center
-                    vLayout.childAlignment = TextAnchor.UpperCenter;
+                    hLayout.childAlignment = TextAnchor.UpperCenter;
                     verticalOffset = -verticalOffset;
                     horizontalOffset = 0;
                 }
                 else
                 {
                     // Upper Right
-                    vLayout.childAlignment = TextAnchor.UpperRight;
+                    hLayout.childAlignment = TextAnchor.UpperRight;
                     horizontalOffset = -horizontalOffset;
                     verticalOffset = -verticalOffset;
                 }
@@ -428,18 +496,18 @@ public class UIManager : MonoBehaviour
                 if (horizontalSlice == 0)
                 {
                     // Upper Left
-                    vLayout.childAlignment = TextAnchor.LowerLeft;
+                    hLayout.childAlignment = TextAnchor.LowerLeft;
                 }
                 else if (horizontalSlice == 1)
                 {
                     // Lower Center
-                    vLayout.childAlignment = TextAnchor.LowerCenter;
+                    hLayout.childAlignment = TextAnchor.LowerCenter;
                     horizontalOffset = 0;
                 }
                 else
                 {
                     // Lower Right
-                    vLayout.childAlignment = TextAnchor.LowerRight;
+                    hLayout.childAlignment = TextAnchor.LowerRight;
                     horizontalOffset = -horizontalOffset;
                 }
                 break;
@@ -449,6 +517,18 @@ public class UIManager : MonoBehaviour
         listRect.localPosition = offset;
         // Debug.Log("X: " + horizontalSlice + ", Y: " + verticalSlice);
         // Debug.Log(spawningFor.position + ", Horizontal Offset: " + horizontalOffset + ", Vertical Offset: " + verticalOffset + ", Final Position: " + listRect.position);
+
+        for (int i = 0; i < numLists; i++)
+        {
+            VerticalLayoutGroup list = spawned.SpawnList();
+
+            // Set vList Spacing
+            list.spacing = toolTipSpacing;
+
+            RectTransform currentRect = list.GetComponent<RectTransform>();
+            Vector2 currentSizeDelta = currentRect.sizeDelta;
+            currentRect.sizeDelta = new Vector2(toolTipWidth, currentSizeDelta.y);
+        }
 
         return spawned;
     }

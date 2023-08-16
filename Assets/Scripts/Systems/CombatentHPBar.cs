@@ -45,7 +45,7 @@ public class CombatentHPBar : MonoBehaviour
         {
             CombatentHPBarSegment segment = hPBarSegments[i];
             // Hide segments that are indexed higher than the current HP Value
-            if (i > newCurrentHP)
+            if (i >= newCurrentHP)
             {
                 segment.SetAlpha(0);
             }

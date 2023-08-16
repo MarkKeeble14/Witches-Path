@@ -23,7 +23,7 @@ public class EquipmentShopOffer : ShopOffer
         GameObject spawnedToolTip = null;
         onPointerEnter += delegate
         {
-            spawnedToolTip = UIManager._Instance.SpawnToolTips(setTo, transform);
+            spawnedToolTip = UIManager._Instance.SpawnToolTips(setTo, GameManager._Instance.GetEquippedEquipmentOfSameType(setTo), transform, true);
         };
         onPointerExit += delegate
         {

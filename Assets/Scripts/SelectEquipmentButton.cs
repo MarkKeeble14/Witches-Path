@@ -38,7 +38,7 @@ public class SelectEquipmentButton : SelectButton
 
     public void SpawnToolTip()
     {
-        spawnedToolTip = UIManager._Instance.SpawnToolTips(representingEquipment, transform);
+        spawnedToolTip = UIManager._Instance.SpawnToolTips(representingEquipment, GameManager._Instance.GetEquippedEquipmentOfSameType(representingEquipment), transform, false);
     }
 
     public void DestroyToolTip()

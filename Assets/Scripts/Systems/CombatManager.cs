@@ -21,19 +21,20 @@ public enum Target
 
 public enum AfflictionType
 {
-    Emboldened,
-    Weakened,
+    Embolden,
+    Weak,
     Vulnerable,
-    Guarded,
-    Bandaged,
-    Retribution,
-    Prepared,
-    Parry,
+    OnGuard,
+    Bandages,
+    Protection,
+    Intangible,
     Echo,
     Poison,
     Blight,
     Burn,
-    Paralyzed,
+    Paralyze,
+    Thorns,
+    Power,
 }
 
 public enum DamageType
@@ -104,6 +105,8 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private CombatentHPBar enemyHPBar;
     [SerializeField] private IntentDisplay enemyIntentDisplay;
     [SerializeField] private TextMeshProUGUI enemyNameText;
+
+
     [SerializeField] private Image characterCombatSprite;
     [SerializeField] private Image enemyCombatSprite;
     [SerializeField] private TurnDisplay turnDisplay;
@@ -198,15 +201,18 @@ public partial class CombatManager : MonoBehaviour
         }
         else
         {
+            // Ensure that the enemy HP Bar is updated
+            // enemyHPBar.SetCurrentHP(currentEnemyHP);
+
             yield return new WaitForSeconds(1);
 
             // Bandaged Effect
-            if (TargetHasAffliction(AfflictionType.Bandaged, Target.Character))
+            if (TargetHasAffliction(AfflictionType.Bandages, Target.Character))
             {
-                int numBandagedStacks = characterAfflictionMap[AfflictionType.Bandaged].GetStacks();
+                int numBandagedStacks = characterAfflictionMap[AfflictionType.Bandages].GetStacks();
                 GameManager._Instance.AlterPlayerHP(numBandagedStacks, DamageType.Heal);
-                ConsumeAfflictionStack(AfflictionType.Bandaged, Target.Character, numBandagedStacks);
-                ShowAfflictionProc(AfflictionType.Bandaged);
+                ConsumeAfflictionStack(AfflictionType.Bandages, Target.Character, numBandagedStacks);
+                ShowAfflictionProc(AfflictionType.Bandages, Target.Character);
                 yield return new WaitForSeconds(1);
             }
 
@@ -246,8 +252,15 @@ public partial class CombatManager : MonoBehaviour
             // Decide Enemy Intent
             // ?
             // Set Intent Display
+
+            // Increase damage by Power
+            int damageIncrease = GetPowerBonus(Target.Enemy);
+            if (damageIncrease > 0)
+            {
+                ShowAfflictionProc(AfflictionType.Power, Target.Enemy);
+            }
             enemyIntentDisplay.SetIntent(IntentType.Attack);
-            enemyIntentDisplay.SetIntentText(currentEnemy.GetBasicAttackDamage().ToString());
+            enemyIntentDisplay.SetIntentText((currentEnemy.GetBasicAttackDamage() + damageIncrease).ToString());
 
             // Player Turn
             yield return StartCoroutine(PlayerTurn());
@@ -266,6 +279,16 @@ public partial class CombatManager : MonoBehaviour
 
         // Call On Combat End
         OnCombatEnd?.Invoke();
+    }
+
+    public int GetPowerBonus(Target owner)
+    {
+        int damageIncrease = 0;
+        if (TargetHasAffliction(AfflictionType.Power, owner))
+        {
+            damageIncrease = GetAffliction(AfflictionType.Power, Target.Enemy).GetStacks();
+        }
+        return damageIncrease;
     }
 
     private IEnumerator PlayerTurn()
@@ -329,9 +352,6 @@ public partial class CombatManager : MonoBehaviour
             // Consume Mana
             GameManager._Instance.AlterPlayerMana(-spell.GetManaCost());
         }
-
-        // Add 1 Charge to all Books
-        GameManager._Instance.AlterAllBookCharge(1);
 
         // Activate Callback
         OnActiveSpellQueued?.Invoke();
@@ -487,8 +507,8 @@ public partial class CombatManager : MonoBehaviour
         NumFreeSpells = 0;
 
         // Clear Afflictions
-        ClearAfflictionMap(enemyAfflictionMap);
-        ClearAfflictionMap(characterAfflictionMap);
+        ClearAfflictionMap(enemyAfflictionMap, Target.Enemy);
+        ClearAfflictionMap(characterAfflictionMap, Target.Character);
 
         ResetCombatentWard(Target.Character);
         ResetCombatentWard(Target.Enemy);
@@ -711,7 +731,9 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private Transform enemyAfflictionList;
     private Dictionary<AfflictionType, Affliction> characterAfflictionMap = new Dictionary<AfflictionType, Affliction>();
     private Dictionary<AfflictionType, Affliction> enemyAfflictionMap = new Dictionary<AfflictionType, Affliction>();
-    private Dictionary<AfflictionType, AfflictionIcon> afflictionIconTracker = new Dictionary<AfflictionType, AfflictionIcon>();
+
+    private Dictionary<AfflictionType, AfflictionIcon> characterAfflictionIconTracker = new Dictionary<AfflictionType, AfflictionIcon>();
+    private Dictionary<AfflictionType, AfflictionIcon> enemyAfflictionIconTracker = new Dictionary<AfflictionType, AfflictionIcon>();
 
     public void AddAffliction(AfflictionType type, int num, Target target)
     {
@@ -719,7 +741,7 @@ public partial class CombatManager : MonoBehaviour
         {
             case Target.Character:
 
-                if (type == AfflictionType.Weakened && GameManager._Instance.HasArtifact(ArtifactLabel.SpecialSpinich))
+                if (type == AfflictionType.Weak && GameManager._Instance.HasArtifact(ArtifactLabel.SpecialSpinich))
                 {
                     GameManager._Instance.AnimateArtifact(ArtifactLabel.SpecialSpinich);
                     return;
@@ -747,11 +769,24 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void ShowAfflictionProc(AfflictionType type)
+    public Affliction GetAffliction(AfflictionType type, Target owner)
     {
-        if (afflictionIconTracker.ContainsKey(type))
+        if (TargetHasAffliction(type, owner))
         {
-            afflictionIconTracker[type].AnimateScale();
+            return GetTargetAfflictionMap(owner)[type];
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public void ShowAfflictionProc(AfflictionType type, Target t)
+    {
+        Dictionary<AfflictionType, AfflictionIcon> map = GetTargetAfflictionDisplays(t);
+        if (map.ContainsKey(type))
+        {
+            map[type].AnimateScale();
         }
     }
 
@@ -759,32 +794,34 @@ public partial class CombatManager : MonoBehaviour
     {
         switch (type)
         {
-            case AfflictionType.Bandaged:
-                return new Bandaged();
+            case AfflictionType.Bandages:
+                return new Bandages();
             case AfflictionType.Blight:
                 return new Blight();
             case AfflictionType.Burn:
                 return new Burn();
             case AfflictionType.Echo:
                 return new Echo();
-            case AfflictionType.Emboldened:
-                return new Emboldened();
-            case AfflictionType.Guarded:
-                return new Guarded();
-            case AfflictionType.Paralyzed:
-                return new Paralyzed();
-            case AfflictionType.Parry:
-                return new Parry();
+            case AfflictionType.Embolden:
+                return new Embolden();
+            case AfflictionType.Intangible:
+                return new Intangible();
+            case AfflictionType.OnGuard:
+                return new OnGuard();
+            case AfflictionType.Paralyze:
+                return new Paralyze();
             case AfflictionType.Poison:
                 return new Poison();
-            case AfflictionType.Prepared:
-                return new Prepared();
-            case AfflictionType.Retribution:
-                return new Retribution();
+            case AfflictionType.Power:
+                return new Power();
+            case AfflictionType.Protection:
+                return new Protection();
+            case AfflictionType.Thorns:
+                return new Thorns();
             case AfflictionType.Vulnerable:
                 return new Vulnerable();
-            case AfflictionType.Weakened:
-                return new Weakened();
+            case AfflictionType.Weak:
+                return new Weak();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -799,30 +836,32 @@ public partial class CombatManager : MonoBehaviour
         if (map.ContainsKey(type))
         {
             map[type].AlterStacks(activations);
-            ShowAfflictionProc(type);
+            ShowAfflictionProc(type, t);
             return false;
         }
         else
         {
             Affliction aff = GetAfflictionOfType(type);
             aff.SetStacks(activations);
+            aff.SetOwner(t);
             map.Add(type, aff);
 
             AfflictionIcon spawned = Instantiate(afflictionIconPrefab, parentTo);
             spawned.SetAffliction(aff);
-            afflictionIconTracker.Add(type, spawned);
-            ShowAfflictionProc(type);
+            GetTargetAfflictionDisplays(t).Add(type, spawned);
+            ShowAfflictionProc(type, t);
             return true;
         }
     }
 
-    private void ClearAfflictionMap(Dictionary<AfflictionType, Affliction> map)
+    private void ClearAfflictionMap(Dictionary<AfflictionType, Affliction> map, Target t)
     {
         Dictionary<AfflictionType, Affliction>.KeyCollection keys = map.Keys;
+        Dictionary<AfflictionType, AfflictionIcon> displays = GetTargetAfflictionDisplays(t);
         foreach (AfflictionType type in keys)
         {
-            AfflictionIcon icon = afflictionIconTracker[type];
-            afflictionIconTracker.Remove(type);
+            AfflictionIcon icon = displays[type];
+            displays.Remove(type);
             Destroy(icon.gameObject);
         }
         map.Clear();
@@ -831,6 +870,11 @@ public partial class CombatManager : MonoBehaviour
     private Dictionary<AfflictionType, Affliction> GetTargetAfflictionMap(Target t)
     {
         return t == Target.Character ? characterAfflictionMap : enemyAfflictionMap;
+    }
+
+    private Dictionary<AfflictionType, AfflictionIcon> GetTargetAfflictionDisplays(Target t)
+    {
+        return t == Target.Character ? characterAfflictionIconTracker : enemyAfflictionIconTracker;
     }
 
     private Transform GetTargetParentAfflictionTo(Target t)
@@ -856,8 +900,9 @@ public partial class CombatManager : MonoBehaviour
         if (!aff.CanBeCleared) return;
 
         // there are no stacks of the affliction remaining, remove
-        AfflictionIcon i = afflictionIconTracker[type];
-        afflictionIconTracker.Remove(type);
+        Dictionary<AfflictionType, AfflictionIcon> displays = GetTargetAfflictionDisplays(target);
+        AfflictionIcon i = displays[type];
+        displays.Remove(type);
         Destroy(i.gameObject);
         map.Remove(type);
 
@@ -877,8 +922,10 @@ public partial class CombatManager : MonoBehaviour
         if (map.ContainsKey(AfflictionType.Poison))
         {
             AlterCombatentHP(-map[AfflictionType.Poison].GetStacks(), target, DamageType.Poison);
-            ConsumeAfflictionStack(AfflictionType.Poison, target);
-            ShowAfflictionProc(AfflictionType.Poison);
+            int v = BalenceManager._Instance.GetValue(AfflictionType.Poison, "PercentToReduceBy");
+            float percentToMultiplyBy = (float)v / 100;
+            ConsumeAfflictionStack(AfflictionType.Poison, target, Mathf.RoundToInt(GetAffliction(AfflictionType.Poison, target).GetStacks() * percentToMultiplyBy));
+            ShowAfflictionProc(AfflictionType.Poison, target);
         }
     }
 
@@ -888,7 +935,7 @@ public partial class CombatManager : MonoBehaviour
         {
             AlterCombatentHP(-map[AfflictionType.Blight].GetStacks(), target, DamageType.Poison);
             AddAffliction(AfflictionType.Blight, 1, target);
-            ShowAfflictionProc(AfflictionType.Blight);
+            ShowAfflictionProc(AfflictionType.Blight, target);
         }
     }
 
@@ -898,7 +945,7 @@ public partial class CombatManager : MonoBehaviour
         {
             AlterCombatentHP(-BalenceManager._Instance.GetValue(AfflictionType.Burn, "DamageAmount"), target, DamageType.Fire);
             ConsumeAfflictionStack(AfflictionType.Burn, target);
-            ShowAfflictionProc(AfflictionType.Burn);
+            ShowAfflictionProc(AfflictionType.Burn, target);
         }
     }
 
@@ -923,8 +970,9 @@ public partial class CombatManager : MonoBehaviour
 
     public void RemoveAffliction(Target t, AfflictionType type)
     {
-        AfflictionIcon icon = afflictionIconTracker[type];
-        afflictionIconTracker.Remove(type);
+        Dictionary<AfflictionType, AfflictionIcon> displays = GetTargetAfflictionDisplays(t);
+        AfflictionIcon icon = displays[type];
+        displays.Remove(type);
         Destroy(icon.gameObject);
         GetTargetAfflictionMap(t).Remove(type);
     }
@@ -940,10 +988,30 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierStart = 1;
     [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierGain = 1;
 
+    // Basic Attack
     private void PlayerBasicAttack()
     {
-        // Simple way of attacking for now
-        AttackCombatent(-GameManager._Instance.GetBasicAttackDamage(), Target.Character, Target.Enemy, DamageType.Default, DamageSource.BasicAttack);
+        // Get damage bonus from the Power Affliction
+        int damageIncrease = GetPowerBonus(Target.Character);
+        if (damageIncrease > 0)
+        {
+            ShowAfflictionProc(AfflictionType.Power, Target.Character);
+        }
+
+        // Increase the players basic attack damage depending on their damage bonus from equipment
+        int damage = GameManager._Instance.DamageFromEquipment + damageIncrease + GameManager._Instance.GetBasicAttackDamage();
+
+        // if the players damage after all this is negative, instead consider it zero
+        // this is done in order to prevent the players basic attacks from healing the enemy, which would suck
+        // Attack the enemy
+        if (damage > 0)
+        {
+            AttackCombatent(-(damage), Target.Character, Target.Enemy, DamageType.Default, DamageSource.BasicAttack);
+        }
+        else
+        {
+            AttackCombatent(0, Target.Character, Target.Enemy, DamageType.Default, DamageSource.BasicAttack);
+        }
 
         OnPlayerAttack?.Invoke();
     }
@@ -989,11 +1057,11 @@ public partial class CombatManager : MonoBehaviour
 
     public bool AttackCombatent(int amount, Target attacker, Target target, DamageType damageType, DamageSource source)
     {
-        // Paralyzed Effect
-        if (TargetHasAffliction(AfflictionType.Paralyzed, attacker))
+        // Paralyze Effect
+        if (TargetHasAffliction(AfflictionType.Paralyze, attacker))
         {
-            ConsumeAfflictionStack(AfflictionType.Paralyzed, attacker);
-            ShowAfflictionProc(AfflictionType.Paralyzed);
+            ConsumeAfflictionStack(AfflictionType.Protection, attacker);
+            ShowAfflictionProc(AfflictionType.Protection, attacker);
             return true;
         }
 
@@ -1006,44 +1074,34 @@ public partial class CombatManager : MonoBehaviour
             GameManager._Instance.AnimateArtifact(ArtifactLabel.BlackPrism);
         }
 
-        // Emboldened Effect
-        if (amount < 0 && TargetHasAffliction(AfflictionType.Emboldened, attacker))
+        // Thorns Effect
+        if (amount < 0 && TargetHasAffliction(AfflictionType.Thorns, target))
         {
-            float value = BalenceManager._Instance.GetValue(AfflictionType.Emboldened, "MultiplyBy");
+            int damage = GetTargetAfflictionMap(target)[AfflictionType.Thorns].GetStacks();
+            ShowAfflictionProc(AfflictionType.Thorns, target);
+            AlterCombatentHP(damage, attacker, DamageType.Default);
+        }
+
+        // Embolden Effect
+        if (amount < 0 && TargetHasAffliction(AfflictionType.Embolden, attacker))
+        {
+            float value = BalenceManager._Instance.GetValue(AfflictionType.Embolden, "MultiplyBy");
             float multiplyBy = value / 100;
 
             amount = Mathf.CeilToInt(amount * multiplyBy);
-            ConsumeAfflictionStack(AfflictionType.Emboldened, attacker);
-            ShowAfflictionProc(AfflictionType.Emboldened);
+            ConsumeAfflictionStack(AfflictionType.Embolden, attacker);
+            ShowAfflictionProc(AfflictionType.Embolden, attacker);
         }
 
-        // Weakened Effect
-        if (amount < 0 && TargetHasAffliction(AfflictionType.Weakened, attacker))
+        // Weak Effect
+        if (amount < 0 && TargetHasAffliction(AfflictionType.Weak, attacker))
         {
-            float value = BalenceManager._Instance.GetValue(AfflictionType.Weakened, "MultiplyBy");
+            float value = BalenceManager._Instance.GetValue(AfflictionType.Weak, "MultiplyBy");
             float multiplyBy = value / 100;
 
             amount = Mathf.CeilToInt(amount * multiplyBy);
-            ConsumeAfflictionStack(AfflictionType.Weakened, attacker);
-            ShowAfflictionProc(AfflictionType.Weakened);
-        }
-
-        // Retribution Effect
-        if (TargetHasAffliction(AfflictionType.Retribution, target))
-        {
-            DamageCombatent(BalenceManager._Instance.GetValue(AfflictionType.Retribution, "DamageAmount"), attacker, target, DamageType.Default);
-            ConsumeAfflictionStack(AfflictionType.Retribution, target);
-            ShowAfflictionProc(AfflictionType.Retribution);
-        }
-
-        // Parry Effect
-        if (TargetHasAffliction(AfflictionType.Parry, target))
-        {
-            ConsumeAfflictionStack(AfflictionType.Parry, target);
-            Target swap = target;
-            target = attacker;
-            attacker = swap;
-            ShowAfflictionProc(AfflictionType.Parry);
+            ConsumeAfflictionStack(AfflictionType.Weak, attacker);
+            ShowAfflictionProc(AfflictionType.Weak, attacker);
         }
 
         // Then to Deal Damage
@@ -1055,7 +1113,18 @@ public partial class CombatManager : MonoBehaviour
         if (amount < 0 && combatent == Target.Character)
         {
             // Reduce the amount of damage by the players defense added by equipment
-            amount += GameManager._Instance.DefenseFromEquipment;
+
+            // if the players defense from equipment is negative, consider it zero
+            int defenseFromEquipment = GameManager._Instance.DefenseFromEquipment;
+            if (defenseFromEquipment < 0)
+            {
+                defenseFromEquipment = 0;
+            }
+
+            // Take away from the damage amount the amount of defense
+            amount += defenseFromEquipment;
+
+            // if doing so makes amount positive, instead just cancel out
             if (amount > 0)
             {
                 amount = 0;
@@ -1063,22 +1132,22 @@ public partial class CombatManager : MonoBehaviour
         }
 
         // Vulnerable Effect
-        if (amount < 0 && TargetHasAffliction(AfflictionType.Vulnerable, Target.Enemy))
+        if (amount < 0 && TargetHasAffliction(AfflictionType.Vulnerable, combatent))
         {
             float value = BalenceManager._Instance.GetValue(AfflictionType.Vulnerable, "MultiplyBy");
             float multiplyBy = value / 100;
 
             amount = Mathf.CeilToInt(amount * multiplyBy);
-            ConsumeAfflictionStack(AfflictionType.Vulnerable, Target.Enemy);
-            ShowAfflictionProc(AfflictionType.Vulnerable);
+            ConsumeAfflictionStack(AfflictionType.Vulnerable, combatent);
+            ShowAfflictionProc(AfflictionType.Vulnerable, combatent);
         }
 
-        // Guarded Effect
-        if (amount < 0 && TargetHasAffliction(AfflictionType.Guarded, Target.Enemy))
+        // OnGuard Effect
+        if (amount < 0 && TargetHasAffliction(AfflictionType.OnGuard, combatent))
         {
-            amount -= BalenceManager._Instance.GetValue(AfflictionType.Guarded, "ReduceBy");
-            ConsumeAfflictionStack(AfflictionType.Guarded, Target.Enemy);
-            ShowAfflictionProc(AfflictionType.Guarded);
+            amount -= BalenceManager._Instance.GetValue(AfflictionType.OnGuard, "ReduceBy");
+            ConsumeAfflictionStack(AfflictionType.OnGuard, combatent);
+            ShowAfflictionProc(AfflictionType.OnGuard, combatent);
 
             // Make sure guarded doesn't make what should be damage instead be a heal
             if (amount > 0)
@@ -1091,14 +1160,14 @@ public partial class CombatManager : MonoBehaviour
         return AlterCombatentHP(amount, combatent, damageType);
     }
 
-    private bool AlterCombatentHP(int amount, Target t, DamageType damageType)
+    private bool AlterCombatentHP(int amount, Target combatent, DamageType damageType)
     {
-        // Prepared Effect
-        if (TargetHasAffliction(AfflictionType.Prepared, t))
+        // Intangible Effect
+        if (TargetHasAffliction(AfflictionType.Intangible, combatent))
         {
             amount = 1;
-            ConsumeAfflictionStack(AfflictionType.Prepared, t);
-            ShowAfflictionProc(AfflictionType.Prepared);
+            ConsumeAfflictionStack(AfflictionType.Intangible, combatent);
+            ShowAfflictionProc(AfflictionType.Intangible, combatent);
         }
 
         // Barbarians Tactics Effect
@@ -1109,7 +1178,7 @@ public partial class CombatManager : MonoBehaviour
         }
 
         // Call the AlterHP function on the appropriate Target
-        switch (t)
+        switch (combatent)
         {
             case Target.Character:
 
@@ -1145,7 +1214,7 @@ public partial class CombatManager : MonoBehaviour
             && GameManager._Instance.HasArtifact(ArtifactLabel.DoctorsReport)
             && (amount * -1) > BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "MustBeOver"))
         {
-            AddAffliction(AfflictionType.Bandaged, (int)BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "StackAmount"), Target.Character);
+            AddAffliction(AfflictionType.Bandages, (int)BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "StackAmount"), Target.Character);
             GameManager._Instance.AnimateArtifact(ArtifactLabel.DoctorsReport);
         }
 
@@ -1186,6 +1255,12 @@ public partial class CombatManager : MonoBehaviour
 
     public void GiveCombatentWard(int wardAmount, Target target)
     {
+        int increaseWardBy = 0;
+        if (TargetHasAffliction(AfflictionType.Protection, target))
+        {
+            increaseWardBy = GetAffliction(AfflictionType.Protection, target).GetStacks();
+            ShowAfflictionProc(AfflictionType.Protection, target);
+        }
         switch (target)
         {
             case Target.Character:

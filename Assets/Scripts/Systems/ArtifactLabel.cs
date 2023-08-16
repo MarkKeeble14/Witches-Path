@@ -8,7 +8,7 @@
     BoldInvestments,
     SmokeShroud,
     HolyShield,
-    BankCard,
+    VIPCard,
     LooseTrigger,
     MolatovCocktail,
     BlueMantis,

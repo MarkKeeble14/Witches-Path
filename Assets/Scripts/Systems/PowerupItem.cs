@@ -1,12 +1,19 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 public abstract class PowerupItem
 {
     protected abstract string SpritePath { get; }
 
-    public virtual ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
+    public List<ToolTipKeyword> GeneralKeywords = new List<ToolTipKeyword>();
+    public List<AfflictionType> AfflictionKeywords = new List<AfflictionType>();
 
-    public virtual AfflictionType[] AfflictionKeywords => new AfflictionType[] { };
+    protected abstract void SetKeywords();
+
+    public PowerupItem()
+    {
+        SetKeywords();
+    }
 
     public virtual string GetAdditionalText()
     {

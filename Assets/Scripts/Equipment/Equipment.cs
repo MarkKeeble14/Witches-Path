@@ -49,6 +49,12 @@ public abstract class Equipment : ScriptableObject
         }
     }
 
+    [SerializeField] private Rarity rarity;
+    public Rarity GetRarity()
+    {
+        return rarity;
+    }
+
     public string ToolTipText => Name + "\n" + GetStatList() + "\n" + GetSpellList();
 
     private string GetStatList()

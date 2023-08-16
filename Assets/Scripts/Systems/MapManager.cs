@@ -9,15 +9,30 @@ public class MapManager : MonoBehaviour
     int currentRowIndex = 0;
 
     [SerializeField] private CanvasGroup mapCV;
+    private bool shown;
+
+    public void ToggleVisibility()
+    {
+        if (shown)
+        {
+            Hide();
+        }
+        else
+        {
+            Show();
+        }
+    }
 
     public void Hide()
     {
+        shown = false;
         mapCV.alpha = 0;
         mapCV.blocksRaycasts = false;
     }
 
     public void Show()
     {
+        shown = true;
         mapCV.alpha = 1;
         mapCV.blocksRaycasts = true;
     }
@@ -36,6 +51,8 @@ public class MapManager : MonoBehaviour
 
     public void Generate()
     {
+        Show();
+
         map.Generate();
     }
 }

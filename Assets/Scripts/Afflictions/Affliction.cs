@@ -10,11 +10,13 @@ public abstract class Affliction
 {
     public abstract AfflictionType Type { get; }
     public abstract AfflictionSign Sign { get; }
-    protected abstract string toolTipText { get; }
+    protected abstract string specificToolTipText { get; }
+    protected abstract string genericToolTipText { get; }
 
     public virtual ToolTipKeyword[] Keywords => new ToolTipKeyword[] { };
     public bool CanBeCleared => stacks <= 0;
     private int stacks;
+    protected Target owner;
 
     public void SetStacks(int v)
     {
@@ -26,6 +28,17 @@ public abstract class Affliction
         stacks += v;
     }
 
+
+    public void SetOwner(Target owner)
+    {
+        this.owner = owner;
+    }
+
+    public Target GetOwner()
+    {
+        return owner;
+    }
+
     public int GetStacks()
     {
         return stacks;
@@ -33,81 +46,73 @@ public abstract class Affliction
 
     public string GetToolTipText()
     {
-        return UIManager._Instance.HighlightKeywords(toolTipText);
+        return UIManager._Instance.HighlightKeywords(stacks > 0 ? specificToolTipText : genericToolTipText);
+    }
+
+    protected int GetAfflictionSpec(string specIdentifier)
+    {
+        return BalenceManager._Instance.GetValue(Type, specIdentifier);
     }
 }
 
-public class Emboldened : Affliction
+public class Embolden : Affliction
 {
-    protected override string toolTipText => "Emboldened Combatents Deal More Damage";
+    protected override string specificToolTipText => "Damage Dealt is multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
+    protected override string genericToolTipText => "Damage Dealt is multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
 
-    public override AfflictionType Type => AfflictionType.Emboldened;
+    public override AfflictionType Type => AfflictionType.Embolden;
 
     public override AfflictionSign Sign => AfflictionSign.Positive;
+
 }
 
-public class Weakened : Affliction
+public class Weak : Affliction
 {
-    protected override string toolTipText => "Weakened Combatents Deal Less Damage";
+    protected override string specificToolTipText => "Damage Dealt is multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
+    protected override string genericToolTipText => "Damage Dealt is multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
 
-    public override AfflictionType Type => AfflictionType.Weakened;
+    public override AfflictionType Type => AfflictionType.Weak;
 
     public override AfflictionSign Sign => AfflictionSign.Negative;
 }
 
 public class Vulnerable : Affliction
 {
-    protected override string toolTipText => "Vulnerable Combatents Recieve More Damage";
+    protected override string specificToolTipText => "Damage Recieved is multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
+    protected override string genericToolTipText => "Damage Recieved is multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
 
     public override AfflictionType Type => AfflictionType.Vulnerable;
 
     public override AfflictionSign Sign => AfflictionSign.Negative;
 }
 
-public class Guarded : Affliction
+public class OnGuard : Affliction
 {
-    protected override string toolTipText => "Guarded Combatents Reduce incoming damage";
+    protected override string specificToolTipText => "Damage Taken is Reduced by " + GetAfflictionSpec("ReduceBy");
+    protected override string genericToolTipText => "Damage Taken is Reduced by " + GetAfflictionSpec("ReduceBy");
 
-    public override AfflictionType Type => AfflictionType.Guarded;
+    public override AfflictionType Type => AfflictionType.OnGuard;
 
     public override AfflictionSign Sign => AfflictionSign.Positive;
 }
 
-public class Bandaged : Affliction
+public class Bandages : Affliction
 {
-    protected override string toolTipText => "At the end of Combat, Heal HP equal to the number of Bandaged";
+    protected override string specificToolTipText => "Heal " + GetStacks() + " HP at the End of Combat";
+    protected override string genericToolTipText => "Heal HP Equal to the Number of Bandages Stacks at the End of Combat";
 
-    public override AfflictionType Type => AfflictionType.Bandaged;
-
-    public override AfflictionSign Sign => AfflictionSign.Positive;
-
-}
-
-public class Retribution : Affliction
-{
-    protected override string toolTipText => "Retribution Causes any who attack the afflicted to recieve damage";
-
-    public override AfflictionType Type => AfflictionType.Retribution;
+    public override AfflictionType Type => AfflictionType.Bandages;
 
     public override AfflictionSign Sign => AfflictionSign.Positive;
 
 }
 
-public class Prepared : Affliction
+public class Intangible : Affliction
 {
-    protected override string toolTipText => "A Prepared Combatent will reduce any instance of damage taken to 1";
+    protected override string specificToolTipText => "Reduce the next " + GetStacks() + " Instances of Damage Taken to 1";
+    protected override string genericToolTipText => "Reduces any Damage Taken to 1";
 
-    public override AfflictionType Type => AfflictionType.Prepared;
-
-    public override AfflictionSign Sign => AfflictionSign.Positive;
-
-}
-
-public class Parry : Affliction
-{
-    protected override string toolTipText => "Parry Causes the next attack taken against the afflicted to instead be applied to their opponent";
-
-    public override AfflictionType Type => AfflictionType.Parry;
+    public override AfflictionType Type => AfflictionType.Intangible;
 
     public override AfflictionSign Sign => AfflictionSign.Positive;
 
@@ -115,7 +120,8 @@ public class Parry : Affliction
 
 public class Echo : Affliction
 {
-    protected override string toolTipText => "Echo Causes the next active spell casted to activate twice";
+    protected override string specificToolTipText => "Repeat the next " + GetStacks() + " Active Spell Casts";
+    protected override string genericToolTipText => "Repeats the next Active Spell Cast";
 
     public override AfflictionType Type => AfflictionType.Echo;
 
@@ -125,35 +131,73 @@ public class Echo : Affliction
 
 public class Blight : Affliction
 {
-    protected override string toolTipText => "Blight deals damage equal to the number of blight stacks at the beginning of the combatents turn.The number of Blight stacks is increased by 1 when triggered";
+    protected override string specificToolTipText => "At the End of the Turn, Take " + GetStacks() + " Damage. Blight is then increased by 1";
 
+    protected override string genericToolTipText => "At the End of the Turn, Take Damage equal to the number of Blight Stacks. Blight is then increased by 1";
     public override AfflictionType Type => AfflictionType.Blight;
 
     public override AfflictionSign Sign => AfflictionSign.Negative;
 
 }
+
 public class Poison : Affliction
 {
-    protected override string toolTipText => "Poison deals damage equal to the number of poison stacks whenever a spell is cast. The number of Poison stacks is reduced by 1 when triggered";
+    protected override string specificToolTipText => "Upon an Active Spell being Cast, Take " + GetStacks() + " Damage. " +
+        "Poison is then decreased by " + GetAfflictionSpec("PercentToReduceBy") + "%";
+    protected override string genericToolTipText => "Upon an Active Spell being Cast, Take Damage equal to the number of Poison Stacks. " +
+        "Poison is then decreased by " + GetAfflictionSpec("PercentToReduceBy") + "%";
 
     public override AfflictionType Type => AfflictionType.Poison;
 
     public override AfflictionSign Sign => AfflictionSign.Negative;
 }
+
 public class Burn : Affliction
 {
-    protected override string toolTipText => "Burn deals a flat amount of damage at the beginning of the combatents turn. The number of Burn stacks is decreased by 1 when triggered";
+    protected override string specificToolTipText => "At the End of the Turn, Take " + GetAfflictionSpec("DamageAmount") + " Damage. Burn is then decreased by 1";
+    protected override string genericToolTipText => "At the End of the Turn, Take " + GetAfflictionSpec("DamageAmount") + " Damage. Burn is then decreased by 1";
 
     public override AfflictionType Type => AfflictionType.Burn;
 
     public override AfflictionSign Sign => AfflictionSign.Negative;
 }
 
-public class Paralyzed : Affliction
+public class Paralyze : Affliction
 {
-    protected override string toolTipText => "Paralyzed Causes the next attack to be taken to fizzle out";
+    protected override string specificToolTipText => "The next " + GetStacks() + " Actions Taken will Fizzle Out";
+    protected override string genericToolTipText => "The next Action Taken will Fizzle Out";
 
-    public override AfflictionType Type => AfflictionType.Paralyzed;
+    public override AfflictionType Type => AfflictionType.Paralyze;
 
     public override AfflictionSign Sign => AfflictionSign.Negative;
+}
+
+public class Thorns : Affliction
+{
+    protected override string specificToolTipText => "Upon Being Attacked, Deal " + GetStacks() + " Damage back to the Attacker";
+    protected override string genericToolTipText => "Upon Being Attacked, Deal Damage equal to the Number of Thorns Stacks back to the Attacker";
+
+    public override AfflictionType Type => AfflictionType.Thorns;
+
+    public override AfflictionSign Sign => AfflictionSign.Positive;
+}
+
+public class Power : Affliction
+{
+    protected override string specificToolTipText => "Basic Attacks do " + GetStacks() + " more Damage";
+    protected override string genericToolTipText => "Basic Attacks do  more Damage equal to the Number of Power Stacks";
+
+    public override AfflictionType Type => AfflictionType.Power;
+
+    public override AfflictionSign Sign => AfflictionSign.Positive;
+}
+
+public class Protection : Affliction
+{
+    protected override string specificToolTipText => "Ward Gained is Increased by " + GetStacks();
+    protected override string genericToolTipText => "Ward Gained is Increased by the Number of Protection Stacks";
+
+    public override AfflictionType Type => AfflictionType.Protection;
+
+    public override AfflictionSign Sign => AfflictionSign.Positive;
 }

@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 418672499888249727}
   - component: {fileID: 418672499888249726}
   - component: {fileID: 2583182587591142136}
+  - component: {fileID: 2251473900149146504}
   m_Layer: 6
   m_Name: CombatPopupText
   m_TagString: Untagged
@@ -52,8 +53,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   text: {fileID: 418672501427760471}
-  minMaxHorizontalOffset: {x: -50, y: 50}
-  minMaxVerticalOffset: {x: -50, y: 50}
+  minMaxHorizontalOffset: {x: -40, y: 40}
+  minMaxVerticalOffset: {x: -20, y: 20}
 --- !u!95 &2583182587591142136
 Animator:
   serializedVersion: 4
@@ -74,6 +75,18 @@ Animator:
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorControllerStateOnDisable: 0
+--- !u!225 &2251473900149146504
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 418672499888249715}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &418672501427760457
 GameObject:
   m_ObjectHideFlags: 0

@@ -175,7 +175,7 @@ RectTransform:
   m_Children:
   - {fileID: 7789622452636619343}
   m_Father: {fileID: 3854288427585472049}
-  m_RootOrder: 4
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -292,7 +292,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -440.00085}
+  m_AnchoredPosition: {x: 0, y: -414.99985}
   m_SizeDelta: {x: 700, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &3239115800174809029
@@ -820,7 +820,7 @@ RectTransform:
   - {fileID: 7485767291256883149}
   - {fileID: 5216509468932709524}
   m_Father: {fileID: 3854288427585472049}
-  m_RootOrder: 2
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -2141,6 +2141,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6946026017905476281}
+  - {fileID: 4829306806360257032}
   m_Father: {fileID: 7620447516890638640}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2168,7 +2169,7 @@ MonoBehaviour:
     m_Bottom: 0
   m_ChildAlignment: 5
   m_Spacing: 0
-  m_ChildForceExpandWidth: 1
+  m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 0
   m_ChildControlHeight: 0
@@ -2456,6 +2457,8 @@ GameObject:
   - component: {fileID: 8698641506227985202}
   - component: {fileID: 100651404946911397}
   - component: {fileID: 2320164225199413166}
+  - component: {fileID: 7970736340790315789}
+  - component: {fileID: 9179513065419430796}
   m_Layer: 0
   m_Name: UpgradeBookButton
   m_TagString: Untagged
@@ -2577,6 +2580,80 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &7970736340790315789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1702508715616521364}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Delegates:
+  - eventID: 0
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 9179513065419430796}
+          m_TargetAssemblyTypeName: UpgradeBookButton, Assembly-CSharp
+          m_MethodName: SpawnToolTip
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+  - eventID: 2
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 9179513065419430796}
+          m_TargetAssemblyTypeName: UpgradeBookButton, Assembly-CSharp
+          m_MethodName: DestroyToolTip
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+  - eventID: 1
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 9179513065419430796}
+          m_TargetAssemblyTypeName: UpgradeBookButton, Assembly-CSharp
+          m_MethodName: DestroyToolTip
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+--- !u!114 &9179513065419430796
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1702508715616521364}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55e031aba6b37804cb0985bc7bac240a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  toSetInactive: {fileID: 9175785449353983612}
 --- !u!1 &1734001953158194800
 GameObject:
   m_ObjectHideFlags: 0
@@ -2643,11 +2720,13 @@ MonoBehaviour:
     - key: Affliction
       value: Powerful status effects
     - key: Ward
-      value: Prevents HP from being lost in combat
+      value: Prevents HP from being lost in Combat
     - key: Heal
       value: Restores HP
     - key: Gold
       value: Currency for use across the realm
+    - key: Charge
+      value: Gain 1 Charge upon resolving a Combat
 --- !u!1 &1790111349770885094
 GameObject:
   m_ObjectHideFlags: 0
@@ -5015,7 +5094,7 @@ MonoBehaviour:
     forcedNodeIndices:
       dictionary:
       - key: 0
-        value: 4
+        value: 2
       - key: 5
         value: 3
       - key: 9
@@ -5484,7 +5563,7 @@ RectTransform:
   m_Children:
   - {fileID: 4530143647491435524}
   m_Father: {fileID: 3854288427585472049}
-  m_RootOrder: 6
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -6255,7 +6334,7 @@ RectTransform:
   m_Children:
   - {fileID: 5962118178604643749}
   m_Father: {fileID: 495595928227502656}
-  m_RootOrder: 0
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
@@ -6434,7 +6513,7 @@ MonoBehaviour:
         dictionary:
         - key: StackAmount
           value: 3
-    - key: BankCard
+    - key: VIPCard
       value:
         dictionary:
         - key: CurrencyAmount
@@ -6462,8 +6541,10 @@ MonoBehaviour:
     - key: InvertedPolaroid
       value:
         dictionary:
-        - key: StackAmount
-          value: 4
+        - key: PlayerStackAmount
+          value: 1
+        - key: EnemyStackAmount
+          value: 3
     - key: HalfLitFirework
       value:
         dictionary: []
@@ -6559,48 +6640,48 @@ MonoBehaviour:
       value:
         dictionary:
         - key: CurrencyAmount
-          value: 5
+          value: 10
         - key: OnLevelUpCurrencyAmount
-          value: 5
+          value: 10
         - key: MaxCharge
-          value: 12
+          value: 1
     - key: MedicalNovella
       value:
         dictionary:
         - key: HealAmount
-          value: 2
+          value: 4
         - key: OnLevelUpHealAmount
-          value: 1
+          value: 2
         - key: MaxCharge
-          value: 12
+          value: 1
     - key: MerchantsManual
       value:
         dictionary:
         - key: CostReduction
-          value: 10
+          value: 25
         - key: OnLevelUpCostReduction
           value: 5
         - key: MaxCharge
-          value: 24
+          value: 3
     - key: BusinessTextbook
       value:
         dictionary:
         - key: UseCost
-          value: 5
-        - key: DamageAmount
           value: 10
+        - key: DamageAmount
+          value: 50
         - key: OnLevelUpDamageAmount
-          value: 4
+          value: 15
         - key: MaxCharge
-          value: 8
+          value: 2
   afflictionSpecDict:
     dictionary:
-    - key: Emboldened
+    - key: Embolden
       value:
         dictionary:
         - key: MultiplyBy
           value: 125
-    - key: Weakened
+    - key: Weak
       value:
         dictionary:
         - key: MultiplyBy
@@ -6610,25 +6691,17 @@ MonoBehaviour:
         dictionary:
         - key: MultiplyBy
           value: 125
-    - key: Guarded
+    - key: OnGuard
       value:
         dictionary:
         - key: ReduceBy
           value: 1
-    - key: Bandaged
+    - key: Bandages
       value:
         dictionary:
         - key: HealAmount
           value: 1
-    - key: Retribution
-      value:
-        dictionary:
-        - key: DamageAmount
-          value: -1
-    - key: Prepared
-      value:
-        dictionary: []
-    - key: Parry
+    - key: Intangible
       value:
         dictionary: []
     - key: Echo
@@ -6637,12 +6710,23 @@ MonoBehaviour:
     - key: Blight
       value:
         dictionary: []
+    - key: Poison
+      value:
+        dictionary:
+        - key: PercentToReduceBy
+          value: 25
     - key: Burn
       value:
         dictionary:
         - key: DamageAmount
           value: 2
-    - key: Paralyzed
+    - key: Paralyze
+      value:
+        dictionary: []
+    - key: Power
+      value:
+        dictionary: []
+    - key: Protection
       value:
         dictionary: []
   spellSpecDict:
@@ -7690,7 +7774,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 250, y: -142.5}
-  m_SizeDelta: {x: 200, y: 30}
+  m_SizeDelta: {x: 500, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4219599633474895501
 CanvasRenderer:
@@ -9201,7 +9285,7 @@ RectTransform:
   m_Children:
   - {fileID: 5203648162189212057}
   m_Father: {fileID: 3854288427585472049}
-  m_RootOrder: 5
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -10170,15 +10254,15 @@ MonoBehaviour:
     - key: 8
       value: 0
     - key: 9
-      value: 0
+      value: 1
     - key: 10
       value: 0
     - key: 11
-      value: 0
+      value: 1
     - key: 12
       value: 0
     - key: 13
-      value: 0
+      value: 1
     - key: 14
       value: 0
     - key: 15
@@ -10188,9 +10272,9 @@ MonoBehaviour:
     - key: 17
       value: 0
     - key: 18
-      value: 0
+      value: 1
     - key: 19
-      value: 0
+      value: 1
     - key: 20
       value: 2
     - key: 21
@@ -10212,11 +10296,11 @@ MonoBehaviour:
   artifactRarityOdds:
     percentageMap:
     - key: 0
-      value: 60
+      value: 50
     - key: 1
       value: 30
     - key: 2
-      value: 10
+      value: 20
   bookBar: {fileID: 5221745815667209846}
   bookRarityMap:
     dictionary:
@@ -10308,7 +10392,15 @@ MonoBehaviour:
       value: {x: 100, y: 150}
     - key: 2
       value: {x: 150, y: 200}
-  minMaxIngredientCost: {x: 20, y: 30}
+  minMaxEquipmentCostDict:
+    dictionary:
+    - key: 0
+      value: {x: 125, y: 150}
+    - key: 1
+      value: {x: 150, y: 200}
+    - key: 2
+      value: {x: 250, y: 300}
+  minMaxIngredientCost: {x: 20, y: 35}
   turnOnForBrowseWaresScreen:
   - {fileID: 3804686934702979586}
   turnOnForSwapBookScreen:
@@ -16326,8 +16418,8 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 6786128534335425695}
   - {fileID: 7320188087266529022}
+  - {fileID: 6786128534335425695}
   m_Father: {fileID: 5524879084108387979}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -18288,7 +18380,7 @@ RectTransform:
   m_Children:
   - {fileID: 7414934973617395872}
   m_Father: {fileID: 495595928227502656}
-  m_RootOrder: 1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
@@ -18649,12 +18741,12 @@ RectTransform:
   - {fileID: 2615427755414323702}
   - {fileID: 8223122395182761135}
   m_Father: {fileID: 3854288427585472049}
-  m_RootOrder: 1
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -100}
-  m_SizeDelta: {x: 1400, y: -200}
+  m_AnchoredPosition: {x: 0, y: -125}
+  m_SizeDelta: {x: 1200, y: -250}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4837976950470549932
 CanvasRenderer:
@@ -18702,10 +18794,144 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7182968247414647835}
   m_Enabled: 1
-  m_Alpha: 1
+  m_Alpha: 0
   m_Interactable: 1
-  m_BlocksRaycasts: 1
+  m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
+--- !u!1 &7190267031432627668
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4829306806360257032}
+  - component: {fileID: 340027366197993584}
+  - component: {fileID: 7128097618717246371}
+  - component: {fileID: 5991816096891349450}
+  m_Layer: 0
+  m_Name: ToggleMap
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &4829306806360257032
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7190267031432627668}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1833234783266962639}
+  m_Father: {fileID: 8297312891336205941}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 80, y: 80}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &340027366197993584
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7190267031432627668}
+  m_CullTransparentMesh: 1
+--- !u!114 &7128097618717246371
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7190267031432627668}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!114 &5991816096891349450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7190267031432627668}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Navigation:
+    m_Mode: 0
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 1
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 7128097618717246371}
+  m_OnClick:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 8971858829053842458}
+        m_TargetAssemblyTypeName: MapManager, Assembly-CSharp
+        m_MethodName: ToggleVisibility
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &7312059182266408002
 GameObject:
   m_ObjectHideFlags: 0
@@ -18803,7 +19029,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.87424195, g: 0.65471697, b: 1, a: 0.5019608}
+  m_Color: {r: 0.3764706, g: 0, b: 0.5019608, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -20205,12 +20431,12 @@ RectTransform:
   m_Children:
   - {fileID: 7315565976779574373}
   m_Father: {fileID: 3854288427585472049}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: -50}
+  m_SizeDelta: {x: 0, y: -100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1768200427242417243
 MonoBehaviour:
@@ -21019,6 +21245,141 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!1 &9005867937069448971
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1833234783266962639}
+  - component: {fileID: 2950027177601833700}
+  - component: {fileID: 1184503899113865408}
+  m_Layer: 0
+  m_Name: Text (TMP)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1833234783266962639
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9005867937069448971}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4829306806360257032}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: -5, y: -5}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &2950027177601833700
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9005867937069448971}
+  m_CullTransparentMesh: 1
+--- !u!114 &1184503899113865408
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9005867937069448971}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: Map
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 31be86eac7cb4b244bb25fdad55d4218, type: 2}
+  m_sharedMaterial: {fileID: -8641412981985209751, guid: 31be86eac7cb4b244bb25fdad55d4218, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4281479730
+  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: -1183493901
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 48.05
+  m_fontSizeBase: 20
+  m_fontWeight: 400
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 12
+  m_fontSizeMax: 72
+  m_fontStyle: 0
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_enableWordWrapping: 1
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 1
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &9175785449353983612
 GameObject:
   m_ObjectHideFlags: 0
@@ -21365,13 +21726,25 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3452216503942594434, guid: 569fc332c155e8b44bff50667589c14c, type: 3}
+      propertyPath: m_Color.b
+      value: 0.1254902
+      objectReference: {fileID: 0}
+    - target: {fileID: 3452216503942594434, guid: 569fc332c155e8b44bff50667589c14c, type: 3}
+      propertyPath: m_Color.g
+      value: 0.1254902
+      objectReference: {fileID: 0}
+    - target: {fileID: 3452216503942594434, guid: 569fc332c155e8b44bff50667589c14c, type: 3}
+      propertyPath: m_Color.r
+      value: 0.1254902
+      objectReference: {fileID: 0}
     - target: {fileID: 8176462229043342499, guid: 569fc332c155e8b44bff50667589c14c, type: 3}
       propertyPath: m_Name
       value: UICanvas
       objectReference: {fileID: 0}
     - target: {fileID: 9177023505872489164, guid: 569fc332c155e8b44bff50667589c14c, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 569fc332c155e8b44bff50667589c14c, type: 3}

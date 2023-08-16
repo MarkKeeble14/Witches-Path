@@ -64,6 +64,9 @@ public abstract class Combat : GameOccurance
     {
         Debug.Log(name + ": OnResolve");
 
+        // Add 1 Charge to all Books
+        GameManager._Instance.AlterAllBookCharge(1);
+
         foreach (RewardType type in itemRewards.Keys())
         {
             RewardInfo info = itemRewards[type].GetOption();
