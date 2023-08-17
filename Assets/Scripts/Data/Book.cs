@@ -66,7 +66,7 @@ public abstract class Book : PowerupItem
 
     // Level Up
 
-    public bool TryCallLevelUp()
+    public bool TryCallLevelUp(bool animate)
     {
         // Can only level up if not at max level
         if (currentLevel >= MaxLevel)
@@ -76,7 +76,8 @@ public abstract class Book : PowerupItem
 
         LevelUp();
         currentLevel++;
-        ShowBookLevelUp();
+        if (animate)
+            ShowBookLevelUp();
         return true;
     }
 

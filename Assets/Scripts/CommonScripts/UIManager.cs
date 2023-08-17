@@ -37,7 +37,12 @@ public enum ToolTipKeyword
     Ward,
     Heal,
     Gold,
-    Charge
+    Charge,
+    Health,
+    Mana,
+    Attack,
+    Defense,
+    Pelts
 }
 
 public enum TextDecorationLabel
@@ -275,14 +280,14 @@ public class UIManager : MonoBehaviour
         for (int i = 0; i < generalKeywords.Count; i++)
         {
             ToolTipKeyword keyword = generalKeywords[i];
-            SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), vLayout);
+            SpawnToolTip(HighlightKeywords(keyword.ToString()), GetKeyWordText(keyword.ToString()), vLayout);
         }
 
         // Spawn ToolTips for Additional Keywords
         for (int i = 0; i < afflictionKeywords.Count; i++)
         {
             AfflictionType keyword = afflictionKeywords[i];
-            SpawnToolTip(keyword.ToString(), CombatManager._Instance.GetAfflictionOfType(keyword).GetToolTipText(), vLayout);
+            SpawnToolTip(HighlightKeywords(keyword.ToString()), CombatManager._Instance.GetAfflictionOfType(keyword).GetToolTipText(), vLayout);
         }
 
         return list.gameObject;
@@ -326,14 +331,14 @@ public class UIManager : MonoBehaviour
             for (int p = 0; p < generalKeywords.Count; p++)
             {
                 ToolTipKeyword keyword = generalKeywords[p];
-                SpawnToolTip(keyword.ToString(), GetKeyWordText(keyword.ToString()), vLayout);
+                SpawnToolTip(HighlightKeywords(keyword.ToString()), GetKeyWordText(keyword.ToString()), vLayout);
             }
 
             // Spawn ToolTips for Additional Keywords
             for (int p = 0; p < afflictionKeywords.Count; p++)
             {
                 AfflictionType keyword = afflictionKeywords[p];
-                SpawnToolTip(keyword.ToString(), CombatManager._Instance.GetAfflictionOfType(keyword).GetToolTipText(), vLayout);
+                SpawnToolTip(HighlightKeywords(keyword.ToString()), CombatManager._Instance.GetAfflictionOfType(keyword).GetToolTipText(), vLayout);
             }
         }
 
@@ -423,14 +428,14 @@ public class UIManager : MonoBehaviour
                 {
                     // Upper Right
                     hLayout.childAlignment = TextAnchor.UpperRight;
-                    horizontalOffset = -horizontalOffset;
                     verticalOffset = -verticalOffset;
+                    horizontalOffset = -horizontalOffset;
                 }
                 break;
             case 1:
                 if (horizontalSlice == 0)
                 {
-                    // Upper Left
+                    // Lower Left
                     hLayout.childAlignment = TextAnchor.LowerLeft;
                 }
                 else if (horizontalSlice == 1)

@@ -100,15 +100,15 @@ public partial class CombatManager : MonoBehaviour
     private int enemyWard;
     private int characterWard;
 
-    [Header("Referencess")]
+    [Header("References")]
     [SerializeField] private CombatentHPBar characterHPBar;
     [SerializeField] private CombatentHPBar enemyHPBar;
     [SerializeField] private IntentDisplay enemyIntentDisplay;
     [SerializeField] private TextMeshProUGUI enemyNameText;
 
-
     [SerializeField] private Image characterCombatSprite;
     [SerializeField] private Image enemyCombatSprite;
+    [SerializeField] private CanvasGroup characterCombatSpriteCV;
     [SerializeField] private CanvasGroup enemyCombatSpriteCV;
     [SerializeField] private TurnDisplay turnDisplay;
 
@@ -198,14 +198,18 @@ public partial class CombatManager : MonoBehaviour
         StartCoroutine(UpdateDuringCombat());
         yield return StartCoroutine(CombatLoop());
 
-        if (GameManager._Instance.GetMaxPlayerHP() <= 0)
+        if (GameManager._Instance.GetCurrentCharacterHP() <= 0)
         {
-            GameManager._Instance.GameOver();
+            StartCoroutine(Utils.ChangeCanvasGroupAlpha(characterCombatSpriteCV, 0, Time.deltaTime * combatSpriteAlphaChangeRate));
+
+            yield return new WaitForSeconds(1);
+
+            yield return GameManager._Instance.GameOverSequence();
         }
         else
         {
             // Play Enemy Death Animation
-            StartCoroutine(AnimateEnemySpriteDeath());
+            StartCoroutine(Utils.ChangeCanvasGroupAlpha(enemyCombatSpriteCV, 0, Time.deltaTime * combatSpriteAlphaChangeRate));
 
             yield return new WaitForSeconds(1);
 
@@ -218,7 +222,6 @@ public partial class CombatManager : MonoBehaviour
                 ShowAfflictionProc(AfflictionType.Bandages, Target.Character);
                 yield return new WaitForSeconds(1);
             }
-
 
             InCombat = false;
 
@@ -282,6 +285,11 @@ public partial class CombatManager : MonoBehaviour
             // Enemy Turn
             yield return StartCoroutine(EnemyTurn());
 
+            if (CheckForCombatOver())
+            {
+                yield break;
+            }
+
             // End of Turn
             yield return new WaitForSeconds(1);
 
@@ -309,6 +317,9 @@ public partial class CombatManager : MonoBehaviour
         Debug.Log("Player Turn Started");
 
         currentTurn = Turn.Player;
+
+        // Allow player to cast spells
+        CanCastSpells = true;
 
         // Show Turn Display
         yield return StartCoroutine(turnDisplay.Show("Player Turn", turnCount > 1 ? turnCount + Utils.GetNumericalSuffix(turnCount) + " Turn" : ""));
@@ -997,7 +1008,7 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float baseEnemyCombatSpriteAnimationSpeed = 25;
     [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierStart = 1;
     [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierGain = 1;
-    [SerializeField] private float enemyCombatSpriteDieAnimationSpeed = 5;
+    [SerializeField] private float combatSpriteAlphaChangeRate = 5;
 
     // Basic Attack
     private void PlayerBasicAttack()
@@ -1046,15 +1057,6 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private IEnumerator AnimateEnemySpriteDeath()
-    {
-        while (enemyCombatSpriteCV.alpha > 0)
-        {
-            enemyCombatSpriteCV.alpha = Mathf.MoveTowards(enemyCombatSpriteCV.alpha, 0, Time.deltaTime * enemyCombatSpriteDieAnimationSpeed);
-            yield return null;
-        }
-    }
-
     private IEnumerator EnemyAttack()
     {
         // Simple way of attacking for now
@@ -1062,13 +1064,9 @@ public partial class CombatManager : MonoBehaviour
 
         yield return StartCoroutine(AnimateEnemySpriteAttack());
 
-        if (!AttackCombatent(-currentEnemy.GetBasicAttackDamage(), Target.Enemy, Target.Character, DamageType.Default, DamageSource.BasicAttack))
+        if (AttackCombatent(-currentEnemy.GetBasicAttackDamage(), Target.Enemy, Target.Character, DamageType.Default, DamageSource.BasicAttack))
         {
-            // Player Died
-            GameManager._Instance.GameOver();
-        }
-        else
-        {
+            // Only call on enemy attack if the player is still alive
             OnEnemyAttack?.Invoke();
         }
     }

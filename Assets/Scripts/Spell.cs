@@ -52,10 +52,16 @@ public abstract class Spell : ToolTippable
     }
 
     // Sets the Keywords of the Spell
-    protected abstract void SetKeywords();
+    protected virtual void SetKeywords()
+    {
+        // 
+    }
 
     // Sets Parameters of the Spell
-    protected abstract void SetParameters();
+    protected virtual void SetParameters()
+    {
+        // 
+    }
 
     // Overridable Functions to determine Spell Effect
     // Determines the actual effect of using the book
@@ -174,11 +180,13 @@ public class PoisonTips : PassiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Poison);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         procAfter = (int)GetSpellSpec("ProcAfter");
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
@@ -239,11 +247,13 @@ public class StaticField : PassiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Paralyze);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         stackAmount = (int)GetSpellSpec("StackAmount");
         procAfter = (int)GetSpellSpec("ProcAfter");
     }
@@ -299,11 +309,13 @@ public class Inferno : PassiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Burn);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         procAfter = (int)GetSpellSpec("ProcAfter");
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
@@ -358,11 +370,13 @@ public class BattleTrance : PassiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Embolden);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         procAfter = (int)GetSpellSpec("ProcAfter");
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
@@ -415,12 +429,9 @@ public class MagicRain : PassiveSpell
     private int procAfter;
     private int tracker;
 
-    protected override void SetKeywords()
-    {
-    }
-
     protected override void SetParameters()
     {
+        base.SetParameters();
         procAfter = (int)GetSpellSpec("ProcAfter");
     }
 
@@ -474,11 +485,13 @@ public class CrushJoints : PassiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Vulnerable);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         procAfter = (int)GetSpellSpec("ProcAfter");
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
@@ -582,6 +595,12 @@ public abstract class ActiveSpell : Spell
 
     public override void OnEquip()
     {
+        //
+    }
+
+    protected override void SetParameters()
+    {
+        base.SetParameters();
         cooldown = (int)GetSpellSpec("Cooldown");
         manaCost = GetSpellSpec("ManaCost");
     }
@@ -642,11 +661,13 @@ public class Fireball : ActiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Burn);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         damageAmount = (int)GetSpellSpec("DamageAmount");
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
@@ -670,11 +691,13 @@ public class Shock : ActiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Paralyze);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         damageAmount = (int)GetSpellSpec("DamageAmount");
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
@@ -697,11 +720,13 @@ public class Singe : ActiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Burn);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
 
@@ -727,6 +752,7 @@ public class Plague : ActiveSpell
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
 
@@ -748,11 +774,13 @@ public class Toxify : ActiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Poison);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         damageAmount = (int)GetSpellSpec("DamageAmount");
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
@@ -773,12 +801,9 @@ public class Jarkai : ActiveSpell
 
     private int damageAmount;
 
-    protected override void SetKeywords()
-    {
-    }
-
     protected override void SetParameters()
     {
+        base.SetParameters();
         damageAmount = (int)GetSpellSpec("DamageAmount");
     }
 
@@ -799,12 +824,9 @@ public class Flurry : ActiveSpell
     private int damageAmount;
     private int hitAmount;
 
-    protected override void SetKeywords()
-    {
-    }
-
     protected override void SetParameters()
     {
+        base.SetParameters();
         damageAmount = (int)GetSpellSpec("DamageAmount");
         hitAmount = (int)GetSpellSpec("HitAmount");
     }
@@ -830,12 +852,14 @@ public class Electrifry : ActiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Paralyze);
         AfflictionKeywords.Add(AfflictionType.Burn);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         paralyzeAmount = (int)GetSpellSpec("ParalyzeAmount");
         burnAmount = (int)GetSpellSpec("BurnAmount");
     }
@@ -859,11 +883,13 @@ public class ExposeFlesh : ActiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Vulnerable);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         damageAmount = (int)GetSpellSpec("DamageAmount");
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
@@ -892,11 +918,13 @@ public class Cripple : ActiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Weak);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         damageAmount = (int)GetSpellSpec("DamageAmount");
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
@@ -918,12 +946,9 @@ public class TradeBlood : ActiveSpell
     private int selfDamageAmount;
     private int otherDamageAmount;
 
-    protected override void SetKeywords()
-    {
-    }
-
     protected override void SetParameters()
     {
+        base.SetParameters();
         selfDamageAmount = (int)GetSpellSpec("SelfDamageAmount");
         otherDamageAmount = (int)GetSpellSpec("OtherDamageAmount");
     }
@@ -946,11 +971,13 @@ public class Excite : ActiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Embolden);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
 
@@ -972,12 +999,14 @@ public class Overexcite : ActiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Embolden);
         AfflictionKeywords.Add(AfflictionType.Vulnerable);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         emboldenedAmount = (int)GetSpellSpec("EmboldenedAmount");
         vulnerableAmount = (int)GetSpellSpec("VulnerableAmount");
     }
@@ -1000,11 +1029,13 @@ public class Forethought : ActiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Intangible);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
 
@@ -1025,11 +1056,13 @@ public class Reverberate : ActiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         AfflictionKeywords.Add(AfflictionType.Echo);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         stackAmount = (int)GetSpellSpec("StackAmount");
     }
 
@@ -1050,11 +1083,13 @@ public class ImpartialAid : ActiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         GeneralKeywords.Add(ToolTipKeyword.Heal);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         healAmount = (int)GetSpellSpec("HealAmount");
     }
 
@@ -1074,12 +1109,9 @@ public class WitchesWill : ActiveSpell
 
     private int damageAmount;
 
-    protected override void SetKeywords()
-    {
-    }
-
     protected override void SetParameters()
     {
+        base.SetParameters();
         damageAmount = (int)GetSpellSpec("DamageAmount");
     }
 
@@ -1100,11 +1132,13 @@ public class WitchesWard : ActiveSpell
 
     protected override void SetKeywords()
     {
+        base.SetKeywords();
         GeneralKeywords.Add(ToolTipKeyword.Ward);
     }
 
     protected override void SetParameters()
     {
+        base.SetParameters();
         wardAmount = (int)GetSpellSpec("WardAmount");
     }
 

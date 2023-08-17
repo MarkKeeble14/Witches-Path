@@ -32,15 +32,15 @@ public class UpgradeBookButton : MonoBehaviour
         int timesToLevel = currentBook.GetCurrentLevel();
         for (int i = 0; i < timesToLevel; i++)
         {
-            upgradedBook.TryCallLevelUp();
+            upgradedBook.TryCallLevelUp(false);
         }
 
         // The new book is what we use for the comparison tooltip
         spawnedToolTip = UIManager._Instance.SpawnComparisonToolTips(
             new ToolTippableComparisonData[]
                 {
-                    new ToolTippableComparisonData("Current: ", currentBook),
-                    new ToolTippableComparisonData("Upgraded: ", upgradedBook)
+                    new ToolTippableComparisonData("Current (" + currentBook.GetCurrentLevel() + "): " , currentBook),
+                    new ToolTippableComparisonData("Upgraded (" + (timesToLevel + 1) + "): ", upgradedBook)
                 },
             transform);
     }

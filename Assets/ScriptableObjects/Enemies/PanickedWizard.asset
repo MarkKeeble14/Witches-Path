@@ -16,4 +16,4 @@ MonoBehaviour:
   name: Panicked Wizard
   maxHP: 200
   startingHP: 200
-  basicAttackDamage: 9
+  basicAttackDamage: 12

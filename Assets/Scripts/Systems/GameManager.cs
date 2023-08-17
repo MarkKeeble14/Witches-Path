@@ -4,6 +4,7 @@ using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.SceneManagement;
 
 public enum ContentType
 {
@@ -1336,17 +1337,28 @@ public class GameManager : MonoBehaviour
         return bookDisplayTracker.ContainsKey(label);
     }
 
+
+    #region UI
     public void AnimateSpell(SpellLabel label)
     {
         loadedSpellDisplays[label].AnimateScale();
     }
 
-    public void GameOver()
+    [Header("Game Over")]
+    [SerializeField] private CanvasGroup gameOverCV;
+    [SerializeField] private float changeGameOverCVAlphaRate;
+
+    public IEnumerator GameOverSequence()
     {
-        throw new NotImplementedException();
+        gameOverCV.blocksRaycasts = true;
+
+        yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(gameOverCV, 1, Time.deltaTime * changeGameOverCVAlphaRate));
     }
 
-    #region UI
+    public void RestartGame()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
 
     public void TogglePotionIngredientListScreen()
     {
@@ -1952,7 +1964,7 @@ public class GameManager : MonoBehaviour
     {
         foreach (KeyValuePair<BookLabel, Book> b in equippedBooks)
         {
-            b.Value.TryCallLevelUp();
+            b.Value.TryCallLevelUp(true);
         }
 
         ResolveCurrentEvent();

@@ -16,4 +16,4 @@ MonoBehaviour:
   name: Mimic
   maxHP: 150
   startingHP: 150
-  basicAttackDamage: 6
+  basicAttackDamage: 9

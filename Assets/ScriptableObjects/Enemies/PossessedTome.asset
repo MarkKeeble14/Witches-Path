@@ -16,4 +16,4 @@ MonoBehaviour:
   name: Possessed Tome
   maxHP: 75
   startingHP: 75
-  basicAttackDamage: 5
+  basicAttackDamage: 7
