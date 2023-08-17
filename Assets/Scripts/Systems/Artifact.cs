@@ -427,7 +427,7 @@ public class BlueMantis : Artifact
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Protection, stackAmount, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, stackAmount, Target.Enemy);
         ShowArtifactProc();
     }
 

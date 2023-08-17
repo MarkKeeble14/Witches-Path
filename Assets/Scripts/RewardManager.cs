@@ -15,7 +15,6 @@ public class RewardManager : MonoBehaviour
     [SerializeField] private GameObject rewardScreen;
     private List<RewardDisplay> spawnedRewards = new List<RewardDisplay>();
 
-
     [SerializeField] private Vector2 toolTipOffset;
 
     private bool resolved;
@@ -25,13 +24,37 @@ public class RewardManager : MonoBehaviour
         resolved = true;
     }
 
+    public void AddReward(SpellLabel label)
+    {
+        Debug.Log("Adding Spell Reward: " + label);
+        RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
+
+        Spell spell = GameManager._Instance.GetSpellOfType(label);
+        GameObject spawnedToolTip = null;
+        spawned.Set(spell.Name, null,
+            delegate
+            {
+                StartCoroutine(GameManager._Instance.StartSwapSpellSequnce(label));
+                spawnedRewards.Remove(spawned);
+                Destroy(spawned.gameObject);
+            }, delegate
+            {
+                spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(spell, spawned.transform);
+            }, delegate
+            {
+                Destroy(spawnedToolTip);
+            }
+        );
+        spawnedRewards.Add(spawned);
+    }
+
     public void AddReward(ArtifactLabel label)
     {
         Debug.Log("Adding Artifact Reward: " + label);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         GameObject spawnedToolTip = null;
         Artifact artifact = GameManager._Instance.GetArtifactOfType(label);
-        spawned.Set(label.ToString(), null,
+        spawned.Set(artifact.Name, null,
             delegate
             {
                 GameManager._Instance.AddArtifact(label);
@@ -42,7 +65,7 @@ public class RewardManager : MonoBehaviour
                 spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(artifact, spawned.transform);
             }, delegate
             {
-                Destroy(spawnedToolTip.gameObject);
+                Destroy(spawnedToolTip);
             }
         );
         spawnedRewards.Add(spawned);
@@ -54,7 +77,7 @@ public class RewardManager : MonoBehaviour
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         GameObject spawnedToolTip = null;
         Book book = GameManager._Instance.GetBookOfType(label);
-        spawned.Set(label.ToString(), null,
+        spawned.Set(book.Name, null,
             delegate
             {
                 GameManager._Instance.SwapBooks(GameManager._Instance.GetOwnedBookLabel(0), label);
@@ -65,7 +88,7 @@ public class RewardManager : MonoBehaviour
                 spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(book, spawned.transform);
             }, delegate
             {
-                Destroy(spawnedToolTip.gameObject);
+                Destroy(spawnedToolTip);
             }
         );
         spawnedRewards.Add(spawned);
@@ -75,7 +98,7 @@ public class RewardManager : MonoBehaviour
     {
         Debug.Log("Adding Potion Ingredient Reward: " + label);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
-        spawned.Set(label.ToString(), null, delegate
+        spawned.Set(Utils.SplitOnCapitalLetters(label.ToString()), null, delegate
         {
             GameManager._Instance.AddPotionIngredient(label);
             spawnedRewards.Remove(spawned);
@@ -132,11 +155,7 @@ public class RewardManager : MonoBehaviour
 
     public IEnumerator ShowRewardScreen()
     {
-        Debug.Log("1: " + rewardScreen + ", Reward Screen Active Self: " + rewardScreen.activeSelf);
-
         rewardScreen.gameObject.SetActive(true);
-
-        Debug.Log("2: " + rewardScreen + ", Reward Screen Active Self: " + rewardScreen.activeSelf);
 
         yield return new WaitUntil(() => resolved);
         resolved = false;

@@ -50,12 +50,9 @@ public abstract class Equipment : ScriptableObject, ToolTippable
     private int numTimesBoosted;
 
     // Tool Tips
-    [SerializeField] private List<SpellLabel> comesWithSpells = new List<SpellLabel>();
     [SerializeField] protected List<AfflictionType> AfflictionKeywords = new List<AfflictionType>();
     [SerializeField] protected List<ToolTipKeyword> GeneralKeywords = new List<ToolTipKeyword>();
     protected List<ToolTippable> OtherToolTippables;
-
-    public List<SpellLabel> ComesWithSpells => comesWithSpells;
     private ReforgeModifier currentReforgeModifier;
 
     public int GetStat(BaseStat stat)
@@ -86,12 +83,6 @@ public abstract class Equipment : ScriptableObject, ToolTippable
         GameManager._Instance.DefenseFromEquipment += defenseChange + defenseBoost;
         GameManager._Instance.AlterManaFromEquipment(manaChange + manaBoost);
 
-        // Add equipment spells
-        foreach (SpellLabel label in comesWithSpells)
-        {
-            GameManager._Instance.EquipSpell(label);
-        }
-
         // Add reforge modifier stats
         if (currentReforgeModifier != ReforgeModifier.Unimpressive)
         {
@@ -105,12 +96,6 @@ public abstract class Equipment : ScriptableObject, ToolTippable
         GameManager._Instance.DamageFromEquipment -= (damageChange + damageBoost);
         GameManager._Instance.DefenseFromEquipment -= (defenseChange + defenseBoost);
         GameManager._Instance.AlterManaFromEquipment(-(manaChange + manaBoost));
-
-        // Remove equipment spells
-        foreach (SpellLabel label in comesWithSpells)
-        {
-            GameManager._Instance.UnequipSpell(label);
-        }
 
         // Remove reforge modifier stats
         if (currentReforgeModifier != ReforgeModifier.Unimpressive)
@@ -195,10 +180,6 @@ public abstract class Equipment : ScriptableObject, ToolTippable
 
         // otherwise, instantiate and populate OtherToolTippables
         OtherToolTippables = new List<ToolTippable>();
-        foreach (SpellLabel l in comesWithSpells)
-        {
-            OtherToolTippables.Add(GameManager._Instance.GetSpellOfType(l));
-        }
     }
 
     // Getter
@@ -211,21 +192,6 @@ public abstract class Equipment : ScriptableObject, ToolTippable
     private string GetStatList()
     {
         return "Damage: " + (damageChange + damageBoost) + ", Defense: " + (defenseChange + defenseBoost) + ", Mana: " + (manaChange + manaBoost);
-    }
-
-    // Getter For Printing
-    private string GetSpellList()
-    {
-        string s = "";
-        for (int i = 0; i < comesWithSpells.Count; i++)
-        {
-            s += comesWithSpells[i].ToString();
-            if (i < comesWithSpells.Count - 1)
-            {
-                s += ", ";
-            }
-        }
-        return s;
     }
 
     // Tool Tip Getter
@@ -249,7 +215,7 @@ public abstract class Equipment : ScriptableObject, ToolTippable
     // Tool Tip Getter
     public string GetToolTipText()
     {
-        return GetStatList() + "\n" + GetSpellList();
+        return GetStatList();
     }
 
     // Tool Tip Getter

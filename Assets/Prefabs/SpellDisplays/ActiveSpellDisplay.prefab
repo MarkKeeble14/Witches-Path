@@ -91,7 +91,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_EffectColor: {r: 0, g: 0, b: 0, a: 0.5}
-  m_EffectDistance: {x: 1, y: -1}
+  m_EffectDistance: {x: 2.5, y: -2.5}
   m_UseGraphicAlpha: 1
 --- !u!1 &1758790773929286141
 GameObject:
@@ -130,7 +130,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -5, y: -5}
+  m_SizeDelta: {x: -10, y: -10}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3334425966995788516
 CanvasRenderer:
@@ -507,11 +507,14 @@ MonoBehaviour:
   nameText: {fileID: 7697333731386376718}
   progressBar: {fileID: 4997572235486677794}
   spellIcon: {fileID: 4684439334132822973}
-  main: {fileID: 4997572235486677794}
+  main: {fileID: 7814417858420328025}
   regularScale: 1
   maxScale: 1.75
   toolTipOffset: {x: 0, y: 25}
   changeScaleSpeed: 2.5
+  disableWhenEmpty:
+  - {fileID: 152138716901173661}
+  - {fileID: 4560675855426494866}
   defaultSprite: {fileID: -2413806693520163455, guid: 36a0f126a9869ea4983b3b972c87b73c, type: 3}
   keyBindingText: {fileID: 7521110085264810116}
   spellCDText: {fileID: 4760069679280669780}

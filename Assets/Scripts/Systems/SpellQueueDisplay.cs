@@ -7,9 +7,24 @@ public class SpellQueueDisplay : MonoBehaviour
     [SerializeField] private TextMeshProUGUI text;
     [SerializeField] private Image image;
 
-    public void Set(string text, Sprite sprite)
+    private Spell representingSpell;
+
+    private GameObject spawnedToolTip;
+
+    public void Set(Spell spell, Sprite sprite)
     {
-        this.text.text = text;
+        representingSpell = spell;
+        text.text = spell.Name;
         image.sprite = sprite;
+    }
+
+    public void SpawnToolTip()
+    {
+        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(representingSpell, transform);
+    }
+
+    public void DestroyToolTip()
+    {
+        Destroy(spawnedToolTip);
     }
 }

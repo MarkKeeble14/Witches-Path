@@ -21,6 +21,8 @@ MonoBehaviour:
         percentageMap:
         - key:
             NumericalType: 1
+            ForceRarity: 0
+            Rarity: 0
             Numbers: {x: 1, y: 2}
           value: 100
     - key: 1
@@ -28,6 +30,17 @@ MonoBehaviour:
         percentageMap:
         - key:
             NumericalType: 1
+            ForceRarity: 0
+            Rarity: 0
+            Numbers: {x: 1, y: 1}
+          value: 100
+    - key: 4
+      value:
+        percentageMap:
+        - key:
+            NumericalType: 0
+            ForceRarity: 0
+            Rarity: 0
             Numbers: {x: 1, y: 1}
           value: 100
   currencyRewards:

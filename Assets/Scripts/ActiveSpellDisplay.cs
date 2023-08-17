@@ -1,6 +1,13 @@
 ﻿using System;
 using UnityEngine;
 using TMPro;
+using DG.Tweening;
+
+public enum SpellDisplayState
+{
+    Normal,
+    SwapSequence
+}
 
 public class ActiveSpellDisplay : SpellDisplay
 {
@@ -17,8 +24,14 @@ public class ActiveSpellDisplay : SpellDisplay
 
     public void TryCast()
     {
+        if (displayState == SpellDisplayState.SwapSequence)
+        {
+            GameManager._Instance.SetSpellToSwap(spell);
+            return;
+        }
+
         // Only allow for spell casts while in combat
-        if (CombatManager._Instance.InCombat && CombatManager._Instance.GetTurn() == Turn.Player)
+        if (CombatManager._Instance.CanCastSpells)
         {
             // Debug.Log("Attempting to Cast: " + spellToCast);
             if (spell.CanCast)
@@ -41,7 +54,7 @@ public class ActiveSpellDisplay : SpellDisplay
         }
     }
 
-    public void SetActiveSpell(ActiveSpell spell, KeyCode binding)
+    public void SetActiveSpell(ActiveSpell spell)
     {
         this.spell = spell;
         spellIcon.sprite = spell.GetSpellSprite();
@@ -50,20 +63,25 @@ public class ActiveSpellDisplay : SpellDisplay
         // Auxillary info
         spellCD = spell.CooldownTracker.y;
         spellManaCost = spell.GetManaCost();
-        keyBinding = binding;
 
         // Set Text
         // Num Notes Never Changes
         spellNumNotesText.text = spell.NumNotes.ToString();
-        keyBindingText.text = binding.ToString();
 
         isAvailable = false;
+    }
+
+    public void SetKeyBinding(KeyCode keyCode)
+    {
+        keyBinding = keyCode;
+        keyBindingText.text = keyCode.ToString();
     }
 
     private new void Update()
     {
         base.Update();
 
+        // Guard
         if (spell == null)
         {
             return;
@@ -78,7 +96,7 @@ public class ActiveSpellDisplay : SpellDisplay
         // Show Cooldown
         if (spell.CooldownTracker.x > 0)
         {
-            progressBar.fillAmount = spell.CooldownTracker.x / spell.CooldownTracker.y;
+            progressBar.fillAmount = 1 - ((float)spell.CooldownTracker.x / spell.CooldownTracker.y);
             text.text = Utils.RoundTo(spell.CooldownTracker.x, 0).ToString();
         }
         else

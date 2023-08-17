@@ -9,7 +9,8 @@ public enum RewardType
     Artifact,
     Book,
     Currency,
-    ClothierCurrency
+    ClothierCurrency,
+    Spell
 }
 
 public enum RewardNumericalType
@@ -19,9 +20,11 @@ public enum RewardNumericalType
 }
 
 [System.Serializable]
-public class RewardInfo
+public class ItemRewardInfo
 {
     public RewardNumericalType NumericalType;
+    public bool ForceRarity;
+    public Rarity Rarity;
     public Vector2 Numbers;
 }
 
@@ -34,14 +37,14 @@ public abstract class Combat : GameOccurance
     public Enemy Enemy { get => enemy; }
 
     [SerializeField]
-    private SerializableDictionary<RewardType, PercentageMap<RewardInfo>> itemRewards
-        = new SerializableDictionary<RewardType, PercentageMap<RewardInfo>>();
+    private SerializableDictionary<RewardType, PercentageMap<ItemRewardInfo>> itemRewards
+        = new SerializableDictionary<RewardType, PercentageMap<ItemRewardInfo>>();
 
     [SerializeField]
     private SerializableDictionary<RewardType, PercentageMap<Vector2Int>> currencyRewards
     = new SerializableDictionary<RewardType, PercentageMap<Vector2Int>>();
 
-    private void ParseItemRewardInfo(RewardInfo info, Action act)
+    private void ParseItemRewardInfo(ItemRewardInfo info, Action act)
     {
         if (info.NumericalType == RewardNumericalType.Between)
         {
@@ -67,22 +70,54 @@ public abstract class Combat : GameOccurance
         // Add 1 Charge to all Books
         GameManager._Instance.AlterAllBookCharge(1);
 
+        // Item rewards
         foreach (RewardType type in itemRewards.Keys())
         {
-            RewardInfo info = itemRewards[type].GetOption();
+            ItemRewardInfo info = itemRewards[type].GetOption();
             switch (type)
             {
                 case RewardType.Artifact:
-                    ParseItemRewardInfo(info, () => RewardManager._Instance.AddReward(GameManager._Instance.GetRandomArtifact()));
+                    ParseItemRewardInfo(info, delegate
+                    {
+                        if (info.ForceRarity)
+                        {
+                            RewardManager._Instance.AddReward(GameManager._Instance.GetRandomArtifactOfRarity(info.Rarity));
+                        }
+                        else
+                        {
+                            RewardManager._Instance.AddReward(GameManager._Instance.GetRandomArtifact());
+                        }
+                    });
                     break;
                 case RewardType.Book:
-                    ParseItemRewardInfo(info, () => RewardManager._Instance.AddReward(GameManager._Instance.GetRandomBook()));
+                    ParseItemRewardInfo(info, delegate
+                    {
+                        if (info.ForceRarity)
+                        {
+                            RewardManager._Instance.AddReward(GameManager._Instance.GetRandomBookOfRarity(info.Rarity));
+                        }
+                        else
+                        {
+                            RewardManager._Instance.AddReward(GameManager._Instance.GetRandomBook());
+                        }
+                    });
+                    break;
+                case RewardType.Spell:
+                    if (info.ForceRarity)
+                    {
+                        RewardManager._Instance.AddReward(GameManager._Instance.GetRandomSpellOfRarity(info.Rarity));
+                    }
+                    else
+                    {
+                        RewardManager._Instance.AddReward(GameManager._Instance.GetRandomSpell());
+                    }
                     break;
                 default:
                     throw new UnhandledSwitchCaseException();
             }
         }
 
+        // Currency Rewards
         foreach (RewardType type in currencyRewards.Keys())
         {
             int num = RandomHelper.RandomIntExclusive(currencyRewards[type].GetOption());

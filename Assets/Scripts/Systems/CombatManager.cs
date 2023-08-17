@@ -139,6 +139,7 @@ public partial class CombatManager : MonoBehaviour
 
     public int NumFreeSpells { get; set; }
     public bool InCombat { get; private set; }
+    public bool CanCastSpells { get; private set; }
 
     private bool playerTurnEnded;
     private Turn currentTurn;
@@ -194,9 +195,6 @@ public partial class CombatManager : MonoBehaviour
         musicSource.clip = combat.MainMusic;
         musicSource.Play();
 
-        // Set settings
-        InCombat = true;
-
         StartCoroutine(UpdateDuringCombat());
         yield return StartCoroutine(CombatLoop());
 
@@ -235,11 +233,17 @@ public partial class CombatManager : MonoBehaviour
 
     private IEnumerator CombatLoop()
     {
+        // Allow player to cast spells
+        CanCastSpells = true;
+
         // Show Turn Display
         yield return StartCoroutine(turnDisplay.Show("Combat Start", ""));
 
         // Call OnCombatStart
         OnCombatStart?.Invoke();
+
+        // Set settings
+        InCombat = true;
 
         while (currentEnemyHP > 0 && GameManager._Instance.GetCurrentCharacterHP() > 0)
         {
@@ -280,6 +284,10 @@ public partial class CombatManager : MonoBehaviour
 
             // End of Turn
             yield return new WaitForSeconds(1);
+
+            // Reset for Turn
+            ResetCombatentWard(Target.Character);
+            GameManager._Instance.AlterPlayerMana(GameManager._Instance.GetCharacter().GetManaPerTurn());
         }
 
         // Call On Combat End
@@ -316,12 +324,10 @@ public partial class CombatManager : MonoBehaviour
             yield break;
         }
 
-        // Reset for Turn
-        ResetCombatentWard(Target.Character);
-        GameManager._Instance.AlterPlayerMana(GameManager._Instance.GetCharacter().GetManaPerTurn());
-
         yield return new WaitUntil(() => playerTurnEnded);
         playerTurnEnded = false;
+
+        CanCastSpells = false;
 
         yield return StartCoroutine(CastCharacterQueue());
 
@@ -339,8 +345,7 @@ public partial class CombatManager : MonoBehaviour
     {
         // Spawn new display
         SpellQueueDisplay spawned = Instantiate(spellQueueDisplayPrefab, spellQueueDisplayList);
-        spawned.Set(spell.Name, spell.GetSpellSprite());
-        // Ensure only the most recent spell can be removed
+        spawned.Set(spell, spell.GetSpellSprite());
 
         spellQueue.Add(new QueuedActiveSpell(spell, spawned, spellQueue.Count));
 
@@ -1073,8 +1078,8 @@ public partial class CombatManager : MonoBehaviour
         // Paralyze Effect
         if (TargetHasAffliction(AfflictionType.Paralyze, attacker))
         {
-            ConsumeAfflictionStack(AfflictionType.Protection, attacker);
-            ShowAfflictionProc(AfflictionType.Protection, attacker);
+            ConsumeAfflictionStack(AfflictionType.Paralyze, attacker);
+            ShowAfflictionProc(AfflictionType.Paralyze, attacker);
             return true;
         }
 
@@ -1176,9 +1181,9 @@ public partial class CombatManager : MonoBehaviour
     private bool AlterCombatentHP(int amount, Target combatent, DamageType damageType)
     {
         // Intangible Effect
-        if (TargetHasAffliction(AfflictionType.Intangible, combatent))
+        if (amount < 0 && TargetHasAffliction(AfflictionType.Intangible, combatent))
         {
-            amount = 1;
+            amount = -1;
             ConsumeAfflictionStack(AfflictionType.Intangible, combatent);
             ShowAfflictionProc(AfflictionType.Intangible, combatent);
         }

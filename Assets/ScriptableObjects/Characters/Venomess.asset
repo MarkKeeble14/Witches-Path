@@ -17,12 +17,14 @@ MonoBehaviour:
   startingHat: {fileID: 11400000, guid: 427716a4784833947b46ed413f751470, type: 2}
   startingWand: {fileID: 11400000, guid: acda65fe9855c2547963cd46c0c48fba, type: 2}
   startingBook: 0
-  startingSpells: 1600000017000000
+  startingSpells: 1600000017000000070000000000000001000000
   startingCurrency: 100
   startingClothierCurrency: 1
   maxHP: 75
   startingHP: 75
   basicAttackDamage: 2
+  startingActiveSpellSlots: 3
+  startingPassiveSpellSlots: 2
   maxMana: 7
   startingMana: 7
   manaPerTurn: 7

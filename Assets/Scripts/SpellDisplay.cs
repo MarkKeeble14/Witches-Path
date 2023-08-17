@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using DG.Tweening;
 
 public abstract class SpellDisplay : MonoBehaviour
 {
@@ -23,6 +24,12 @@ public abstract class SpellDisplay : MonoBehaviour
 
     [SerializeField] private float changeScaleSpeed = 1f;
 
+    [SerializeField] private GameObject[] disableWhenEmpty;
+    private bool isEmpty;
+
+    protected SpellDisplayState displayState = SpellDisplayState.Normal;
+    private Tweener shakeTweener;
+
     private void Start()
     {
         targetScale = regularScale;
@@ -36,14 +43,30 @@ public abstract class SpellDisplay : MonoBehaviour
 
     protected void Update()
     {
-        // Allow target scale to fall back to regular scale
-        if (targetScale != regularScale)
+        if (displayState == SpellDisplayState.Normal)
         {
-            targetScale = Mathf.MoveTowards(targetScale, regularScale, changeScaleSpeed * Time.deltaTime);
-        }
+            // Allow target scale to fall back to regular scale
+            if (targetScale != regularScale)
+            {
+                targetScale = Mathf.MoveTowards(targetScale, regularScale, changeScaleSpeed * Time.deltaTime);
+            }
 
-        // Set Scale
-        main.transform.localScale = targetScale * Vector3.one;
+            // Set Scale
+            main.transform.localScale = targetScale * Vector3.one;
+        }
+    }
+
+    public void SetSpellDisplayState(SpellDisplayState displayState)
+    {
+        this.displayState = displayState;
+        if (displayState == SpellDisplayState.SwapSequence)
+        {
+            shakeTweener = transform.DOShakePosition(1, 3, 10, 90, false, false).SetLoops(-1);
+        }
+        else if (displayState == SpellDisplayState.Normal)
+        {
+            shakeTweener.Kill();
+        }
     }
 
     public void AnimateScale()
@@ -60,15 +83,26 @@ public abstract class SpellDisplay : MonoBehaviour
         isAvailable = true;
     }
 
+    public void SetEmpty(bool isEmpty)
+    {
+        this.isEmpty = isEmpty;
+        foreach (GameObject obj in disableWhenEmpty)
+        {
+            obj.SetActive(!isEmpty);
+        }
+    }
+
     public abstract Spell GetSpell();
 
     public void SpawnToolTip()
     {
-        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(GetSpell(), transform);
+        // Only spawn ToolTip if spell is set
+        if (!isEmpty)
+            spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(GetSpell(), transform);
     }
 
     public void DestroyToolTip()
     {
-        Destroy(spawnedToolTip.gameObject);
+        Destroy(spawnedToolTip);
     }
 }

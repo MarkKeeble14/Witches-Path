@@ -18,13 +18,13 @@ public enum SpellLabel
     Jarkai,
     Flurry,
     Electrifry,
-    ExposedFlesh,
+    ExposeFlesh,
     Cripple,
-    BloodTrade,
+    TradeBlood,
     Excite,
     Overexcite,
     Forethought,
-    Reverberations,
+    Reverberate,
     ImpartialAid,
     MagicRain,
     CrushJoints,
@@ -35,7 +35,7 @@ public enum SpellLabel
 [System.Serializable]
 public abstract class Spell : ToolTippable
 {
-    public string Name => Label.ToString();
+    public abstract string Name { get; }
     public abstract SpellLabel Label { get; }
 
     public string SpritePath => "Spells/" + Label.ToString().ToLower();
@@ -104,8 +104,10 @@ public abstract class Spell : ToolTippable
 
     public string GetToolTipText()
     {
-        return UIManager._Instance.HighlightKeywords(toolTipText);
+        return UIManager._Instance.HighlightKeywords(toolTipText + GetDetailText());
     }
+
+    protected abstract string GetDetailText();
 
     public List<ToolTippable> GetOtherToolTippables()
     {
@@ -146,10 +148,22 @@ public abstract class PassiveSpell : Spell
             NumDuplicateProcs -= 1;
         }
     }
+
+    public virtual float GetPercentProgress()
+    {
+        return 1;
+    }
+
+    protected override string GetDetailText()
+    {
+        return "";
+    }
 }
 
 public class PoisonTips : PassiveSpell
 {
+    public override string Name => "Poison Tips";
+
     private int tracker;
     private int procAfter;
     private int stackAmount;
@@ -205,10 +219,16 @@ public class PoisonTips : PassiveSpell
     {
         return tracker + "/" + procAfter;
     }
+
+    public override float GetPercentProgress()
+    {
+        return (float)tracker / procAfter;
+    }
 }
 
 public class StaticField : PassiveSpell
 {
+    public override string Name => "Static Field";
     public override SpellLabel Label => SpellLabel.StaticField;
 
     protected override string toolTipText => "Every " + procAfter + " Turn" + (procAfter > 1 ? "s" : "") + ", Apply " + stackAmount + " Paralyze to the Enemy";
@@ -250,7 +270,7 @@ public class StaticField : PassiveSpell
 
     public override void Proc(bool canDupe)
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Protection, stackAmount, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, stackAmount, Target.Enemy);
         base.Proc(canDupe);
     }
 
@@ -258,10 +278,17 @@ public class StaticField : PassiveSpell
     {
         return tracker + "/" + procAfter;
     }
+
+    public override float GetPercentProgress()
+    {
+        return (float)tracker / procAfter;
+    }
 }
 
 public class Inferno : PassiveSpell
 {
+    public override string Name => "Inferno";
+
     public override SpellLabel Label => SpellLabel.Inferno;
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Burn";
@@ -311,10 +338,16 @@ public class Inferno : PassiveSpell
     {
         return tracker + "/" + procAfter;
     }
+
+    public override float GetPercentProgress()
+    {
+        return (float)tracker / procAfter;
+    }
 }
 
 public class BattleTrance : PassiveSpell
 {
+    public override string Name => "Battle Trance";
     public override SpellLabel Label => SpellLabel.BattleTrance;
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain " + stackAmount + " Embolden";
@@ -364,10 +397,16 @@ public class BattleTrance : PassiveSpell
     {
         return tracker + "/" + procAfter;
     }
+
+    public override float GetPercentProgress()
+    {
+        return (float)tracker / procAfter;
+    }
 }
 
 public class MagicRain : PassiveSpell
 {
+    public override string Name => "Magic Rain";
     public override SpellLabel Label => SpellLabel.MagicRain;
 
     protected override string toolTipText => "Every " + procAfter + " Turn" + (procAfter > 1 ? "s" : "") + ", Fire a Projectile Dealing " + damageAmount + " Damage to the Enemy";
@@ -415,10 +454,16 @@ public class MagicRain : PassiveSpell
     {
         return tracker + "/" + procAfter;
     }
+
+    public override float GetPercentProgress()
+    {
+        return (float)tracker / procAfter;
+    }
 }
 
 public class CrushJoints : PassiveSpell
 {
+    public override string Name => "Crush Joints";
     public override SpellLabel Label => SpellLabel.CrushJoints;
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Vulnerable";
@@ -473,6 +518,11 @@ public class CrushJoints : PassiveSpell
     public override string GetSecondaryText()
     {
         return tracker + "/" + procAfter;
+    }
+
+    public override float GetPercentProgress()
+    {
+        return (float)tracker / procAfter;
     }
 }
 
@@ -572,10 +622,17 @@ public abstract class ActiveSpell : Spell
     {
         cooldownTracker = 0;
     }
+
+    protected override string GetDetailText()
+    {
+        // Order: Mana -> Cooldown -> Attacks
+        return "\nMana Cost: " + manaCost + " - Cooldown: " + CooldownTracker.y + " - Attacks: " + NumNotes;
+    }
 }
 
 public class Fireball : ActiveSpell
 {
+    public override string Name => "Fireball";
     public override SpellLabel Label => SpellLabel.Fireball;
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage, Apply " + stackAmount + " Burn";
@@ -603,6 +660,7 @@ public class Fireball : ActiveSpell
 
 public class Shock : ActiveSpell
 {
+    public override string Name => "Shock";
     public override SpellLabel Label => SpellLabel.Shock;
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage, Apply " + stackAmount + " Paralyze";
@@ -624,12 +682,13 @@ public class Shock : ActiveSpell
     protected override void Effect()
     {
         CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Electricity, DamageSource.ActiveSpell);
-        CombatManager._Instance.AddAffliction(AfflictionType.Protection, stackAmount, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, stackAmount, Target.Enemy);
     }
 }
 
 public class Singe : ActiveSpell
 {
+    public override string Name => "Singe";
     public override SpellLabel Label => SpellLabel.Singe;
 
     protected override string toolTipText => "Apply " + stackAmount + " Burn";
@@ -654,6 +713,7 @@ public class Singe : ActiveSpell
 
 public class Plague : ActiveSpell
 {
+    public override string Name => "Plague";
     public override SpellLabel Label => SpellLabel.Plague;
 
     protected override string toolTipText => "Apply " + stackAmount + " Poison";
@@ -678,6 +738,7 @@ public class Plague : ActiveSpell
 
 public class Toxify : ActiveSpell
 {
+    public override string Name => "Toxify";
     public override SpellLabel Label => SpellLabel.Toxify;
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage, Apply " + stackAmount + " Poison";
@@ -705,6 +766,7 @@ public class Toxify : ActiveSpell
 
 public class Jarkai : ActiveSpell
 {
+    public override string Name => "Jarkai";
     public override SpellLabel Label => SpellLabel.Jarkai;
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage Twice";
@@ -729,6 +791,7 @@ public class Jarkai : ActiveSpell
 
 public class Flurry : ActiveSpell
 {
+    public override string Name => "Flurry";
     public override SpellLabel Label => SpellLabel.Flurry;
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage " + hitAmount + " Times";
@@ -757,6 +820,7 @@ public class Flurry : ActiveSpell
 
 public class Electrifry : ActiveSpell
 {
+    public override string Name => "Electrifry";
     public override SpellLabel Label => SpellLabel.Electrifry;
 
     protected override string toolTipText => "Apply " + paralyzeAmount + " Paralyze, Apply " + burnAmount + " Burn";
@@ -766,7 +830,7 @@ public class Electrifry : ActiveSpell
 
     protected override void SetKeywords()
     {
-        AfflictionKeywords.Add(AfflictionType.Poison);
+        AfflictionKeywords.Add(AfflictionType.Paralyze);
         AfflictionKeywords.Add(AfflictionType.Burn);
     }
 
@@ -778,14 +842,15 @@ public class Electrifry : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Protection, paralyzeAmount, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, paralyzeAmount, Target.Enemy);
         CombatManager._Instance.AddAffliction(AfflictionType.Burn, burnAmount, Target.Enemy);
     }
 }
 
-public class ExposedFlesh : ActiveSpell
+public class ExposeFlesh : ActiveSpell
 {
-    public override SpellLabel Label => SpellLabel.ExposedFlesh;
+    public override string Name => "Expose Flesh";
+    public override SpellLabel Label => SpellLabel.ExposeFlesh;
 
     protected override string toolTipText => "Apply " + stackAmount + " Vulnerable, Deal " + damageAmount + " Damage";
 
@@ -817,6 +882,7 @@ public class ExposedFlesh : ActiveSpell
 
 public class Cripple : ActiveSpell
 {
+    public override string Name => "Cripple";
     public override SpellLabel Label => SpellLabel.Cripple;
 
     protected override string toolTipText => "Apply " + stackAmount + " Weak, Deal " + damageAmount + " Damage";
@@ -842,9 +908,10 @@ public class Cripple : ActiveSpell
     }
 }
 
-public class BloodTrade : ActiveSpell
+public class TradeBlood : ActiveSpell
 {
-    public override SpellLabel Label => SpellLabel.BloodTrade;
+    public override string Name => "Trade Blood";
+    public override SpellLabel Label => SpellLabel.TradeBlood;
 
     protected override string toolTipText => "Lose " + selfDamageAmount + " HP, Deal " + otherDamageAmount + " Damage";
 
@@ -870,6 +937,7 @@ public class BloodTrade : ActiveSpell
 
 public class Excite : ActiveSpell
 {
+    public override string Name => "Excite";
     public override SpellLabel Label => SpellLabel.Excite;
 
     protected override string toolTipText => "Gain " + stackAmount + " Embolden";
@@ -894,9 +962,10 @@ public class Excite : ActiveSpell
 
 public class Overexcite : ActiveSpell
 {
+    public override string Name => "Overexcite";
     public override SpellLabel Label => SpellLabel.Overexcite;
 
-    protected override string toolTipText => "Gain " + emboldenedAmount + " Embolden, Gain " + vulnerableAmount + " Vulnerable, ";
+    protected override string toolTipText => "Gain " + emboldenedAmount + " Embolden, Gain " + vulnerableAmount + " Vulnerable";
 
     private int emboldenedAmount;
     private int vulnerableAmount;
@@ -922,6 +991,7 @@ public class Overexcite : ActiveSpell
 
 public class Forethought : ActiveSpell
 {
+    public override string Name => "Forethought";
     public override SpellLabel Label => SpellLabel.Forethought;
 
     protected override string toolTipText => "Gain " + stackAmount + " Intangible";
@@ -944,9 +1014,10 @@ public class Forethought : ActiveSpell
     }
 }
 
-public class Reverberations : ActiveSpell
+public class Reverberate : ActiveSpell
 {
-    public override SpellLabel Label => SpellLabel.Reverberations;
+    public override string Name => "Reverberate";
+    public override SpellLabel Label => SpellLabel.Reverberate;
 
     protected override string toolTipText => "Gain " + stackAmount + " Echo";
 
@@ -970,6 +1041,7 @@ public class Reverberations : ActiveSpell
 
 public class ImpartialAid : ActiveSpell
 {
+    public override string Name => "Impartial Aid";
     public override SpellLabel Label => SpellLabel.ImpartialAid;
 
     protected override string toolTipText => "All Combatents Heal " + healAmount + " HP";
@@ -995,6 +1067,7 @@ public class ImpartialAid : ActiveSpell
 
 public class WitchesWill : ActiveSpell
 {
+    public override string Name => "Witches Will";
     public override SpellLabel Label => SpellLabel.WitchesWill;
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage";
@@ -1018,6 +1091,7 @@ public class WitchesWill : ActiveSpell
 
 public class WitchesWard : ActiveSpell
 {
+    public override string Name => "Witches Ward";
     public override SpellLabel Label => SpellLabel.WitchesWard;
 
     protected override string toolTipText => "Gain " + wardAmount + " Ward";

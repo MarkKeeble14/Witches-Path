@@ -10,7 +10,8 @@ public enum ContentType
     Artifact,
     Book,
     ActiveSpell,
-    PassiveSpell
+    PassiveSpell,
+    Spell
 }
 
 public class GameManager : MonoBehaviour
@@ -54,23 +55,28 @@ public class GameManager : MonoBehaviour
     private int bookIndex;
 
     [Header("Spells")]
-    private List<ActiveSpellDisplay> activeSpellDisplays = new List<ActiveSpellDisplay>();
+    [SerializeField] private SerializableDictionary<SpellLabel, Rarity> spellRarityMap = new SerializableDictionary<SpellLabel, Rarity>();
+    [SerializeField] private PercentageMap<Rarity> spellRarityOdds = new PercentageMap<Rarity>();
+    private List<SpellLabel> allSpells;
     private Dictionary<SpellLabel, SpellDisplay> loadedSpellDisplays = new Dictionary<SpellLabel, SpellDisplay>();
-    private Dictionary<ActiveSpellDisplay, ActiveSpell> equippedActiveSpells = new Dictionary<ActiveSpellDisplay, ActiveSpell>();
-    private Dictionary<PassiveSpellDisplay, PassiveSpell> equippedPassiveSpells = new Dictionary<PassiveSpellDisplay, PassiveSpell>();
-    [SerializeField] private KeyCode[] activeSpellBindings;
-    [SerializeField] private ActiveSpellDisplay activeSpellDisplayPrefab;
-    [SerializeField] private PassiveSpellDisplay passiveSpellDisplayPrefab;
-    [SerializeField] private Transform activeSpellDisplaysList;
-    [SerializeField] private Transform passiveSpellDisplaysList;
-
-    [Header("Passive Spells")]
-    [SerializeField] private List<SpellLabel> equippablePassiveSpells = new List<SpellLabel>();
-    private int equippablePassiveSpellIndex = 0;
+    private int equippableSpellIndex;
 
     [Header("Active Spells")]
-    [SerializeField] private List<SpellLabel> equippableActiveSpells = new List<SpellLabel>();
-    private int equippableActiveSpellIndex = 0;
+    [SerializeField] private KeyCode[] activeSpellBindings;
+    [SerializeField] private ActiveSpellDisplay activeSpellDisplayPrefab;
+    [SerializeField] private Transform activeSpellDisplaysList;
+    private List<ActiveSpellDisplay> activeSpellDisplays = new List<ActiveSpellDisplay>();
+    private Dictionary<ActiveSpellDisplay, ActiveSpell> equippedActiveSpells = new Dictionary<ActiveSpellDisplay, ActiveSpell>();
+    private List<ActiveSpellDisplay> unusedActiveSpellDisplays = new List<ActiveSpellDisplay>();
+    private int numActiveSpellSlots;
+
+    [Header("Passive Spells")]
+    [SerializeField] private PassiveSpellDisplay passiveSpellDisplayPrefab;
+    [SerializeField] private Transform passiveSpellDisplaysList;
+    private Dictionary<PassiveSpellDisplay, PassiveSpell> equippedPassiveSpells = new Dictionary<PassiveSpellDisplay, PassiveSpell>();
+    private List<PassiveSpellDisplay> unusedPassiveSpellDisplays = new List<PassiveSpellDisplay>();
+    private int numPassiveSpellSlots;
+
 
     [Header("Potions")]
     private Dictionary<PotionIngredient, int> potionIngredientMap = new Dictionary<PotionIngredient, int>();
@@ -121,6 +127,9 @@ public class GameManager : MonoBehaviour
 
         // Get List of all Artifact Labels
         allArtifacts = new List<ArtifactLabel>((ArtifactLabel[])Enum.GetValues(typeof(ArtifactLabel)));
+
+        // Get List of all Spell Labels
+        allSpells = new List<SpellLabel>((SpellLabel[])Enum.GetValues(typeof(SpellLabel)));
 
         TryAddPersistentTokens();
 
@@ -196,73 +205,38 @@ public class GameManager : MonoBehaviour
         // Testing
         switch (currentlyTesting)
         {
-            case ContentType.ActiveSpell:
+            case ContentType.Spell:
 
                 // Active Spells
                 // Equip new spell
                 if (Input.GetKeyDown(KeyCode.RightArrow))
                 {
-                    equippableActiveSpellIndex++;
+                    equippableSpellIndex++;
 
-                    if (equippableActiveSpellIndex > equippableActiveSpells.Count - 1)
-                        equippableActiveSpellIndex = 0;
+                    if (equippableSpellIndex > allSpells.Count - 1)
+                        equippableSpellIndex = 0;
 
-                    Debug.Log("Selected: " + equippableActiveSpells[equippableActiveSpellIndex]);
+                    Debug.Log("Selected: " + allSpells[equippableSpellIndex]);
                 }
 
                 // Equip new spell
                 if (Input.GetKeyDown(KeyCode.LeftArrow))
                 {
-                    equippableActiveSpellIndex--;
+                    equippableSpellIndex--;
 
-                    if (equippableActiveSpellIndex < 0)
-                        equippableActiveSpellIndex = equippableActiveSpells.Count - 1;
+                    if (equippableSpellIndex < 0)
+                        equippableSpellIndex = allSpells.Count - 1;
 
-                    Debug.Log("Selected: " + equippableActiveSpells[equippableActiveSpellIndex]);
+                    Debug.Log("Selected: " + allSpells[equippableSpellIndex]);
                 }
 
                 if (Input.GetKeyDown(KeyCode.Alpha1))
                 {
-                    EquipActiveSpell(equippableActiveSpells[equippableActiveSpellIndex]);
+                    EquipSpell(allSpells[equippableSpellIndex]);
                 }
                 if (Input.GetKeyDown(KeyCode.Alpha2))
                 {
-                    UnequipActiveSpell(equippableActiveSpells[equippableActiveSpellIndex]);
-                }
-
-                break;
-            case ContentType.PassiveSpell:
-
-                // Passive Spells
-                // Equip new spell
-                if (Input.GetKeyDown(KeyCode.RightArrow))
-                {
-                    equippablePassiveSpellIndex++;
-
-                    if (equippablePassiveSpellIndex > equippablePassiveSpells.Count - 1)
-                        equippablePassiveSpellIndex = 0;
-
-                    Debug.Log("Selected: " + equippablePassiveSpells[equippablePassiveSpellIndex]);
-                }
-
-                // Equip new spell
-                if (Input.GetKeyDown(KeyCode.LeftArrow))
-                {
-                    equippablePassiveSpellIndex--;
-
-                    if (equippablePassiveSpellIndex < 0)
-                        equippablePassiveSpellIndex = equippablePassiveSpells.Count - 1;
-
-                    Debug.Log("Selected: " + equippablePassiveSpells[equippablePassiveSpellIndex]);
-                }
-
-                if (Input.GetKeyDown(KeyCode.Alpha1))
-                {
-                    EquipPassiveSpell(equippablePassiveSpells[equippablePassiveSpellIndex]);
-                }
-                if (Input.GetKeyDown(KeyCode.Alpha2))
-                {
-                    UnequipPassiveSpell(equippablePassiveSpells[equippablePassiveSpellIndex]);
+                    EquipSpell(allSpells[equippableSpellIndex]);
                 }
 
                 break;
@@ -280,7 +254,7 @@ public class GameManager : MonoBehaviour
                     Debug.Log("Selected: " + allArtifacts[artifactIndex]);
                 }
 
-                // Equip new spell
+                // Equip new artifact
                 if (Input.GetKeyDown(KeyCode.LeftArrow))
                 {
                     artifactIndex--;
@@ -316,7 +290,7 @@ public class GameManager : MonoBehaviour
                     Debug.Log("Selected: " + allBooks[bookIndex]);
                 }
 
-                // Equip new spell
+                // Equip new book
                 if (Input.GetKeyDown(KeyCode.LeftArrow))
                 {
                     bookIndex--;
@@ -340,7 +314,6 @@ public class GameManager : MonoBehaviour
                 break;
         }
     }
-
 
     public void TriggerRandomPassiveSpell()
     {
@@ -379,6 +352,152 @@ public class GameManager : MonoBehaviour
         equippedBooks[label].AlterCharge(alterBy);
     }
 
+    // Spell Swap Sequence
+    [SerializeField] private GameObject[] turnOnForSwapSpellSequence;
+    [SerializeField] private VisualSpellDisplay visualSpellDisplayPrefab;
+    [SerializeField] private Transform spawnVisualSpellDisplayPrefabOn;
+    private bool skipSpellSwap;
+    private Spell spellToSwap;
+
+    public void SkipSpellSwap()
+    {
+        skipSpellSwap = true;
+    }
+
+    public void SetSpellToSwap(Spell spell)
+    {
+        spellToSwap = spell;
+    }
+
+    public IEnumerator StartSwapSpellSequnce(SpellLabel label)
+    {
+        Spell spell = GetSpellOfType(label);
+        switch (spell)
+        {
+            case ActiveSpell:
+                yield return StartCoroutine(SwapSpellSequence(ContentType.ActiveSpell, label));
+                break;
+            case PassiveSpell:
+                yield return StartCoroutine(SwapSpellSequence(ContentType.PassiveSpell, label));
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
+
+    private IEnumerator SwapSpellSequence(ContentType requiredSpellType, SpellLabel newSpell)
+    {
+        // First check to see if theres an extra slot to use
+        switch (requiredSpellType)
+        {
+            case ContentType.ActiveSpell:
+                // if there is an extra spell display to use
+                if (unusedActiveSpellDisplays.Count > 0)
+                {
+                    // Just use it
+                    EquipActiveSpell(newSpell);
+                    yield break;
+                }
+                break;
+            case ContentType.PassiveSpell:
+                // if there is an extra spell display to use
+                if (unusedPassiveSpellDisplays.Count > 0)
+                {
+                    // Just use it
+                    EquipPassiveSpell(newSpell);
+                    yield break;
+                }
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+
+        // Enable extra UI
+        foreach (GameObject obj in turnOnForSwapSpellSequence)
+        {
+            obj.SetActive(true);
+        }
+
+        // Spawn Visual Spell Display to Give Player Info
+        VisualSpellDisplay spawned = Instantiate(visualSpellDisplayPrefab, spawnVisualSpellDisplayPrefabOn);
+        spawned.SetSpell(GetSpellOfType(newSpell));
+
+        // Tell all displays of the specified type that the swap sequence IS happening 
+        switch (requiredSpellType)
+        {
+            case ContentType.ActiveSpell:
+                foreach (KeyValuePair<ActiveSpellDisplay, ActiveSpell> spell in equippedActiveSpells)
+                {
+                    // Tell Spell Display new on click action
+                    spell.Key.SetSpellDisplayState(SpellDisplayState.SwapSequence);
+                }
+                break;
+            case ContentType.PassiveSpell:
+                foreach (KeyValuePair<PassiveSpellDisplay, PassiveSpell> spell in equippedPassiveSpells)
+                {
+                    // Tell Spell Display new on click action
+                    spell.Key.SetSpellDisplayState(SpellDisplayState.SwapSequence);
+                }
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+
+        // Wait until either a spell has been selected to be swapped or the player has elected to reject the swap
+        yield return new WaitUntil(() => skipSpellSwap || spellToSwap != null);
+
+        // Re-tell all spell displays to go back to normal
+        switch (requiredSpellType)
+        {
+            case ContentType.ActiveSpell:
+                foreach (KeyValuePair<ActiveSpellDisplay, ActiveSpell> spell in equippedActiveSpells)
+                {
+                    // Tell Spell Display new on click action
+                    spell.Key.SetSpellDisplayState(SpellDisplayState.Normal);
+                }
+                break;
+            case ContentType.PassiveSpell:
+                foreach (KeyValuePair<PassiveSpellDisplay, PassiveSpell> spell in equippedPassiveSpells)
+                {
+                    // Tell Spell Display new on click action
+                    spell.Key.SetSpellDisplayState(SpellDisplayState.Normal);
+                }
+                break;
+        }
+
+        // Player has decided not to reject the swap and has selected a spell to swap out
+        if (!skipSpellSwap)
+        {
+            // Swap out the selected Spells
+            switch (requiredSpellType)
+            {
+                case ContentType.ActiveSpell:
+                    ActiveSpellDisplay activeDisplay = UnequipActiveSpell(spellToSwap.Label);
+                    unusedActiveSpellDisplays.Remove(activeDisplay);
+                    EquipActiveSpell(newSpell, activeDisplay);
+                    break;
+                case ContentType.PassiveSpell:
+                    PassiveSpellDisplay passiveDisplay = UnequipPassiveSpell(spellToSwap.Label);
+                    unusedPassiveSpellDisplays.Remove(passiveDisplay);
+                    EquipPassiveSpell(newSpell, passiveDisplay);
+                    break;
+            }
+        }
+
+        // Destroy previously spawned visual spell display
+        Destroy(spawned.gameObject);
+
+        // Disable the screens used for this sequence
+        foreach (GameObject obj in turnOnForSwapSpellSequence)
+        {
+            obj.SetActive(false);
+        }
+
+        // Reset for next time
+        spellToSwap = null;
+        skipSpellSwap = false;
+    }
+
     public void EquipSpell(SpellLabel label)
     {
         Spell spell = GetSpellOfType(label);
@@ -395,88 +514,145 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void UnequipSpell(SpellLabel label)
-    {
-        Spell spell = loadedSpellDisplays[label].GetSpell();
-
-        switch (spell)
-        {
-            case ActiveSpell:
-                UnequipActiveSpell(label);
-                break;
-            case PassiveSpell:
-                UnequipPassiveSpell(label);
-                break;
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
-    }
-
-    public void EquipPassiveSpell(SpellLabel label)
+    public PassiveSpellDisplay SpawnPassiveSpellDisplay()
     {
         PassiveSpellDisplay spawned = Instantiate(passiveSpellDisplayPrefab, passiveSpellDisplaysList);
+        unusedPassiveSpellDisplays.Add(spawned);
+        spawned.SetEmpty(true);
+        return spawned;
+    }
 
+    public ActiveSpellDisplay SpawnActiveSpellDisplay()
+    {
+        ActiveSpellDisplay spawned = Instantiate(activeSpellDisplayPrefab, activeSpellDisplaysList);
+        KeyCode keyBinding = activeSpellBindings[unusedActiveSpellDisplays.Count + equippedActiveSpells.Count];
+        unusedActiveSpellDisplays.Add(spawned);
+        spawned.SetKeyBinding(keyBinding);
+        spawned.SetEmpty(true);
+        return spawned;
+    }
+
+    public void EquipPassiveSpell(SpellLabel label, PassiveSpellDisplay spellDisplay = null)
+    {
+        // if no spell display to equip into is specified
+        if (spellDisplay == null)
+        {
+            // if there is an extra spell display to use
+            if (unusedPassiveSpellDisplays.Count > 0)
+            {
+                // grab that display to use
+                spellDisplay = unusedPassiveSpellDisplays[0];
+                unusedPassiveSpellDisplays.RemoveAt(0);
+            }
+            else
+            {
+                // if there isn't, then we can't equip this spell and something has probably gone wrong
+                return;
+            }
+        }
+
+        spellDisplay.SetEmpty(false);
         PassiveSpell newSpell = (PassiveSpell)GetSpellOfType(label);
         newSpell.OnEquip();
 
-        equippedPassiveSpells.Add(spawned, newSpell);
-        spawned.SetPassiveSpell(newSpell);
-        loadedSpellDisplays.Add(label, spawned);
+        spellDisplay.SetPassiveSpell(newSpell);
+        equippedPassiveSpells.Add(spellDisplay, newSpell);
+        loadedSpellDisplays.Add(label, spellDisplay);
 
         // Debug.Log("Equipped: " + newSpell);
     }
 
-    public void UnequipPassiveSpell(SpellLabel label)
+    public PassiveSpellDisplay UnequipPassiveSpell(SpellLabel label)
     {
         if (!loadedSpellDisplays.ContainsKey(label))
         {
             Debug.Log("Spell: " + label + ", not Currency Equipped");
-            return;
+            return null;
         }
 
-        SpellDisplay loaded = loadedSpellDisplays[label];
+        PassiveSpellDisplay loaded = (PassiveSpellDisplay)loadedSpellDisplays[label];
 
+        // Manage lists
         loaded.Unset();
-        equippedPassiveSpells.Remove((PassiveSpellDisplay)loaded);
+        equippedPassiveSpells.Remove(loaded);
         loadedSpellDisplays.Remove(label);
-        Destroy(loaded.gameObject);
+
+        // if the number of equipped passive spells + the number of unused passive spell displays is over the number of allowed spell slots, destroy the extra one
+        // otherwise, it remains simply unset
+        if (equippedPassiveSpells.Count + unusedPassiveSpellDisplays.Count > numPassiveSpellSlots)
+        {
+            Destroy(loaded.gameObject);
+        }
+        else
+        {
+            unusedPassiveSpellDisplays.Add(loaded);
+        }
+
+        return loaded;
 
         // Debug.Log("Unequipped: " + label.ToString());
     }
 
-    public void EquipActiveSpell(SpellLabel label)
+    public void EquipActiveSpell(SpellLabel label, ActiveSpellDisplay spellDisplay = null)
     {
-        ActiveSpellDisplay spawned = Instantiate(activeSpellDisplayPrefab, activeSpellDisplaysList);
+        // if no spell display to equip into is specified
+        if (spellDisplay == null)
+        {
+            // if there is an extra spell display to use
+            if (unusedActiveSpellDisplays.Count > 0)
+            {
+                // grab that display to use
+                spellDisplay = unusedActiveSpellDisplays[0];
+                unusedActiveSpellDisplays.RemoveAt(0);
+            }
+            else
+            {
+                // if there isn't, then we can't equip this spell and something has probably gone wrong
+                return;
+            }
+        }
 
+        spellDisplay.SetEmpty(false);
         ActiveSpell newSpell = (ActiveSpell)GetSpellOfType(label);
         newSpell.OnEquip();
 
-        equippedActiveSpells.Add(spawned, newSpell);
-        spawned.SetActiveSpell(newSpell, activeSpellBindings[equippedActiveSpells.Count - 1]);
-        loadedSpellDisplays.Add(label, spawned);
-        activeSpellDisplays.Add(spawned);
+        spellDisplay.SetActiveSpell(newSpell);
+        equippedActiveSpells.Add(spellDisplay, newSpell);
+        loadedSpellDisplays.Add(label, spellDisplay);
+        activeSpellDisplays.Add(spellDisplay);
 
         // Debug.Log("Equipped: " + newSpell);
     }
 
-    public void UnequipActiveSpell(SpellLabel label)
+    public ActiveSpellDisplay UnequipActiveSpell(SpellLabel label)
     {
         if (!loadedSpellDisplays.ContainsKey(label))
         {
             Debug.Log("Spell: " + label + ", not Currency Equipped");
-            return;
+            return null;
         }
 
         ActiveSpellDisplay loaded = (ActiveSpellDisplay)loadedSpellDisplays[label];
 
-        loaded.Unset();
+        // if the number of equipped active spells + the number of unused active spell displays is over the number of allowed spell slots, destroy the extra one
+        // otherwise, it remains simply unset
+        if (equippedActiveSpells.Count + unusedActiveSpellDisplays.Count > numActiveSpellSlots)
+        {
+            Destroy(loaded.gameObject);
+        }
+        else
+        {
+            // Manage lists
+            loaded.Unset();
+            unusedActiveSpellDisplays.Add(loaded);
+        }
+
         equippedActiveSpells.Remove(loaded);
         loadedSpellDisplays.Remove(label);
         activeSpellDisplays.Remove(loaded);
 
-        Destroy(loaded.gameObject);
-
         // Debug.Log("Unequipped: " + label.ToString());
+        return loaded;
     }
 
     public void ReduceActiveSpellCooldowns(int reduceBy)
@@ -533,10 +709,23 @@ public class GameManager : MonoBehaviour
 
     private void EquipCharacterLoadout(Character c)
     {
+        // Spawn default num spell slots
+        numActiveSpellSlots = c.GetStartingActiveSpellSlots();
+        numPassiveSpellSlots = c.GetStartingPassiveSpellSlots();
+        for (int i = 0; i < numActiveSpellSlots; i++)
+        {
+            SpawnActiveSpellDisplay();
+        }
+        for (int i = 0; i < numPassiveSpellSlots; i++)
+        {
+            SpawnPassiveSpellDisplay();
+        }
+
         // Equip starting spells
         foreach (SpellLabel spellLabel in c.GetStartingSpells())
         {
             EquipSpell(spellLabel);
+            allSpells.Remove(spellLabel);
         }
 
         // Equip character equipment
@@ -649,8 +838,8 @@ public class GameManager : MonoBehaviour
         {
             case SpellLabel.BattleTrance:
                 return new BattleTrance();
-            case SpellLabel.BloodTrade:
-                return new BloodTrade();
+            case SpellLabel.TradeBlood:
+                return new TradeBlood();
             case SpellLabel.Cripple:
                 return new Cripple();
             case SpellLabel.CrushJoints:
@@ -659,8 +848,8 @@ public class GameManager : MonoBehaviour
                 return new Electrifry();
             case SpellLabel.Excite:
                 return new Excite();
-            case SpellLabel.ExposedFlesh:
-                return new ExposedFlesh();
+            case SpellLabel.ExposeFlesh:
+                return new ExposeFlesh();
             case SpellLabel.Fireball:
                 return new Fireball();
             case SpellLabel.Flurry:
@@ -681,8 +870,8 @@ public class GameManager : MonoBehaviour
                 return new Plague();
             case SpellLabel.PoisonTips:
                 return new PoisonTips();
-            case SpellLabel.Reverberations:
-                return new Reverberations();
+            case SpellLabel.Reverberate:
+                return new Reverberate();
             case SpellLabel.Shock:
                 return new Shock();
             case SpellLabel.Singe:
@@ -1638,7 +1827,7 @@ public class GameManager : MonoBehaviour
         return artifact;
     }
 
-    private ArtifactLabel GetRandomArtifactOfRarity(Rarity r)
+    public ArtifactLabel GetRandomArtifactOfRarity(Rarity r)
     {
         List<ArtifactLabel> options = new List<ArtifactLabel>();
         foreach (ArtifactLabel l in allArtifacts)
@@ -1689,7 +1878,7 @@ public class GameManager : MonoBehaviour
         return book;
     }
 
-    private BookLabel GetRandomBookOfRarity(Rarity r)
+    public BookLabel GetRandomBookOfRarity(Rarity r)
     {
         List<BookLabel> options = new List<BookLabel>();
         foreach (BookLabel l in allBooks)
@@ -1704,6 +1893,38 @@ public class GameManager : MonoBehaviour
         if (options.Count == 0)
         {
             return BookLabel.WitchesTravelGuide;
+        }
+
+        return RandomHelper.GetRandomFromList(options);
+    }
+
+    // BrEAk
+
+    public SpellLabel GetRandomSpell(bool removeFromPool = true)
+    {
+        SpellLabel spell = GetRandomSpellOfRarity(spellRarityOdds.GetOption());
+        if (removeFromPool)
+        {
+            allSpells.Remove(spell);
+        }
+        return spell;
+    }
+
+    public SpellLabel GetRandomSpellOfRarity(Rarity r)
+    {
+        List<SpellLabel> options = new List<SpellLabel>();
+        foreach (SpellLabel l in allSpells)
+        {
+            if (spellRarityMap[l] == r)
+            {
+                options.Add(l);
+            }
+        }
+
+        // No Books Remaining
+        if (options.Count == 0)
+        {
+            return SpellLabel.WitchesWill;
         }
 
         return RandomHelper.GetRandomFromList(options);
