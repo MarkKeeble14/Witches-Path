@@ -15,6 +15,53 @@ public class CombatentHPBar : MonoBehaviour
     [SerializeField] private GameObject[] wardDisplay;
     private int currentWard;
     private int maxHealth;
+    private int currentHealth;
+
+    private int damageFromPoison;
+    private int damageFromBurn;
+    private int damageFromBlight;
+
+    public void SetDamageFromPoison(int stacks)
+    {
+        damageFromPoison = stacks;
+        ShowAfflictionStacks();
+    }
+
+    public void SetDamageFromBurn(int stacks)
+    {
+        damageFromBurn = stacks;
+        ShowAfflictionStacks();
+    }
+
+    public void SetDamageFromBlight(int stacks)
+    {
+        damageFromBlight = stacks;
+        ShowAfflictionStacks();
+    }
+
+    private void ShowAfflictionStacks()
+    {
+        int poisonThreshold = currentHealth - damageFromPoison;
+        int burnThreshold = currentHealth - damageFromPoison - damageFromBurn;
+        int blightThreshold = currentHealth - damageFromPoison - damageFromBurn - damageFromBlight;
+        for (int i = currentHealth; i > poisonThreshold && i > 0; i--)
+        {
+            CombatentHPBarSegment segment = hPBarSegments[i - 1];
+            segment.SetColor(Color.green);
+        }
+
+        for (int i = poisonThreshold; i > burnThreshold && i > 0; i--)
+        {
+            CombatentHPBarSegment segment = hPBarSegments[i - 1];
+            segment.SetColor(Color.magenta);
+        }
+
+        for (int i = blightThreshold; i > blightThreshold && i > 0; i--)
+        {
+            CombatentHPBarSegment segment = hPBarSegments[i - 1];
+            segment.SetColor(Color.cyan);
+        }
+    }
 
     public void Set(int currentHealth, int maxHealth)
     {
@@ -36,16 +83,17 @@ public class CombatentHPBar : MonoBehaviour
             }
         }
         this.maxHealth = maxHealth;
+        this.currentHealth = currentHealth;
         hpText.text = currentHealth + " / " + maxHealth;
     }
 
-    public void SetCurrentHP(int newCurrentHP)
+    public void SetCurrentHP(int newCurrentHealth)
     {
         for (int i = 0; i < hPBarSegments.Length; i++)
         {
             CombatentHPBarSegment segment = hPBarSegments[i];
             // Hide segments that are indexed higher than the current HP Value
-            if (i >= newCurrentHP)
+            if (i >= newCurrentHealth)
             {
                 segment.SetAlpha(0);
             }
@@ -54,7 +102,8 @@ public class CombatentHPBar : MonoBehaviour
                 segment.SetAlpha(1);
             }
         }
-        hpText.text = newCurrentHP + " / " + maxHealth;
+        currentHealth = newCurrentHealth;
+        hpText.text = currentHealth + " / " + maxHealth;
     }
 
     public void SetWard(int wardAmount)

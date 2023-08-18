@@ -148,7 +148,7 @@ public partial class CombatManager : MonoBehaviour
     [Header("Spell Queue")]
     [SerializeField] private SpellQueueDisplay spellQueueDisplayPrefab;
     [SerializeField] private Transform spellQueueDisplayList;
-    private List<QueuedActiveSpell> spellQueue = new List<QueuedActiveSpell>();
+    private List<InCastQueueActiveSpell> spellQueue = new List<InCastQueueActiveSpell>();
     [SerializeField] private float delayBetweenSpellCasts = 1;
     [SerializeField] private AudioSource spellSFXSource;
 
@@ -225,12 +225,13 @@ public partial class CombatManager : MonoBehaviour
 
             InCombat = false;
 
-            // Reset
-            ResetCombat();
 
             GameManager._Instance.ResolveCurrentEvent();
 
             Debug.Log("Combat Completed: " + combat);
+
+            // Reset
+            ResetCombat();
         }
     }
 
@@ -352,13 +353,31 @@ public partial class CombatManager : MonoBehaviour
         Debug.Log("Player Turn Ended");
     }
 
+    [SerializeField] private SpellPotencyDisplay castingSpellPotencyDisplayPrefab;
+    [SerializeField] private SemicircleLayoutGroup castingSpellSemiCircle;
+
+    private struct InCastQueueActiveSpell
+    {
+        public SpellPotencyDisplay SpellPotencyDisplay;
+        public QueuedActiveSpell QueuedActiveSpell;
+    }
+
     public void AddSpellToCastQueue(ActiveSpell spell)
     {
         // Spawn new display
         SpellQueueDisplay spawned = Instantiate(spellQueueDisplayPrefab, spellQueueDisplayList);
         spawned.Set(spell, spell.GetSpellSprite());
 
-        spellQueue.Add(new QueuedActiveSpell(spell, spawned, spellQueue.Count));
+        // Spawn casting queue potency display
+        SpellPotencyDisplay spellPotencyDisplay = Instantiate(castingSpellPotencyDisplayPrefab, castingSpellSemiCircle.transform);
+
+        InCastQueueActiveSpell toQueue = new InCastQueueActiveSpell();
+        toQueue.SpellPotencyDisplay = spellPotencyDisplay;
+        toQueue.QueuedActiveSpell = new QueuedActiveSpell(spell, spawned, spellQueue.Count);
+        spellQueue.Add(toQueue);
+
+        // Test
+        spellPotencyDisplay.SetCurrentPotency(RandomHelper.RandomFloat(spellPotencyDisplay.GetMinMaxPotency()));
 
         // Check for Free Spell Casts
         if (NumFreeSpells > 0)
@@ -394,16 +413,17 @@ public partial class CombatManager : MonoBehaviour
             ApplyPoisonEffectOnMap(enemyAfflictionMap, Target.Enemy);
 
             // Get Spell from Queue
-            QueuedActiveSpell spell = spellQueue[0];
+            InCastQueueActiveSpell spell = spellQueue[0];
 
             // Remove Spell from Queue
             spellQueue.RemoveAt(0);
 
-            // Remove UI from spell queue
-            Destroy(spell.Display.gameObject);
+            // Remove UI from spell queue & from Spell Potency Display
+            Destroy(spell.QueuedActiveSpell.Display.gameObject);
+            Destroy(spell.SpellPotencyDisplay.gameObject);
 
             // Cast Spell
-            yield return StartCoroutine(CastSpell(spell.Spell));
+            yield return StartCoroutine(CastSpell(spell.QueuedActiveSpell.Spell));
 
             if (CheckForCombatOver())
             {
@@ -474,6 +494,18 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
+    private int GetTargetAfflictionStacks(AfflictionType type, Target target)
+    {
+        if (TargetHasAffliction(type, target))
+        {
+            return GetTargetAfflictionMap(target)[type].GetStacks();
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
     private IEnumerator EnemyTurn()
     {
         Debug.Log("Enemy Turn Started");
@@ -540,14 +572,6 @@ public partial class CombatManager : MonoBehaviour
         // Reset Player Mana
         GameManager._Instance.SetPlayerMana(GameManager._Instance.GetMaxPlayerMana());
 
-        // Clear Spell Queue
-        while (spellQueue.Count > 0)
-        {
-            QueuedActiveSpell spell = spellQueue[0];
-            Destroy(spell.Display.gameObject);
-            spellQueue.RemoveAt(0);
-        }
-
         // Reset HP Bars
         characterHPBar.Clear();
         enemyHPBar.Clear();
@@ -556,6 +580,15 @@ public partial class CombatManager : MonoBehaviour
         musicSource.time = 0;
         objCount = 0;
         noteCount = 0;
+
+        // Clear Spell Queue
+        while (spellQueue.Count > 0)
+        {
+            InCastQueueActiveSpell spell = spellQueue[0];
+            Destroy(spell.QueuedActiveSpell.Display.gameObject);
+            Destroy(spell.SpellPotencyDisplay.gameObject);
+            spellQueue.RemoveAt(0);
+        }
 
         // Destroy Circles
         ClearCircleList();
@@ -848,30 +881,54 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private bool SetAffliction(AfflictionType type, int activations, Target t)
+    private bool SetAffliction(AfflictionType type, int activations, Target target)
     {
-        Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(t);
-        Transform parentTo = GetTargetParentAfflictionTo(t);
+        Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(target);
+        Transform parentTo = GetTargetParentAfflictionTo(target);
+
+        bool isNewInstance;
 
         // Affliction Map already contains
         if (map.ContainsKey(type))
         {
             map[type].AlterStacks(activations);
-            ShowAfflictionProc(type, t);
-            return false;
+            ShowAfflictionProc(type, target);
+            isNewInstance = false;
         }
         else
         {
             Affliction aff = GetAfflictionOfType(type);
             aff.SetStacks(activations);
-            aff.SetOwner(t);
+            aff.SetOwner(target);
             map.Add(type, aff);
 
             AfflictionIcon spawned = Instantiate(afflictionIconPrefab, parentTo);
             spawned.SetAffliction(aff);
-            GetTargetAfflictionDisplays(t).Add(type, spawned);
-            ShowAfflictionProc(type, t);
-            return true;
+            GetTargetAfflictionDisplays(target).Add(type, spawned);
+            ShowAfflictionProc(type, target);
+            isNewInstance = true;
+        }
+
+        // Update hp bar
+        UpdateHPBarAfflictions(type, target);
+        return isNewInstance;
+    }
+
+    private void UpdateHPBarAfflictions(AfflictionType type, Target target)
+    {
+        switch (type)
+        {
+            case AfflictionType.Poison:
+                GetCombatentHPBar(target).SetDamageFromPoison(GetTargetAfflictionStacks(AfflictionType.Poison, target));
+                break;
+            case AfflictionType.Burn:
+                GetCombatentHPBar(target).SetDamageFromBurn(BalenceManager._Instance.GetValue(AfflictionType.Burn, "DamageAmount"));
+                break;
+            case AfflictionType.Blight:
+                GetCombatentHPBar(target).SetDamageFromBlight(GetTargetAfflictionStacks(AfflictionType.Blight, target));
+                break;
+            default:
+                break;
         }
     }
 
@@ -917,6 +974,9 @@ public partial class CombatManager : MonoBehaviour
         // remove a stack
         aff.AlterStacks(-toConsume);
 
+        // update hp bar
+        UpdateHPBarAfflictions(type, target);
+
         // there remains at least a stack of the affliction, do not remove
         if (!aff.CanBeCleared) return;
 
@@ -938,6 +998,19 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
+    private CombatentHPBar GetCombatentHPBar(Target target)
+    {
+        switch (target)
+        {
+            case Target.Character:
+                return characterHPBar;
+            case Target.Enemy:
+                return enemyHPBar;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
+
     private void ApplyPoisonEffectOnMap(Dictionary<AfflictionType, Affliction> map, Target target)
     {
         if (map.ContainsKey(AfflictionType.Poison))
@@ -948,6 +1021,7 @@ public partial class CombatManager : MonoBehaviour
             ConsumeAfflictionStack(AfflictionType.Poison, target, Mathf.RoundToInt(GetAffliction(AfflictionType.Poison, target).GetStacks() * percentToMultiplyBy));
             ShowAfflictionProc(AfflictionType.Poison, target);
         }
+
     }
 
     private void ApplyBlightEffectOnMap(Dictionary<AfflictionType, Affliction> map, Target target)

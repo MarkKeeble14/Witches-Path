@@ -23,7 +23,7 @@ MonoBehaviour:
   maxHP: 90
   startingHP: 90
   basicAttackDamage: 7
-  startingActiveSpellSlots: 3
+  startingActiveSpellSlots: 4
   startingPassiveSpellSlots: 2
   maxMana: 7
   startingMana: 7

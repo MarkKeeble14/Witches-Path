@@ -1,11 +1,30 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum EventLabel
 {
     HomeFree,
     WitchesHut,
-    TravellersDelivery
+    TravellersDelivery,
+    PitOfTreasure
+}
+
+[System.Serializable]
+public class PassFailEventOptionContainer
+{
+    [SerializeField] private string conditionalString;
+    [SerializeField] private EventOption onConditionPass;
+    [SerializeField] private EventOption onConditionFail;
+    public EventOption GetEventOption(bool pass)
+    {
+        return pass ? onConditionPass : onConditionFail;
+    }
+
+    public string GetConditionalString()
+    {
+        return conditionalString;
+    }
 }
 
 [CreateAssetMenu(fileName = "OptionEvent", menuName = "GameOccurance/OptionEvent")]
@@ -17,16 +36,23 @@ public class OptionEvent : GameOccurance
 
     public override MapNodeType Type => MapNodeType.Event;
 
+
     public Sprite EventArt { get => eventArt; }
     public string EventName { get => eventName; }
     public string EventText { get => eventText; }
-    public EventOption[] Options { get => options; }
 
     [Header("Event Details")]
     [SerializeField] private Sprite eventArt;
     [SerializeField] private string eventName;
     [SerializeField] private string eventText;
-    [SerializeField] private EventOption[] options;
+    [SerializeField] private PassFailEventOptionContainer[] options;
+
+    [SerializeField] private OptionEvent[] chainEvents;
+
+    public OptionEvent GetChainEvent(int index)
+    {
+        return chainEvents[index];
+    }
 
     protected override IEnumerator OnResolve()
     {
@@ -38,16 +64,18 @@ public class OptionEvent : GameOccurance
     {
         Debug.Log(name + ": OnStart");
 
-        FillEventOptionText();
-
         yield return GameManager._Instance.StartCoroutine(EventManager._Instance.StartOptionEvent(this));
     }
 
-    private void FillEventOptionText()
+    public List<EventOption> GetVerifiedEventOptions()
     {
-        foreach (EventOption option in options)
+        List<EventOption> verifiedOptions = new List<EventOption>();
+        foreach (PassFailEventOptionContainer option in options)
         {
-            option.FillEffect(eventLabel);
+            EventOption toAdd = option.GetEventOption(GameManager._Instance.ParseEventCondition(this, option.GetConditionalString()));
+            toAdd.FillEffect(eventLabel);
+            verifiedOptions.Add(toAdd);
         }
+        return verifiedOptions;
     }
 }

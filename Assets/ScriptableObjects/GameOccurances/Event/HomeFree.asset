@@ -17,22 +17,42 @@ MonoBehaviour:
   eventName: Home Free
   eventText: In the distance, you notice a magical portal gurgling in the wind...
   options:
-  - hintText: Apprach the Portal
-    effectText: Gain {GoldAmount} Gold, Lose a Random Artifact
-    possibleOutcomes:
-      percentageMap:
-      - key:
-          resultText: As you approach the portal, one of your artifacts is sucked
-            from your bag straight into the portal's waiting ripples. A moment later,
-            a sack of money flies out, nearing taking off your head before landing
-            by your feet.
-          codeString: AlterGold:{GoldAmount};RemoveRandomArtifact
-        value: 100
-  - hintText: Ignore the Portal
-    effectText: Gain Nothing, Lose Nothing
-    possibleOutcomes:
-      percentageMap:
-      - key:
-          resultText: Being wary can be a boon and a curse...
-          codeString: 
-        value: 100
+  - conditionalString: 
+    onConditionPass:
+      hintText: Approach
+      effectText: Gain {GoldAmount} Gold, Lose a Random Artifact
+      locked: 0
+      possibleOutcomes:
+        percentageMap:
+        - key:
+            resultText: As you approach the portal, one of your artifacts is sucked
+              from your bag straight into the portal's waiting ripples. A moment
+              later, a sack of money flies out, nearing taking off your head before
+              landing by your feet.
+            codeString: AlterGold:{GoldAmount};RemoveRandomArtifact
+          value: 100
+    onConditionFail:
+      hintText: 
+      effectText: 
+      locked: 0
+      possibleOutcomes:
+        percentageMap: []
+  - conditionalString: 
+    onConditionPass:
+      hintText: Ignore
+      effectText: Gain Nothing, Lose Nothing
+      locked: 0
+      possibleOutcomes:
+        percentageMap:
+        - key:
+            resultText: You decide to leave well enough alone. The sounds coming
+              from the portal sounded unpleasant, to say the least...
+            codeString: 
+          value: 100
+    onConditionFail:
+      hintText: 
+      effectText: 
+      locked: 0
+      possibleOutcomes:
+        percentageMap: []
+  chainEvents: []

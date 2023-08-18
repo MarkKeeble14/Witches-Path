@@ -5,9 +5,28 @@ using UnityEngine;
 using UnityEngine.UI;
 
 [System.Serializable]
+public class OptionEventWithCondition
+{
+    [SerializeField] private OptionEvent optionEvent;
+    [SerializeField] private string conditionString;
+    public string Name => optionEvent.EventLabel.ToString();
+
+    public string GetConditionString()
+    {
+        return conditionString;
+    }
+
+    public OptionEvent GetOptionEvent()
+    {
+        return optionEvent;
+    }
+}
+
+[System.Serializable]
 public class Map
 {
     [SerializeField] private SerializableDictionary<MapNodeType, List<GameOccurance>> mapNodes = new SerializableDictionary<MapNodeType, List<GameOccurance>>();
+    [SerializeField] private List<OptionEventWithCondition> optionEventMapNodes = new List<OptionEventWithCondition>();
     [SerializeField] private SerializableDictionary<int, MapNodeType> forcedNodeIndices = new SerializableDictionary<int, MapNodeType>();
     [SerializeField] private PercentageMap<MapNodeType> randomNodeTypeLiklihood = new PercentageMap<MapNodeType>();
 
@@ -169,6 +188,27 @@ public class Map
 
     private GameOccurance GetMapNodeOfType(MapNodeType type)
     {
-        return RandomHelper.GetRandomFromList(mapNodes[type]);
+        if (type == MapNodeType.Event)
+        {
+            return GetEventMapNode();
+        }
+        else
+        {
+            return RandomHelper.GetRandomFromList(mapNodes[type]);
+        }
+    }
+
+    private GameOccurance GetEventMapNode()
+    {
+        List<OptionEvent> possibleEvents = new List<OptionEvent>();
+        foreach (OptionEventWithCondition optionEvent in optionEventMapNodes)
+        {
+            OptionEvent e = optionEvent.GetOptionEvent();
+            if (GameManager._Instance.ParseEventCondition(e, optionEvent.GetConditionString()))
+            {
+                possibleEvents.Add(e);
+            }
+        }
+        return RandomHelper.GetRandomFromList(possibleEvents);
     }
 }

@@ -1,12 +1,15 @@
 ﻿using UnityEngine;
 using TMPro;
 using System;
+using UnityEngine.UI;
 
 public class OptionEventOptionDisplay : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI hintText;
-    [SerializeField] private TextMeshProUGUI labelText;
+    [SerializeField] private TextMeshProUGUI effectText;
     private EventOption setTo;
+
+    [SerializeField] private Button button;
 
     private Action onClick;
 
@@ -14,7 +17,8 @@ public class OptionEventOptionDisplay : MonoBehaviour
     {
         setTo = option;
         hintText.text = option.HintText;
-        labelText.text = option.EffectText;
+        effectText.text = option.FinalizedEffectText;
+        button.interactable = !option.Locked;
     }
 
     public void OnClick()

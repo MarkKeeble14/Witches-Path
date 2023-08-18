@@ -6,9 +6,12 @@ public class EventOption
 {
     [SerializeField] private string hintText;
     [SerializeField] private string effectText;
+    [SerializeField] private bool locked;
     private string finalizedEffectText;
     public string HintText => hintText;
-    public string EffectText => finalizedEffectText;
+    public string FinalizedEffectText => finalizedEffectText;
+    public bool Locked => locked;
+
 
     [SerializeField] private PercentageMap<EventOptionOutcome> possibleOutcomes = new PercentageMap<EventOptionOutcome>();
 

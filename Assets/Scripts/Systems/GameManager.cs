@@ -1628,9 +1628,11 @@ public class GameManager : MonoBehaviour
         return res;
     }
 
-    public IEnumerator ParseEventEffect(EventLabel label, string effects)
+    public IEnumerator ParseEventEffect(OptionEvent optionEvent, string effects)
     {
         if (effects.Length == 0) yield break;
+        EventLabel label = optionEvent.EventLabel;
+        bool hasRewards = false;
 
         Debug.Log("Parsing Event Effect: " + effects);
         string[] commands = CureAllStrings(effects.Split(';'));
@@ -1648,9 +1650,11 @@ public class GameManager : MonoBehaviour
                 {
                     case "AddRandomArtifact":
                         RewardManager._Instance.AddReward(GetRandomArtifact());
+                        hasRewards = true;
                         break;
                     case "AddRandomBook":
                         RewardManager._Instance.AddReward(GetRandomBook());
+                        hasRewards = true;
                         break;
                     case "RemoveRandomArtifact":
                         if (equippedArtifacts.Count > 0)
@@ -1662,6 +1666,7 @@ public class GameManager : MonoBehaviour
                         break;
                     case "AddRandomPotionIngredient":
                         RewardManager._Instance.AddReward(GetRandomPotionIngredient());
+                        hasRewards = true;
                         break;
                     case "RemoveRandomPotionIngredient":
                         if (GetNumPotionIngredients() > 0)
@@ -1686,6 +1691,7 @@ public class GameManager : MonoBehaviour
                             if (goldAmount > 0)
                             {
                                 RewardManager._Instance.AddCurrencyReward((int)goldAmount);
+                                hasRewards = true;
                             }
                             else
                             {
@@ -1735,6 +1741,7 @@ public class GameManager : MonoBehaviour
                         if (Enum.TryParse<ArtifactLabel>(argument, out addedArtifact))
                         {
                             RewardManager._Instance.AddReward(addedArtifact);
+                            hasRewards = true;
 
                         }
                         else
@@ -1747,6 +1754,7 @@ public class GameManager : MonoBehaviour
                         if (Enum.TryParse<BookLabel>(argument, out addedBook))
                         {
                             RewardManager._Instance.AddReward(addedBook);
+                            hasRewards = true;
                         }
                         else
                         {
@@ -1761,6 +1769,20 @@ public class GameManager : MonoBehaviour
                             {
                                 RewardManager._Instance.AddReward(GetRandomPotionIngredient());
                             }
+                            hasRewards = true;
+                        }
+                        else
+                        {
+                            Debug.Log("Could not Convert Argument: " + argument + " to Int");
+                        }
+                        break;
+                    case "ChainEvent":
+                        int index;
+                        if (TryParseArgument(label, argument, out index))
+                        {
+                            EventManager._Instance.SetChainingEvents(true);
+                            EventManager._Instance.SetOutcome(null);
+                            StartCoroutine(EventManager._Instance.StartOptionEvent(optionEvent.GetChainEvent(index)));
                         }
                         else
                         {
@@ -1773,7 +1795,93 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        yield return StartCoroutine(RewardManager._Instance.ShowRewardScreen());
+        if (hasRewards)
+        {
+            yield return StartCoroutine(RewardManager._Instance.ShowRewardScreen());
+        }
+        else
+        {
+            yield return null;
+        }
+    }
+
+    public bool ParseEventCondition(OptionEvent optionEvent, string condition)
+    {
+        if (condition.Length == 0) return true;
+        if (condition.ToLower().Equals("false")) return false;
+        if (condition.ToLower().Equals("true")) return true;
+
+        EventLabel label = optionEvent.EventLabel;
+        Debug.Log("Parsing Event Condition: " + condition);
+        string[] conditionParts = CureAllStrings(condition.Split(':'));
+
+        if (conditionParts.Length == 1)
+        {
+            string singleCondition = conditionParts[0];
+            Debug.Log("Single Condition: " + singleCondition);
+            switch (singleCondition)
+            {
+                default:
+                    throw new UnhandledSwitchCaseException(singleCondition);
+            }
+        }
+        else
+        {
+            string conditionPart = conditionParts[0];
+            string argument = conditionParts[1];
+
+            Debug.Log("Argument Condition: " + conditionPart + ", Argument = " + argument);
+            switch (conditionPart)
+            {
+                case "MinGoldAmount":
+                    int minGoldAmount;
+                    if (TryParseArgument(label, argument, out minGoldAmount))
+                    {
+                        return GetPlayerCurrency() > minGoldAmount;
+                    }
+                    else
+                    {
+                        Debug.Log("Could not Convert Argument: " + argument + " to Int");
+                    }
+                    break;
+                case "MaxGoldAmount":
+                    int maxGoldAmount;
+                    if (TryParseArgument(label, argument, out maxGoldAmount))
+                    {
+                        return GetPlayerCurrency() < maxGoldAmount;
+                    }
+                    else
+                    {
+                        Debug.Log("Could not Convert Argument: " + argument + " to Int");
+                    }
+                    break;
+                case "MinHPAmount":
+                    int minHPAmount;
+                    if (TryParseArgument(label, argument, out minHPAmount))
+                    {
+                        return GetCurrentCharacterHP() > minHPAmount;
+                    }
+                    else
+                    {
+                        Debug.Log("Could not Convert Argument: " + argument + " to Int");
+                    }
+                    break;
+                case "MaxHPAmount":
+                    int maxHPAmount;
+                    if (TryParseArgument(label, argument, out maxHPAmount))
+                    {
+                        return GetCurrentCharacterHP() < maxHPAmount;
+                    }
+                    else
+                    {
+                        Debug.Log("Could not Convert Argument: " + argument + " to Int");
+                    }
+                    break;
+                default:
+                    throw new UnhandledSwitchCaseException(conditionPart + ", " + argument);
+            }
+        }
+        return false;
     }
 
     private int GetNumPotionIngredients()
