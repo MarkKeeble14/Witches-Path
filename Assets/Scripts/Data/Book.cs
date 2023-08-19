@@ -168,6 +168,11 @@ public abstract class Book : PowerupItem
     {
         return "On Use: " + base.GetToolTipText() + "\nCharge: " + CurrentCharge + "/" + MaxCharge;
     }
+
+    public override string GetToolTipLabel()
+    {
+        return base.GetToolTipLabel() + " (" + currentLevel + "/" + MaxLevel + ")";
+    }
 }
 
 public class WitchesTravelGuide : Book

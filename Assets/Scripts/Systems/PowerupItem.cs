@@ -35,7 +35,7 @@ public abstract class PowerupItem : ToolTippable
         return GeneralKeywords;
     }
 
-    public string GetToolTipLabel()
+    public virtual string GetToolTipLabel()
     {
         return Name;
     }

@@ -34,6 +34,11 @@ public class BalenceManager : MonoBehaviour
         return reforgeModifierEffects[reforgeModifier];
     }
 
+    public bool PotionHasSpec(PotionIngredientType type, string param)
+    {
+        return ingredientSpecDict[type.ToString()].ContainsKey(param);
+    }
+
     public int GetValue(PotionIngredientType ingredientType, string identifier, int potency)
     {
         return ingredientSpecDict[ingredientType.ToString()][identifier][potency];

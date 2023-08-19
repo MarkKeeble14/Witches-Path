@@ -126,7 +126,7 @@ public class UIManager : MonoBehaviour
             }
 
             // Token is a Number but with a Percent (%)
-            if (token[token.Length - 1] == '%')
+            if (token.Length > 1 && token[token.Length - 1] == '%')
             {
                 string sub = token.Substring(0, token.Length - 1);
                 if (int.TryParse(sub, out number))
@@ -137,7 +137,7 @@ public class UIManager : MonoBehaviour
             }
 
             // Token is a Number with a Comma (,) or Period (.)
-            if (token[token.Length - 1] == ',' || token[token.Length - 1] == '.')
+            if (token.Length > 1 && (token[token.Length - 1] == ',' || token[token.Length - 1] == '.'))
             {
                 string sub = token.Substring(0, token.Length - 1);
                 if (int.TryParse(sub, out number))

@@ -80,7 +80,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Potions")]
     private Dictionary<PotionIngredientType, int> potionIngredientMap = new Dictionary<PotionIngredientType, int>();
-    private Potion currentPotion = new Potion();
+    private Potion currentPotion;
     private List<Potion> availablePotions = new List<Potion>();
 
     [Header("Equipment")]
@@ -144,6 +144,8 @@ public class GameManager : MonoBehaviour
         SetEquipmentToolTippables(equippableHats.Cast<Equipment>().ToList());
         SetEquipmentToolTippables(equippableRobes.Cast<Equipment>().ToList());
         SetEquipmentToolTippables(equippableWands.Cast<Equipment>().ToList());
+
+        SetNewPotion();
 
         LoadMap();
         StartCoroutine(GameLoop());
@@ -1058,23 +1060,26 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void AddPotionIngredient(PotionIngredientType ingredient)
+    public bool AddPotionIngredient(PotionIngredientType ingredient)
     {
+        bool r;
         if (potionIngredientMap.ContainsKey(ingredient))
         {
             potionIngredientMap[ingredient] = potionIngredientMap[ingredient] + 1;
-
-            // Update entry in UI
-            potionIngredientUIList[ingredient].UpdateQuantity(potionIngredientMap[ingredient]);
+            r = false;
         }
         else
         {
             potionIngredientMap.Add(ingredient, 1);
-
-            PotionIngredientListEntry spawned = Instantiate(potionIngredientListEntryPrefab, potionIngredientListParent);
-            potionIngredientUIList.Add(ingredient, spawned);
-            spawned.Set(ingredient, 1, false);
+            r = true;
         }
+
+        if (brewPotionScreenOpen)
+        {
+            ReSpawnPotionIngredientToBrewList(ingredient);
+        }
+
+        return r;
     }
 
     public bool RemovePotionIngredient(PotionIngredientType ingredient)
@@ -1085,22 +1090,18 @@ public class GameManager : MonoBehaviour
             if (numIngredient == 1)
             {
                 potionIngredientMap.Remove(ingredient);
-
-                PotionIngredientListEntry ui = potionIngredientUIList[ingredient];
-                Destroy(ui.gameObject);
-                potionIngredientUIList.Remove(ingredient);
                 return true;
             }
             else
             {
                 potionIngredientMap[ingredient] = numIngredient - 1;
-                potionIngredientUIList[ingredient].UpdateQuantity(potionIngredientMap[ingredient]);
                 return false;
             }
         }
         else
         {
-            throw new Exception();
+            Debug.Log("Potion Ingredient: " + ingredient + ", Not Found in Map");
+            return false;
         }
     }
 
@@ -1350,6 +1351,7 @@ public class GameManager : MonoBehaviour
     [Header("Game Over")]
     [SerializeField] private CanvasGroup gameOverCV;
     [SerializeField] private float changeGameOverCVAlphaRate;
+    private List<PotionIngredientListEntry> spawnedPotionIngredientListEntries = new List<PotionIngredientListEntry>();
 
     public IEnumerator GameOverSequence()
     {
@@ -1366,6 +1368,27 @@ public class GameManager : MonoBehaviour
     public void TogglePotionIngredientListScreen()
     {
         potionIngredientListScreen.SetActive(!potionIngredientListScreen.activeInHierarchy);
+
+        // Opening 
+        if (potionIngredientListScreen.activeInHierarchy)
+        {
+            foreach (KeyValuePair<PotionIngredientType, int> kvp in potionIngredientMap)
+            {
+                PotionIngredientListEntry spawned = Instantiate(potionIngredientListEntryPrefab, potionIngredientListParent);
+                spawned.Set(kvp.Key, 1, false);
+                spawnedPotionIngredientListEntries.Add(spawned);
+            }
+        }
+        else
+        {
+            // Closing
+            while (spawnedPotionIngredientListEntries.Count > 0)
+            {
+                PotionIngredientListEntry cur = spawnedPotionIngredientListEntries[0];
+                spawnedPotionIngredientListEntries.RemoveAt(0);
+                Destroy(cur.gameObject);
+            }
+        }
     }
 
     private void SwitchUIScreens(GameObject[] turnOn, GameObject[] turnOff)
@@ -1385,18 +1408,20 @@ public class GameManager : MonoBehaviour
     #region Campfire
 
     [Header("Potion Screen")]
-    private Dictionary<PotionIngredientType, PotionIngredientListEntry> potionIngredientUIList = new Dictionary<PotionIngredientType, PotionIngredientListEntry>();
     [SerializeField] private PotionIngredientListEntry potionIngredientListEntryPrefab;
     [SerializeField] private Transform potionIngredientListParent;
     [SerializeField] private GameObject potionIngredientListScreen;
+    [SerializeField] private Transform potionDisplayList;
+    [SerializeField] private PotionDisplay potionDisplayPrefab;
 
     // Brew Screen
     [SerializeField] private GameObject[] turnOnForBrewPotionScreen;
     [SerializeField] private GameObject[] turnOffForBrewPotionScreen;
     [SerializeField] private Transform brewPotionScreenInventoryPotionIngredientList;
-    [SerializeField] private PotionDisplay potionDisplay;
+    [SerializeField] private BrewingPotionDisplay brewingPotionDisplay;
     private List<PotionIngredientListEntry> spawnedBrewPotionIngredientListEntries = new List<PotionIngredientListEntry>();
 
+    private bool brewPotionScreenOpen;
     public void RestAtCampfire()
     {
         float value = BalenceManager._Instance.GetValue(MapNodeType.Campfire, "HealPercent");
@@ -1405,41 +1430,7 @@ public class GameManager : MonoBehaviour
         ResolveCurrentEvent();
     }
 
-    public void OpenBrewPotionScreen()
-    {
-        SwitchUIScreens(turnOnForBrewPotionScreen, turnOffForBrewPotionScreen);
-
-        potionDisplay.SetPotion(currentPotion);
-
-        foreach (KeyValuePair<PotionIngredientType, int> entry in potionIngredientMap)
-        {
-            PotionIngredientListEntry cur = Instantiate(potionIngredientListEntryPrefab, brewPotionScreenInventoryPotionIngredientList);
-            cur.Set(entry.Key, entry.Value, true);
-            spawnedBrewPotionIngredientListEntries.Add(cur);
-            cur.AddOnPressAction(delegate
-            {
-                PotionIngredient ingredient = GetPotionIngredientOfType(entry.Key);
-
-                // Onlly allow the click if we can actually add the ingredient to the pot
-                if (!currentPotion.CanAddComponentType(ingredient.ComponentType)) return;
-
-                GetPotionIngredientOfType(entry.Key).AddToPotion(currentPotion);
-                if (RemovePotionIngredient(entry.Key))
-                {
-                    spawnedBrewPotionIngredientListEntries.Remove(cur);
-                    Destroy(cur.gameObject);
-                }
-
-                // Destroy the spawned list entry if there are no more of these ingredients left
-                if (entry.Value <= 0)
-                {
-                    Destroy(cur.gameObject);
-                }
-            });
-        }
-    }
-
-    private PotionIngredient GetPotionIngredientOfType(PotionIngredientType type)
+    public PotionIngredient GetPotionIngredientOfType(PotionIngredientType type)
     {
         switch (type)
         {
@@ -1461,8 +1452,6 @@ public class GameManager : MonoBehaviour
                 return new CreatureGland();
             case PotionIngredientType.CreatureNose:
                 return new CreatureNose();
-            case PotionIngredientType.DuplicationGlitch:
-                return new DuplicationGlitch();
             case PotionIngredientType.ElectricalWire:
                 return new ElectricalWire();
             case PotionIngredientType.GlassBottle:
@@ -1492,16 +1481,106 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void CloseBrewPotionScreen()
+    public void ReSpawnPotionIngredientToBrewList(PotionIngredientType type)
     {
-        SwitchUIScreens(turnOffForBrewPotionScreen, turnOnForBrewPotionScreen);
+        foreach (PotionIngredientListEntry entry in spawnedBrewPotionIngredientListEntries)
+        {
+            if (entry.Type == type)
+            {
+                entry.UpdateQuantity(potionIngredientMap[type]);
+                return;
+            }
+        }
 
+        SpawnPotionIngredientEntry(type, 1);
+    }
+
+    private void SpawnPotionIngredientEntry(PotionIngredientType type, int num)
+    {
+        PotionIngredientListEntry cur = Instantiate(potionIngredientListEntryPrefab, brewPotionScreenInventoryPotionIngredientList);
+        cur.Set(type, num, true);
+        spawnedBrewPotionIngredientListEntries.Add(cur);
+        cur.AddOnPressAction(delegate
+        {
+            // Get an instance of the ingredient
+            PotionIngredient ingredient = GetPotionIngredientOfType(type);
+
+            // Onlly allow the click if we can actually add the ingredient to the pot
+            if (currentPotion.HasComponentOfType(ingredient)) return;
+
+            // Add the ingredient to the potion
+            currentPotion.AddIngredient(GetPotionIngredientOfType(type));
+
+            // Remove it from the players inventory
+            if (RemovePotionIngredient(type))
+            {
+                // Removing it from the inventory removed the last ingredient
+                // Remove the spawned list entry and destroy the game object
+                spawnedBrewPotionIngredientListEntries.Remove(cur);
+                Destroy(cur.gameObject);
+                cur.DestroyToolTip();
+            }
+            else
+            {
+                cur.UpdateQuantity(potionIngredientMap[type]);
+            }
+        });
+    }
+
+    private void FillBrewPotionIngredientList()
+    {
+        foreach (KeyValuePair<PotionIngredientType, int> entry in potionIngredientMap)
+        {
+            SpawnPotionIngredientEntry(entry.Key, entry.Value);
+        }
+    }
+
+    private void ClearBrewPotionIngredientList()
+    {
         while (spawnedBrewPotionIngredientListEntries.Count > 0)
         {
             PotionIngredientListEntry cur = spawnedBrewPotionIngredientListEntries[0];
             spawnedBrewPotionIngredientListEntries.RemoveAt(0);
             Destroy(cur.gameObject);
         }
+
+        currentPotion.ClearPotionBase();
+        currentPotion.ClearPotionPotency();
+        currentPotion.ClearPotionTargeter();
+    }
+
+    public void OpenBrewPotionScreen()
+    {
+        SwitchUIScreens(turnOnForBrewPotionScreen, turnOffForBrewPotionScreen);
+
+        FillBrewPotionIngredientList();
+
+        brewPotionScreenOpen = true;
+    }
+
+
+    public void CloseBrewPotionScreen()
+    {
+        SwitchUIScreens(turnOffForBrewPotionScreen, turnOnForBrewPotionScreen);
+
+        // Re-add ingredients put into potion but not actually combined
+        if (currentPotion.CurPotionBaseIngredient != null)
+        {
+            AddPotionIngredient(currentPotion.CurPotionBaseIngredient.Type);
+        }
+        if (currentPotion.CurPotionPotencyIngredient != null)
+        {
+            AddPotionIngredient(currentPotion.CurPotionPotencyIngredient.Type);
+        }
+        if (currentPotion.CurPotionTargeterIngredient != null)
+        {
+            AddPotionIngredient(currentPotion.CurPotionTargeterIngredient.Type);
+        }
+
+        // Destroy list entries
+        ClearBrewPotionIngredientList();
+
+        brewPotionScreenOpen = false;
     }
 
     public void BrewPotion()
@@ -1510,18 +1589,32 @@ public class GameManager : MonoBehaviour
         {
             // Brew the potion
             currentPotion.Brew();
+
             // Add the potion
             AddPotion(currentPotion);
 
             // Reset 
-            currentPotion = new Potion();
-            potionDisplay.SetPotion(currentPotion);
+            SetNewPotion();
         }
+    }
+
+    public void SetNewPotion()
+    {
+        currentPotion = new Potion();
+        brewingPotionDisplay.SetPotion(currentPotion);
     }
 
     public void AddPotion(Potion p)
     {
         availablePotions.Add(p);
+
+        // Spawn UI
+        PotionDisplay spawned = Instantiate(potionDisplayPrefab, potionDisplayList);
+        spawned.Set(p, delegate
+        {
+            p.Use();
+            Destroy(spawned.gameObject);
+        });
     }
 
     public void RemovePotion(Potion p)

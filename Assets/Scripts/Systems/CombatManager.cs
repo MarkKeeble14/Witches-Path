@@ -891,6 +891,8 @@ public partial class CombatManager : MonoBehaviour
                 return new Vulnerable();
             case AfflictionType.Weak:
                 return new Weak();
+            case AfflictionType.Regeneration:
+                return new Regeneration();
             default:
                 throw new UnhandledSwitchCaseException();
         }

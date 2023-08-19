@@ -39,8 +39,8 @@ public class UpgradeBookButton : MonoBehaviour
         spawnedToolTip = UIManager._Instance.SpawnComparisonToolTips(
             new ToolTippableComparisonData[]
                 {
-                    new ToolTippableComparisonData("Current (" + currentBook.GetCurrentLevel() + "): " , currentBook),
-                    new ToolTippableComparisonData("Upgraded (" + (timesToLevel + 1) + "): ", upgradedBook)
+                    new ToolTippableComparisonData("Current: " , currentBook),
+                    new ToolTippableComparisonData("Upgraded: ", upgradedBook)
                 },
             transform);
     }
