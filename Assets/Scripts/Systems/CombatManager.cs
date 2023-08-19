@@ -16,7 +16,7 @@ public enum Turn
 public enum Target
 {
     Character,
-    Enemy
+    Enemy,
 }
 
 public enum AfflictionType
@@ -35,6 +35,7 @@ public enum AfflictionType
     Paralyze,
     Thorns,
     Power,
+    Regeneration
 }
 
 public enum DamageType
@@ -350,6 +351,13 @@ public partial class CombatManager : MonoBehaviour
 
         GameManager._Instance.ResetActiveSpellCooldowns();
 
+        // Regeneration Effect
+        if (TargetHasAffliction(AfflictionType.Regeneration, Target.Character))
+        {
+            AlterCombatentHP(GetTargetAfflictionStacks(AfflictionType.Regeneration, Target.Character), Target.Character, DamageType.Heal);
+            ConsumeAfflictionStack(AfflictionType.Regeneration, Target.Character);
+        }
+
         Debug.Log("Player Turn Ended");
     }
 
@@ -534,6 +542,13 @@ public partial class CombatManager : MonoBehaviour
 
         // Clear Enemy Intent
         enemyIntentDisplay.ClearIntents();
+
+        // Regeneration Effect
+        if (TargetHasAffliction(AfflictionType.Regeneration, Target.Enemy))
+        {
+            AlterCombatentHP(GetTargetAfflictionStacks(AfflictionType.Regeneration, Target.Enemy), Target.Enemy, DamageType.Heal);
+            ConsumeAfflictionStack(AfflictionType.Regeneration, Target.Enemy);
+        }
 
         Debug.Log("Enemy Turn Ended");
     }

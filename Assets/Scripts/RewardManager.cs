@@ -94,7 +94,7 @@ public class RewardManager : MonoBehaviour
         spawnedRewards.Add(spawned);
     }
 
-    public void AddReward(PotionIngredient label)
+    public void AddReward(PotionIngredientType label)
     {
         Debug.Log("Adding Potion Ingredient Reward: " + label);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);

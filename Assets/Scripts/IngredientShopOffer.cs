@@ -3,9 +3,9 @@ using System;
 
 public class IngredientShopOffer : ShopOffer
 {
-    [SerializeField] private PotionIngredient label;
+    [SerializeField] private PotionIngredientType label;
 
-    public void Set(PotionIngredient setTo, int cost, Action onClick)
+    public void Set(PotionIngredientType setTo, int cost, Action onClick)
     {
         label = setTo;
         this.cost = cost;

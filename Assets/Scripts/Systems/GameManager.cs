@@ -78,9 +78,10 @@ public class GameManager : MonoBehaviour
     private List<PassiveSpellDisplay> unusedPassiveSpellDisplays = new List<PassiveSpellDisplay>();
     private int numPassiveSpellSlots;
 
-
     [Header("Potions")]
-    private Dictionary<PotionIngredient, int> potionIngredientMap = new Dictionary<PotionIngredient, int>();
+    private Dictionary<PotionIngredientType, int> potionIngredientMap = new Dictionary<PotionIngredientType, int>();
+    private Potion currentPotion = new Potion();
+    private List<Potion> availablePotions = new List<Potion>();
 
     [Header("Equipment")]
     [SerializeField] private List<Hat> equippableHats = new List<Hat>();
@@ -1051,13 +1052,13 @@ public class GameManager : MonoBehaviour
 
     private void PrintPotionIngredientMap()
     {
-        foreach (KeyValuePair<PotionIngredient, int> kvp in potionIngredientMap)
+        foreach (KeyValuePair<PotionIngredientType, int> kvp in potionIngredientMap)
         {
             Debug.Log(kvp);
         }
     }
 
-    public void AddPotionIngredient(PotionIngredient ingredient)
+    public void AddPotionIngredient(PotionIngredientType ingredient)
     {
         if (potionIngredientMap.ContainsKey(ingredient))
         {
@@ -1072,11 +1073,11 @@ public class GameManager : MonoBehaviour
 
             PotionIngredientListEntry spawned = Instantiate(potionIngredientListEntryPrefab, potionIngredientListParent);
             potionIngredientUIList.Add(ingredient, spawned);
-            spawned.Set(ingredient, 1);
+            spawned.Set(ingredient, 1, false);
         }
     }
 
-    public void RemovePotionIngredient(PotionIngredient ingredient)
+    public bool RemovePotionIngredient(PotionIngredientType ingredient)
     {
         if (potionIngredientMap.ContainsKey(ingredient))
         {
@@ -1088,11 +1089,13 @@ public class GameManager : MonoBehaviour
                 PotionIngredientListEntry ui = potionIngredientUIList[ingredient];
                 Destroy(ui.gameObject);
                 potionIngredientUIList.Remove(ingredient);
+                return true;
             }
             else
             {
                 potionIngredientMap[ingredient] = numIngredient - 1;
                 potionIngredientUIList[ingredient].UpdateQuantity(potionIngredientMap[ingredient]);
+                return false;
             }
         }
         else
@@ -1101,9 +1104,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public PotionIngredient GetRandomPotionIngredient()
+    public PotionIngredientType GetRandomPotionIngredient()
     {
-        return RandomHelper.GetRandomEnumValue<PotionIngredient>();
+        return RandomHelper.GetRandomEnumValue<PotionIngredientType>();
     }
 
     public void AddRandomPotionIngredient()
@@ -1382,12 +1385,17 @@ public class GameManager : MonoBehaviour
     #region Campfire
 
     [Header("Potion Screen")]
-    private Dictionary<PotionIngredient, PotionIngredientListEntry> potionIngredientUIList = new Dictionary<PotionIngredient, PotionIngredientListEntry>();
+    private Dictionary<PotionIngredientType, PotionIngredientListEntry> potionIngredientUIList = new Dictionary<PotionIngredientType, PotionIngredientListEntry>();
     [SerializeField] private PotionIngredientListEntry potionIngredientListEntryPrefab;
     [SerializeField] private Transform potionIngredientListParent;
     [SerializeField] private GameObject potionIngredientListScreen;
+
+    // Brew Screen
     [SerializeField] private GameObject[] turnOnForBrewPotionScreen;
     [SerializeField] private GameObject[] turnOffForBrewPotionScreen;
+    [SerializeField] private Transform brewPotionScreenInventoryPotionIngredientList;
+    [SerializeField] private PotionDisplay potionDisplay;
+    private List<PotionIngredientListEntry> spawnedBrewPotionIngredientListEntries = new List<PotionIngredientListEntry>();
 
     public void RestAtCampfire()
     {
@@ -1400,20 +1408,139 @@ public class GameManager : MonoBehaviour
     public void OpenBrewPotionScreen()
     {
         SwitchUIScreens(turnOnForBrewPotionScreen, turnOffForBrewPotionScreen);
+
+        potionDisplay.SetPotion(currentPotion);
+
+        foreach (KeyValuePair<PotionIngredientType, int> entry in potionIngredientMap)
+        {
+            PotionIngredientListEntry cur = Instantiate(potionIngredientListEntryPrefab, brewPotionScreenInventoryPotionIngredientList);
+            cur.Set(entry.Key, entry.Value, true);
+            spawnedBrewPotionIngredientListEntries.Add(cur);
+            cur.AddOnPressAction(delegate
+            {
+                PotionIngredient ingredient = GetPotionIngredientOfType(entry.Key);
+
+                // Onlly allow the click if we can actually add the ingredient to the pot
+                if (!currentPotion.CanAddComponentType(ingredient.ComponentType)) return;
+
+                GetPotionIngredientOfType(entry.Key).AddToPotion(currentPotion);
+                if (RemovePotionIngredient(entry.Key))
+                {
+                    spawnedBrewPotionIngredientListEntries.Remove(cur);
+                    Destroy(cur.gameObject);
+                }
+
+                // Destroy the spawned list entry if there are no more of these ingredients left
+                if (entry.Value <= 0)
+                {
+                    Destroy(cur.gameObject);
+                }
+            });
+        }
+    }
+
+    private PotionIngredient GetPotionIngredientOfType(PotionIngredientType type)
+    {
+        switch (type)
+        {
+            case PotionIngredientType.BreakableBottle:
+                return new BreakableBottle();
+            case PotionIngredientType.CeremonialLeaf:
+                return new CeremonialLeaf();
+            case PotionIngredientType.ChaiTea:
+                return new ChaiTea();
+            case PotionIngredientType.CrabShell:
+                return new CrabShell();
+            case PotionIngredientType.CreatureClaw:
+                return new CreatureClaw();
+            case PotionIngredientType.CreatureFinger:
+                return new CreatureFinger();
+            case PotionIngredientType.CreatureFoot:
+                return new CreatureFoot();
+            case PotionIngredientType.CreatureGland:
+                return new CreatureGland();
+            case PotionIngredientType.CreatureNose:
+                return new CreatureNose();
+            case PotionIngredientType.DuplicationGlitch:
+                return new DuplicationGlitch();
+            case PotionIngredientType.ElectricalWire:
+                return new ElectricalWire();
+            case PotionIngredientType.GlassBottle:
+                return new GlassBottle();
+            case PotionIngredientType.HammerHandle:
+                return new HammerHandle();
+            case PotionIngredientType.MammalTooth:
+                return new MammalTooth();
+            case PotionIngredientType.Paprika:
+                return new Paprika();
+            case PotionIngredientType.RawBeef:
+                return new RawBeef();
+            case PotionIngredientType.RawPork:
+                return new RawPork();
+            case PotionIngredientType.ScalySkin:
+                return new ScalySkin();
+            case PotionIngredientType.SeaWater:
+                return new SeaWater();
+            case PotionIngredientType.SelkieSpit:
+                return new SelkieSpit();
+            case PotionIngredientType.TreeSap:
+                return new BreakableBottle();
+            case PotionIngredientType.VenomousSack:
+                return new BreakableBottle();
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
     }
 
     public void CloseBrewPotionScreen()
     {
         SwitchUIScreens(turnOffForBrewPotionScreen, turnOnForBrewPotionScreen);
+
+        while (spawnedBrewPotionIngredientListEntries.Count > 0)
+        {
+            PotionIngredientListEntry cur = spawnedBrewPotionIngredientListEntries[0];
+            spawnedBrewPotionIngredientListEntries.RemoveAt(0);
+            Destroy(cur.gameObject);
+        }
     }
 
-    public void ChoosePotion()
+    public void BrewPotion()
     {
-        // Add potion somehow
+        if (currentPotion.ReadyForBrew)
+        {
+            // Brew the potion
+            currentPotion.Brew();
+            // Add the potion
+            AddPotion(currentPotion);
 
-        // Close brew potion screen 
-        CloseBrewPotionScreen();
-        ResolveCurrentEvent();
+            // Reset 
+            currentPotion = new Potion();
+            potionDisplay.SetPotion(currentPotion);
+        }
+    }
+
+    public void AddPotion(Potion p)
+    {
+        availablePotions.Add(p);
+    }
+
+    public void RemovePotion(Potion p)
+    {
+        availablePotions.Remove(p);
+    }
+
+    public void UsePotion(Potion p)
+    {
+        p.Use();
+        RemovePotion(p);
+    }
+
+    [ContextMenu("UseFirstPotion")]
+    public void UseFirstPotion()
+    {
+        if (availablePotions.Count <= 0) return;
+        Potion p = availablePotions[0];
+        UsePotion(p);
     }
 
     #endregion
@@ -1877,6 +2004,28 @@ public class GameManager : MonoBehaviour
                         Debug.Log("Could not Convert Argument: " + argument + " to Int");
                     }
                     break;
+                case "HasArtifact":
+                    ArtifactLabel artifactLabel;
+                    if (Enum.TryParse<ArtifactLabel>(argument, out artifactLabel))
+                    {
+                        return HasArtifact(artifactLabel);
+                    }
+                    else
+                    {
+                        Debug.Log("Could not Convert Argument: " + argument + " to ArtifactLabel");
+                    }
+                    break;
+                case "HasBook":
+                    BookLabel bookLabel;
+                    if (Enum.TryParse<BookLabel>(argument, out bookLabel))
+                    {
+                        return HasBook(bookLabel);
+                    }
+                    else
+                    {
+                        Debug.Log("Could not Convert Argument: " + argument + " to BookLabel");
+                    }
+                    break;
                 default:
                     throw new UnhandledSwitchCaseException(conditionPart + ", " + argument);
             }
@@ -1887,14 +2036,14 @@ public class GameManager : MonoBehaviour
     private int GetNumPotionIngredients()
     {
         int r = 0;
-        foreach (KeyValuePair<PotionIngredient, int> kvp in potionIngredientMap)
+        foreach (KeyValuePair<PotionIngredientType, int> kvp in potionIngredientMap)
         {
             r += kvp.Value;
         }
         return r;
     }
 
-    private PotionIngredient GetRandomOwnedPotionIngredient()
+    private PotionIngredientType GetRandomOwnedPotionIngredient()
     {
         return RandomHelper.GetRandomFromList(potionIngredientMap.Keys.ToList());
     }

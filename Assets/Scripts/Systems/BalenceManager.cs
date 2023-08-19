@@ -24,12 +24,21 @@ public class BalenceManager : MonoBehaviour
     [SerializeField]
     private SerializableDictionary<string, SerializableDictionary<string, int>> eventSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
+    [SerializeField]
+    private SerializableDictionary<string, SerializableDictionary<string, int[]>> ingredientSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int[]>>();
+
     [SerializeField] private SerializableDictionary<ReforgeModifier, ReforgeModifierEffect> reforgeModifierEffects = new SerializableDictionary<ReforgeModifier, ReforgeModifierEffect>();
 
     public ReforgeModifierEffect GetReforgeModifierEffect(ReforgeModifier reforgeModifier)
     {
         return reforgeModifierEffects[reforgeModifier];
     }
+
+    public int GetValue(PotionIngredientType ingredientType, string identifier, int potency)
+    {
+        return ingredientSpecDict[ingredientType.ToString()][identifier][potency];
+    }
+
 
     public int GetValue(ArtifactLabel artifactLabel, string identifier)
     {

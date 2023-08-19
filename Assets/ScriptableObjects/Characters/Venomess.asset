@@ -18,7 +18,7 @@ MonoBehaviour:
   startingWand: {fileID: 11400000, guid: acda65fe9855c2547963cd46c0c48fba, type: 2}
   startingBook: 0
   startingSpells: 16000000170000000700000000000000
-  startingCurrency: 25
+  startingCurrency: 100
   startingClothierCurrency: 1
   maxHP: 75
   startingHP: 75
