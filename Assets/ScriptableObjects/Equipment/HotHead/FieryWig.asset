@@ -17,6 +17,5 @@ MonoBehaviour:
   damageChange: 2
   defenseChange: -1
   manaChange: -1
-  comesWithSpells: 06000000
-  AfflictionKeywords: 0a000000
+  AfflictionKeywords: 
   GeneralKeywords: 

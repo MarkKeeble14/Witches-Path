@@ -162,6 +162,19 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
+        // Disable the upgrade book button if book cannot be upgraded
+        if (CanUpgradeActiveBook)
+        {
+            upgradeBookButtonCV.alpha = 1;
+            upgradeBookButtonCV.interactable = true;
+        }
+        else
+        {
+            upgradeBookButtonCV.alpha = 0.5f;
+            upgradeBookButtonCV.interactable = false;
+        }
+
+        // Set Info Texts
         hpText.text = Mathf.RoundToInt(currentPlayerHP).ToString() + "/" + Mathf.RoundToInt(maxPlayerHP).ToString();
         manaText.text = Mathf.RoundToInt(currentPlayerMana).ToString() + "/" + Mathf.RoundToInt(maxPlayerMana).ToString();
         currencyText.text = Mathf.RoundToInt(currentPlayerCurrency).ToString();
@@ -1036,6 +1049,23 @@ public class GameManager : MonoBehaviour
         equippedBooks.Remove(type);
     }
 
+    public void UpgradeBooks()
+    {
+        foreach (KeyValuePair<BookLabel, Book> b in equippedBooks)
+        {
+            b.Value.TryCallLevelUp(true);
+        }
+
+        ResolveCurrentEvent();
+    }
+
+    public void SwapBooks(BookLabel swappingOut, BookLabel swappingTo)
+    {
+        RemoveBook(swappingOut);
+        AddBook(swappingTo);
+        AnimateBook(swappingTo);
+    }
+
     public void AnimateArtifact(ArtifactLabel label)
     {
         if (artifactDisplayTracker.ContainsKey(label))
@@ -1348,10 +1378,13 @@ public class GameManager : MonoBehaviour
         loadedSpellDisplays[label].AnimateScale();
     }
 
+    public bool CanUpgradeActiveBook => GetOwnedBook(0).CanLevelUp;
+
     [Header("Game Over")]
     [SerializeField] private CanvasGroup gameOverCV;
     [SerializeField] private float changeGameOverCVAlphaRate;
     private List<PotionIngredientListEntry> spawnedPotionIngredientListEntries = new List<PotionIngredientListEntry>();
+    [SerializeField] private CanvasGroup upgradeBookButtonCV;
 
     public IEnumerator GameOverSequence()
     {
@@ -1427,7 +1460,6 @@ public class GameManager : MonoBehaviour
         float value = BalenceManager._Instance.GetValue(MapNodeType.Campfire, "HealPercent");
         float percentHP = value / 100;
         AlterPlayerHP(Mathf.CeilToInt(maxPlayerHP * percentHP), DamageType.Heal);
-        ResolveCurrentEvent();
     }
 
     public PotionIngredient GetPotionIngredientOfType(PotionIngredientType type)
@@ -1640,25 +1672,45 @@ public class GameManager : MonoBehaviour
 
     #region Tavern
 
+    [System.Serializable]
+    private class TavernScreenInformation
+    {
+        public GameObject[] turnOnForScreen;
+        public Transform parentSpawnsTo;
+    }
+
+    private enum TavernScreen
+    {
+        Innkeeper,
+        ClothierDefault,
+        ClothierWares,
+        Merchant,
+        Librarian,
+        Default
+    }
+
     [Header("Tavern")]
     [SerializeField] private int numPotionIngredientShopOffers;
     [SerializeField] private int numArtifactShopOffers;
     [SerializeField] private int numEquipmentShopOffers;
+    [SerializeField] private int numBookShopOffers;
 
     [SerializeField] private EquipmentShopOffer equipmentShopOfferPrefab;
     [SerializeField] private ArtifactShopOffer artifactShopOfferPrefab;
     [SerializeField] private IngredientShopOffer ingredientShopOfferPrefab;
+    [SerializeField] private BookShopOffer bookShopOfferPrefab;
 
     private List<ArtifactShopOffer> shopArtifactList = new List<ArtifactShopOffer>();
     private List<IngredientShopOffer> shopIngredientList = new List<IngredientShopOffer>();
     private List<EquipmentShopOffer> shopEquipmentList = new List<EquipmentShopOffer>();
+    private List<BookShopOffer> shopBookList = new List<BookShopOffer>();
 
     [SerializeField] private SerializableDictionary<TavernScreen, TavernScreenInformation> tavernScreens = new SerializableDictionary<TavernScreen, TavernScreenInformation>();
+
     [SerializeField] private SerializableDictionary<Rarity, Vector2> minMaxArtifactCostDict = new SerializableDictionary<Rarity, Vector2>();
     [SerializeField] private SerializableDictionary<Rarity, Vector2> minMaxEquipmentCostDict = new SerializableDictionary<Rarity, Vector2>();
+    [SerializeField] private SerializableDictionary<Rarity, Vector2> minMaxBookCostDict = new SerializableDictionary<Rarity, Vector2>();
     [SerializeField] private Vector2 minMaxIngredientCost;
-
-    [SerializeField] private GameObject[] turnOnForBrowseWaresScreen;
 
     public void MultiplyCosts(float multBy)
     {
@@ -1676,49 +1728,31 @@ public class GameManager : MonoBehaviour
         {
             offer.MultiplyCost(multBy);
         }
+
+        foreach (ShopOffer offer in shopBookList)
+        {
+            offer.MultiplyCost(multBy);
+        }
     }
 
-    public void OpenBrowseWaresScreen()
+    private TavernScreen ParseStringIntoTavernScreen(string str)
     {
-        foreach (GameObject obj in turnOnForBrowseWaresScreen)
+        TavernScreen screen;
+        Enum.TryParse<TavernScreen>(str, out screen);
+        return screen;
+    }
+
+    public void OpenTavernScreen(string screen)
+    {
+        foreach (GameObject obj in tavernScreens[ParseStringIntoTavernScreen(screen)].turnOnForScreen)
         {
             obj.SetActive(true);
         }
     }
 
-    public void CloseBrowseWaresScreen()
+    public void CloseTavernScreen(string screen)
     {
-        foreach (GameObject obj in turnOnForBrowseWaresScreen)
-        {
-            obj.SetActive(false);
-        }
-    }
-
-    [System.Serializable]
-    private class TavernScreenInformation
-    {
-        public GameObject[] turnOnForScreen;
-        public Transform parentSpawnsTo;
-    }
-
-    private enum TavernScreen
-    {
-        Innkeeper,
-        Clothier,
-        Merchant
-    }
-
-    public void OpenScreen(int index)
-    {
-        foreach (GameObject obj in tavernScreens[(TavernScreen)index].turnOnForScreen)
-        {
-            obj.SetActive(true);
-        }
-    }
-
-    public void CloseScreen(int index)
-    {
-        foreach (GameObject obj in tavernScreens[(TavernScreen)index].turnOnForScreen)
+        foreach (GameObject obj in tavernScreens[ParseStringIntoTavernScreen(screen)].turnOnForScreen)
         {
             obj.SetActive(false);
         }
@@ -1729,7 +1763,8 @@ public class GameManager : MonoBehaviour
         // Spawn Offers
         TavernScreenInformation innkeeperInfo = tavernScreens[TavernScreen.Innkeeper];
         TavernScreenInformation merchantInfo = tavernScreens[TavernScreen.Merchant];
-        TavernScreenInformation clothierInfo = tavernScreens[TavernScreen.Clothier];
+        TavernScreenInformation clothierWaresInfo = tavernScreens[TavernScreen.ClothierWares];
+        TavernScreenInformation librarianInfo = tavernScreens[TavernScreen.Librarian];
 
         // Artifacts
         for (int i = 0; i < numArtifactShopOffers; i++)
@@ -1751,6 +1786,27 @@ public class GameManager : MonoBehaviour
             shopArtifactList.Add(offer);
         }
 
+        // Books
+        for (int i = 0; i < numBookShopOffers; i++)
+        {
+            // Ran out of aartifacts
+            if (allBooks.Count == 0)
+            {
+                break;
+            }
+
+            BookShopOffer offer = Instantiate(bookShopOfferPrefab, librarianInfo.parentSpawnsTo);
+
+            // Get artifact that will be offered
+            BookLabel offered = GetRandomBook();
+
+            // Determine cost
+            int cost = Mathf.RoundToInt(RandomHelper.RandomFloat(minMaxBookCostDict[bookRarityMap[offered]]));
+            offer.Set(offered, cost, null);
+            shopBookList.Add(offer);
+        }
+
+
         // Potion Ingredients
         for (int i = 0; i < numPotionIngredientShopOffers; i++)
         {
@@ -1762,7 +1818,7 @@ public class GameManager : MonoBehaviour
         // Equipment
         for (int i = 0; i < numEquipmentShopOffers; i++)
         {
-            EquipmentShopOffer offer = Instantiate(equipmentShopOfferPrefab, clothierInfo.parentSpawnsTo);
+            EquipmentShopOffer offer = Instantiate(equipmentShopOfferPrefab, clothierWaresInfo.parentSpawnsTo);
             Equipment oferred = GetRandomEquipment();
             offer.Set(oferred, RandomHelper.RandomIntExclusive(minMaxEquipmentCostDict[oferred.GetRarity()]));
             shopEquipmentList.Add(offer);
@@ -1808,23 +1864,14 @@ public class GameManager : MonoBehaviour
             shopEquipmentList.RemoveAt(0);
             Destroy(offer.gameObject);
         }
+
+        while (shopBookList.Count > 0)
+        {
+            BookShopOffer offer = shopBookList[0];
+            shopBookList.RemoveAt(0);
+            Destroy(offer.gameObject);
+        }
     }
-
-    #region Runemaiden
-
-    // Reroll Rune
-    public void RerollRune(Equipment e)
-    {
-
-    }
-
-    // Upgrade Rune
-    public void UpgradeRune(Equipment e)
-    {
-
-    }
-
-    #endregion
 
     #region Merchant
 
@@ -2295,71 +2342,6 @@ public class GameManager : MonoBehaviour
     public void AddRandomBook()
     {
         AddBook(GetRandomBook());
-    }
-
-    #endregion
-
-    #region Library 
-
-    [Header("Swap Book Screen")]
-    [SerializeField] private GameObject[] turnOnForSwapBookScreen;
-    [SerializeField] private GameObject[] turnOffForSwapBookScreen;
-    [SerializeField] private Transform swapBookOptionList;
-    [SerializeField] private SwapBookButton swapBookButtonPrefab;
-    private List<SwapBookButton> spawnedSwapBookButtons = new List<SwapBookButton>();
-
-    private BookLabel libraryBookOffer;
-
-    public void UpgradeBooks()
-    {
-        foreach (KeyValuePair<BookLabel, Book> b in equippedBooks)
-        {
-            b.Value.TryCallLevelUp(true);
-        }
-
-        ResolveCurrentEvent();
-    }
-
-    public void OpenSwapBookScreen()
-    {
-        SwitchUIScreens(turnOnForSwapBookScreen, turnOffForSwapBookScreen);
-
-        SwapBookButton spawned = Instantiate(swapBookButtonPrefab, swapBookOptionList);
-        libraryBookOffer = GetRandomBook();
-        spawned.Set(libraryBookOffer, null);
-        spawnedSwapBookButtons.Add(spawned);
-    }
-
-    public void CloseSwapBookScreen()
-    {
-        SwitchUIScreens(turnOffForSwapBookScreen, turnOnForSwapBookScreen);
-
-        while (spawnedSwapBookButtons.Count > 0)
-        {
-            SwapBookButton spawned = spawnedSwapBookButtons[0];
-            spawnedSwapBookButtons.RemoveAt(0);
-            Destroy(spawned.gameObject);
-        }
-    }
-
-    public void SwapBooks(BookLabel swappingOut, BookLabel swappingTo)
-    {
-        RemoveBook(swappingOut);
-        AddBook(swappingTo);
-        AnimateBook(swappingTo);
-    }
-
-    public void RejectBookSwap()
-    {
-        CloseSwapBookScreen();
-        ResolveCurrentEvent();
-    }
-
-    public void AcceptBookSwap()
-    {
-        SwapBooks(GetRandomOwnedBook(), libraryBookOffer);
-        CloseSwapBookScreen();
-        ResolveCurrentEvent();
     }
 
     #endregion

@@ -7,7 +7,8 @@ public enum EventLabel
     HomeFree,
     WitchesHut,
     TravellersDelivery,
-    PitOfTreasure
+    PitOfTreasure,
+    Treasure
 }
 
 [System.Serializable]

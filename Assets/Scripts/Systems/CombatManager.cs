@@ -141,6 +141,13 @@ public partial class CombatManager : MonoBehaviour
     public int NumFreeSpells { get; set; }
     public bool InCombat { get; private set; }
     public bool CanCastSpells { get; private set; }
+    private bool hasCastQueue;
+    private bool isCastingQueue;
+    [SerializeField] private string castButtonTextEndPlayerTurn = "Cast";
+    [SerializeField] private string castButtonTextWhileCasting = "Casting";
+    [SerializeField] private string castButtonTextPostCasting = "End Turn";
+    [SerializeField] private string castButtonTextEnemyTurn = "Enemy Turn";
+    [SerializeField] private TextMeshProUGUI castButtonText;
 
     private bool playerTurnEnded;
     private Turn currentTurn;
@@ -196,14 +203,13 @@ public partial class CombatManager : MonoBehaviour
         musicSource.clip = combat.MainMusic;
         musicSource.Play();
 
-        StartCoroutine(UpdateDuringCombat());
         yield return StartCoroutine(CombatLoop());
 
         if (GameManager._Instance.GetCurrentCharacterHP() <= 0)
         {
             StartCoroutine(Utils.ChangeCanvasGroupAlpha(characterCombatSpriteCV, 0, Time.deltaTime * combatSpriteAlphaChangeRate));
 
-            yield return new WaitForSeconds(1);
+            yield return new WaitForSeconds(delayAfterPlayerDeath);
 
             yield return GameManager._Instance.GameOverSequence();
         }
@@ -212,7 +218,7 @@ public partial class CombatManager : MonoBehaviour
             // Play Enemy Death Animation
             StartCoroutine(Utils.ChangeCanvasGroupAlpha(enemyCombatSpriteCV, 0, Time.deltaTime * combatSpriteAlphaChangeRate));
 
-            yield return new WaitForSeconds(1);
+            yield return new WaitForSeconds(delayAfterEnemyDeath);
 
             // Bandaged Effect
             if (TargetHasAffliction(AfflictionType.Bandages, Target.Character))
@@ -221,11 +227,10 @@ public partial class CombatManager : MonoBehaviour
                 GameManager._Instance.AlterPlayerHP(numBandagedStacks, DamageType.Heal);
                 ConsumeAfflictionStack(AfflictionType.Bandages, Target.Character, numBandagedStacks);
                 ShowAfflictionProc(AfflictionType.Bandages, Target.Character);
-                yield return new WaitForSeconds(1);
+                yield return new WaitForSeconds(delayAfterBandagesEffect);
             }
 
             InCombat = false;
-
 
             GameManager._Instance.ResolveCurrentEvent();
 
@@ -249,6 +254,8 @@ public partial class CombatManager : MonoBehaviour
 
         // Set settings
         InCombat = true;
+
+        StartCoroutine(UpdateDuringCombat());
 
         while (currentEnemyHP > 0 && GameManager._Instance.GetCurrentCharacterHP() > 0)
         {
@@ -293,7 +300,7 @@ public partial class CombatManager : MonoBehaviour
             }
 
             // End of Turn
-            yield return new WaitForSeconds(1);
+            yield return new WaitForSeconds(delayAfterEnemyTurn);
 
             // Reset for Turn
             ResetCombatentWard(Target.Character);
@@ -322,6 +329,7 @@ public partial class CombatManager : MonoBehaviour
 
         // Allow player to cast spells
         CanCastSpells = true;
+        hasCastQueue = false;
 
         // Show Turn Display
         yield return StartCoroutine(turnDisplay.Show("Player Turn", turnCount > 1 ? turnCount + Utils.GetNumericalSuffix(turnCount) + " Turn" : ""));
@@ -348,6 +356,9 @@ public partial class CombatManager : MonoBehaviour
         {
             yield break;
         }
+
+        yield return new WaitUntil(() => playerTurnEnded);
+        playerTurnEnded = false;
 
         GameManager._Instance.ResetActiveSpellCooldowns();
 
@@ -415,6 +426,7 @@ public partial class CombatManager : MonoBehaviour
 
     private IEnumerator CastCharacterQueue()
     {
+        isCastingQueue = true;
         while (spellQueue.Count > 0)
         {
             // Apply Poison Effect
@@ -440,6 +452,8 @@ public partial class CombatManager : MonoBehaviour
 
             yield return new WaitForSeconds(delayBetweenSpellCasts);
         }
+        isCastingQueue = false;
+        hasCastQueue = true;
     }
 
     private bool CheckForCombatOver()
@@ -534,7 +548,7 @@ public partial class CombatManager : MonoBehaviour
             yield break;
         }
 
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(delayBeforeEnemyAttack);
 
         ResetCombatentWard(Target.Enemy);
 
@@ -557,6 +571,27 @@ public partial class CombatManager : MonoBehaviour
     {
         while (InCombat)
         {
+            // Change the text of the cast Button depending on what's happening
+            if (currentTurn == Turn.Enemy)
+            {
+                castButtonText.text = castButtonTextEnemyTurn;
+            }
+            else if (currentTurn == Turn.Player)
+            {
+                if (hasCastQueue)
+                {
+                    castButtonText.text = castButtonTextPostCasting;
+                }
+                else if (isCastingQueue)
+                {
+                    castButtonText.text = castButtonTextWhileCasting;
+                }
+                else
+                {
+                    castButtonText.text = castButtonTextEndPlayerTurn;
+                }
+            }
+
             // Show Enemy HP
             enemyHPBar.SetText(currentEnemyHP + "/" + maxEnemyHP);
 
@@ -573,6 +608,9 @@ public partial class CombatManager : MonoBehaviour
         turnCount = 0;
         // Reset Num Free Spells
         NumFreeSpells = 0;
+
+        isCastingQueue = false;
+        hasCastQueue = false;
 
         // Clear Afflictions
         ClearAfflictionMap(enemyAfflictionMap, Target.Enemy);
@@ -1100,6 +1138,13 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierStart = 1;
     [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierGain = 1;
     [SerializeField] private float combatSpriteAlphaChangeRate = 5;
+
+    [Header("Delays")]
+    [SerializeField] private float delayAfterPlayerDeath = 2;
+    [SerializeField] private float delayAfterEnemyDeath = 2;
+    [SerializeField] private float delayAfterBandagesEffect = 1;
+    [SerializeField] private float delayBeforeEnemyAttack = 1;
+    [SerializeField] private float delayAfterEnemyTurn = 1;
 
     // Basic Attack
     private void PlayerBasicAttack()

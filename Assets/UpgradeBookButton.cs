@@ -22,6 +22,9 @@ public class UpgradeBookButton : MonoBehaviour
 
     public void SpawnToolTip()
     {
+        // Only spawn tooltip if player can actually upgrade book
+        if (!GameManager._Instance.CanUpgradeActiveBook) return;
+
         // Get current book
         Book currentBook = GameManager._Instance.GetOwnedBook(0);
 

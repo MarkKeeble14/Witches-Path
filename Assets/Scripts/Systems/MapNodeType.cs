@@ -2,7 +2,7 @@
 {
     MinorFight,
     Boss,
-    Library,
+    Treasure,
     Campfire,
     Tavern,
     Event,

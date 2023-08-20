@@ -6,6 +6,18 @@ using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+[System.Serializable]
+public struct UISectionInformation
+{
+    [SerializeField] private string text;
+    [SerializeField] private Sprite icon;
+    [SerializeField] private Color color;
+
+    public string Text { get => text; }
+    public Sprite Icon { get => icon; }
+    public Color Color { get => color; }
+}
+
 public struct ToolTippableComparisonData
 {
     public string AdditionalLabel;
@@ -40,7 +52,7 @@ public enum ToolTipKeyword
     Charge,
     Health,
     Mana,
-    Attack,
+    Damage,
     Defense,
     Pelts
 }
@@ -78,6 +90,8 @@ public class UIManager : MonoBehaviour
     private List<string> afflictionTypes = new List<string>();
 
     private List<string> numericalSuffixes => new List<string>() { "st", "nd", "rd", "th" };
+
+    [SerializeField] private SerializableDictionary<UISection, UISectionInformation> UISectionMap = new SerializableDictionary<UISection, UISectionInformation>();
 
     public string GetKeyWordText(string keyword)
     {
@@ -523,5 +537,10 @@ public class UIManager : MonoBehaviour
         List<RaycastResult> raysastResults = new List<RaycastResult>();
         EventSystem.current.RaycastAll(eventData, raysastResults);
         return raysastResults;
+    }
+
+    public UISectionInformation GetUISectionInformation(UISection uiSection)
+    {
+        return UISectionMap[uiSection];
     }
 }
