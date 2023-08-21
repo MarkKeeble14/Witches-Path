@@ -58,5 +58,4 @@ MonoBehaviour:
       locked: 0
       possibleOutcomes:
         percentageMap: []
-  chainEvents:
-  - {fileID: 11400000, guid: cac73f62b47c5b641959cba53a8fd468, type: 2}
+  chainEvents: []

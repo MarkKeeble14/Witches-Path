@@ -843,6 +843,11 @@ public class CaveMural : Artifact
             tracker = 0;
         }
     }
+
+    public override string GetAdditionalText()
+    {
+        return tracker + " / " + procAfter;
+    }
 }
 
 public class BarbariansBlade : Artifact
@@ -1054,6 +1059,11 @@ public class Telescope : Artifact
             tracker = 0;
         }
     }
+
+    public override string GetAdditionalText()
+    {
+        return tracker + " / " + procAfter;
+    }
 }
 
 public class CheapStopwatch : Artifact
@@ -1094,6 +1104,11 @@ public class CheapStopwatch : Artifact
             ShowArtifactProc();
             tracker = 0;
         }
+    }
+
+    public override string GetAdditionalText()
+    {
+        return tracker + " / " + procAfter;
     }
 }
 
@@ -1141,6 +1156,11 @@ public class Boulder : Artifact
             tracker = 0;
             damageAmount += damageIncrease;
         }
+    }
+
+    public override string GetAdditionalText()
+    {
+        return tracker + " / " + procAfter;
     }
 }
 

@@ -75,14 +75,17 @@ public class UIManager : MonoBehaviour
 
     [Header("Prefabs")]
     [SerializeField] private ToolTipList toolTipList;
-
     [SerializeField] private ToolTip toolTipPrefab;
+    [SerializeField] private ConfirmPotionToolTip confirmPotionToolTipPrefab;
+
 
     [Header("Tool Tips")]
     [SerializeField] private int toolTipWidth;
     [SerializeField] private int toolTipHeight;
     [SerializeField] private float toolTipSpacing;
     [SerializeField] private float offset;
+
+    [SerializeField] private float confirmPotionUseToolTipWidth = 250;
 
     [SerializeField] SerializableDictionary<TextDecorationLabel, Color> textDecorationColorMap = new SerializableDictionary<TextDecorationLabel, Color>();
 
@@ -92,6 +95,13 @@ public class UIManager : MonoBehaviour
     private List<string> numericalSuffixes => new List<string>() { "st", "nd", "rd", "th" };
 
     [SerializeField] private SerializableDictionary<UISection, UISectionInformation> UISectionMap = new SerializableDictionary<UISection, UISectionInformation>();
+
+    [SerializeField] private SerializableDictionary<DamageType, Color> damageTypeColorMap = new SerializableDictionary<DamageType, Color>();
+
+    public Color GetDamageTypeColor(DamageType type)
+    {
+        return damageTypeColorMap[type];
+    }
 
     public string GetKeyWordText(string keyword)
     {
@@ -270,6 +280,16 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    public GameObject SpawnConfirmPotionToolTip(Potion potion, Transform spawningOn)
+    {
+        // Spawn the ToolTipList object that will house all of our other tooltips
+        ToolTipList list = SpawnToolTipList(spawningOn, 1, 1, true, confirmPotionUseToolTipWidth);
+        Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
+        GameObject spawned = SpawnToolTip(confirmPotionToolTipPrefab.gameObject, vLayout);
+        spawned.GetComponent<ConfirmPotionToolTip>().Set(potion, spawningOn, list.gameObject);
+        return list.gameObject;
+    }
+
     public GameObject SpawnGenericToolTips(ToolTippable spawningFor, Transform spawningOn)
     {
         // Determine how many tool tips we're spawning
@@ -359,7 +379,7 @@ public class UIManager : MonoBehaviour
         return list.gameObject;
     }
 
-    private ToolTipList SpawnToolTipList(Transform spawningFor, int numToolTips, int numLists)
+    private ToolTipList SpawnToolTipList(Transform spawningFor, int numToolTips, int numLists, bool overrideWidth = false, float overridenWidth = 0)
     {
         RectTransform spawningForRect = spawningFor.GetComponent<RectTransform>();
         float spawningForWidth = spawningForRect.sizeDelta.x;
@@ -407,7 +427,16 @@ public class UIManager : MonoBehaviour
 
         // Calculate List Height
         float listHeight = (numToolTips * toolTipHeight) + ((numToolTips - 1) * toolTipSpacing);
-        float listWidth = (numLists * toolTipWidth) + ((numLists - 1) * toolTipSpacing);
+
+        float listWidth;
+        if (overrideWidth)
+        {
+            listWidth = overridenWidth;
+        }
+        else
+        {
+            listWidth = ((numLists * toolTipWidth) + ((numLists - 1) * toolTipSpacing));
+        }
         listRect.sizeDelta = new Vector2(listWidth, listHeight);
 
         // Depending on where the mouse is, splitting the screen up into two rows of 3 (so six sections total), we set the Layout Groups Child Alignment Property
@@ -421,7 +450,17 @@ public class UIManager : MonoBehaviour
         // Upper Left -> (-parentHeight / 2) (-numToolTips * toolTipHeight) (-numToolTIps - 1 * toolTipSpacing) (-offsetY)
 
         float verticalOffset = (spawningForHeight / 2) + (listHeight / 2) + this.offset;
-        float horizontalOffset = (toolTipWidth - spawningForWidth) / 2;
+
+        float horizontalOffset;
+        if (overrideWidth)
+        {
+            horizontalOffset = (overridenWidth - spawningForWidth) / 2;
+        }
+        else
+        {
+            horizontalOffset = (toolTipWidth - spawningForWidth) / 2;
+        }
+
         switch (verticalSlice)
         {
             case 0:
@@ -494,6 +533,15 @@ public class UIManager : MonoBehaviour
         RectTransform spawnedRect = spawned.GetComponent<RectTransform>();
         spawnedRect.sizeDelta = new Vector2(spawnedRect.sizeDelta.x, toolTipHeight);
         spawned.Set(label, content);
+        return spawned.gameObject;
+    }
+
+    private GameObject SpawnToolTip(GameObject obj, Transform transform)
+    {
+        GameObject spawned = Instantiate(obj, transform);
+        RectTransform spawnedRect = spawned.GetComponent<RectTransform>();
+        spawnedRect.sizeDelta = new Vector2(spawnedRect.sizeDelta.x, toolTipHeight);
+
         return spawned.gameObject;
     }
 

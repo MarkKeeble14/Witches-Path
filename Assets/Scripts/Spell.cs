@@ -554,6 +554,10 @@ public abstract class ActiveSpell : Spell
     public bool HasMana => GameManager._Instance.GetCurrentPlayerMana() >= manaCost;
     public bool CanCast => !OnCooldown && HasMana;
 
+    protected abstract DamageType mainDamageType { get; }
+
+    public DamageType MainDamageType => mainDamageType;
+
     // Casting Information
     // public DefaultAsset MapFile { get => Resources.Load<DefaultAsset>("ActiveSpellData/" + Label + "/MapFile"); }
     // public AudioClip AssociatedSoundClip { get => Resources.Load<AudioClip>("ActiveSpellData/" + Label + "/SoundClip"); }
@@ -656,6 +660,8 @@ public class Fireball : ActiveSpell
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage, Apply " + stackAmount + " Burn";
 
+    protected override DamageType mainDamageType => DamageType.Fire;
+
     private int damageAmount;
     private int stackAmount;
 
@@ -685,6 +691,8 @@ public class Shock : ActiveSpell
     public override SpellLabel Label => SpellLabel.Shock;
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage, Apply " + stackAmount + " Paralyze";
+
+    protected override DamageType mainDamageType => DamageType.Electricity;
 
     private int damageAmount;
     private int stackAmount;
@@ -716,6 +724,8 @@ public class Singe : ActiveSpell
 
     protected override string toolTipText => "Apply " + stackAmount + " Burn";
 
+    protected override DamageType mainDamageType => DamageType.Fire;
+
     private int stackAmount;
 
     protected override void SetKeywords()
@@ -743,6 +753,8 @@ public class Plague : ActiveSpell
 
     protected override string toolTipText => "Apply " + stackAmount + " Poison";
 
+    protected override DamageType mainDamageType => DamageType.Poison;
+
     private int stackAmount;
 
     protected override void SetKeywords()
@@ -768,6 +780,8 @@ public class Toxify : ActiveSpell
     public override SpellLabel Label => SpellLabel.Toxify;
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage, Apply " + stackAmount + " Poison";
+
+    protected override DamageType mainDamageType => DamageType.Poison;
 
     private int damageAmount;
     private int stackAmount;
@@ -799,6 +813,8 @@ public class Jarkai : ActiveSpell
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage Twice";
 
+    protected override DamageType mainDamageType => DamageType.Default;
+
     private int damageAmount;
 
     protected override void SetParameters()
@@ -820,6 +836,8 @@ public class Flurry : ActiveSpell
     public override SpellLabel Label => SpellLabel.Flurry;
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage " + hitAmount + " Times";
+
+    protected override DamageType mainDamageType => DamageType.Default;
 
     private int damageAmount;
     private int hitAmount;
@@ -846,6 +864,8 @@ public class Electrifry : ActiveSpell
     public override SpellLabel Label => SpellLabel.Electrifry;
 
     protected override string toolTipText => "Apply " + paralyzeAmount + " Paralyze, Apply " + burnAmount + " Burn";
+
+    protected override DamageType mainDamageType => DamageType.Electricity;
 
     private int paralyzeAmount;
     private int burnAmount;
@@ -877,6 +897,8 @@ public class ExposeFlesh : ActiveSpell
     public override SpellLabel Label => SpellLabel.ExposeFlesh;
 
     protected override string toolTipText => "Apply " + stackAmount + " Vulnerable, Deal " + damageAmount + " Damage";
+
+    protected override DamageType mainDamageType => DamageType.Evil;
 
     private int damageAmount;
     private int stackAmount;
@@ -913,6 +935,8 @@ public class Cripple : ActiveSpell
 
     protected override string toolTipText => "Apply " + stackAmount + " Weak, Deal " + damageAmount + " Damage";
 
+    protected override DamageType mainDamageType => DamageType.Evil;
+
     private int damageAmount;
     private int stackAmount;
 
@@ -943,6 +967,8 @@ public class TradeBlood : ActiveSpell
 
     protected override string toolTipText => "Lose " + selfDamageAmount + " HP, Deal " + otherDamageAmount + " Damage";
 
+    protected override DamageType mainDamageType => DamageType.Evil;
+
     private int selfDamageAmount;
     private int otherDamageAmount;
 
@@ -966,6 +992,8 @@ public class Excite : ActiveSpell
     public override SpellLabel Label => SpellLabel.Excite;
 
     protected override string toolTipText => "Gain " + stackAmount + " Embolden";
+
+    protected override DamageType mainDamageType => DamageType.Default;
 
     private int stackAmount;
 
@@ -993,6 +1021,8 @@ public class Overexcite : ActiveSpell
     public override SpellLabel Label => SpellLabel.Overexcite;
 
     protected override string toolTipText => "Gain " + emboldenedAmount + " Embolden, Gain " + vulnerableAmount + " Vulnerable";
+
+    protected override DamageType mainDamageType => DamageType.Default;
 
     private int emboldenedAmount;
     private int vulnerableAmount;
@@ -1025,6 +1055,8 @@ public class Forethought : ActiveSpell
 
     protected override string toolTipText => "Gain " + stackAmount + " Intangible";
 
+    protected override DamageType mainDamageType => DamageType.Default;
+
     private int stackAmount;
 
     protected override void SetKeywords()
@@ -1052,6 +1084,8 @@ public class Reverberate : ActiveSpell
 
     protected override string toolTipText => "Gain " + stackAmount + " Echo";
 
+    protected override DamageType mainDamageType => DamageType.Default;
+
     private int stackAmount;
 
     protected override void SetKeywords()
@@ -1078,6 +1112,8 @@ public class ImpartialAid : ActiveSpell
     public override SpellLabel Label => SpellLabel.ImpartialAid;
 
     protected override string toolTipText => "All Combatents Heal " + healAmount + " HP";
+
+    protected override DamageType mainDamageType => DamageType.Heal;
 
     private int healAmount;
 
@@ -1107,6 +1143,8 @@ public class WitchesWill : ActiveSpell
 
     protected override string toolTipText => "Deal " + damageAmount + " Damage";
 
+    protected override DamageType mainDamageType => DamageType.Default;
+
     private int damageAmount;
 
     protected override void SetParameters()
@@ -1127,6 +1165,8 @@ public class WitchesWard : ActiveSpell
     public override SpellLabel Label => SpellLabel.WitchesWard;
 
     protected override string toolTipText => "Gain " + wardAmount + " Ward";
+
+    protected override DamageType mainDamageType => DamageType.Default;
 
     private int wardAmount;
 

@@ -19,26 +19,32 @@ public class EquipmentShopOffer : ShopOffer
         defenseBonus.text = e.GetStat(BaseStat.Defense).ToString();
         manaBonus.text = e.GetStat(BaseStat.Mana).ToString();
 
-        GameObject spawnedToolTip = null;
-        onPointerEnter += delegate
-        {
-            spawnedToolTip = UIManager._Instance.SpawnComparisonToolTips(
-                new ToolTippableComparisonData[]
-                    {
-                        new ToolTippableComparisonData("Offering: ", e),
-                        new ToolTippableComparisonData("Current: ", GameManager._Instance.GetEquippedEquipmentOfSameType(e))
-                    },
-                transform);
-        };
-        onPointerExit += delegate
-        {
-            if (spawnedToolTip != null)
-                Destroy(spawnedToolTip.gameObject);
-        };
+        // Tool Tips
+        onPointerEnter += SpawnToolTip;
+        onPointerExit += DestroyToolTip;
     }
 
     protected override void Purchase()
     {
         GameManager._Instance.EquipEquipment(representingEquipment);
+    }
+
+    // Tool Tips
+    private GameObject spawnedToolTip;
+
+    public void SpawnToolTip()
+    {
+        spawnedToolTip = UIManager._Instance.SpawnComparisonToolTips(
+            new ToolTippableComparisonData[]
+                {
+                        new ToolTippableComparisonData("Offering: ", representingEquipment),
+                        new ToolTippableComparisonData("Current: ", GameManager._Instance.GetEquippedEquipmentOfSameType(representingEquipment))
+                },
+            transform);
+    }
+
+    public void DestroyToolTip()
+    {
+        Destroy(spawnedToolTip);
     }
 }

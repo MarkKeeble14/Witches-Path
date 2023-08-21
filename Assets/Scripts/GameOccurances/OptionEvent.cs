@@ -55,6 +55,11 @@ public class OptionEvent : GameOccurance
         return chainEvents[index];
     }
 
+    public void Set()
+    {
+        //
+    }
+
     protected override IEnumerator OnResolve()
     {
         Debug.Log(name + ": OnResolve");
@@ -64,6 +69,8 @@ public class OptionEvent : GameOccurance
     protected override IEnumerator OnStart()
     {
         Debug.Log(name + ": OnStart");
+
+        Set();
 
         yield return GameManager._Instance.StartCoroutine(EventManager._Instance.StartOptionEvent(this));
     }

@@ -2,10 +2,16 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.EventSystems;
 
-public class SelectEquipmentButton : SelectButton
+public enum EquipmentSequence
 {
-    private Equipment representingEquipment;
+    Reforge,
+    Strengthen
+}
+
+public class SelectEquipmentButton : SelectButton, IPointerEnterHandler, IPointerExitHandler
+{
 
     [SerializeField] private RectTransform mainRect;
     [SerializeField] private float costObjWidth = 100;
@@ -14,7 +20,14 @@ public class SelectEquipmentButton : SelectButton
     [SerializeField] private TextMeshProUGUI labelText;
     [SerializeField] private GameObject costObj;
 
+    private EquipmentSequence partOfSequence;
+    private Equipment representingEquipment;
     private GameObject spawnedToolTip;
+
+    private void Start()
+    {
+        onPointerClick += DestroyToolTip;
+    }
 
     public void Set(Equipment e, Action a)
     {
@@ -22,18 +35,30 @@ public class SelectEquipmentButton : SelectButton
         Set(e.GetName(), a);
     }
 
-    public void ShowCost(int cost, string label)
+    public void ShowCost(string label, EquipmentSequence inSequence)
     {
-        Utils.SetRight(mainRect, costObjWidth);
-
-        costText.text = cost.ToString();
+        partOfSequence = inSequence;
         labelText.text = label;
-        costObj.SetActive(true);
+        if (partOfSequence == EquipmentSequence.Reforge)
+        {
+            Utils.SetRight(mainRect, costObjWidth);
+            costObj.SetActive(true);
+            SetCostText();
+        }
+    }
+
+    private void SetCostText()
+    {
+        if (partOfSequence == EquipmentSequence.Reforge)
+        {
+            costText.text = representingEquipment.GetCostToReforge().ToString();
+        }
     }
 
     private void Update()
     {
         SetText(representingEquipment.GetName());
+        SetCostText();
     }
 
     public void SpawnToolTip()
@@ -44,5 +69,15 @@ public class SelectEquipmentButton : SelectButton
     public void DestroyToolTip()
     {
         Destroy(spawnedToolTip);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        SpawnToolTip();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        DestroyToolTip();
     }
 }

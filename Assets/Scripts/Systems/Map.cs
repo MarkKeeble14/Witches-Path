@@ -25,26 +25,33 @@ public class OptionEventWithCondition
 [System.Serializable]
 public class Map
 {
+    [Header("Map Settings")]
     [SerializeField] private SerializableDictionary<MapNodeType, List<GameOccurance>> mapNodes = new SerializableDictionary<MapNodeType, List<GameOccurance>>();
     [SerializeField] private List<OptionEventWithCondition> optionEventMapNodes = new List<OptionEventWithCondition>();
     [SerializeField] private SerializableDictionary<int, MapNodeType> forcedNodeIndices = new SerializableDictionary<int, MapNodeType>();
     [SerializeField] private PercentageMap<MapNodeType> randomNodeTypeLiklihood = new PercentageMap<MapNodeType>();
-
     [SerializeField] private Vector2Int mapGridSize = new Vector2Int(5, 15);
-    private MapNodeUI[,] spawnedGridNodes;
 
     [Header("Visual Settings")]
     [SerializeField] private float delayBetweenShowingCells = .1f;
     [SerializeField] private Vector2 chanceToPokeHole = new Vector2(1, 3);
     [SerializeField] private SerializableDictionary<MapNodeType, Sprite> mapNodeIconDict = new SerializableDictionary<MapNodeType, Sprite>();
 
-
-    [Header("References")]
-    [SerializeField] private GridLayoutGroup grid;
-    [SerializeField] private ScrollRect scrollRect;
-
     [Header("Prefabs")]
     [SerializeField] private MapNodeUI mapNodePrefab;
+
+    // Map Data
+    private MapNodeUI[,] spawnedGridNodes;
+
+    // Map References
+    private GridLayoutGroup grid;
+    private ScrollRect scrollRect;
+
+    public void Set(GridLayoutGroup mapGrid, ScrollRect mapScrollRect)
+    {
+        grid = mapGrid;
+        scrollRect = mapScrollRect;
+    }
 
     public void Generate()
     {
@@ -55,10 +62,15 @@ public class Map
         PopulateGrid();
 
         OverrideForcedIndices();
+    }
 
-        MapManager._Instance.StartCoroutine(ShowGrid());
-
-        scrollRect.verticalNormalizedPosition = 0;
+    public void Clear()
+    {
+        ActOnEachGridCell(node =>
+        {
+            GameObject.Destroy(node.gameObject);
+        });
+        spawnedGridNodes = null;
     }
 
     public void ActOnEachGridCell(Action<MapNodeUI> func)
@@ -177,7 +189,7 @@ public class Map
         }
     }
 
-    private IEnumerator ShowGrid()
+    public IEnumerator ShowGrid()
     {
         yield return MapManager._Instance.StartCoroutine(ActOnEachGridCellWithDelay(cell =>
         {

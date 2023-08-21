@@ -4,8 +4,9 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System;
+using UnityEngine.EventSystems;
 
-public abstract class ShopOffer : MonoBehaviour
+public abstract class ShopOffer : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     protected int cost;
 
@@ -16,7 +17,7 @@ public abstract class ShopOffer : MonoBehaviour
 
     protected Action onPointerEnter;
     protected Action onPointerExit;
-    [SerializeField] protected Vector2 toolTipOffset;
+    protected Action onPointerClick;
 
     private void Update()
     {
@@ -26,16 +27,6 @@ public abstract class ShopOffer : MonoBehaviour
     public void MultiplyCost(float multBy)
     {
         cost = Mathf.CeilToInt(cost * multBy);
-    }
-
-    public void OnPointerEnter()
-    {
-        onPointerEnter?.Invoke();
-    }
-
-    public void OnPointerExit()
-    {
-        onPointerExit?.Invoke();
     }
 
     public void TryPurchase()
@@ -52,4 +43,19 @@ public abstract class ShopOffer : MonoBehaviour
     }
 
     protected abstract void Purchase();
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        onPointerClick?.Invoke();
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        onPointerEnter?.Invoke();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        onPointerExit?.Invoke();
+    }
 }

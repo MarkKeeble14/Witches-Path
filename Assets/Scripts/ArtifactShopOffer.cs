@@ -3,30 +3,34 @@ using UnityEngine;
 
 public class ArtifactShopOffer : ShopOffer
 {
-    [SerializeField] private ArtifactLabel label;
+    [SerializeField] private Artifact artifact;
 
-    public void Set(ArtifactLabel setTo, int cost, Action onClick)
+    public void Set(ArtifactLabel setTo, int cost)
     {
-        label = setTo;
+        artifact = GameManager._Instance.GetArtifactOfType(setTo);
+        itemText.text = artifact.Name;
         this.cost = cost;
 
-        Artifact artifact = GameManager._Instance.GetArtifactOfType(setTo);
-        itemText.text = artifact.Name;
-
-        GameObject spawnedToolTip = null;
-        onPointerEnter += delegate
-        {
-            spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(artifact, transform);
-        };
-        onPointerExit += delegate
-        {
-            if (spawnedToolTip != null)
-                Destroy(spawnedToolTip.gameObject);
-        };
+        // Tool Tips
+        onPointerEnter += SpawnToolTip;
+        onPointerExit += DestroyToolTip;
     }
 
     protected override void Purchase()
     {
-        GameManager._Instance.AddArtifact(label);
+        GameManager._Instance.AddArtifact(artifact.GetLabel());
+    }
+
+    // Tool Tips
+    private GameObject spawnedToolTip;
+
+    public void SpawnToolTip()
+    {
+        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(artifact, transform);
+    }
+
+    public void DestroyToolTip()
+    {
+        Destroy(spawnedToolTip);
     }
 }

@@ -26,8 +26,8 @@ public struct ReforgeModifierEffect
 
     public ReforgeModifierEffect(BaseStat affectedStat, int statChange)
     {
-        this.AffectedStat = affectedStat;
-        this.StatChange = statChange;
+        AffectedStat = affectedStat;
+        StatChange = statChange;
     }
 }
 
@@ -84,7 +84,7 @@ public abstract class Equipment : ScriptableObject, ToolTippable
         GameManager._Instance.AlterManaFromEquipment(manaChange + manaBoost);
 
         // Add reforge modifier stats
-        if (currentReforgeModifier != ReforgeModifier.Unimpressive)
+        if (currentReforgeModifier != ReforgeModifier.None && currentReforgeModifier != ReforgeModifier.Unimpressive)
         {
             ApplyReforgeModifierEffect(currentReforgeModifier, 1);
         }
@@ -98,7 +98,7 @@ public abstract class Equipment : ScriptableObject, ToolTippable
         GameManager._Instance.AlterManaFromEquipment(-(manaChange + manaBoost));
 
         // Remove reforge modifier stats
-        if (currentReforgeModifier != ReforgeModifier.Unimpressive)
+        if (currentReforgeModifier != ReforgeModifier.None && currentReforgeModifier != ReforgeModifier.Unimpressive)
         {
             ApplyReforgeModifierEffect(currentReforgeModifier, -1);
         }
@@ -106,40 +106,47 @@ public abstract class Equipment : ScriptableObject, ToolTippable
 
     public bool Reforge()
     {
+        // Remove Previous Effect
         if (currentReforgeModifier != ReforgeModifier.Unimpressive)
         {
             ApplyReforgeModifierEffect(currentReforgeModifier, -1);
         }
 
         List<ReforgeModifier> possibleModifiers = new List<ReforgeModifier>((ReforgeModifier[])Enum.GetValues(typeof(ReforgeModifier)));
-        possibleModifiers.Remove(ReforgeModifier.None);
-        // possibleModifiers.Remove(ReforgeModifier.Unimpressive);
-        possibleModifiers.Remove(currentReforgeModifier);
 
-        if (possibleModifiers.Count == 0) return false;
-
+        if (possibleModifiers.Contains(ReforgeModifier.None))
+            possibleModifiers.Remove(ReforgeModifier.None);
         currentReforgeModifier = RandomHelper.GetRandomFromList(possibleModifiers);
+
         ApplyReforgeModifierEffect(currentReforgeModifier, 1);
+
         Debug.Log("Reforge Result: " + name + " - " + currentReforgeModifier);
+
         return true;
     }
 
     private void ApplyReforgeModifierEffect(ReforgeModifier modifier, int multiplyBy)
     {
-        ReforgeModifierEffect effect = BalenceManager._Instance.GetReforgeModifierEffect(modifier);
-        switch (effect.AffectedStat)
+        List<ReforgeModifierEffect> effects = BalenceManager._Instance.GetReforgeModifierEffect(modifier);
+        foreach (ReforgeModifierEffect effect in effects)
         {
-            case BaseStat.Damage:
-                GameManager._Instance.DamageFromEquipment += effect.StatChange * multiplyBy;
-                break;
-            case BaseStat.Defense:
-                GameManager._Instance.DefenseFromEquipment += effect.StatChange * multiplyBy;
-                break;
-            case BaseStat.Mana:
-                GameManager._Instance.AlterManaFromEquipment(effect.StatChange * multiplyBy);
-                break;
-            default:
-                throw new UnhandledSwitchCaseException();
+            switch (effect.AffectedStat)
+            {
+                case BaseStat.Damage:
+                    damageBoost += effect.StatChange * multiplyBy;
+                    GameManager._Instance.DamageFromEquipment += effect.StatChange * multiplyBy;
+                    break;
+                case BaseStat.Defense:
+                    defenseBoost += effect.StatChange * multiplyBy;
+                    GameManager._Instance.DefenseFromEquipment += effect.StatChange * multiplyBy;
+                    break;
+                case BaseStat.Mana:
+                    manaBoost += effect.StatChange * multiplyBy;
+                    GameManager._Instance.AlterManaFromEquipment(effect.StatChange * multiplyBy);
+                    break;
+                default:
+                    throw new UnhandledSwitchCaseException();
+            }
         }
     }
 
@@ -237,8 +244,13 @@ public abstract class Equipment : ScriptableObject, ToolTippable
         }
     }
 
-    public int GetCostToBoost()
+    public int GetCostToStrengthen()
     {
         return numTimesBoosted + 1;
+    }
+
+    public int GetCostToReforge()
+    {
+        return BalenceManager._Instance.GetCostToReforge(currentReforgeModifier);
     }
 }

@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1866484488799057959
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5332111636835463515}
+  - component: {fileID: 4738525776646052579}
+  m_Layer: 0
+  m_Name: MapManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5332111636835463515
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1866484488799057959}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4738525776646052579
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1866484488799057959}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36fba719ae8067146b70ee74e8ff47bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  map:
+    mapNodes:
+      dictionary:
+      - key: 0
+        value: []
+      - key: 1
+        value: []
+      - key: 2
+        value: []
+      - key: 3
+        value: []
+      - key: 4
+        value: []
+    optionEventMapNodes: []
+    forcedNodeIndices:
+      dictionary:
+      - key: 0
+        value: 0
+    randomNodeTypeLiklihood:
+      percentageMap:
+      - key: 0
+        value: 45
+      - key: 2
+        value: 5
+      - key: 3
+        value: 10
+      - key: 4
+        value: 5
+      - key: 5
+        value: 35
+    mapGridSize: {x: 15, y: 6}
+    delayBetweenShowingCells: 0.025
+    chanceToPokeHole: {x: 2, y: 5}
+    mapNodeIconDict:
+      dictionary:
+      - key: 0
+        value: {fileID: 21300000, guid: 48e6567f2ac3be441987e940403efae9, type: 3}
+      - key: 1
+        value: {fileID: 21300000, guid: 91f3a59db48995646a98d1c1658bb71e, type: 3}
+      - key: 2
+        value: {fileID: 21300000, guid: e96be44b3ff26924e9b88ddaf039b596, type: 3}
+      - key: 3
+        value: {fileID: 21300000, guid: ed7e1f1fa66467b4297a1a6909617877, type: 3}
+      - key: 4
+        value: {fileID: 21300000, guid: 3b2ca0e4cb774da46bb67613d518dd26, type: 3}
+      - key: 5
+        value: {fileID: 21300000, guid: d54b620160a40034496a6005b052ecc2, type: 3}
+    mapNodePrefab: {fileID: 5932683331434114181, guid: 07ed74b0a56adf64583b8214596c03bb, type: 3}
+  nextStage: 

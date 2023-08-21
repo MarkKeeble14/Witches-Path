@@ -16,7 +16,7 @@ public class OptionEventOptionDisplay : MonoBehaviour
     public void Set(EventOption option)
     {
         setTo = option;
-        hintText.text = option.HintText;
+        hintText.text = "[" + option.HintText + "]";
         effectText.text = option.FinalizedEffectText;
         button.interactable = !option.Locked;
     }

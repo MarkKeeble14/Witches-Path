@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 using TMPro;
+using UnityEngine.EventSystems;
 
-public class SelectStatButton : SelectButton
+public class SelectStatButton : SelectButton, IPointerEnterHandler, IPointerExitHandler
 {
     [SerializeField] private RectTransform mainRect;
     [SerializeField] private float costObjWidth = 100;
@@ -13,6 +14,11 @@ public class SelectStatButton : SelectButton
     private Equipment representingEquipment;
 
     private GameObject spawnedToolTip;
+
+    private void Start()
+    {
+        onPointerClick += DestroyToolTip;
+    }
 
     public void ReupToolTip()
     {
@@ -32,7 +38,7 @@ public class SelectStatButton : SelectButton
 
     private void Update()
     {
-        costText.text = representingEquipment.GetCostToBoost().ToString();
+        costText.text = representingEquipment.GetCostToStrengthen().ToString();
     }
 
     public void SpawnToolTip()
@@ -43,5 +49,15 @@ public class SelectStatButton : SelectButton
     public void DestroyToolTip()
     {
         Destroy(spawnedToolTip);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        SpawnToolTip();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        DestroyToolTip();
     }
 }

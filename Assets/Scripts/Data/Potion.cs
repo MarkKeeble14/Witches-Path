@@ -14,7 +14,7 @@ public enum PotionIngredientType
     VenomousSack,
     RawPork,
     Paprika,
-    SeaWater,
+    HolyWater,
     ElectricalWire,
     CeremonialLeaf,
     CrabShell,
@@ -25,6 +25,7 @@ public enum PotionIngredientType
     CreatureFoot,
     CreatureClaw,
     CreatureNose,
+    RainCloud,
 }
 
 [System.Serializable]
@@ -33,7 +34,9 @@ public class PotionMakeup
     private PotionBase potionBase;
     private PotionTargeter potionTargeter;
     private PotionPotency potionPotency;
+    private PotionAugmenter potionAugmenter;
 
+    public bool HasAugmenter => potionAugmenter != null;
     public bool HasBaseIngredient => potionBase != null;
     public bool HasTargeter => potionTargeter != null;
     public bool HasPotency => potionPotency != null;
@@ -57,6 +60,11 @@ public class PotionMakeup
         potionPotency = pPotency;
     }
 
+    public void SetPotionAugmenter(PotionAugmenter pAugmenter)
+    {
+        potionAugmenter = pAugmenter;
+    }
+
     public PotionBase GetPotionBase()
     {
         return potionBase;
@@ -72,6 +80,11 @@ public class PotionMakeup
         return potionPotency;
     }
 
+    public PotionAugmenter GetPotionAugmenter()
+    {
+        return potionAugmenter;
+    }
+
     public string GetPotionEffectString()
     {
         return effectString;
@@ -80,9 +93,23 @@ public class PotionMakeup
     public void AddEffect(Potion addEffectTo)
     {
         SetEffectString();
+
         addEffectTo.AddOnUseEffect(delegate
         {
-            potionBase.Effect(potionTargeter, potionPotency);
+            // Potion has an augmenter, we pass control of when/how to call that effect to the augmenter
+            if (HasAugmenter)
+            {
+                potionAugmenter.PassControlToAugmenter(
+                    delegate
+                    {
+                        potionBase.Effect(potionTargeter, potionPotency);
+                    });
+            }
+            else
+            {
+                // There is no augmenter, we can simply call the effect
+                potionBase.Effect(potionTargeter, potionPotency);
+            }
         });
     }
 
@@ -130,7 +157,7 @@ public class PotionMakeup
                     if (BalenceManager._Instance.PotionHasSpec(potionBase.Type, param))
                     {
                         // Check if value is negative, if so, make the number positive as the accompanying text will indicate the direction of the value, i.e., "Deal 50 Damage" instead of "Deal -50 Damage"
-                        float v = BalenceManager._Instance.GetValue(potionBase.Type, param, potionPotency.Potency - 1);
+                        float v = BalenceManager._Instance.GetValue(potionBase.Type, param, potionPotency.Potency);
                         if (v < 0)
                         {
                             v *= -1;
@@ -151,6 +178,11 @@ public class PotionMakeup
             }
         }
 
+        if (HasAugmenter)
+        {
+            res += "\n" + potionAugmenter.GetToolTipText();
+        }
+
         effectString = res;
         // Debug.Log("Effect String: " + effectString);
     }
@@ -161,13 +193,14 @@ public class Potion : ToolTippable
 {
     private List<PotionMakeup> potionMakeup = new List<PotionMakeup>();
     private PotionMakeup curPotionMakeup => potionMakeup[potionMakeup.Count - 1];
-
     public bool ReadyForBrew => potionMakeup[potionMakeup.Count - 1].HasBeenSet;
-
     public PotionBase CurPotionBaseIngredient => curPotionMakeup.GetPotionBase();
     public PotionTargeter CurPotionTargeterIngredient => curPotionMakeup.GetPotionTargeter();
     public PotionPotency CurPotionPotencyIngredient => curPotionMakeup.GetPotionPotency();
+    public PotionAugmenter CurPotionAugmenterIngredient => curPotionMakeup.GetPotionAugmenter();
     private Action onUse;
+    private string label;
+    private string defaultLabel = "Unbrewed";
 
     public void AddOnUseEffect(Action a)
     {
@@ -177,6 +210,7 @@ public class Potion : ToolTippable
     public Potion()
     {
         potionMakeup.Add(new PotionMakeup());
+        label = defaultLabel;
     }
 
     public void AddIngredient(PotionIngredient ingredient)
@@ -192,10 +226,13 @@ public class Potion : ToolTippable
             case PotionPotency i:
                 curPotionMakeup.SetPotionPotency(i);
                 break;
+            case PotionAugmenter i:
+                curPotionMakeup.SetPotionAugmenter(i);
+                break;
             default:
                 throw new UnhandledSwitchCaseException();
         }
-        Debug.Log(curPotionMakeup.GetPotionPotency() + ", " + curPotionMakeup.GetPotionTargeter() + ", " + curPotionMakeup.GetPotionBase());
+        // Debug.Log(curPotionMakeup.GetPotionAugmenter() + ", " + curPotionMakeup.GetPotionPotency() + ", " + curPotionMakeup.GetPotionTargeter() + ", " + curPotionMakeup.GetPotionBase());
     }
 
     public void ClearPotionBase()
@@ -213,10 +250,29 @@ public class Potion : ToolTippable
         curPotionMakeup.SetPotionPotency(null);
     }
 
+    public void ClearPotionAugmenter()
+    {
+        curPotionMakeup.SetPotionAugmenter(null);
+    }
+
     public void Brew()
     {
         // Finalize Effect
         curPotionMakeup.AddEffect(this);
+
+        // Set Label
+        if (label.Equals(defaultLabel))
+        {
+            string res = "";
+            if (CurPotionAugmenterIngredient != null)
+            {
+                res += CurPotionAugmenterIngredient.EffectOnPotionName + " ";
+            }
+            res += CurPotionPotencyIngredient.EffectOnPotionName + " ";
+            res += CurPotionTargeterIngredient.EffectOnPotionName + " ";
+            res += "Potion of " + CurPotionBaseIngredient.EffectOnPotionName;
+            label = res;
+        }
 
         // Move on to new set of ingredients
         potionMakeup.Add(new PotionMakeup());
@@ -237,6 +293,8 @@ public class Potion : ToolTippable
                 return curPotionMakeup.HasTargeter;
             case PotionPotency p:
                 return curPotionMakeup.HasPotency;
+            case PotionAugmenter a:
+                return curPotionMakeup.HasAugmenter;
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -259,8 +317,7 @@ public class Potion : ToolTippable
 
     public string GetToolTipLabel()
     {
-        // Temporary
-        return "Potion";
+        return label;
     }
 
     public string GetToolTipText()
@@ -284,6 +341,7 @@ public abstract class PotionIngredient : ToolTippable
     public abstract PotionIngredientType Type { get; }
 
     public abstract string Name { get; }
+    public abstract string EffectOnPotionName { get; }
 
     protected abstract string toolTipText { get; }
 
@@ -295,9 +353,14 @@ public abstract class PotionIngredient : ToolTippable
     public PotionIngredient()
     {
         SetKeywords();
+        SetParameters();
     }
 
     protected abstract void SetKeywords();
+    protected virtual void SetParameters()
+    {
+        //
+    }
 
     public List<AfflictionType> GetAfflictionKeyWords()
     {
@@ -352,13 +415,79 @@ public abstract class PotionPotency : PotionIngredient
     protected override string toolTipText => "Potency = " + Potency;
 }
 
+public abstract class PotionAugmenter : PotionIngredient
+{
+    protected override string componentTypeString => "PotionAugmenter";
+
+    protected Action effect;
+
+    // Tells the Augmenter to Activate
+    public void PassControlToAugmenter(Action effect)
+    {
+        this.effect += effect;
+        InitEffect();
+    }
+
+    // Determines when the effect is called
+    protected abstract void InitEffect();
+
+    // Calls the effect, can be optionally overriden if there requires more logic than simply calling the Action
+    protected virtual void CallEffect()
+    {
+        effect?.Invoke();
+    }
+
+    protected int GetPotionSpec(string identifier)
+    {
+        return BalenceManager._Instance.GetValue(Type, identifier);
+    }
+}
+
+public class RainCloud : PotionAugmenter
+{
+    public override PotionIngredientType Type => PotionIngredientType.RainCloud;
+
+    public override string Name => "Rain Cloud";
+
+    protected override string toolTipText => "Potion Effect Will Activate At the Beginning of The Next " + numTurns + " Enemy Turns";
+
+    public override string EffectOnPotionName => "Repeating";
+
+    private int numTurns;
+
+    protected override void SetKeywords()
+    {
+    }
+
+    protected override void SetParameters()
+    {
+        numTurns = GetPotionSpec("NumTurns");
+    }
+
+    protected override void CallEffect()
+    {
+        if (numTurns > 0)
+        {
+            effect?.Invoke();
+            numTurns--;
+        }
+    }
+
+    protected override void InitEffect()
+    {
+        CombatManager._Instance.OnEnemyTurnStart += CallEffect;
+    }
+
+}
+
 public class HammerHandle : PotionBase
 {
     public override string Name => "Hammer Handle";
     public override string TemplateEffectString => "Deal {DamageAmount} Damage to the {Target}";
     public override PotionIngredientType Type => PotionIngredientType.HammerHandle;
-
     protected override string toolTipText => "Deal Damage";
+
+    public override string EffectOnPotionName => "Germs";
 
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
@@ -388,6 +517,8 @@ public class SelkieSpit : PotionBase
     public override PotionIngredientType Type => PotionIngredientType.SelkieSpit;
     protected override string toolTipText => "Heal";
 
+    public override string EffectOnPotionName => "Spittle";
+
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
         int healAmount = GetPotionSpec("HealAmount", potionPotency.Potency);
@@ -416,6 +547,7 @@ public class RawBeef : PotionBase
     public override string TemplateEffectString => "Apply {StackAmount} Vulnerable to the {Target}";
     public override PotionIngredientType Type => PotionIngredientType.RawBeef;
     protected override string toolTipText => "Apply Vulnerable";
+    public override string EffectOnPotionName => "Debilitating Blood";
 
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
@@ -434,6 +566,7 @@ public class TreeSap : PotionBase
     public override string TemplateEffectString => "Apply {StackAmount} Blight to the {Target}";
     public override PotionIngredientType Type => PotionIngredientType.TreeSap;
     protected override string toolTipText => "Apply Blight";
+    public override string EffectOnPotionName => "Blighted Sap";
 
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
@@ -452,6 +585,7 @@ public class MammalTooth : PotionBase
     public override string TemplateEffectString => "Apply {StackAmount} Power to the {Target}";
     public override PotionIngredientType Type => PotionIngredientType.MammalTooth;
     protected override string toolTipText => "Apply Power";
+    public override string EffectOnPotionName => "Ground Teeth";
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Power, GetPotionSpec("StackAmount", potionPotency.Potency), potionTargeting.Target);
@@ -468,6 +602,7 @@ public class ScalySkin : PotionBase
     public override string Name => "Scaly Skin";
     public override string TemplateEffectString => "Apply {StackAmount} Thorns to the {Target}";
     public override PotionIngredientType Type => PotionIngredientType.ScalySkin;
+    public override string EffectOnPotionName => "Thorns";
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Thorns, GetPotionSpec("StackAmount", potionPotency.Potency), potionTargeting.Target);
@@ -486,6 +621,7 @@ public class ChaiTea : PotionBase
     public override string TemplateEffectString => "Apply {StackAmount} Burn to the {Target}";
     public override PotionIngredientType Type => PotionIngredientType.ChaiTea;
     protected override string toolTipText => "Apply Burn";
+    public override string EffectOnPotionName => "Scalding Tea";
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Burn, GetPotionSpec("StackAmount", potionPotency.Potency), potionTargeting.Target);
@@ -503,6 +639,7 @@ public class VenomousSack : PotionBase
     public override string TemplateEffectString => "Apply {StackAmount} Poison to the {Target}";
     public override PotionIngredientType Type => PotionIngredientType.VenomousSack;
     protected override string toolTipText => "Apply Poison";
+    public override string EffectOnPotionName => "Venom";
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Poison, GetPotionSpec("StackAmount", potionPotency.Potency), potionTargeting.Target);
@@ -519,6 +656,7 @@ public class RawPork : PotionBase
     public override string Name => "Raw Pork";
     public override string TemplateEffectString => "Apply {StackAmount} Weak to the {Target}";
     protected override string toolTipText => "Apply Weak";
+    public override string EffectOnPotionName => "Crippling Blood";
     public override PotionIngredientType Type => PotionIngredientType.RawPork;
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
@@ -536,6 +674,7 @@ public class Paprika : PotionBase
     public override string Name => "Paprika";
     public override string TemplateEffectString => "Apply {StackAmount} Embolden to the {Target}";
     protected override string toolTipText => "Apply Embolden";
+    public override string EffectOnPotionName => "Spice";
     public override PotionIngredientType Type => PotionIngredientType.Paprika;
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
@@ -548,12 +687,13 @@ public class Paprika : PotionBase
     }
 }
 
-public class SeaWater : PotionBase
+public class HolyWater : PotionBase
 {
-    public override string Name => "Sea Water";
+    public override string Name => "Holy Water";
     public override string TemplateEffectString => "Apply {StackAmount} Regeneration to the {Target}";
     protected override string toolTipText => "Apply Regeneration";
-    public override PotionIngredientType Type => PotionIngredientType.SeaWater;
+    public override string EffectOnPotionName => "Miracles";
+    public override PotionIngredientType Type => PotionIngredientType.HolyWater;
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Regeneration, GetPotionSpec("StackAmount", potionPotency.Potency), potionTargeting.Target);
@@ -570,6 +710,7 @@ public class ElectricalWire : PotionBase
     public override string Name => "Electrical Wire";
     public override string TemplateEffectString => "Apply {StackAmount} Paralyze to the {Target}";
     protected override string toolTipText => "Apply Paralyze";
+    public override string EffectOnPotionName => "Electricity";
     public override PotionIngredientType Type => PotionIngredientType.ElectricalWire;
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
@@ -587,6 +728,7 @@ public class CeremonialLeaf : PotionBase
     public override string Name => "Ceremonial Leaf";
     public override string TemplateEffectString => "Apply {StackAmount} Echo to the {Target}";
     protected override string toolTipText => "Apply Echo";
+    public override string EffectOnPotionName => "Sound";
     public override PotionIngredientType Type => PotionIngredientType.CeremonialLeaf;
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
@@ -604,6 +746,7 @@ public class CrabShell : PotionBase
     public override string Name => "Crab Shell";
     public override string TemplateEffectString => "Apply {StackAmount} Protection to the {Target}";
     protected override string toolTipText => "Apply Protection";
+    public override string EffectOnPotionName => "Shell";
     public override PotionIngredientType Type => PotionIngredientType.CrabShell;
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
@@ -622,6 +765,8 @@ public class GlassBottle : PotionTargeter
     public override string Name => "Glass Bottle";
     public override PotionIngredientType Type => PotionIngredientType.GlassBottle;
 
+    public override string EffectOnPotionName => "Drinkable";
+
     public override Target Target => Target.Character;
 
     protected override string toolTipText => "Target the Player";
@@ -635,6 +780,8 @@ public class BreakableBottle : PotionTargeter
 {
     public override string Name => "Breakable Bottle";
     public override PotionIngredientType Type => PotionIngredientType.BreakableBottle;
+
+    public override string EffectOnPotionName => "Throwable";
     public override Target Target => Target.Enemy;
     protected override string toolTipText => "Target the Enemy";
 
@@ -648,6 +795,7 @@ public class CreatureGland : PotionPotency
 {
     public override string Name => "Creature Gland";
     public override PotionIngredientType Type => PotionIngredientType.CreatureGland;
+    public override string EffectOnPotionName => "Faint";
     public override int Potency => 1;
 
     protected override void SetKeywords()
@@ -660,6 +808,8 @@ public class CreatureFinger : PotionPotency
 {
     public override string Name => "Creature Finger";
     public override PotionIngredientType Type => PotionIngredientType.CreatureFinger;
+
+    public override string EffectOnPotionName => "Mild";
     public override int Potency => 2;
 
     protected override void SetKeywords()
@@ -670,6 +820,7 @@ public class CreatureFinger : PotionPotency
 public class CreatureFoot : PotionPotency
 {
     public override string Name => "Creature Foot";
+    public override string EffectOnPotionName => "Passable";
     public override PotionIngredientType Type => PotionIngredientType.CreatureFoot;
     public override int Potency => 3;
     protected override void SetKeywords()
@@ -680,6 +831,7 @@ public class CreatureFoot : PotionPotency
 public class CreatureClaw : PotionPotency
 {
     public override string Name => "Creature Claw";
+    public override string EffectOnPotionName => "Capable";
     public override PotionIngredientType Type => PotionIngredientType.CreatureClaw;
     public override int Potency => 4;
 
@@ -691,6 +843,7 @@ public class CreatureClaw : PotionPotency
 public class CreatureNose : PotionPotency
 {
     public override string Name => "Creature Nose";
+    public override string EffectOnPotionName => "Potent";
     public override PotionIngredientType Type => PotionIngredientType.CreatureNose;
     public override int Potency => 5;
 

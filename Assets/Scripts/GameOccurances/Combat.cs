@@ -4,21 +4,6 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-public enum RewardType
-{
-    Artifact,
-    Book,
-    Currency,
-    ClothierCurrency,
-    Spell
-}
-
-public enum RewardNumericalType
-{
-    ChanceTo,
-    Between
-}
-
 [System.Serializable]
 public class ItemRewardInfo
 {
@@ -123,7 +108,7 @@ public abstract class Combat : GameOccurance
             int num = RandomHelper.RandomIntExclusive(currencyRewards[type].GetOption());
             switch (type)
             {
-                case RewardType.ClothierCurrency:
+                case RewardType.Pelts:
                     RewardManager._Instance.AddClothierCurrencyReward(num);
                     break;
                 case RewardType.Currency:

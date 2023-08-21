@@ -33,7 +33,7 @@ public class SetTextAndImageColors : MonoBehaviour
     [SerializeField] private TextMeshProUGUI text;
     [SerializeField] private Image i;
 
-    private void Awake()
+    private void Start()
     {
         UISectionInformation setTo = UIManager._Instance.GetUISectionInformation(uiSection);
         i.color = setTo.Color;

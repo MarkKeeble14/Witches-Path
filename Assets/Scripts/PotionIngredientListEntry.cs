@@ -4,8 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using UnityEngine.EventSystems;
 
-public class PotionIngredientListEntry : MonoBehaviour
+public class PotionIngredientListEntry : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private TextMeshProUGUI quantityText;
@@ -62,5 +63,15 @@ public class PotionIngredientListEntry : MonoBehaviour
     public void DestroyToolTip()
     {
         Destroy(spawnedToolTip);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        SpawnToolTip();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        DestroyToolTip();
     }
 }

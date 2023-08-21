@@ -27,6 +27,7 @@ public class EventManager : MonoBehaviour
     [SerializeField] private OptionEventOptionDisplay optionEventOptionPrefab;
 
     private bool chainingEvents;
+    private OptionEvent currentOptionEvent;
     private EventOptionOutcome currentOutcome;
 
     [SerializeField] private Transform resolveButton;
@@ -45,6 +46,8 @@ public class EventManager : MonoBehaviour
 
     public IEnumerator StartOptionEvent(OptionEvent optionEvent)
     {
+        currentOptionEvent = optionEvent;
+
         List<EventOption> optionEventOptions = optionEvent.GetVerifiedEventOptions();
         eventNameDisplay.text = optionEvent.EventName;
         eventTextDisplay.text = optionEvent.EventText;
@@ -79,6 +82,12 @@ public class EventManager : MonoBehaviour
 
         yield return StartCoroutine(GameManager._Instance.ParseEventEffect(optionEvent, currentOutcome.CodeString));
 
+        bool gameOver = false;
+        if (GameManager._Instance.GameOvered)
+        {
+            gameOver = true;
+        }
+
         // if chaining events is set, we reset certain things & variables but not everything
         // Break if chaining, do not do anything further
         if (chainingEvents)
@@ -102,12 +111,13 @@ public class EventManager : MonoBehaviour
 
         eventTextDisplay.text = currentOutcome.ResultText;
 
-        yield return new WaitUntil(() => resolved);
+        yield return new WaitUntil(() => resolved || gameOver);
 
         resolveButton.gameObject.SetActive(false);
 
         // Reset for next use
         currentOutcome = null;
+        currentOptionEvent = null;
         resolved = false;
 
         GameManager._Instance.ResolveCurrentEvent();

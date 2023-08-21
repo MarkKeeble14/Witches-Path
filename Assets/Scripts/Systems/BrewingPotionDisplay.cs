@@ -8,19 +8,19 @@ public class BrewingPotionDisplay : MonoBehaviour
 {
     [Header("Settings")]
     [SerializeField] private TextMeshProUGUI brewButtonTextMesh;
-    [SerializeField] private string brewButtonText = "Brew";
-    [SerializeField] private string brewButtonReadyEffectTextTag = "shake";
 
     [Header("References")]
     [SerializeField] private BrewingPotionDisplaySegment baseIngredientDisplaySegment;
     [SerializeField] private BrewingPotionDisplaySegment targeterIngredientDisplaySegment;
     [SerializeField] private BrewingPotionDisplaySegment potencyIngredientDisplaySegment;
+    [SerializeField] private BrewingPotionDisplaySegment augmenterIngredientDisplaySegment;
     private Potion p;
     private bool potionWasReadyForBrew;
 
     [SerializeField] private GameObject clearBaseButton;
     [SerializeField] private GameObject clearTargeterButton;
     [SerializeField] private GameObject clearPotencyButton;
+    [SerializeField] private GameObject clearAugmenterButton;
     [SerializeField] private Transform brewButton;
     private Image brewButtonImage;
 
@@ -54,6 +54,12 @@ public class BrewingPotionDisplay : MonoBehaviour
         p.ClearPotionPotency();
     }
 
+    public void RemoveAugmenter()
+    {
+        GameManager._Instance.AddPotionIngredient(p.CurPotionAugmenterIngredient.Type);
+        p.ClearPotionAugmenter();
+    }
+
     public void SpawnToolTip()
     {
         if (p.ReadyForBrew)
@@ -62,6 +68,10 @@ public class BrewingPotionDisplay : MonoBehaviour
             potionCopy.AddIngredient(p.CurPotionBaseIngredient);
             potionCopy.AddIngredient(p.CurPotionTargeterIngredient);
             potionCopy.AddIngredient(p.CurPotionPotencyIngredient);
+            if (p.CurPotionAugmenterIngredient != null)
+            {
+                potionCopy.AddIngredient(p.CurPotionAugmenterIngredient);
+            }
             potionCopy.Brew();
 
             spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(potionCopy, brewButton);
@@ -104,9 +114,11 @@ public class BrewingPotionDisplay : MonoBehaviour
         clearBaseButton.SetActive(p.CurPotionBaseIngredient != null);
         clearTargeterButton.SetActive(p.CurPotionTargeterIngredient != null);
         clearPotencyButton.SetActive(p.CurPotionPotencyIngredient != null);
+        clearAugmenterButton.SetActive(p.CurPotionAugmenterIngredient != null);
 
         baseIngredientDisplaySegment.SetRepresenting(p.CurPotionBaseIngredient);
         targeterIngredientDisplaySegment.SetRepresenting(p.CurPotionTargeterIngredient);
         potencyIngredientDisplaySegment.SetRepresenting(p.CurPotionPotencyIngredient);
+        augmenterIngredientDisplaySegment.SetRepresenting(p.CurPotionAugmenterIngredient);
     }
 }

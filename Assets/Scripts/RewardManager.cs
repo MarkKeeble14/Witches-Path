@@ -2,6 +2,22 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum RewardType
+{
+    Artifact,
+    Book,
+    Currency,
+    Pelts,
+    Spell,
+    PotionIngredient
+}
+
+public enum RewardNumericalType
+{
+    ChanceTo,
+    Between
+}
+
 public class RewardManager : MonoBehaviour
 {
     public static RewardManager _Instance { get; private set; }
@@ -17,6 +33,8 @@ public class RewardManager : MonoBehaviour
 
     [SerializeField] private Vector2 toolTipOffset;
 
+    [SerializeField] private SerializableDictionary<RewardType, Sprite> rewardTypeSpriteDict = new SerializableDictionary<RewardType, Sprite>();
+
     private bool resolved;
 
     public void Resolve()
@@ -31,7 +49,7 @@ public class RewardManager : MonoBehaviour
 
         Spell spell = GameManager._Instance.GetSpellOfType(label);
         GameObject spawnedToolTip = null;
-        spawned.Set(spell.Name, null,
+        spawned.Set(spell.Name, rewardTypeSpriteDict[RewardType.Spell],
             delegate
             {
                 StartCoroutine(GameManager._Instance.StartSwapSpellSequnce(label));
@@ -54,7 +72,7 @@ public class RewardManager : MonoBehaviour
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         GameObject spawnedToolTip = null;
         Artifact artifact = GameManager._Instance.GetArtifactOfType(label);
-        spawned.Set(artifact.Name, null,
+        spawned.Set(artifact.Name, rewardTypeSpriteDict[RewardType.Artifact],
             delegate
             {
                 GameManager._Instance.AddArtifact(label);
@@ -77,7 +95,7 @@ public class RewardManager : MonoBehaviour
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         GameObject spawnedToolTip = null;
         Book book = GameManager._Instance.GetBookOfType(label);
-        spawned.Set(book.Name, null,
+        spawned.Set(book.Name, rewardTypeSpriteDict[RewardType.Book],
             delegate
             {
                 GameManager._Instance.SwapBooks(GameManager._Instance.GetOwnedBookLabel(0), label);
@@ -98,12 +116,22 @@ public class RewardManager : MonoBehaviour
     {
         Debug.Log("Adding Potion Ingredient Reward: " + label);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
-        spawned.Set(Utils.SplitOnCapitalLetters(label.ToString()), null, delegate
-        {
-            GameManager._Instance.AddPotionIngredient(label);
-            spawnedRewards.Remove(spawned);
-            Destroy(spawned.gameObject);
-        }, null, null);
+        GameObject spawnedToolTip = null;
+        PotionIngredient ingredient = GameManager._Instance.GetPotionIngredientOfType(label);
+        spawned.Set(ingredient.Name, rewardTypeSpriteDict[RewardType.PotionIngredient],
+            delegate
+            {
+                GameManager._Instance.AddPotionIngredient(label);
+                spawnedRewards.Remove(spawned);
+                Destroy(spawned.gameObject);
+            }, delegate
+            {
+                spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(ingredient, spawned.transform);
+            }, delegate
+            {
+                Destroy(spawnedToolTip);
+            }
+        );
         spawnedRewards.Add(spawned);
     }
 
@@ -124,12 +152,13 @@ public class RewardManager : MonoBehaviour
         }
 
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
-        spawned.Set(currencyAmount.ToString() + " Gold", null, delegate
-        {
-            GameManager._Instance.AlterCurrency(currencyAmount);
-            spawnedRewards.Remove(spawned);
-            Destroy(spawned.gameObject);
-        }, null, null);
+        spawned.Set(currencyAmount.ToString() + " Gold", rewardTypeSpriteDict[RewardType.Currency],
+            delegate
+            {
+                GameManager._Instance.AlterCurrency(currencyAmount);
+                spawnedRewards.Remove(spawned);
+                Destroy(spawned.gameObject);
+            }, null, null);
         spawnedRewards.Add(spawned);
     }
 
@@ -143,12 +172,13 @@ public class RewardManager : MonoBehaviour
         Debug.Log("Adding Clothier Currency Reward: " + currencyAmount);
 
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
-        spawned.Set(currencyAmount.ToString() + " Pelt" + (currencyAmount > 1 ? "s" : ""), null, delegate
-        {
-            GameManager._Instance.AlterClothierCurrency(currencyAmount);
-            spawnedRewards.Remove(spawned);
-            Destroy(spawned.gameObject);
-        }, null, null);
+        spawned.Set(currencyAmount.ToString() + " Pelt" + (currencyAmount > 1 ? "s" : ""), rewardTypeSpriteDict[RewardType.Pelts],
+            delegate
+            {
+                GameManager._Instance.AlterClothierCurrency(currencyAmount);
+                spawnedRewards.Remove(spawned);
+                Destroy(spawned.gameObject);
+            }, null, null);
 
         spawnedRewards.Add(spawned);
     }

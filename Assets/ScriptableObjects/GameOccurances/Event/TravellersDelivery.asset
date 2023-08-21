@@ -31,7 +31,7 @@ MonoBehaviour:
             codeString: AddRandomArtifact;AlterGold:{LoseGoldAmount}
           value: 100
     onConditionFail:
-      hintText: '[Locked] Pay'
+      hintText: Pay (Locked)
       effectText: Gain Artifact, Lose {LoseGoldAmount} Gold
       locked: 1
       possibleOutcomes:

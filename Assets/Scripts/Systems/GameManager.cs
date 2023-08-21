@@ -96,9 +96,6 @@ public class GameManager : MonoBehaviour
     [Header("Test")]
     [SerializeField] private ContentType currentlyTesting;
 
-    [Header("Visual")]
-    [SerializeField] private SerializableDictionary<DamageType, Color> damageSourceColorDict = new SerializableDictionary<DamageType, Color>();
-
     [Header("References")]
     [SerializeField] private TextMeshProUGUI hpText;
     [SerializeField] private TextMeshProUGUI manaText;
@@ -116,6 +113,8 @@ public class GameManager : MonoBehaviour
     public int DefenseFromEquipment { get; set; }
     private int manaFromEquipment;
 
+    public bool GameOvered => GetCurrentCharacterHP() <= 0;
+
 
     private void Awake()
     {
@@ -123,6 +122,11 @@ public class GameManager : MonoBehaviour
     }
 
     private void Start()
+    {
+        CallOnGameStart();
+    }
+
+    public void CallOnGameStart()
     {
         // Get List of all Book Labels
         allBooks = new List<BookLabel>((BookLabel[])Enum.GetValues(typeof(BookLabel)));
@@ -147,8 +151,6 @@ public class GameManager : MonoBehaviour
 
         SetNewPotion();
 
-        LoadMap();
-        StartCoroutine(GameLoop());
         EquipCharacterLoadout(playerCharacter);
     }
 
@@ -1165,16 +1167,10 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    public void LoadMap()
+    public IEnumerator StageLoop()
     {
-        MapManager._Instance.Generate();
-    }
-
-    private IEnumerator GameLoop()
-    {
-        MapManager._Instance.NextRow();
-
-        while (true)
+        bool shouldBreak = false;
+        while (!shouldBreak)
         {
             yield return new WaitUntil(() => currentOccurance != null);
             currentOccurance.SetResolve(false);
@@ -1186,23 +1182,60 @@ public class GameManager : MonoBehaviour
 
             yield return StartCoroutine(currentOccurance.RunOccurance());
 
+            // if we've game overed, break the loop as the level is done
+            if (GameOvered)
+            {
+                shouldBreak = true;
+            }
+
             // if beat boss, break the loop as the level is done
             if (currentOccurance.Type == MapNodeType.Boss)
             {
-                break;
+                shouldBreak = true;
             }
 
             // Reset current occurance
             currentNode.SetMapNodeState(MapNodeState.COMPLETED);
             currentOccurance = null;
 
-            // move to next room
-            MapManager._Instance.Show();
-
-            MapManager._Instance.NextRow();
+            if (!shouldBreak)
+            {
+                // move to next room
+                MapManager._Instance.Show();
+                MapManager._Instance.NextRow();
+            }
+            else
+            {
+                break;
+            }
         }
 
-        Debug.Log("Level Ended");
+        // Determine what Happens Next
+        if (GameOvered)
+        {
+            // Game Over
+            Debug.Log("Level Ended With: Game Over");
+            StartCoroutine(GameOverSequence());
+        }
+        else
+        {
+            // Beat Stage
+            Debug.Log("Level Ended With: Beat Stage");
+            if (MapManager._Instance.HasNextStage)
+            {
+                MapManager._Instance.Clear();
+
+                string nextStage = MapManager._Instance.GetNextStage();
+                Debug.Log("Loading Next Stage: " + nextStage);
+
+                SceneManager.LoadScene(nextStage);
+            }
+            else
+            {
+                Debug.Log("No more Stages: Game Won");
+                yield return StartCoroutine(GameWonSequence());
+            }
+        }
     }
 
     [ContextMenu("ResolveCurrentEvent")]
@@ -1245,7 +1278,7 @@ public class GameManager : MonoBehaviour
         currentPlayerClothierCurrency += amount;
     }
 
-    public bool AlterPlayerHP(int amount, DamageType damageSource, bool spawnPopupText = true)
+    public bool AlterPlayerHP(int amount, DamageType damageType, bool spawnPopupText = true)
     {
         // Barricade Effect
         if (amount < -1 && HasArtifact(ArtifactLabel.Barricade))
@@ -1263,7 +1296,7 @@ public class GameManager : MonoBehaviour
         if (spawnPopupText)
         {
             PopupText spawned = Instantiate(popupTextPrefab, hpText.transform);
-            spawned.Set((amount > 0 ? "+" : "") + Utils.RoundTo(amount, 1).ToString(), GetColorByDamageSource(damageSource));
+            spawned.Set((amount > 0 ? "+" : "") + Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
         }
 
         if (currentPlayerHP + amount > maxPlayerHP)
@@ -1285,11 +1318,6 @@ public class GameManager : MonoBehaviour
             return true;
         }
         return false;
-    }
-
-    public Color GetColorByDamageSource(DamageType damageSource)
-    {
-        return damageSourceColorDict[damageSource];
     }
 
     public int GetCurrentCharacterHP()
@@ -1382,7 +1410,9 @@ public class GameManager : MonoBehaviour
 
     [Header("Game Over")]
     [SerializeField] private CanvasGroup gameOverCV;
+    [SerializeField] private CanvasGroup gameWonCV;
     [SerializeField] private float changeGameOverCVAlphaRate;
+    [SerializeField] private float changeGameWonCVAlphaRate;
     private List<PotionIngredientListEntry> spawnedPotionIngredientListEntries = new List<PotionIngredientListEntry>();
     [SerializeField] private CanvasGroup upgradeBookButtonCV;
 
@@ -1391,6 +1421,13 @@ public class GameManager : MonoBehaviour
         gameOverCV.blocksRaycasts = true;
 
         yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(gameOverCV, 1, Time.deltaTime * changeGameOverCVAlphaRate));
+    }
+
+    public IEnumerator GameWonSequence()
+    {
+        gameWonCV.blocksRaycasts = true;
+
+        yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(gameWonCV, 1, Time.deltaTime * changeGameWonCVAlphaRate));
     }
 
     public void RestartGame()
@@ -1408,7 +1445,7 @@ public class GameManager : MonoBehaviour
             foreach (KeyValuePair<PotionIngredientType, int> kvp in potionIngredientMap)
             {
                 PotionIngredientListEntry spawned = Instantiate(potionIngredientListEntryPrefab, potionIngredientListParent);
-                spawned.Set(kvp.Key, 1, false);
+                spawned.Set(kvp.Key, kvp.Value, false);
                 spawnedPotionIngredientListEntries.Add(spawned);
             }
         }
@@ -1500,14 +1537,16 @@ public class GameManager : MonoBehaviour
                 return new RawPork();
             case PotionIngredientType.ScalySkin:
                 return new ScalySkin();
-            case PotionIngredientType.SeaWater:
-                return new SeaWater();
+            case PotionIngredientType.HolyWater:
+                return new HolyWater();
             case PotionIngredientType.SelkieSpit:
                 return new SelkieSpit();
             case PotionIngredientType.TreeSap:
                 return new BreakableBottle();
             case PotionIngredientType.VenomousSack:
                 return new BreakableBottle();
+            case PotionIngredientType.RainCloud:
+                return new RainCloud();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -1642,11 +1681,7 @@ public class GameManager : MonoBehaviour
 
         // Spawn UI
         PotionDisplay spawned = Instantiate(potionDisplayPrefab, potionDisplayList);
-        spawned.Set(p, delegate
-        {
-            p.Use();
-            Destroy(spawned.gameObject);
-        });
+        spawned.Set(p);
     }
 
     public void RemovePotion(Potion p)
@@ -1782,7 +1817,7 @@ public class GameManager : MonoBehaviour
 
             // Determine cost
             int cost = Mathf.RoundToInt(RandomHelper.RandomFloat(minMaxArtifactCostDict[artifactRarityMap[offered]]));
-            offer.Set(offered, cost, null);
+            offer.Set(offered, cost);
             shopArtifactList.Add(offer);
         }
 
@@ -1802,7 +1837,7 @@ public class GameManager : MonoBehaviour
 
             // Determine cost
             int cost = Mathf.RoundToInt(RandomHelper.RandomFloat(minMaxBookCostDict[bookRarityMap[offered]]));
-            offer.Set(offered, cost, null);
+            offer.Set(offered, cost);
             shopBookList.Add(offer);
         }
 
@@ -1811,7 +1846,7 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < numPotionIngredientShopOffers; i++)
         {
             IngredientShopOffer offer = Instantiate(ingredientShopOfferPrefab, innkeeperInfo.parentSpawnsTo);
-            offer.Set(GetRandomPotionIngredient(), RandomHelper.RandomIntExclusive(minMaxIngredientCost), null);
+            offer.Set(GetRandomPotionIngredient(), RandomHelper.RandomIntExclusive(minMaxIngredientCost));
             shopIngredientList.Add(offer);
         }
 
@@ -2369,7 +2404,7 @@ public class GameManager : MonoBehaviour
     private bool exitSelectEquipmentScreen;
     private bool exitSelectStatScreen;
 
-    public void OpenSelectEquipmentScreen(bool showCost, string label)
+    public void OpenSelectEquipmentScreen(string label, EquipmentSequence inSequence)
     {
         selectEquipmentScreen.SetActive(true);
 
@@ -2382,11 +2417,12 @@ public class GameManager : MonoBehaviour
         SelectEquipmentButton spawnedForWand = Instantiate(selectEquipmentButtonPrefab, selectEquipmentList);
         spawnedForWand.Set(playerEquippedWand, () => selectedEquipment = playerEquippedWand);
 
-        if (showCost)
+        if (inSequence == EquipmentSequence.Reforge)
         {
-            spawnedForHat.ShowCost(1, label);
-            spawnedForRobe.ShowCost(1, label);
-            spawnedForWand.ShowCost(1, label);
+            Debug.Log("Showing Costs: " + label);
+            spawnedForHat.ShowCost(label, inSequence);
+            spawnedForRobe.ShowCost(label, inSequence);
+            spawnedForWand.ShowCost(label, inSequence);
         }
 
         spawnedSelectEquipmentButtons.Add(spawnedForHat);
@@ -2448,7 +2484,7 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator ReforgeEquipmentSequence()
     {
-        OpenSelectEquipmentScreen(true, "Refroge");
+        OpenSelectEquipmentScreen("Reforge", EquipmentSequence.Reforge);
 
         while (!exitSelectEquipmentScreen)
         {
@@ -2461,17 +2497,18 @@ public class GameManager : MonoBehaviour
             }
 
             // No Moneys
-            if (currentPlayerClothierCurrency <= 0)
+            int cost = selectedEquipment.GetCostToReforge();
+            if (currentPlayerClothierCurrency < cost)
             {
                 selectedEquipment = null;
                 continue;
             }
 
+            // Use Currency
+            AlterClothierCurrency(-cost);
+
             // Reforge
             selectedEquipment.Reforge();
-
-            // Use Currency
-            AlterClothierCurrency(-1);
 
             // Reset
             selectedEquipment = null;
@@ -2489,7 +2526,7 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator StrengthenEquipmentSequence()
     {
-        OpenSelectEquipmentScreen(false, "");
+        OpenSelectEquipmentScreen("", EquipmentSequence.Strengthen);
 
         while (!exitSelectEquipmentScreen)
         {
@@ -2516,14 +2553,15 @@ public class GameManager : MonoBehaviour
                 }
 
                 // No Moneys
-                if (currentPlayerClothierCurrency < selectedEquipment.GetCostToBoost())
+                int cost = selectedEquipment.GetCostToStrengthen();
+                if (currentPlayerClothierCurrency < cost)
                 {
                     hasSelectedStat = false;
                     continue;
                 }
 
                 // Use Currency
-                AlterClothierCurrency(-selectedEquipment.GetCostToBoost());
+                AlterClothierCurrency(-cost);
 
                 // Reforge
                 selectedEquipment.Strengthen(selectedStat, 1);

@@ -1,8 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.EventSystems;
 
-public class ItemDisplay : MonoBehaviour
+public class ItemDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("UI")]
     [SerializeField] private Image image;
@@ -81,6 +82,16 @@ public class ItemDisplay : MonoBehaviour
 
     public void DestroyToolTip()
     {
-        Destroy(spawnedToolTip.gameObject);
+        Destroy(spawnedToolTip);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        SpawnToolTip();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        DestroyToolTip();
     }
 }

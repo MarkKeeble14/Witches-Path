@@ -5,13 +5,15 @@ public class IngredientShopOffer : ShopOffer
 {
     private PotionIngredient potionIngredient;
 
-    public void Set(PotionIngredientType type, int cost, Action onClick)
+    public void Set(PotionIngredientType type, int cost)
     {
         potionIngredient = GameManager._Instance.GetPotionIngredientOfType(type);
         itemText.text = potionIngredient.Name;
         this.cost = cost;
 
-        onClick?.Invoke();
+        // Tool Tips
+        onPointerEnter += SpawnToolTip;
+        onPointerExit += DestroyToolTip;
     }
 
     protected override void Purchase()
@@ -20,6 +22,7 @@ public class IngredientShopOffer : ShopOffer
         DestroyToolTip();
     }
 
+    // Tool Tips
     private GameObject spawnedToolTip;
 
     public void SpawnToolTip()

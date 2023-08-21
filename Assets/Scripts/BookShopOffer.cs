@@ -3,29 +3,33 @@ using UnityEngine;
 
 public class BookShopOffer : ShopOffer
 {
-    [SerializeField] private BookLabel label;
+    [SerializeField] private Book book;
     protected override void Purchase()
     {
-        GameManager._Instance.AddBook(label);
+        GameManager._Instance.AddBook(book.GetLabel());
     }
 
-    public void Set(BookLabel setTo, int cost, Action onClick)
+    public void Set(BookLabel setTo, int cost)
     {
-        label = setTo;
+        book = GameManager._Instance.GetBookOfType(setTo);
+        itemText.text = book.Name;
         this.cost = cost;
 
-        Book book = GameManager._Instance.GetBookOfType(setTo);
-        itemText.text = book.Name;
+        // Tool Tips
+        onPointerEnter += SpawnToolTip;
+        onPointerExit += DestroyToolTip;
+    }
 
-        GameObject spawnedToolTip = null;
-        onPointerEnter += delegate
-        {
-            spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(book, transform);
-        };
-        onPointerExit += delegate
-        {
-            if (spawnedToolTip != null)
-                Destroy(spawnedToolTip.gameObject);
-        };
+    // Tool Tips
+    private GameObject spawnedToolTip;
+
+    public void SpawnToolTip()
+    {
+        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(book, transform);
+    }
+
+    public void DestroyToolTip()
+    {
+        Destroy(spawnedToolTip);
     }
 }

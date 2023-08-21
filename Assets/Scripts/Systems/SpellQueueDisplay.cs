@@ -1,8 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.EventSystems;
 
-public class SpellQueueDisplay : MonoBehaviour
+public class SpellQueueDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [SerializeField] private TextMeshProUGUI text;
     [SerializeField] private Image image;
@@ -26,5 +27,15 @@ public class SpellQueueDisplay : MonoBehaviour
     public void DestroyToolTip()
     {
         Destroy(spawnedToolTip);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        SpawnToolTip();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        DestroyToolTip();
     }
 }

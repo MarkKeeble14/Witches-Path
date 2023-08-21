@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8822629965113686416}
   - component: {fileID: 9056464791004000356}
   m_Layer: 0
-  m_Name: Pip
+  m_Name: BookPip
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

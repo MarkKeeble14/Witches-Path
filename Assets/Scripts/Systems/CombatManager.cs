@@ -44,7 +44,8 @@ public enum DamageType
     Poison,
     Electricity,
     Fire,
-    Heal
+    Heal,
+    Evil
 }
 
 public enum DamageSource
@@ -205,8 +206,9 @@ public partial class CombatManager : MonoBehaviour
 
         yield return StartCoroutine(CombatLoop());
 
-        if (GameManager._Instance.GetCurrentCharacterHP() <= 0)
+        if (GameManager._Instance.GameOvered)
         {
+            // Player is Dead
             StartCoroutine(Utils.ChangeCanvasGroupAlpha(characterCombatSpriteCV, 0, Time.deltaTime * combatSpriteAlphaChangeRate));
 
             yield return new WaitForSeconds(delayAfterPlayerDeath);
@@ -215,6 +217,7 @@ public partial class CombatManager : MonoBehaviour
         }
         else
         {
+            // Enemy is Dead
             // Play Enemy Death Animation
             StartCoroutine(Utils.ChangeCanvasGroupAlpha(enemyCombatSpriteCV, 0, Time.deltaTime * combatSpriteAlphaChangeRate));
 
@@ -229,16 +232,16 @@ public partial class CombatManager : MonoBehaviour
                 ShowAfflictionProc(AfflictionType.Bandages, Target.Character);
                 yield return new WaitForSeconds(delayAfterBandagesEffect);
             }
-
-            InCombat = false;
-
-            GameManager._Instance.ResolveCurrentEvent();
-
-            Debug.Log("Combat Completed: " + combat);
-
-            // Reset
-            ResetCombat();
         }
+
+        InCombat = false;
+
+        Debug.Log("Combat Completed: " + combat);
+
+        // Reset
+        ResetCombat();
+
+        GameManager._Instance.ResolveCurrentEvent();
     }
 
     private IEnumerator CombatLoop()
@@ -389,6 +392,17 @@ public partial class CombatManager : MonoBehaviour
 
         // Spawn casting queue potency display
         SpellPotencyDisplay spellPotencyDisplay = Instantiate(castingSpellPotencyDisplayPrefab, castingSpellSemiCircle.transform);
+        spellPotencyDisplay.SetSpell(spell);
+
+        // Indicate the first spell to be cast
+        if (spellQueue.Count == 0)
+        {
+            spellPotencyDisplay.SetOutlineColor(Color.red);
+        }
+        else
+        {
+            spellPotencyDisplay.SetOutlineColor(Color.black);
+        }
 
         InCastQueueActiveSpell toQueue = new InCastQueueActiveSpell();
         toQueue.SpellPotencyDisplay = spellPotencyDisplay;
@@ -426,6 +440,13 @@ public partial class CombatManager : MonoBehaviour
 
     private IEnumerator CastCharacterQueue()
     {
+        // Disallow tool tips from being spawned while casting is underway
+        foreach (InCastQueueActiveSpell inQueue in spellQueue)
+        {
+            inQueue.SpellPotencyDisplay.SetCanShowToolTips(false);
+        }
+
+        // Cast Queue
         isCastingQueue = true;
         while (spellQueue.Count > 0)
         {
@@ -437,6 +458,12 @@ public partial class CombatManager : MonoBehaviour
 
             // Remove Spell from Queue
             spellQueue.RemoveAt(0);
+
+            // Show next up spell cast
+            if (spellQueue.Count > 0)
+            {
+                spellQueue[0].SpellPotencyDisplay.SetOutlineColor(Color.red);
+            }
 
             // Remove UI from spell queue & from Spell Potency Display
             Destroy(spell.QueuedActiveSpell.Display.gameObject);
@@ -1231,7 +1258,7 @@ public partial class CombatManager : MonoBehaviour
         {
             int damage = GetTargetAfflictionMap(target)[AfflictionType.Thorns].GetStacks();
             ShowAfflictionProc(AfflictionType.Thorns, target);
-            AlterCombatentHP(damage, attacker, DamageType.Default);
+            AlterCombatentHP(-damage, attacker, DamageType.Default);
         }
 
         // Embolden Effect
@@ -1347,7 +1374,7 @@ public partial class CombatManager : MonoBehaviour
                 characterHPBar.SetWard(characterWard);
 
                 PopupText text = Instantiate(popupTextPrefab, characterCombatSprite.transform);
-                text.Set(Utils.RoundTo(amount, 1).ToString(), GameManager._Instance.GetColorByDamageSource(damageType));
+                text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
 
                 bool r = GameManager._Instance.AlterPlayerHP(amount, damageType, false);
                 characterHPBar.SetCurrentHP(GameManager._Instance.GetCurrentCharacterHP());
@@ -1383,7 +1410,7 @@ public partial class CombatManager : MonoBehaviour
         enemyHPBar.SetWard(enemyWard);
 
         PopupText text = Instantiate(popupTextPrefab, enemyCombatSprite.transform);
-        text.Set(Utils.RoundTo(amount, 1).ToString(), GameManager._Instance.GetColorByDamageSource(damageType));
+        text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
 
         if (currentEnemyHP + amount > maxEnemyHP)
         {

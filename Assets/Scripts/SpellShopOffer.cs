@@ -3,32 +3,36 @@ using UnityEngine;
 
 public class SpellShopOffer : ShopOffer
 {
-    [SerializeField] private SpellLabel label;
+    [SerializeField] private Spell spell;
 
-    public void Set(SpellLabel setTo, int cost, Action onClick)
+    public void Set(SpellLabel setTo, int cost)
     {
-        label = setTo;
+        spell = GameManager._Instance.GetSpellOfType(setTo);
         this.cost = cost;
 
         itemText.text = Utils.SplitOnCapitalLetters(setTo.ToString());
         costText.text = cost.ToString();
 
-        Spell spell = GameManager._Instance.GetSpellOfType(setTo);
-
-        GameObject spawnedToolTip = null;
-        onPointerEnter += delegate
-        {
-            spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(spell, transform);
-        };
-        onPointerExit += delegate
-        {
-            if (spawnedToolTip != null)
-                Destroy(spawnedToolTip.gameObject);
-        };
+        // Tool Tips
+        onPointerEnter += SpawnToolTip;
+        onPointerExit += DestroyToolTip;
     }
 
     protected override void Purchase()
     {
-        GameManager._Instance.EquipSpell(label);
+        GameManager._Instance.EquipSpell(spell.Label);
+    }
+
+    // Tool Tips
+    private GameObject spawnedToolTip;
+
+    public void SpawnToolTip()
+    {
+        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(spell, transform);
+    }
+
+    public void DestroyToolTip()
+    {
+        Destroy(spawnedToolTip);
     }
 }

@@ -1,21 +1,27 @@
 ﻿using UnityEngine;
 using TMPro;
 using System;
+using UnityEngine.EventSystems;
 
-public class SelectButton : MonoBehaviour
+public class SelectButton : MonoBehaviour, IPointerClickHandler
 {
     [SerializeField] private TextMeshProUGUI text;
 
-    private Action onPress;
+    protected Action onPointerClick;
 
-    public void OnPress()
+    public void Click()
     {
-        onPress?.Invoke();
+        onPointerClick?.Invoke();
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        Click();
     }
 
     public void Set(string text, Action onPress)
     {
-        this.onPress += onPress;
+        this.onPointerClick += onPress;
         this.text.text = text;
     }
 

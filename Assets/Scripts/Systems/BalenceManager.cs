@@ -7,29 +7,46 @@ public class BalenceManager : MonoBehaviour
     public static BalenceManager _Instance { get; private set; }
 
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, int>> artifactSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int>>();
+    private SerializableDictionary<string, SerializableDictionary<string, int>> artifactSpecDict
+        = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, int>> bookSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int>>();
+    private SerializableDictionary<string, SerializableDictionary<string, int>> bookSpecDict
+        = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, int>> afflictionSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int>>();
+    private SerializableDictionary<string, SerializableDictionary<string, int>> afflictionSpecDict
+        = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, int>> spellSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int>>();
+    private SerializableDictionary<string, SerializableDictionary<string, int>> spellSpecDict
+        = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, int>> mapNodeSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int>>();
+    private SerializableDictionary<string, SerializableDictionary<string, int>> mapNodeSpecDict
+        = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, int>> eventSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int>>();
+    private SerializableDictionary<string, SerializableDictionary<string, int>> eventSpecDict
+        = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, int[]>> ingredientSpecDict = new SerializableDictionary<string, SerializableDictionary<string, int[]>>();
+    private SerializableDictionary<string, SerializableDictionary<string, int[]>> ingredientSpecDict
+        = new SerializableDictionary<string, SerializableDictionary<string, int[]>>();
 
-    [SerializeField] private SerializableDictionary<ReforgeModifier, ReforgeModifierEffect> reforgeModifierEffects = new SerializableDictionary<ReforgeModifier, ReforgeModifierEffect>();
+    [SerializeField]
+    private SerializableDictionary<ReforgeModifier, List<ReforgeModifierEffect>> reforgeModifierEffects
+        = new SerializableDictionary<ReforgeModifier, List<ReforgeModifierEffect>>();
+    [SerializeField]
+    private SerializableDictionary<ReforgeModifier, int> costToReforgeModifier
+        = new SerializableDictionary<ReforgeModifier, int>();
 
-    public ReforgeModifierEffect GetReforgeModifierEffect(ReforgeModifier reforgeModifier)
+    private void Awake()
+    {
+        _Instance = this;
+    }
+
+    public List<ReforgeModifierEffect> GetReforgeModifierEffect(ReforgeModifier reforgeModifier)
     {
         return reforgeModifierEffects[reforgeModifier];
     }
@@ -41,9 +58,13 @@ public class BalenceManager : MonoBehaviour
 
     public int GetValue(PotionIngredientType ingredientType, string identifier, int potency)
     {
-        return ingredientSpecDict[ingredientType.ToString()][identifier][potency];
+        return ingredientSpecDict[ingredientType.ToString()][identifier][potency - 1];
     }
 
+    public int GetValue(PotionIngredientType ingredientType, string identifier)
+    {
+        return ingredientSpecDict[ingredientType.ToString()][identifier][0];
+    }
 
     public int GetValue(ArtifactLabel artifactLabel, string identifier)
     {
@@ -110,8 +131,8 @@ public class BalenceManager : MonoBehaviour
         return eventSpecDict.ContainsKey(label.ToString());
     }
 
-    private void Awake()
+    public int GetCostToReforge(ReforgeModifier reforgeModifier)
     {
-        _Instance = this;
+        return costToReforgeModifier[reforgeModifier];
     }
 }
