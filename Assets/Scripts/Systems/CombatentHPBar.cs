@@ -24,19 +24,16 @@ public class CombatentHPBar : MonoBehaviour
     public void SetDamageFromPoison(int stacks)
     {
         damageFromPoison = stacks;
-        ShowAfflictionStacks();
     }
 
     public void SetDamageFromBurn(int stacks)
     {
         damageFromBurn = stacks;
-        ShowAfflictionStacks();
     }
 
     public void SetDamageFromBlight(int stacks)
     {
         damageFromBlight = stacks;
-        ShowAfflictionStacks();
     }
 
     public void Set(int currentHealth, int maxHealth)
@@ -61,7 +58,6 @@ public class CombatentHPBar : MonoBehaviour
         this.maxHealth = maxHealth;
         this.currentHealth = currentHealth;
         hpText.text = currentHealth + " / " + maxHealth;
-        ShowAfflictionStacks();
     }
 
     public void SetCurrentHP(int newCurrentHealth)
@@ -81,7 +77,6 @@ public class CombatentHPBar : MonoBehaviour
         }
         currentHealth = newCurrentHealth;
         hpText.text = currentHealth + " / " + maxHealth;
-        ShowAfflictionStacks();
     }
 
     public void SetWard(int wardAmount)
@@ -104,7 +99,6 @@ public class CombatentHPBar : MonoBehaviour
         }
         currentWard = wardAmount;
         wardText.text = currentWard.ToString();
-        ShowAfflictionStacks();
     }
 
     public void Clear()
@@ -121,6 +115,11 @@ public class CombatentHPBar : MonoBehaviour
     public void SetText(string text)
     {
         this.hpText.text = text;
+    }
+
+    private void Update()
+    {
+        ShowAfflictionStacks();
     }
 
     private void ShowAfflictionStacks()

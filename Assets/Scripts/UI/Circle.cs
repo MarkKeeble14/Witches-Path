@@ -48,6 +48,7 @@ public class Circle : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         Vector3 randomScreenPos = new Vector3(Random.Range(0 + screenBufferHorizontal, Screen.width - screenBufferHorizontal),
             Random.Range(0 + screenBufferVertical, Screen.height - screenBufferVertical), 0);
+        transform.SetAsFirstSibling();
         transform.position = randomScreenPos;
         active = true;
     }

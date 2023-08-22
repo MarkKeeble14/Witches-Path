@@ -337,8 +337,8 @@ public partial class CombatManager : MonoBehaviour
         OnPlayerTurnStart?.Invoke();
 
         // Tick Relevant Afflictions
-        ApplyBurnEffectOnMap(characterAfflictionMap, Target.Character);
         ApplyBlightEffectOnMap(characterAfflictionMap, Target.Character);
+        ApplyPoisonEffectOnMap(characterAfflictionMap, Target.Character);
 
         if (CheckForCombatOver())
         {
@@ -449,20 +449,17 @@ public partial class CombatManager : MonoBehaviour
 
         while (spellQueue.Count > 0)
         {
-            // Apply Poison Effect
-            ApplyPoisonEffectOnMap(enemyAfflictionMap, Target.Enemy);
-
             // Get Spell from Queue
             InCastQueueActiveSpell spell = spellQueue[0];
-
-            // Remove Spell from Queue
-            spellQueue.RemoveAt(0);
 
             // Show next up spell cast
             if (spellQueue.Count > 0)
             {
                 spellQueue[0].SpellPotencyDisplay.SetOutlineColor(Color.red);
             }
+
+            // Remove Spell from Queue
+            spellQueue.RemoveAt(0);
 
             // Remove UI from spell queue & from Spell Potency Display
             Destroy(spell.QueuedActiveSpell.Display.gameObject);
@@ -472,6 +469,18 @@ public partial class CombatManager : MonoBehaviour
 
             if (CheckForCombatOver())
             {
+                // Killed the enemy or died themselves, either way remove the rest of the queued spells
+                while (spellQueue.Count > 0)
+                {
+                    InCastQueueActiveSpell cur = spellQueue[0];
+                    spellQueue.RemoveAt(0);
+
+                    // Remove UI from spell queue & from Spell Potency Display
+                    Destroy(cur.QueuedActiveSpell.Display.gameObject);
+                    Destroy(cur.SpellPotencyDisplay.gameObject);
+                    yield return null;
+                }
+
                 yield break;
             }
 
@@ -600,6 +609,7 @@ public partial class CombatManager : MonoBehaviour
         {
             Circle c = Instantiate(circlePrefab, parentNoteCirclesTo);
             c.ResetCircle();
+            c.name += circlePool.CountAll;
             return c;
         }, circ =>
         {
@@ -645,6 +655,7 @@ public partial class CombatManager : MonoBehaviour
         }
 
         // Enemy Attack?
+        EnemyBasicAttack();
 
         // Decrease effectiveness Multiplier
         if (effectivenessMultiplier - decreaseEffectivenessMultiplierOnMiss < 0)
@@ -669,8 +680,8 @@ public partial class CombatManager : MonoBehaviour
         OnEnemyTurnStart?.Invoke();
 
         // Tick Relevant Afflictions
-        ApplyBurnEffectOnMap(enemyAfflictionMap, Target.Enemy);
         ApplyBlightEffectOnMap(enemyAfflictionMap, Target.Enemy);
+        ApplyPoisonEffectOnMap(enemyAfflictionMap, Target.Enemy);
 
         if (CheckForCombatOver())
         {
@@ -946,16 +957,23 @@ public partial class CombatManager : MonoBehaviour
 
     private void UpdateHPBarAfflictions(AfflictionType type, Target target)
     {
+        int v;
         switch (type)
         {
             case AfflictionType.Poison:
-                GetCombatentHPBar(target).SetDamageFromPoison(GetTargetAfflictionStacks(AfflictionType.Poison, target));
+                v = (TargetHasAffliction(AfflictionType.Poison, target) ? GetTargetAfflictionStacks(AfflictionType.Poison, target) : 0);
+                // Debug.Log(v);
+                GetCombatentHPBar(target).SetDamageFromPoison(v);
                 break;
             case AfflictionType.Burn:
-                GetCombatentHPBar(target).SetDamageFromBurn(BalenceManager._Instance.GetValue(AfflictionType.Burn, "DamageAmount"));
+                v = (TargetHasAffliction(AfflictionType.Burn, target) ? BalenceManager._Instance.GetValue(AfflictionType.Burn, "DamageAmount") : 0);
+                // Debug.Log(v);
+                GetCombatentHPBar(target).SetDamageFromBurn(v);
                 break;
             case AfflictionType.Blight:
-                GetCombatentHPBar(target).SetDamageFromBlight(GetTargetAfflictionStacks(AfflictionType.Blight, target));
+                v = (TargetHasAffliction(AfflictionType.Blight, target) ? GetTargetAfflictionStacks(AfflictionType.Blight, target) : 0);
+                // Debug.Log(v);
+                GetCombatentHPBar(target).SetDamageFromBlight(v);
                 break;
             default:
                 break;
@@ -1004,9 +1022,6 @@ public partial class CombatManager : MonoBehaviour
         // remove a stack
         aff.AlterStacks(-toConsume);
 
-        // update hp bar
-        UpdateHPBarAfflictions(type, target);
-
         // there remains at least a stack of the affliction, do not remove
         if (!aff.CanBeCleared) return;
 
@@ -1016,6 +1031,9 @@ public partial class CombatManager : MonoBehaviour
         displays.Remove(type);
         Destroy(i.gameObject);
         map.Remove(type);
+
+        // update hp bar
+        UpdateHPBarAfflictions(type, target);
 
         switch (target)
         {
@@ -1063,7 +1081,6 @@ public partial class CombatManager : MonoBehaviour
             ConsumeAfflictionStack(AfflictionType.Poison, target, Mathf.RoundToInt(GetAffliction(AfflictionType.Poison, target).GetStacks() * percentToMultiplyBy));
             ShowAfflictionProc(AfflictionType.Poison, target);
         }
-
     }
 
     private void ApplyBlightEffectOnMap(Dictionary<AfflictionType, Affliction> map, Target target)
@@ -1162,6 +1179,9 @@ public partial class CombatManager : MonoBehaviour
             AttackCombatent(0, Target.Character, Target.Enemy, DamageType.Default, DamageSource.BasicAttack);
         }
 
+        // Burn Effect
+        ApplyBurnEffectOnMap(characterAfflictionMap, Target.Character);
+
         OnPlayerAttack?.Invoke();
     }
 
@@ -1184,18 +1204,26 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private IEnumerator EnemyAttack()
+    private void EnemyBasicAttack()
     {
-        // Simple way of attacking for now
-        // Damage increase from equipment is built into basic attack damage
-
-        yield return StartCoroutine(AnimateEnemySpriteAttack());
-
         if (AttackCombatent(-currentEnemy.GetBasicAttackDamage(), Target.Enemy, Target.Character, DamageType.Default, DamageSource.BasicAttack))
         {
             // Only call on enemy attack if the player is still alive
             OnEnemyAttack?.Invoke();
+
+            // Burn Effect
+            ApplyBurnEffectOnMap(enemyAfflictionMap, Target.Enemy);
         }
+    }
+
+    private IEnumerator EnemyAttack()
+    {
+        // Simple way of attacking for now
+        // Once enemies are fully implemented, this will call a spell most likely
+
+        yield return StartCoroutine(AnimateEnemySpriteAttack());
+
+        EnemyBasicAttack();
     }
 
     public bool AttackCombatent(int amount, Target attacker, Target target, DamageType damageType, DamageSource source)

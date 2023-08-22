@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   name: Volcanic Garmants
   rarity: 0
-  damageChange: 2
+  damageChange: 1
   defenseChange: -1
   manaChange: -1
   AfflictionKeywords: 

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   name: Fiery Wig
   rarity: 0
-  damageChange: 2
+  damageChange: 0
   defenseChange: -1
   manaChange: -1
   AfflictionKeywords: 
