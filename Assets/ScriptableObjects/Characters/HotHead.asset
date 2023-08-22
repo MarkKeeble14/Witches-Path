@@ -22,7 +22,7 @@ MonoBehaviour:
   startingClothierCurrency: 1
   maxHP: 90
   startingHP: 90
-  basicAttackDamage: 7
+  basicAttackDamage: 2
   startingActiveSpellSlots: 4
   startingPassiveSpellSlots: 2
   maxMana: 8

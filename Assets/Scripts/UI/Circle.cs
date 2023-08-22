@@ -1,155 +1,114 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-public class Circle : MonoBehaviour
+public class Circle : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
-    // Circle parameters
-    private float posX = 0;
-    private float posY = 0;
-    private float posZ = 0;
+    [SerializeField] private GameObject foreground, background, approach; // Circle objects
+    [SerializeField] private CanvasGroup approachCV;
+    [SerializeField] private CanvasGroup mainCV;
+    [SerializeField] private float fadeOutMainCVRate;
 
-    [HideInInspector]
-    public int posA = 0;
+    [SerializeField] private float minApproachScale = 0.9f;
+    [SerializeField] private float maxAcceptedApproachScale = 1.05f;
+    [SerializeField] private Vector3 approachScaleRate;
+    [SerializeField] private float approachAlphaChangeRate;
 
-    private Color mainColor, mainColor1, mainColor2; // Circle sprites color
-    [SerializeField] private GameObject mainFore, mainBack, mainApproach; // Circle objects
-    [SerializeField] private SpriteRenderer fore, back, appr; // Circle sprites
+    [SerializeField] private Vector3 approachStartingScale;
 
-    // Checking stuff
-    private bool canRemove = false;
-    private bool hasBeenClicked = false;
+    [SerializeField] private float screenBufferHorizontal;
+    [SerializeField] private float screenBufferVertical;
 
-    // Set circle configuration
-    public void Set(float x, float y, float z, int a)
+    private float timer;
+    private bool isMousedOver;
+    private bool active;
+
+    public void OnPointerEnter(PointerEventData eventData)
     {
-        posX = x;
-        posY = y;
-        posZ = z;
-        posA = a;
-        mainColor = appr.color;
-        mainColor1 = fore.color;
-        mainColor2 = back.color;
+        isMousedOver = true;
     }
 
-    // Spawning the circle
-    public void Show()
+    public void OnPointerExit(PointerEventData eventData)
     {
-        gameObject.transform.position = new Vector3(posX, posY, posZ);
-        enabled = true;
-        StartCoroutine(Checker());
+        isMousedOver = false;
     }
 
-    // If circle wasn't clicked
-    public void Remove()
+    public void ResetCircle()
     {
-        if (!hasBeenClicked)
-        {
-            canRemove = true;
-            enabled = true;
-        }
+        timer = 0;
+        approachCV.alpha = 0;
+        mainCV.alpha = 1;
+        approach.transform.localScale = approachStartingScale;
+        isMousedOver = false;
     }
 
-    // If circle was clicked
-    public void Got()
+    public void Set()
     {
-        if (!canRemove)
-        {
-            hasBeenClicked = true;
-            mainApproach.transform.position = new Vector2(-101, -101);
-
-            CombatManager._Instance.OnNoteHit();
-            canRemove = false;
-            enabled = true;
-        }
-    }
-
-    // Check if circle wasn't clicked
-    private IEnumerator Checker()
-    {
-        while (true)
-        {
-            // 75 means delay before removing
-            if (CombatManager._Instance.GetTimer() >= posA + (CombatManager._Instance.GetApprRate() + 75) && !hasBeenClicked)
-            {
-                Remove();
-                CombatManager._Instance.OnNoteMiss();
-                break;
-            }
-            yield return null;
-        }
+        Vector3 randomScreenPos = new Vector3(Random.Range(0 + screenBufferHorizontal, Screen.width - screenBufferHorizontal),
+            Random.Range(0 + screenBufferVertical, Screen.height - screenBufferVertical), 0);
+        transform.position = randomScreenPos;
+        active = true;
     }
 
     // Main Update
     private void Update()
     {
+        // Increase timer
+        timer += Time.deltaTime;
+
+        if (!active) return;
+
         // Approach Circle modifier
-        if (mainApproach.transform.localScale.x >= 0.9f)
+        if (approach.transform.localScale.x >= minApproachScale)
         {
-            mainApproach.transform.localScale -= new Vector3(5.166667f, 5.166667f, 0f) * Time.deltaTime;
-            mainColor.a += 4f * Time.deltaTime;
-            mainColor1.a += 4f * Time.deltaTime;
-            mainColor2.a += 4f * Time.deltaTime;
-            fore.color = mainColor1;
-            back.color = mainColor2;
-            appr.color = mainColor;
+            approachCV.alpha = Mathf.MoveTowards(approachCV.alpha, 1, Time.deltaTime * approachAlphaChangeRate);
+            approach.transform.localScale -= approachScaleRate * Time.deltaTime;
 
-        }
-        // If circle wasn't clicked
-        else if (!hasBeenClicked)
-        {
-            // Remove circle
-            if (!canRemove)
+            // Check if mouse is over the circle within a range of it being at it's smallest, if so we consider it a pass
+            if (approach.transform.localScale.x <= maxAcceptedApproachScale && isMousedOver)
             {
-                mainApproach.transform.position = new Vector2(-101, -101);
-                enabled = false;
-            }
-            // If circle wasn't clicked
-            else
-            {
-                mainColor1.a -= 10f * Time.deltaTime;
-                mainColor2.a -= 10f * Time.deltaTime;
-                mainFore.transform.localPosition += (Vector3.down * 2) * Time.deltaTime;
-                mainBack.transform.localPosition += Vector3.down * Time.deltaTime;
-                fore.color = mainColor1;
-                back.color = mainColor2;
-                if (mainColor1.a <= 0f)
-                {
-                    gameObject.transform.position = new Vector2(-101, -101);
-                    enabled = false;
-                }
+                OnHit();
             }
         }
-
-        // If circle was clicked
-        if (hasBeenClicked)
+        else
         {
-            mainColor1.a -= 10f * Time.deltaTime;
-            mainColor2.a -= 10f * Time.deltaTime;
-            mainFore.transform.localScale += new Vector3(2, 2, 0) * Time.deltaTime;
-            mainBack.transform.localScale += new Vector3(2, 2, 0) * Time.deltaTime;
-            fore.color = mainColor1;
-            back.color = mainColor2;
-            if (mainColor1.a <= 0f)
-            {
-                gameObject.transform.position = new Vector2(-101, -101);
-                enabled = false;
-            }
+            // We are under the minApproachScale, consider it a fail
+            OnFail();
         }
     }
 
-    public SpriteRenderer GetFore()
+    private void OnHit()
     {
-        return fore;
+        // Debug.Log("Hit");
+        CombatManager._Instance.OnNoteHit();
+        StartCoroutine(EndRoutine());
     }
 
-    public SpriteRenderer GetBack()
+    private void OnFail()
     {
-        return back;
+        // Debug.Log("Fail");
+        CombatManager._Instance.OnNoteMiss();
+        StartCoroutine(EndRoutine());
     }
 
-    public SpriteRenderer GetAppr()
+    private IEnumerator EndRoutine()
     {
-        return appr;
+        active = false;
+
+        while (mainCV.alpha > 0)
+        {
+            mainCV.alpha = Mathf.MoveTowards(mainCV.alpha, 0, Time.deltaTime * fadeOutMainCVRate);
+            yield return null;
+        }
+
+        CombatManager._Instance.ReleaseCircle(this);
+    }
+
+    public void Cancel()
+    {
+        active = false;
+        StartCoroutine(EndRoutine());
     }
 }

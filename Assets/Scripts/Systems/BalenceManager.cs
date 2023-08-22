@@ -2,38 +2,97 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum SpellType
+{
+    Active,
+    Passive
+}
+
+[System.Serializable]
+public class ActiveSpellSpecDictionary
+{
+    [SerializeField] private int cooldown;
+    [SerializeField] private int manaCost;
+    [SerializeField] private int batches;
+    [SerializeField] private Vector2Int minMaxBatches;
+    [SerializeField] private SerializableDictionary<string, int> additionalParameters = new SerializableDictionary<string, int>();
+
+    public int GetSpec(string identifier)
+    {
+        switch (identifier)
+        {
+            case "Cooldown":
+                return cooldown;
+            case "ManaCost":
+                return manaCost;
+            case "Batches":
+                return batches;
+            case "MinNotesPerBatch":
+                return minMaxBatches.x;
+            case "MaxNotesPerBatch":
+                return minMaxBatches.y;
+            default:
+                return additionalParameters[identifier];
+        }
+    }
+}
+
+
+[System.Serializable]
+public class PassiveSpellSpecDictionary
+{
+    [SerializeField] private SerializableDictionary<string, int> additionalParameters = new SerializableDictionary<string, int>();
+
+    public int GetSpec(string identifier)
+    {
+        return additionalParameters[identifier];
+    }
+}
+
 public class BalenceManager : MonoBehaviour
 {
     public static BalenceManager _Instance { get; private set; }
 
+    [Header("Artifacts")]
     [SerializeField]
     private SerializableDictionary<string, SerializableDictionary<string, int>> artifactSpecDict
         = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
+    [Header("Books")]
     [SerializeField]
     private SerializableDictionary<string, SerializableDictionary<string, int>> bookSpecDict
         = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
+    [Header("Afflictions")]
     [SerializeField]
     private SerializableDictionary<string, SerializableDictionary<string, int>> afflictionSpecDict
         = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
+    [Header("Spells")]
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, int>> spellSpecDict
-        = new SerializableDictionary<string, SerializableDictionary<string, int>>();
+    private SerializableDictionary<string, PassiveSpellSpecDictionary> passiveSpellSpecDict
+        = new SerializableDictionary<string, PassiveSpellSpecDictionary>();
 
+    [SerializeField]
+    private SerializableDictionary<string, ActiveSpellSpecDictionary> activeSpellSpecDict
+    = new SerializableDictionary<string, ActiveSpellSpecDictionary>();
+
+    [Header("Map")]
     [SerializeField]
     private SerializableDictionary<string, SerializableDictionary<string, int>> mapNodeSpecDict
         = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
+    [Header("Events")]
     [SerializeField]
     private SerializableDictionary<string, SerializableDictionary<string, int>> eventSpecDict
         = new SerializableDictionary<string, SerializableDictionary<string, int>>();
 
+    [Header("Potions")]
     [SerializeField]
     private SerializableDictionary<string, SerializableDictionary<string, int[]>> ingredientSpecDict
         = new SerializableDictionary<string, SerializableDictionary<string, int[]>>();
 
+    [Header("Equipment")]
     [SerializeField]
     private SerializableDictionary<ReforgeModifier, List<ReforgeModifierEffect>> reforgeModifierEffects
         = new SerializableDictionary<ReforgeModifier, List<ReforgeModifierEffect>>();
@@ -80,9 +139,9 @@ public class BalenceManager : MonoBehaviour
             case ContentType.Book:
                 return bookSpecDict[label][identifier];
             case ContentType.ActiveSpell:
-                return spellSpecDict[label][identifier];
+                return activeSpellSpecDict[label].GetSpec(identifier);
             case ContentType.PassiveSpell:
-                return spellSpecDict[label][identifier];
+                return passiveSpellSpecDict[label].GetSpec(identifier);
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -111,9 +170,17 @@ public class BalenceManager : MonoBehaviour
         return afflictionSpecDict[afflictionType.ToString()][identifier];
     }
 
-    public int GetValue(SpellLabel spellLabel, string identifier)
+    public int GetValue(SpellLabel spellLabel, SpellType spellType, string identifier)
     {
-        return spellSpecDict[spellLabel.ToString()][identifier];
+        switch (spellType)
+        {
+            case SpellType.Active:
+                return activeSpellSpecDict[spellLabel.ToString()].GetSpec(identifier);
+            case SpellType.Passive:
+                return passiveSpellSpecDict[spellLabel.ToString()].GetSpec(identifier);
+            default:
+                throw new Exception();
+        }
     }
 
     public int GetValue(MapNodeType type, string identifier)

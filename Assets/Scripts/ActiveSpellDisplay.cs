@@ -66,7 +66,7 @@ public class ActiveSpellDisplay : SpellDisplay
 
         // Set Text
         // Num Notes Never Changes
-        spellNumNotesText.text = spell.NumNotes.ToString();
+        spellNumNotesText.text = spell.GetNumNotesString();
 
         isAvailable = false;
     }

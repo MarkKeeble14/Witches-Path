@@ -37,7 +37,7 @@ public abstract class Spell : ToolTippable
 {
     public abstract string Name { get; }
     public abstract SpellLabel Label { get; }
-
+    protected abstract SpellType Type { get; }
     public string SpritePath => "Spells/" + Label.ToString().ToLower();
 
     protected abstract string toolTipText { get; }
@@ -84,7 +84,7 @@ public abstract class Spell : ToolTippable
     protected int GetSpellSpec(string specIdentifier)
     {
         // Debug.Log("GetSpellSpec Called for: " + Label + " - " + specIdentifier);
-        return BalenceManager._Instance.GetValue(Label, specIdentifier);
+        return BalenceManager._Instance.GetValue(Label, Type, specIdentifier);
     }
 
     // Getters
@@ -125,6 +125,8 @@ public abstract class Spell : ToolTippable
 
 public abstract class PassiveSpell : Spell
 {
+    protected override SpellType Type => SpellType.Passive;
+
     // A Global variable determining whether or not a passive spell being activated should duplicate itself
     public static int NumDuplicateProcs { get; set; }
 
@@ -545,6 +547,8 @@ public class CrushJoints : PassiveSpell
 
 public abstract class ActiveSpell : Spell
 {
+    protected override SpellType Type => SpellType.Active;
+
     // Data
     private int manaCost;
     private int cooldown;
@@ -558,14 +562,9 @@ public abstract class ActiveSpell : Spell
 
     public DamageType MainDamageType => mainDamageType;
 
-    // Casting Information
-    // public DefaultAsset MapFile { get => Resources.Load<DefaultAsset>("ActiveSpellData/" + Label + "/MapFile"); }
-    // public AudioClip AssociatedSoundClip { get => Resources.Load<AudioClip>("ActiveSpellData/" + Label + "/SoundClip"); }
-
     // Testing
-    public TextAsset MapFile { get => Resources.Load<TextAsset>("ActiveSpellData/TestMap"); }
-    private int numNotes;
-    public int NumNotes => numNotes;
+    public Vector2Int MinMaxNotesPerBatch { get; private set; }
+    public int Batches { get; private set; }
 
     public AudioClip AssociatedSoundClip { get => Resources.Load<AudioClip>("ActiveSpellData/TestClip"); }
 
@@ -602,11 +601,23 @@ public abstract class ActiveSpell : Spell
         //
     }
 
+    protected float GetEffectivenessMultiplier()
+    {
+        return CombatManager._Instance.GetActiveSpellEffectivenessMultiplier();
+    }
+
+    protected int PassValueThroughEffectivenessMultiplier(int damage)
+    {
+        return Mathf.CeilToInt(damage * GetEffectivenessMultiplier());
+    }
+
     protected override void SetParameters()
     {
         base.SetParameters();
         cooldown = (int)GetSpellSpec("Cooldown");
         manaCost = GetSpellSpec("ManaCost");
+        Batches = GetSpellSpec("Batches");
+        MinMaxNotesPerBatch = new Vector2Int(GetSpellSpec("MinNotesPerBatch"), GetSpellSpec("MaxNotesPerBatch"));
     }
 
     public void SetOnCooldown()
@@ -649,7 +660,12 @@ public abstract class ActiveSpell : Spell
     protected override string GetDetailText()
     {
         // Order: Mana -> Cooldown -> Attacks
-        return "\nMana Cost: " + manaCost + " - Cooldown: " + CooldownTracker.y + " - Attacks: " + NumNotes;
+        return "\nMana Cost: " + manaCost + " - Cooldown: " + CooldownTracker.y + " - Attacks: " + GetNumNotesString();
+    }
+
+    public string GetNumNotesString()
+    {
+        return (Batches * MinMaxNotesPerBatch.x) + " - " + (Batches * MinMaxNotesPerBatch.y);
     }
 }
 
@@ -680,8 +696,8 @@ public class Fireball : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Fire, DamageSource.ActiveSpell);
-        CombatManager._Instance.AddAffliction(AfflictionType.Burn, stackAmount, Target.Enemy);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Fire, DamageSource.ActiveSpell);
+        CombatManager._Instance.AddAffliction(AfflictionType.Burn, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
 }
 
@@ -712,8 +728,8 @@ public class Shock : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Electricity, DamageSource.ActiveSpell);
-        CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, stackAmount, Target.Enemy);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Electricity, DamageSource.ActiveSpell);
+        CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
 }
 
@@ -742,7 +758,7 @@ public class Singe : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Burn, stackAmount, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Burn, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
 }
 
@@ -770,7 +786,7 @@ public class Plague : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Poison, stackAmount, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Poison, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
 }
 
@@ -801,8 +817,8 @@ public class Toxify : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Poison, DamageSource.ActiveSpell);
-        CombatManager._Instance.AddAffliction(AfflictionType.Poison, stackAmount, Target.Enemy);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Poison, DamageSource.ActiveSpell);
+        CombatManager._Instance.AddAffliction(AfflictionType.Poison, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
 }
 
@@ -825,8 +841,8 @@ public class Jarkai : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
     }
 }
 
@@ -853,7 +869,7 @@ public class Flurry : ActiveSpell
     {
         for (int i = 0; i < hitAmount; i++)
         {
-            CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
+            CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
         }
     }
 }
@@ -886,8 +902,8 @@ public class Electrifry : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, paralyzeAmount, Target.Enemy);
-        CombatManager._Instance.AddAffliction(AfflictionType.Burn, burnAmount, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, PassValueThroughEffectivenessMultiplier(paralyzeAmount), Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Burn, PassValueThroughEffectivenessMultiplier(burnAmount), Target.Enemy);
     }
 }
 
@@ -923,8 +939,8 @@ public class ExposeFlesh : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
-        CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, stackAmount, Target.Enemy);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
+        CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
 }
 
@@ -955,8 +971,8 @@ public class Cripple : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
-        CombatManager._Instance.AddAffliction(AfflictionType.Weak, stackAmount, Target.Enemy);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
+        CombatManager._Instance.AddAffliction(AfflictionType.Weak, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
 }
 
@@ -982,7 +998,7 @@ public class TradeBlood : ActiveSpell
     protected override void Effect()
     {
         GameManager._Instance.AlterPlayerHP(-selfDamageAmount, DamageType.Default);
-        CombatManager._Instance.AttackCombatent(-otherDamageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-otherDamageAmount), Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
     }
 }
 
@@ -1011,7 +1027,7 @@ public class Excite : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Embolden, stackAmount, Target.Character);
+        CombatManager._Instance.AddAffliction(AfflictionType.Embolden, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Character);
     }
 }
 
@@ -1043,8 +1059,8 @@ public class Overexcite : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Embolden, emboldenedAmount, Target.Character);
-        CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, vulnerableAmount, Target.Character);
+        CombatManager._Instance.AddAffliction(AfflictionType.Embolden, PassValueThroughEffectivenessMultiplier(emboldenedAmount), Target.Character);
+        CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, PassValueThroughEffectivenessMultiplier(vulnerableAmount), Target.Character);
     }
 }
 
@@ -1073,7 +1089,7 @@ public class Forethought : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Intangible, stackAmount, Target.Character);
+        CombatManager._Instance.AddAffliction(AfflictionType.Intangible, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Character);
     }
 }
 
@@ -1102,7 +1118,7 @@ public class Reverberate : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Echo, stackAmount, Target.Character);
+        CombatManager._Instance.AddAffliction(AfflictionType.Echo, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Character);
     }
 }
 
@@ -1131,8 +1147,8 @@ public class ImpartialAid : ActiveSpell
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterPlayerHP(healAmount, DamageType.Heal);
-        CombatManager._Instance.AltarEnemyHP(healAmount, DamageType.Heal);
+        GameManager._Instance.AlterPlayerHP(PassValueThroughEffectivenessMultiplier(healAmount), DamageType.Heal);
+        CombatManager._Instance.AltarEnemyHP(PassValueThroughEffectivenessMultiplier(healAmount), DamageType.Heal);
     }
 }
 
@@ -1155,7 +1171,7 @@ public class WitchesWill : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
     }
 }
 
@@ -1184,7 +1200,7 @@ public class WitchesWard : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.GiveCombatentWard(wardAmount, Target.Character);
+        CombatManager._Instance.GiveCombatentWard(PassValueThroughEffectivenessMultiplier(wardAmount), Target.Character);
     }
 }
 

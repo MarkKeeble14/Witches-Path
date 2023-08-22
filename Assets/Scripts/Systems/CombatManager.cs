@@ -68,28 +68,14 @@ public partial class CombatManager : MonoBehaviour
     }
 
     [Header("Rhythm Settings")]
-    [SerializeField] private Circle circle; // Circle Object
-
-    [SerializeField] private bool enableSliders = true;
-    [SerializeField] private int apprRate = 600; // Approach rate (in ms)
-
-    const int SPAWN = -100; // Spawn coordinates for objects
-
-    private double timer = 0; // Main song timer
-    private int delayPos = 0; // Delay song position
-
-    private int noteCount = 0; // Notes played counter
-    private int objCount = 0; // Spawned objects counter
-
+    [SerializeField] private Circle circlePrefab; // Circle Object
+    private ObjectPool<Circle> circlePool;
     private List<Circle> circleList = new List<Circle>(); // Circles List
-    private static string[] lineParams; // Object Parameters
+    [SerializeField] private Transform parentNoteCirclesTo;
+
     // Other stuff
     [SerializeField] private LayerMask noteLayer;
-    [SerializeField] private GameObject cursorTrail;
     [SerializeField] private Image background;
-    private Vector3 mousePosition;
-    private Ray mainRay;
-    private RaycastHit mainHit;
 
     // Enemy Stuff
     private AudioClip hitSound;
@@ -113,11 +99,13 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private CanvasGroup characterCombatSpriteCV;
     [SerializeField] private CanvasGroup enemyCombatSpriteCV;
     [SerializeField] private TurnDisplay turnDisplay;
+    [SerializeField] private TextMeshProUGUI effectivenessMultiplierText;
 
     [Header("Game")]
     [SerializeField] private PopupText popupTextPrefab;
 
     [Header("Audio")]
+    [SerializeField] private bool playSFXOnHit;
     [SerializeField] private bool playSFXOnMiss;
     [SerializeField] private AudioSource sfxSource;
     [SerializeField] private AudioSource musicSource;
@@ -160,6 +148,13 @@ public partial class CombatManager : MonoBehaviour
     private List<InCastQueueActiveSpell> spellQueue = new List<InCastQueueActiveSpell>();
     [SerializeField] private AudioSource spellSFXSource;
 
+    private float effectivenessMultiplier = 0;
+    [SerializeField] private float decreaseEffectivenessMultiplierOnMiss = 0.25f;
+    [SerializeField] private float increaseEffectivenessMultiplierOnHit = 0.1f;
+    [SerializeField] private float defaultEffectivenessMultiplier = 1;
+    [SerializeField] private float maxEffectivenessMultiplier;
+    private List<Circle> spawnedCircles = new List<Circle>();
+
     public void SetPlayerTurnEnded(bool b)
     {
         playerTurnEnded = b;
@@ -195,6 +190,9 @@ public partial class CombatManager : MonoBehaviour
         // Player Stuff
         characterCombatSprite.sprite = GameManager._Instance.GetCharacter().GetCombatSprite();
         characterHPBar.Set(GameManager._Instance.GetCurrentCharacterHP(), GameManager._Instance.GetMaxPlayerHP());
+
+        // Combat stuff
+        effectivenessMultiplier = defaultEffectivenessMultiplier;
 
         // Set music source
         // Read Circle Data (.osu)
@@ -359,9 +357,6 @@ public partial class CombatManager : MonoBehaviour
             yield break;
         }
 
-        yield return new WaitUntil(() => playerTurnEnded);
-        playerTurnEnded = false;
-
         GameManager._Instance.ResetActiveSpellCooldowns();
 
         // Regeneration Effect
@@ -409,7 +404,8 @@ public partial class CombatManager : MonoBehaviour
         spellQueue.Add(toQueue);
 
         // Test
-        spellPotencyDisplay.SetCurrentPotency(RandomHelper.RandomFloat(spellPotencyDisplay.GetMinMaxPotency()));
+        spellPotencyDisplay.SetCurrentPotency(effectivenessMultiplier);
+        spellPotencyDisplay.SetMaxPotency(maxEffectivenessMultiplier);
 
         // Check for Free Spell Casts
         if (NumFreeSpells > 0)
@@ -447,6 +443,10 @@ public partial class CombatManager : MonoBehaviour
 
         // Cast Queue
         isCastingQueue = true;
+
+        // Set effectiveness multiplier text to be active
+        effectivenessMultiplierText.gameObject.SetActive(true);
+
         while (spellQueue.Count > 0)
         {
             // Apply Poison Effect
@@ -466,10 +466,9 @@ public partial class CombatManager : MonoBehaviour
 
             // Remove UI from spell queue & from Spell Potency Display
             Destroy(spell.QueuedActiveSpell.Display.gameObject);
-            Destroy(spell.SpellPotencyDisplay.gameObject);
 
             // Cast Spell
-            yield return StartCoroutine(CastSpell(spell.QueuedActiveSpell.Spell));
+            yield return StartCoroutine(CastSpell(spell));
 
             if (CheckForCombatOver())
             {
@@ -478,6 +477,10 @@ public partial class CombatManager : MonoBehaviour
 
             yield return new WaitForSeconds(delayBetweenSpellCasts);
         }
+
+        // Set effectiveness multiplier text to be inactive
+        effectivenessMultiplierText.gameObject.SetActive(false);
+
         isCastingQueue = false;
         hasCastQueue = true;
     }
@@ -487,70 +490,170 @@ public partial class CombatManager : MonoBehaviour
         return currentEnemyHP <= 0 || GameManager._Instance.GetCurrentCharacterHP() <= 0;
     }
 
-    private IEnumerator CastSpell(ActiveSpell spell)
+    private IEnumerator CastSpell(InCastQueueActiveSpell queuedActiveSpell)
     {
+        ActiveSpell spell = queuedActiveSpell.QueuedActiveSpell.Spell;
+
         // Set SFX source to spell audio clip
         spellSFXSource.clip = spell.AssociatedSoundClip;
-
-        // Read Circles (.osu file/beatmap)
-        int numNotes = ReadCircles(AssetDatabase.GetAssetPath(spell.MapFile));
 
         // Set hit & miss sounds
         hitSound = spell.HitSound;
         missSound = spell.MissSound;
 
-        // Play Sequence
-        // yield return StartCoroutine(PlaySpell(spellSFXSource, numNotes));
-        yield return null;
+        spellSFXSource.Play();
 
-        // Apply effects
-        spell.Cast();
+        // Play Sequence
+        yield return StartCoroutine(PlaySpell(queuedActiveSpell));
     }
 
-    private IEnumerator PlaySpell(AudioSource spellAudioSource, int numNotes)
+    public float GetActiveSpellEffectivenessMultiplier()
     {
-        noteCount = 0;
-        spellAudioSource.Play();
-        while (noteCount < numNotes)
+        return effectivenessMultiplier;
+    }
+
+    private IEnumerator UpdateSpellPotencyDisplay(SpellPotencyDisplay display)
+    {
+        while (true)
         {
-            timer = (spellAudioSource.time * 1000); // Convert timer
-            delayPos = (circleList[objCount].posA);
-            mainRay = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-            // Spawn object
-            if (timer >= delayPos)
-            {
-                circleList[objCount].Show();
-                objCount++;
-            }
-
-            // Check if cursor is over object
-            if (Physics.Raycast(mainRay, out mainHit))
-            {
-                if (LayerMaskHelper.IsInLayerMask(mainHit.collider.gameObject, noteLayer) && timer >= mainHit.collider.gameObject.GetComponent<Circle>().posA + apprRate)
-                {
-                    mainHit.collider.gameObject.GetComponent<Circle>().Got();
-                    mainHit.collider.enabled = false;
-                }
-            }
-
-            // Cursor trail movement
-            mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            cursorTrail.transform.position = new Vector3(mousePosition.x, mousePosition.y, -9);
-
+            display.SetCurrentPotency(effectivenessMultiplier);
             yield return null;
         }
     }
 
-    private int GetTargetAfflictionStacks(AfflictionType type, Target target)
+    private IEnumerator PlaySpell(InCastQueueActiveSpell queueActiveSpell)
     {
-        if (TargetHasAffliction(type, target))
+        ActiveSpell spell = queueActiveSpell.QueuedActiveSpell.Spell;
+        SpellPotencyDisplay potencyDisplay = queueActiveSpell.SpellPotencyDisplay;
+        Coroutine updatePotencyDisplay = StartCoroutine(UpdateSpellPotencyDisplay(potencyDisplay));
+        float t = 0;
+
+        for (int i = 0; i < spell.Batches; i++)
         {
-            return GetTargetAfflictionMap(target)[type].GetStacks();
+            // Spawn Batch of Circles
+            for (int p = 0; p < RandomHelper.RandomIntInclusive(spell.MinMaxNotesPerBatch); p++)
+            {
+                Circle c = circlePool.Get();
+                spawnedCircles.Add(c);
+                c.Set();
+
+                t = 0;
+                while (t < delayBetweenSpellNotes)
+                {
+                    t += Time.deltaTime;
+
+                    // Check if Killed the enemy during Spell Sequence
+                    if (CheckForCombatOver())
+                    {
+                        // if so, cancel the rest of the spell
+                        while (spawnedCircles.Count > 0)
+                        {
+                            Circle spawned = spawnedCircles[0];
+                            spawned.Cancel();
+                        }
+                        yield break;
+                    }
+                    yield return null;
+                }
+            }
+
+            // Depending on how many are hit, spell power is increased
+            t = 0;
+            while (t < delayBetweenSpellBatches)
+            {
+                t += Time.deltaTime;
+                yield return null;
+            }
+        }
+
+        // Stop update potency display coroutine
+        StopCoroutine(updatePotencyDisplay);
+
+        // Apply effects
+        spell.Cast();
+        Destroy(potencyDisplay.gameObject);
+
+        // Reset
+        effectivenessMultiplier = defaultEffectivenessMultiplier;
+    }
+
+    public void ReleaseCircle(Circle circle)
+    {
+        circlePool.Release(circle);
+        spawnedCircles.Remove(circle);
+    }
+
+
+    private void ClearCircleList()
+    {
+        while (circleList.Count > 0)
+        {
+            Circle c = circleList[0];
+            circleList.RemoveAt(0);
+            circlePool.Release(c);
+        }
+    }
+
+    private void CreateCirclePool()
+    {
+        circlePool = new ObjectPool<Circle>(() =>
+        {
+            Circle c = Instantiate(circlePrefab, parentNoteCirclesTo);
+            c.ResetCircle();
+            return c;
+        }, circ =>
+        {
+            circ.gameObject.SetActive(true);
+        }, circ =>
+        {
+            circ.gameObject.SetActive(false);
+            circ.ResetCircle();
+        }, circ =>
+        {
+            Destroy(circ.gameObject);
+        }, true, 100);
+    }
+
+    public void OnNoteHit()
+    {
+        // Play SFX
+        if (playSFXOnHit)
+        {
+            sfxSource.PlayOneShot(hitSound);
+        }
+
+        // Player Attack
+        PlayerBasicAttack();
+
+        // Increase effectiveness Multiplier
+        if (effectivenessMultiplier + increaseEffectivenessMultiplierOnHit > maxEffectivenessMultiplier)
+        {
+            effectivenessMultiplier = maxEffectivenessMultiplier;
         }
         else
         {
-            return 0;
+            effectivenessMultiplier += increaseEffectivenessMultiplierOnHit;
+        }
+    }
+
+    public void OnNoteMiss()
+    {
+        // Play SFX
+        if (playSFXOnMiss)
+        {
+            sfxSource.PlayOneShot(missSound);
+        }
+
+        // Enemy Attack?
+
+        // Decrease effectiveness Multiplier
+        if (effectivenessMultiplier - decreaseEffectivenessMultiplierOnMiss < 0)
+        {
+            effectivenessMultiplier = 0;
+        }
+        else
+        {
+            effectivenessMultiplier -= decreaseEffectivenessMultiplierOnMiss;
         }
     }
 
@@ -597,6 +700,9 @@ public partial class CombatManager : MonoBehaviour
     {
         while (InCombat)
         {
+            // Set effectiveness multiplier text
+            effectivenessMultiplierText.text = "x" + Utils.RoundTo(effectivenessMultiplier, 2).ToString();
+
             // Change the text of the cast Button depending on what's happening
             if (currentTurn == Turn.Enemy)
             {
@@ -657,8 +763,6 @@ public partial class CombatManager : MonoBehaviour
 
         musicSource.Stop();
         musicSource.time = 0;
-        objCount = 0;
-        noteCount = 0;
 
         // Clear Spell Queue
         while (spellQueue.Count > 0)
@@ -676,146 +780,6 @@ public partial class CombatManager : MonoBehaviour
     public Turn GetTurn()
     {
         return currentTurn;
-    }
-
-    #endregion
-
-    #region Parsing
-
-    private void ClearCircleList()
-    {
-        while (circleList.Count > 0)
-        {
-            Circle c = circleList[0];
-            circleList.RemoveAt(0);
-            circlePool.Release(c);
-        }
-    }
-
-    private ObjectPool<Circle> circlePool;
-    private void CreateCirclePool()
-    {
-        circlePool = new ObjectPool<Circle>(() =>
-        {
-            return Instantiate(circle, null);
-        }, circ =>
-        {
-            circ.gameObject.SetActive(true);
-        }, circ =>
-        {
-            circ.gameObject.SetActive(false);
-        }, circ =>
-        {
-            Destroy(circ.gameObject);
-        }, true, 100);
-    }
-
-    private int ReadCircles(string path)
-    {
-        // Reset if neccessary
-        ClearCircleList();
-
-        // Generate new Circles
-        StreamReader reader = new StreamReader(path);
-        string line;
-
-        // Skip to [HitObjects] part
-        while (true)
-        {
-            if (reader.ReadLine() == "[HitObjects]")
-                break;
-        }
-
-        int TotalLines = 0;
-
-        // Count all lines
-        while (!reader.EndOfStream)
-        {
-            reader.ReadLine();
-            TotalLines++;
-        }
-
-        reader.Close();
-
-        reader = new StreamReader(path);
-
-        // Skip to [HitObjects] part again
-        while (true)
-        {
-            if (reader.ReadLine() == "[HitObjects]")
-                break;
-        }
-
-        // Sort objects on load
-        int ForeOrder = TotalLines + 2; // Sort foreground layer
-        int BackOrder = TotalLines + 1; // Sort background layer
-        int ApproachOrder = TotalLines; // Sort approach circles layer
-
-        // Some crazy Z axis modifications for sorting
-        string TotalLinesStr = "0.";
-        for (int i = 3; i > TotalLines.ToString().Length; i--)
-            TotalLinesStr += "0";
-        TotalLinesStr += TotalLines.ToString();
-        float Z_Index = -(float.Parse(TotalLinesStr));
-
-        while (!reader.EndOfStream)
-        {
-            // Uncomment to skip sliders
-            if (!enableSliders)
-            {
-                while (true)
-                {
-                    line = reader.ReadLine();
-                    if (line != null)
-                    {
-                        if (!line.Contains("|"))
-                            break;
-                    }
-                    else
-                        break;
-                }
-            }
-
-            line = reader.ReadLine();
-            if (line == null)
-                break;
-
-            lineParams = line.Split(','); // Line parameters (X&Y axis, time position)
-
-            // Sorting configuration
-            Circle circle = circlePool.Get();
-            GameObject circleObject = circle.gameObject;
-            circle.transform.position = new Vector2(SPAWN, SPAWN);
-
-            circle.GetFore().sortingOrder = ForeOrder;
-            circle.GetBack().sortingOrder = BackOrder;
-            circle.GetAppr().sortingOrder = ApproachOrder;
-            circleObject.transform.localPosition += new Vector3((float)circleObject.transform.localPosition.x, (float)circleObject.transform.localPosition.y, (float)Z_Index);
-            circleObject.transform.SetAsFirstSibling();
-            ForeOrder--; BackOrder--; ApproachOrder--; Z_Index += 0.01f;
-
-            int FlipY = 384 - int.Parse(lineParams[1]); // Flip Y axis
-
-            int AdjustedX = Mathf.RoundToInt(Screen.height * 1.333333f); // Aspect Ratio
-
-            // Padding
-            float slices = 8f;
-            float paddingX = AdjustedX / slices;
-            float paddingY = Screen.height / slices;
-
-            // Resolution set
-            float newRangeX = ((AdjustedX - paddingX) - paddingX);
-            float newValueX = ((int.Parse(lineParams[0]) * newRangeX) / 512f) + paddingX + ((Screen.width - AdjustedX) / 2f);
-            float newRangeY = Screen.height;
-            float newValueY = ((FlipY * newRangeY) / 512f) + paddingY;
-
-            Vector3 mainPos = Camera.main.ScreenToWorldPoint(new Vector3(newValueX, newValueY, 0)); // Convert from screen position to world position
-
-            circle.Set(mainPos.x, mainPos.y, circleObject.transform.position.z, int.Parse(lineParams[2]) - apprRate);
-
-            circleList.Add(circle);
-        }
-        return circleList.Count;
     }
 
     #endregion
@@ -839,21 +803,6 @@ public partial class CombatManager : MonoBehaviour
     public void BoulderProc(float damage)
     {
 
-    }
-
-    public void OnNoteHit()
-    {
-        sfxSource.PlayOneShot(hitSound);
-        noteCount++;
-
-        PlayerBasicAttack();
-    }
-
-    public void OnNoteMiss()
-    {
-        if (playSFXOnMiss)
-            sfxSource.PlayOneShot(missSound);
-        noteCount++;
     }
 
     #region Afflictions
@@ -1079,6 +1028,18 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
+    private int GetTargetAfflictionStacks(AfflictionType type, Target target)
+    {
+        if (TargetHasAffliction(type, target))
+        {
+            return GetTargetAfflictionMap(target)[type].GetStacks();
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
     private CombatentHPBar GetCombatentHPBar(Target target)
     {
         switch (target)
@@ -1172,6 +1133,9 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float delayAfterBandagesEffect = 1;
     [SerializeField] private float delayBeforeEnemyAttack = 1;
     [SerializeField] private float delayAfterEnemyTurn = 1;
+    // These should maybe go in Spells
+    [SerializeField] private float delayBetweenSpellBatches = .5f;
+    [SerializeField] private float delayBetweenSpellNotes = .25f;
 
     // Basic Attack
     private void PlayerBasicAttack()
@@ -1482,14 +1446,4 @@ public partial class CombatManager : MonoBehaviour
     }
 
     #endregion
-
-    public double GetTimer()
-    {
-        return timer;
-    }
-
-    public int GetApprRate()
-    {
-        return apprRate;
-    }
 }

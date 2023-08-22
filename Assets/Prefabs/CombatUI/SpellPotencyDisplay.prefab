@@ -153,8 +153,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0ea292ceed1dfb489bd643c81aa2f31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minMaxPotency: {x: 1, y: 100}
-  minMaxScale: {x: 0.5, y: 2}
+  minMaxScale: {x: 0.25, y: 3.5}
   toScale: {fileID: 7930833743587960993}
   animateScaleSpeed: 5
   animateAlphaSpeed: 4

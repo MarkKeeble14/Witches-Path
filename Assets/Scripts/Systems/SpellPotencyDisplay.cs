@@ -6,7 +6,6 @@ using UnityEngine.EventSystems;
 public class SpellPotencyDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("Settings")]
-    [SerializeField] private Vector2 minMaxPotency;
     [SerializeField] private Vector2 minMaxScale;
     [SerializeField] private Transform toScale;
 
@@ -24,6 +23,7 @@ public class SpellPotencyDisplay : MonoBehaviour, IPointerEnterHandler, IPointer
     private GameObject spawnedToolTip;
 
     private bool canShowToolTips;
+    private float maxPotency;
 
     public void SetSpell(ActiveSpell spell)
     {
@@ -47,18 +47,18 @@ public class SpellPotencyDisplay : MonoBehaviour, IPointerEnterHandler, IPointer
         currentPotency = v;
     }
 
+    public void SetMaxPotency(float v)
+    {
+        maxPotency = v;
+    }
+
+
     private void Update()
     {
-        goalScale = MathHelper.Normalize(currentPotency, minMaxPotency.x, minMaxPotency.y, minMaxScale.x, minMaxScale.y);
+        goalScale = MathHelper.Normalize(currentPotency, 0, maxPotency, minMaxScale.x, minMaxScale.y);
         toScale.localScale = Vector3.Lerp(toScale.localScale, goalScale * Vector3.one, Time.deltaTime * animateScaleSpeed);
         cv.alpha = Mathf.Lerp(cv.alpha, 1, Time.deltaTime * animateAlphaSpeed);
     }
-
-    public Vector2 GetMinMaxPotency()
-    {
-        return minMaxPotency;
-    }
-
     private void SpawnToolTip()
     {
         if (canShowToolTips)
