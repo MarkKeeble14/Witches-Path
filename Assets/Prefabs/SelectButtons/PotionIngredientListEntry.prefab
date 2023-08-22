@@ -313,6 +313,16 @@ MonoBehaviour:
   quantityText: {fileID: 7813717229870302775}
   icon: {fileID: 5758162007269368987}
   cv: {fileID: 4943620174359730282}
+  potionIngredientCategorySpriteMap:
+    dictionary:
+    - key: 0
+      value: {fileID: 21300000, guid: f66d2574dba4a6445a494796543f27e8, type: 3}
+    - key: 1
+      value: {fileID: 21300000, guid: d29ce8c1d52ef934c8d34ca8ba7c3ca8, type: 3}
+    - key: 2
+      value: {fileID: 21300000, guid: 48ce93021fa8ceb4fb178fadad24710d, type: 3}
+    - key: 3
+      value: {fileID: 21300000, guid: abd97406dfc97ea4599bc91608927e0c, type: 3}
 --- !u!114 &3950168351011666793
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -576,14 +586,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 10ce2f84e407e72439b33812ac4d3944, type: 3}
+  m_Sprite: {fileID: 21300000, guid: f66d2574dba4a6445a494796543f27e8, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -605,8 +615,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_EffectColor: {r: 0, g: 0, b: 0, a: 0.5}
-  m_EffectDistance: {x: 5, y: -5}
+  m_EffectColor: {r: 0, g: 0, b: 0, a: 0.5019608}
+  m_EffectDistance: {x: 2.5, y: 2.5}
   m_UseGraphicAlpha: 1
 --- !u!1 &6379942610170276963
 GameObject:

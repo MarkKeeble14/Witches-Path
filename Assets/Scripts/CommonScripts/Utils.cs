@@ -292,4 +292,17 @@ public class Utils
     {
         return rt.offsetMin.y;
     }
+
+    public static Color ParseHexToColor(string hex)
+    {
+        Color col;
+        if (ColorUtility.TryParseHtmlString(hex, out col))
+        {
+            return col;
+        }
+        else
+        {
+            throw new Exception();
+        }
+    }
 }

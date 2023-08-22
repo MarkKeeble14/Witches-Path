@@ -95,6 +95,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Test")]
     [SerializeField] private ContentType currentlyTesting;
+    [SerializeField] private int numRandomIngredientsOnStart;
 
     [Header("References")]
     [SerializeField] private TextMeshProUGUI hpText;
@@ -124,6 +125,11 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         CallOnGameStart();
+
+        for (int i = 0; i < numRandomIngredientsOnStart; i++)
+        {
+            AddRandomPotionIngredient();
+        }
     }
 
     public void CallOnGameStart()
@@ -1491,6 +1497,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private BrewingPotionDisplay brewingPotionDisplay;
     private List<PotionIngredientListEntry> spawnedBrewPotionIngredientListEntries = new List<PotionIngredientListEntry>();
 
+    private Dictionary<Potion, PotionDisplay> spawnedPotionDisplays = new Dictionary<Potion, PotionDisplay>();
     private bool brewPotionScreenOpen;
     public void RestAtCampfire()
     {
@@ -1544,7 +1551,7 @@ public class GameManager : MonoBehaviour
             case PotionIngredientType.TreeSap:
                 return new BreakableBottle();
             case PotionIngredientType.VenomousSack:
-                return new BreakableBottle();
+                return new VenomousSack();
             case PotionIngredientType.RainCloud:
                 return new RainCloud();
             default:
@@ -1682,11 +1689,19 @@ public class GameManager : MonoBehaviour
         // Spawn UI
         PotionDisplay spawned = Instantiate(potionDisplayPrefab, potionDisplayList);
         spawned.Set(p);
+        p.SetPotionIcon(spawned);
+
+        spawnedPotionDisplays.Add(p, spawned);
     }
+
 
     public void RemovePotion(Potion p)
     {
         availablePotions.Remove(p);
+
+        PotionDisplay d = spawnedPotionDisplays[p];
+        spawnedPotionDisplays.Remove(p);
+        Destroy(d.gameObject);
     }
 
     public void UsePotion(Potion p)
@@ -2285,7 +2300,15 @@ public class GameManager : MonoBehaviour
         // No Artifacts Remaining
         if (options.Count == 0)
         {
-            return ArtifactLabel.Crown;
+            switch (r)
+            {
+                case Rarity.Common:
+                    return ArtifactLabel.Crown;
+                case Rarity.Rare:
+                    return GetRandomArtifactOfRarity(Rarity.Uncommon);
+                case Rarity.Uncommon:
+                    return GetRandomArtifactOfRarity(Rarity.Common);
+            }
         }
 
 
@@ -2334,9 +2357,18 @@ public class GameManager : MonoBehaviour
         }
 
         // No Books Remaining
+        // No Artifacts Remaining
         if (options.Count == 0)
         {
-            return BookLabel.WitchesTravelGuide;
+            switch (r)
+            {
+                case Rarity.Common:
+                    return BookLabel.WitchesTravelGuide;
+                case Rarity.Rare:
+                    return GetRandomBookOfRarity(Rarity.Uncommon);
+                case Rarity.Uncommon:
+                    return GetRandomBookOfRarity(Rarity.Common);
+            }
         }
 
         return RandomHelper.GetRandomFromList(options);

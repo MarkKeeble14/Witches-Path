@@ -86,6 +86,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private float offset;
 
     [SerializeField] private float confirmPotionUseToolTipWidth = 250;
+    [SerializeField] private float confirmPotionUseToolTipHeight = 100;
 
     [SerializeField] SerializableDictionary<TextDecorationLabel, Color> textDecorationColorMap = new SerializableDictionary<TextDecorationLabel, Color>();
 
@@ -97,6 +98,13 @@ public class UIManager : MonoBehaviour
     [SerializeField] private SerializableDictionary<UISection, UISectionInformation> UISectionMap = new SerializableDictionary<UISection, UISectionInformation>();
 
     [SerializeField] private SerializableDictionary<DamageType, Color> damageTypeColorMap = new SerializableDictionary<DamageType, Color>();
+
+    [SerializeField] private SerializableDictionary<PotionIngredientCategory, Sprite> potionIngredientCategorySpriteMap = new SerializableDictionary<PotionIngredientCategory, Sprite>();
+
+    public Sprite GetPotionIngredientCategorySprite(PotionIngredientCategory category)
+    {
+        return potionIngredientCategorySpriteMap[category];
+    }
 
     public Color GetDamageTypeColor(DamageType type)
     {
@@ -285,7 +293,7 @@ public class UIManager : MonoBehaviour
         // Spawn the ToolTipList object that will house all of our other tooltips
         ToolTipList list = SpawnToolTipList(spawningOn, 1, 1, true, confirmPotionUseToolTipWidth);
         Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
-        GameObject spawned = SpawnToolTip(confirmPotionToolTipPrefab.gameObject, vLayout);
+        GameObject spawned = SpawnToolTip(confirmPotionToolTipPrefab.gameObject, vLayout, true, confirmPotionUseToolTipHeight);
         spawned.GetComponent<ConfirmPotionToolTip>().Set(potion, spawningOn, list.gameObject);
         return list.gameObject;
     }
@@ -536,11 +544,18 @@ public class UIManager : MonoBehaviour
         return spawned.gameObject;
     }
 
-    private GameObject SpawnToolTip(GameObject obj, Transform transform)
+    private GameObject SpawnToolTip(GameObject obj, Transform transform, bool overrideHeight = false, float overridenHeight = 0)
     {
         GameObject spawned = Instantiate(obj, transform);
         RectTransform spawnedRect = spawned.GetComponent<RectTransform>();
-        spawnedRect.sizeDelta = new Vector2(spawnedRect.sizeDelta.x, toolTipHeight);
+        if (overrideHeight)
+        {
+            spawnedRect.sizeDelta = new Vector2(spawnedRect.sizeDelta.x, overridenHeight);
+        }
+        else
+        {
+            spawnedRect.sizeDelta = new Vector2(spawnedRect.sizeDelta.x, toolTipHeight);
+        }
 
         return spawned.gameObject;
     }

@@ -118,7 +118,7 @@ public class RewardManager : MonoBehaviour
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         GameObject spawnedToolTip = null;
         PotionIngredient ingredient = GameManager._Instance.GetPotionIngredientOfType(label);
-        spawned.Set(ingredient.Name, rewardTypeSpriteDict[RewardType.PotionIngredient],
+        spawned.Set(ingredient.Name, UIManager._Instance.GetPotionIngredientCategorySprite(ingredient.Category),
             delegate
             {
                 GameManager._Instance.AddPotionIngredient(label);

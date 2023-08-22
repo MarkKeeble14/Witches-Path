@@ -5,7 +5,8 @@ using UnityEngine.EventSystems;
 
 public class PotionDisplay : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
-    [SerializeField] private Image icon;
+    [SerializeField] private Image potionContainer;
+    [SerializeField] private Image potionContents;
 
     private GameObject useToolTip;
     private GameObject infoToolTip;
@@ -50,5 +51,20 @@ public class PotionDisplay : MonoBehaviour, IPointerClickHandler, IPointerEnterH
     public void OnPointerExit(PointerEventData eventData)
     {
         Destroy(infoToolTip);
+    }
+
+    public void SetColor(Color potionColor)
+    {
+        potionContents.color = potionColor;
+    }
+
+    public void SetSprite(Sprite potionSprite)
+    {
+        potionContainer.sprite = potionSprite;
+    }
+
+    public void SetFillAmount(float v)
+    {
+        potionContents.fillAmount = v;
     }
 }

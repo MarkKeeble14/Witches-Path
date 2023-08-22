@@ -301,7 +301,7 @@ public class Protection : Affliction
 public class Regeneration : Affliction
 {
     protected override string specificToolTipText => "At the End of your Turn, Heal " + GetStacks() + " HP. Regeneration is then decreased by 1";
-    protected override string genericToolTipText => "At the End of your Turn, Heal HP equal to the Number of Regeneration Stacks. Regen is then decreased by 1";
+    protected override string genericToolTipText => "At the End of your Turn, Heal HP equal to the Number of Regeneration Stacks. Regeneration is then decreased by 1";
 
     public override AfflictionType Type => AfflictionType.Regeneration;
 

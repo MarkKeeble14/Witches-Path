@@ -43,9 +43,7 @@ public class PotionIngredientListEntry : MonoBehaviour, IPointerEnterHandler, IP
         nameText.text = ingredient.Name;
         this.quantity = quantity;
         quantityText.text = quantity.ToString();
-
-        // Set icon (TODO)
-        icon.sprite = null;
+        icon.sprite = UIManager._Instance.GetPotionIngredientCategorySprite(ingredient.Category);
 
         cv.interactable = interactable;
     }

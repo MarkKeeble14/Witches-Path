@@ -28,6 +28,13 @@ public class ConfirmPotionToolTip : MonoBehaviour, IPointerEnterHandler, IPointe
         Destroy(importantParent);
     }
 
+    public void Discard()
+    {
+        GameManager._Instance.RemovePotion(spawnedFor);
+        DestroyToolTip();
+        Destroy(importantParent);
+    }
+
     private GameObject spawnedToolTip;
     private void SpawnToolTip()
     {

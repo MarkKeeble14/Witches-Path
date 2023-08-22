@@ -158,7 +158,6 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private SpellQueueDisplay spellQueueDisplayPrefab;
     [SerializeField] private Transform spellQueueDisplayList;
     private List<InCastQueueActiveSpell> spellQueue = new List<InCastQueueActiveSpell>();
-    [SerializeField] private float delayBetweenSpellCasts = 1;
     [SerializeField] private AudioSource spellSFXSource;
 
     public void SetPlayerTurnEnded(bool b)
@@ -1167,6 +1166,7 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float combatSpriteAlphaChangeRate = 5;
 
     [Header("Delays")]
+    [SerializeField] private float delayBetweenSpellCasts = 1;
     [SerializeField] private float delayAfterPlayerDeath = 2;
     [SerializeField] private float delayAfterEnemyDeath = 2;
     [SerializeField] private float delayAfterBandagesEffect = 1;

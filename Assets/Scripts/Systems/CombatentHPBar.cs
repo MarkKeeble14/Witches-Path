@@ -39,30 +39,6 @@ public class CombatentHPBar : MonoBehaviour
         ShowAfflictionStacks();
     }
 
-    private void ShowAfflictionStacks()
-    {
-        int poisonThreshold = currentHealth - damageFromPoison;
-        int burnThreshold = currentHealth - damageFromPoison - damageFromBurn;
-        int blightThreshold = currentHealth - damageFromPoison - damageFromBurn - damageFromBlight;
-        for (int i = currentHealth; i > poisonThreshold && i > 0; i--)
-        {
-            CombatentHPBarSegment segment = hPBarSegments[i - 1];
-            segment.SetColor(Color.green);
-        }
-
-        for (int i = poisonThreshold; i > burnThreshold && i > 0; i--)
-        {
-            CombatentHPBarSegment segment = hPBarSegments[i - 1];
-            segment.SetColor(Color.magenta);
-        }
-
-        for (int i = blightThreshold; i > blightThreshold && i > 0; i--)
-        {
-            CombatentHPBarSegment segment = hPBarSegments[i - 1];
-            segment.SetColor(Color.cyan);
-        }
-    }
-
     public void Set(int currentHealth, int maxHealth)
     {
         hPBarSegments = new CombatentHPBarSegment[maxHealth];
@@ -85,6 +61,7 @@ public class CombatentHPBar : MonoBehaviour
         this.maxHealth = maxHealth;
         this.currentHealth = currentHealth;
         hpText.text = currentHealth + " / " + maxHealth;
+        ShowAfflictionStacks();
     }
 
     public void SetCurrentHP(int newCurrentHealth)
@@ -104,6 +81,7 @@ public class CombatentHPBar : MonoBehaviour
         }
         currentHealth = newCurrentHealth;
         hpText.text = currentHealth + " / " + maxHealth;
+        ShowAfflictionStacks();
     }
 
     public void SetWard(int wardAmount)
@@ -126,6 +104,7 @@ public class CombatentHPBar : MonoBehaviour
         }
         currentWard = wardAmount;
         wardText.text = currentWard.ToString();
+        ShowAfflictionStacks();
     }
 
     public void Clear()
@@ -134,10 +113,39 @@ public class CombatentHPBar : MonoBehaviour
         {
             Destroy(segment.gameObject);
         }
+        damageFromBlight = 0;
+        damageFromBurn = 0;
+        damageFromPoison = 0;
     }
 
     public void SetText(string text)
     {
         this.hpText.text = text;
+    }
+
+    private void ShowAfflictionStacks()
+    {
+        int poisonThreshold = currentHealth - damageFromPoison;
+        int burnThreshold = currentHealth - damageFromPoison - damageFromBurn;
+        int blightThreshold = currentHealth - damageFromPoison - damageFromBurn - damageFromBlight;
+        for (int i = currentHealth; i > poisonThreshold && i > 0; i--)
+        {
+            CombatentHPBarSegment segment = hPBarSegments[i - 1];
+            // Green
+            segment.SetColor(Utils.ParseHexToColor("#90EE90"));
+        }
+
+        for (int i = poisonThreshold; i > burnThreshold && i > 0; i--)
+        {
+            CombatentHPBarSegment segment = hPBarSegments[i - 1];
+            // Orange
+            segment.SetColor(Utils.ParseHexToColor("#FFA500"));
+        }
+
+        for (int i = burnThreshold; i > blightThreshold && i > 0; i--)
+        {
+            CombatentHPBarSegment segment = hPBarSegments[i - 1];
+            segment.SetColor(Color.yellow);
+        }
     }
 }

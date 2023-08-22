@@ -1,14 +1,17 @@
 ﻿using UnityEngine;
 using System;
+using UnityEngine.UI;
 
 public class IngredientShopOffer : ShopOffer
 {
-    private PotionIngredient potionIngredient;
+    private PotionIngredient ingredient;
+    [SerializeField] private Image icon;
 
     public void Set(PotionIngredientType type, int cost)
     {
-        potionIngredient = GameManager._Instance.GetPotionIngredientOfType(type);
-        itemText.text = potionIngredient.Name;
+        ingredient = GameManager._Instance.GetPotionIngredientOfType(type);
+        itemText.text = ingredient.Name;
+        icon.sprite = UIManager._Instance.GetPotionIngredientCategorySprite(ingredient.Category);
         this.cost = cost;
 
         // Tool Tips
@@ -18,7 +21,7 @@ public class IngredientShopOffer : ShopOffer
 
     protected override void Purchase()
     {
-        GameManager._Instance.AddPotionIngredient(potionIngredient.Type);
+        GameManager._Instance.AddPotionIngredient(ingredient.Type);
         DestroyToolTip();
     }
 
@@ -27,7 +30,7 @@ public class IngredientShopOffer : ShopOffer
 
     public void SpawnToolTip()
     {
-        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(potionIngredient, transform);
+        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(ingredient, transform);
     }
 
     public void DestroyToolTip()

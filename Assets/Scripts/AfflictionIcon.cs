@@ -69,7 +69,6 @@ public class AfflictionIcon : MonoBehaviour
 
     public void SpawnToolTip()
     {
-        Debug.Log("Spawn ToolTip");
         spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(setTo, transform);
     }
 

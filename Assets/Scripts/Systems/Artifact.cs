@@ -846,7 +846,7 @@ public class CaveMural : Artifact
 
     public override string GetAdditionalText()
     {
-        return tracker + " / " + procAfter;
+        return tracker.ToString();
     }
 }
 
@@ -1062,7 +1062,7 @@ public class Telescope : Artifact
 
     public override string GetAdditionalText()
     {
-        return tracker + " / " + procAfter;
+        return tracker.ToString();
     }
 }
 
@@ -1108,7 +1108,7 @@ public class CheapStopwatch : Artifact
 
     public override string GetAdditionalText()
     {
-        return tracker + " / " + procAfter;
+        return tracker.ToString();
     }
 }
 
@@ -1160,7 +1160,7 @@ public class Boulder : Artifact
 
     public override string GetAdditionalText()
     {
-        return tracker + " / " + procAfter;
+        return tracker.ToString();
     }
 }
 
