@@ -182,10 +182,10 @@ MonoBehaviour:
         value: {fileID: 21300000, guid: d54b620160a40034496a6005b052ecc2, type: 3}
       - key: 6
         value: {fileID: 21300000, guid: 313f1b24ff320f34ba3fb34f0a654345, type: 3}
-    numLinesPerConnector: 0
-    connectorOffsetFromNode: 0
+    numLinesPerConnector: 10
+    connectorOffsetFromNode: 0.25
     mapNodePrefab: {fileID: 5932683331434114181, guid: 07ed74b0a56adf64583b8214596c03bb, type: 3}
     mapLayout: {fileID: 2457742011578673596, guid: 8b9be5afbcf2502489c8b33a7cabaa85, type: 3}
     spawnNodesOn: {fileID: 0}
-    spawnConnectorsOn: {fileID: 0}
+  buildConnectorDelay: 0.05
   nextStage: 

@@ -82,7 +82,6 @@ public class Map
 
     [Header("References")]
     [SerializeField] private Transform spawnNodesOn;
-    [SerializeField] private Transform spawnConnectorsOn;
 
     public void Generate()
     {
@@ -159,7 +158,7 @@ public class Map
 
             foreach (MapNodeUI node in currentSectionNodes)
             {
-                node.SetConnectorColors(MapNodeState.UNACCESSABLE);
+                node.SetAllConnectorsState(MapNodeConnectorState.UNACCESSABLE, false);
             }
         }
     }
@@ -207,26 +206,12 @@ public class Map
         }
     }
 
-    public void SetConnectorColors(int sectionIndex, MapNodeState state)
-    {
-        foreach (MapNodeUI node in spawnedGridNodes[sectionIndex])
-        {
-            node.SetConnectorColors(state);
-        }
-    }
-
     public void SetNextAccessable(int sectionIndex, int rowIndex, List<MapNodeUI> possibleNodes)
     {
         // Allow the specified row of map nodes to be interactable
         MapNodeUI[,] mapNodes = spawnedGridNodes[sectionIndex];
         foreach (MapNodeUI node in mapNodes)
         {
-            node.SetConnectorColors(MapNodeState.UNACCESSABLE);
-            if (node.GetMapNodeState() == MapNodeState.COMPLETED && node.Coords.x == rowIndex - 1)
-            {
-                node.SetConnectorColors(MapNodeState.ACCESSABLE);
-            }
-
             if (node.Coords.x == rowIndex && possibleNodes.Contains(node))
             {
                 node.SetMapNodeState(MapNodeState.ACCESSABLE);

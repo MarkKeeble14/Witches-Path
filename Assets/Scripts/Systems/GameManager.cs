@@ -105,6 +105,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI damageText;
     [SerializeField] private TextMeshProUGUI defenseText;
 
+    [Header("Delays")]
+    [SerializeField] private float delayOnReachNode = 0.5f;
+
     // Callbacks
     public Action OnEnterNewRoom;
     public Action OnPlayerRecieveDamage;
@@ -158,6 +161,8 @@ public class GameManager : MonoBehaviour
         SetNewPotion();
 
         EquipCharacterLoadout(playerCharacter);
+
+        CanSetCurrentGameOccurance = true;
     }
 
     private void SetEquipmentToolTippables(List<Equipment> equipment)
@@ -1203,6 +1208,7 @@ public class GameManager : MonoBehaviour
             // Reset current occurance
             currentNode.SetMapNodeState(MapNodeState.COMPLETED);
             currentOccurance = null;
+            CanSetCurrentGameOccurance = true;
 
             if (!shouldBreak)
             {
@@ -1250,10 +1256,33 @@ public class GameManager : MonoBehaviour
         currentOccurance.SetResolve(true);
     }
 
-    public void SetCurrentGameOccurance(MapNodeUI setNodeTo)
+    public void ToggleMap()
     {
+        MapManager._Instance.ToggleVisibility();
+    }
+
+    public bool CanSetCurrentGameOccurance { get; private set; }
+
+    public IEnumerator SetCurrentGameOccurance(MapNodeUI setNodeTo)
+    {
+        CanSetCurrentGameOccurance = false;
+        if (currentNode != null)
+        {
+            // Set the current Connection to be Traversed
+            NodeConnection connection = currentNode.SetConnectionState(currentNode, setNodeTo, MapNodeConnectorState.TRAVERSED);
+            // Set the previous Connections to be Unaccessable
+            currentNode.SetAllConnectorsState(MapNodeConnectorState.UNACCESSABLE, true);
+
+            float delayBetweenSegments = MapManager._Instance.GetBuildConnectorDelay();
+            yield return StartCoroutine(currentNode.SetConnectionColors(connection, delayBetweenSegments));
+            yield return new WaitForSeconds(delayOnReachNode);
+        }
+
         currentNode = setNodeTo;
         currentOccurance = currentNode.GetRepresentedGameOccurance();
+
+        // Set the new Connections to be Accessable
+        setNodeTo.SetAllConnectorsState(MapNodeConnectorState.ACCESSABLE, false);
     }
 
     public GameOccurance GetCurrentGameOccurance()

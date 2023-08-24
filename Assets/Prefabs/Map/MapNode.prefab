@@ -105,6 +105,14 @@ MonoBehaviour:
       value: {r: 0.5019608, g: 0.3764706, b: 1, a: 1}
     - key: 4
       value: {r: 1, g: 0.76862746, b: 1, a: 0.76862746}
+  connectorStateColors:
+    dictionary:
+    - key: 0
+      value: {r: 0.76862746, g: 0.76862746, b: 0.76862746, a: 0.5019608}
+    - key: 1
+      value: {r: 1, g: 0.76862746, b: 1, a: 1}
+    - key: 2
+      value: {r: 0.76862746, g: 0, b: 1, a: 1}
   canvasGroup: {fileID: 2583760358671153052}
   nodeTypeText: {fileID: 6298872908732782939}
   changeColorOf: {fileID: 6077554487136461261}

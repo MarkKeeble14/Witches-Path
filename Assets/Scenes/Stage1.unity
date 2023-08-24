@@ -342,20 +342,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
-      propertyPath: map.numLinesPerConnector
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.minMaxVerticalOffset.x
       value: -50
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.minMaxVerticalOffset.y
       value: 50
-      objectReference: {fileID: 0}
-    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
-      propertyPath: map.connectorOffsetFromNode
-      value: 0.25
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.minMaxHorizontalOffset.x
@@ -452,30 +444,6 @@ PrefabInstance:
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.forcedNodeIndices.dictionary.Array.data[4].value
       value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
-      propertyPath: map.mapSections.Array.data[0].ChanceToConnectPaths.x
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
-      propertyPath: map.mapSections.Array.data[0].ChanceToConnectPaths.y
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
-      propertyPath: map.mapSections.Array.data[2].ChanceToConnectPaths.x
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
-      propertyPath: map.mapSections.Array.data[2].ChanceToConnectPaths.y
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
-      propertyPath: map.mapSections.Array.data[4].ChanceToConnectPaths.x
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
-      propertyPath: map.mapSections.Array.data[4].ChanceToConnectPaths.y
-      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSectionNodeSizeDict.dictionary.Array.data[1].key

@@ -4,6 +4,22 @@ using TMPro;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using UnityEngine.UI.Extensions;
+using System.Collections;
+
+public class NodeConnection
+{
+    public MapNodeUI From;
+    public MapNodeUI To;
+    public UILineRenderer LineRenderer;
+    public MapNodeConnectorState State;
+
+    public NodeConnection(MapNodeUI from, MapNodeUI to, UILineRenderer lineRenderer)
+    {
+        From = from;
+        To = to;
+        LineRenderer = lineRenderer;
+    }
+}
 
 public enum MapNodeState
 {
@@ -15,6 +31,13 @@ public enum MapNodeState
     LOCKOUT
 }
 
+public enum MapNodeConnectorState
+{
+    UNACCESSABLE,
+    ACCESSABLE,
+    TRAVERSED,
+}
+
 public class MapNodeUI : MonoBehaviour
 {
     [SerializeField] private GameOccurance representedGameOccurance;
@@ -23,6 +46,7 @@ public class MapNodeUI : MonoBehaviour
     private float alphaTarget = 0f;
     [SerializeField] private float changeAlphaRate = 5f;
     [SerializeField] private SerializableDictionary<MapNodeState, Color> nodeStateColors = new SerializableDictionary<MapNodeState, Color>();
+    [SerializeField] private SerializableDictionary<MapNodeConnectorState, Color> connectorStateColors = new SerializableDictionary<MapNodeConnectorState, Color>();
 
     [Header("References")]
     [SerializeField] private CanvasGroup canvasGroup;
@@ -38,7 +62,9 @@ public class MapNodeUI : MonoBehaviour
     public List<MapNodeUI> OutgoingNodes => outgoingNodes;
 
     [SerializeField] private UILineRenderer lineRendererPrefab;
-    private List<UILineRenderer> connections = new List<UILineRenderer>();
+
+    private List<NodeConnection> nodeConnections = new List<NodeConnection>();
+
     public Vector2 SpawnedOffset { get; private set; }
     public bool HasBeenSet { get; private set; }
 
@@ -63,7 +89,7 @@ public class MapNodeUI : MonoBehaviour
         }
         lineRenderer.Points = list.ToArray();
 
-        connections.Add(lineRenderer);
+        nodeConnections.Add(new NodeConnection(from, to, lineRenderer));
     }
 
     public MapNodeState GetMapNodeState()
@@ -92,8 +118,11 @@ public class MapNodeUI : MonoBehaviour
 
     public void CallOnPressed()
     {
-        SetMapNodeState(MapNodeState.ONGOING);
-        GameManager._Instance.SetCurrentGameOccurance(this);
+        if (GameManager._Instance.CanSetCurrentGameOccurance)
+        {
+            SetMapNodeState(MapNodeState.ONGOING);
+            StartCoroutine(GameManager._Instance.SetCurrentGameOccurance(this));
+        }
     }
 
     public void Set(GameOccurance setTo, Sprite sprite)
@@ -122,14 +151,6 @@ public class MapNodeUI : MonoBehaviour
         changeColorOf.color = nodeStateColors[currentState];
     }
 
-    public void SetConnectorColors(MapNodeState state)
-    {
-        foreach (UILineRenderer connector in connections)
-        {
-            connector.color = nodeStateColors[state];
-        }
-    }
-
     public void Lockout()
     {
         SetMapNodeState(MapNodeState.LOCKOUT);
@@ -153,5 +174,56 @@ public class MapNodeUI : MonoBehaviour
     public bool HasIncomingConnection(MapNodeUI from)
     {
         return incomingNodes.Contains(from);
+    }
+
+    public NodeConnection SetConnectionState(MapNodeUI incomingNode, MapNodeUI outgoingNode, MapNodeConnectorState state)
+    {
+        foreach (NodeConnection connection in nodeConnections)
+        {
+            if (connection.From == incomingNode && connection.To == outgoingNode)
+            {
+                connection.State = state;
+                SetConnectionColors();
+                return connection;
+            }
+        }
+        return null;
+    }
+
+    public void SetAllConnectorsState(MapNodeConnectorState state, bool ignoreTravelled)
+    {
+        foreach (NodeConnection connection in nodeConnections)
+        {
+            if (ignoreTravelled && connection.State == MapNodeConnectorState.TRAVERSED)
+            {
+                continue;
+            }
+            connection.State = state;
+            SetConnectionColors();
+        }
+    }
+
+    private void SetConnectionColors()
+    {
+        foreach (NodeConnection connection in nodeConnections)
+        {
+            connection.LineRenderer.color = connectorStateColors[connection.State];
+        }
+    }
+
+    public IEnumerator SetConnectionColors(NodeConnection connection, float delayBetweenSections)
+    {
+        Vector2[] points = connection.LineRenderer.Points;
+        Vector2[] nextPoints = new Vector2[2];
+        nextPoints[0] = points[0];
+
+        for (int i = 0; i < points.Length; i++)
+        {
+            nextPoints[1] = points[i];
+            connection.LineRenderer.Points = nextPoints;
+            connection.LineRenderer.SetAllDirty();
+
+            yield return new WaitForSeconds(delayBetweenSections);
+        }
     }
 }

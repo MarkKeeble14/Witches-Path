@@ -6,6 +6,7 @@ public class MapManager : MonoBehaviour
     public static MapManager _Instance { get; private set; }
 
     [SerializeField] private Map map;
+    [SerializeField] private float buildConnectorDelay;
     private CanvasGroup mapCV;
 
     [SerializeField] private string nextStage;
@@ -54,7 +55,6 @@ public class MapManager : MonoBehaviour
         {
             // Reached the end of the section, increment current section index and set row index back to 0
             Debug.Log("Row Passed; Section Passed");
-            map.SetConnectorColors(currentSectionIndex, MapNodeState.UNACCESSABLE);
             currentRowIndex = 0;
             map.SetFirstRowAccessable(++currentSectionIndex);
         }
@@ -93,5 +93,10 @@ public class MapManager : MonoBehaviour
     public void Clear()
     {
         map.Clear();
+    }
+
+    public float GetBuildConnectorDelay()
+    {
+        return buildConnectorDelay;
     }
 }
