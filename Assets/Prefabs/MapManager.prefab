@@ -45,38 +45,127 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   map:
+    mapSections:
+    - Content: 0
+      Size: {x: 6, y: 6}
+      ForcedNodeIndicies:
+        dictionary:
+        - key: 0
+          value: 0
+      NumPaths: 4
+      ChanceToConnectPaths: {x: 1, y: 2}
+      SizingInfo:
+        CellSize: 200
+        ContentSize: 75
+        MinMaxHorizontalOffset: {x: -50, y: 50}
+        MinMaxVerticalOffset: {x: -50, y: 50}
+    - Content: 1
+      Size: {x: 1, y: 2}
+      ForcedNodeIndicies:
+        dictionary: []
+      NumPaths: 0
+      ChanceToConnectPaths: {x: 0, y: 0}
+      SizingInfo:
+        CellSize: 400
+        ContentSize: 350
+        MinMaxHorizontalOffset: {x: 0, y: 0}
+        MinMaxVerticalOffset: {x: 0, y: 0}
+    - Content: 0
+      Size: {x: 7, y: 6}
+      ForcedNodeIndicies:
+        dictionary:
+        - key: 0
+          value: 0
+      NumPaths: 5
+      ChanceToConnectPaths: {x: 1, y: 2}
+      SizingInfo:
+        CellSize: 200
+        ContentSize: 75
+        MinMaxHorizontalOffset: {x: -50, y: 50}
+        MinMaxVerticalOffset: {x: -50, y: 50}
+    - Content: 1
+      Size: {x: 1, y: 2}
+      ForcedNodeIndicies:
+        dictionary: []
+      NumPaths: 0
+      ChanceToConnectPaths: {x: 0, y: 0}
+      SizingInfo:
+        CellSize: 400
+        ContentSize: 350
+        MinMaxHorizontalOffset: {x: 0, y: 0}
+        MinMaxVerticalOffset: {x: 0, y: 0}
+    - Content: 0
+      Size: {x: 8, y: 8}
+      ForcedNodeIndicies:
+        dictionary:
+        - key: 0
+          value: 0
+      NumPaths: 6
+      ChanceToConnectPaths: {x: 1, y: 3}
+      SizingInfo:
+        CellSize: 200
+        ContentSize: 75
+        MinMaxHorizontalOffset: {x: -50, y: 50}
+        MinMaxVerticalOffset: {x: -50, y: 50}
+    - Content: 2
+      Size: {x: 1, y: 1}
+      ForcedNodeIndicies:
+        dictionary: []
+      NumPaths: 0
+      ChanceToConnectPaths: {x: 0, y: 0}
+      SizingInfo:
+        CellSize: 600
+        ContentSize: 600
+        MinMaxHorizontalOffset: {x: 0, y: 0}
+        MinMaxVerticalOffset: {x: 0, y: 0}
+    randomNodeTypeOdds:
+      dictionary:
+      - key: 0
+        value:
+          percentageMap:
+          - key: 0
+            value: 40
+          - key: 5
+            value: 30
+          - key: 2
+            value: 10
+          - key: 3
+            value: 10
+          - key: 4
+            value: 10
+      - key: 1
+        value:
+          percentageMap:
+          - key: 6
+            value: 100
+      - key: 2
+        value:
+          percentageMap:
+          - key: 1
+            value: 100
     mapNodes:
       dictionary:
       - key: 0
-        value: []
+        value:
+        - {fileID: 11400000, guid: 4a8c072a50d2db141884587a09c9b779, type: 2}
+        - {fileID: 11400000, guid: 7bae952cbc8c7f74d8010f1f5cd1d515, type: 2}
       - key: 1
-        value: []
+        value:
+        - {fileID: 11400000, guid: 4443f57486e50f24d87d1fee2e2b2e34, type: 2}
       - key: 2
-        value: []
+        value:
+        - {fileID: 11400000, guid: c30c5abef1ff9ba4fbd2aa4434599934, type: 2}
       - key: 3
-        value: []
+        value:
+        - {fileID: 11400000, guid: 3dabd6f91e7de5944b6d936c6ab90aa4, type: 2}
       - key: 4
-        value: []
+        value:
+        - {fileID: 11400000, guid: b65ce5b92625d60479642ecbd5a823f1, type: 2}
+      - key: 6
+        value:
+        - {fileID: 11400000, guid: c5be366deb16c174b9b1fa3e4067be77, type: 2}
     optionEventMapNodes: []
-    forcedNodeIndices:
-      dictionary:
-      - key: 0
-        value: 0
-    randomNodeTypeLiklihood:
-      percentageMap:
-      - key: 0
-        value: 45
-      - key: 2
-        value: 5
-      - key: 3
-        value: 10
-      - key: 4
-        value: 5
-      - key: 5
-        value: 35
-    mapGridSize: {x: 15, y: 6}
     delayBetweenShowingCells: 0.025
-    chanceToPokeHole: {x: 2, y: 5}
     mapNodeIconDict:
       dictionary:
       - key: 0
@@ -91,5 +180,12 @@ MonoBehaviour:
         value: {fileID: 21300000, guid: 3b2ca0e4cb774da46bb67613d518dd26, type: 3}
       - key: 5
         value: {fileID: 21300000, guid: d54b620160a40034496a6005b052ecc2, type: 3}
+      - key: 6
+        value: {fileID: 21300000, guid: 313f1b24ff320f34ba3fb34f0a654345, type: 3}
+    numLinesPerConnector: 0
+    connectorOffsetFromNode: 0
     mapNodePrefab: {fileID: 5932683331434114181, guid: 07ed74b0a56adf64583b8214596c03bb, type: 3}
+    mapLayout: {fileID: 2457742011578673596, guid: 8b9be5afbcf2502489c8b33a7cabaa85, type: 3}
+    spawnNodesOn: {fileID: 0}
+    spawnConnectorsOn: {fileID: 0}
   nextStage: 

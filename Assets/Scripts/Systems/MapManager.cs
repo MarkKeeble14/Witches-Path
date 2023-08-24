@@ -17,7 +17,8 @@ public class MapManager : MonoBehaviour
         return nextStage;
     }
 
-    int currentRowIndex = 0;
+    private int currentSectionIndex = 0;
+    private int currentRowIndex = 0;
 
     private bool shown;
 
@@ -47,13 +48,21 @@ public class MapManager : MonoBehaviour
         mapCV.blocksRaycasts = true;
     }
 
-    public void NextRow()
+    public void UnlockNext(MapNodeUI fromNode)
     {
-        if (currentRowIndex > 0)
+        if (map.SetRowPassed(currentSectionIndex, currentRowIndex))
         {
-            map.SetRowPassed(currentRowIndex - 1);
+            // Reached the end of the section, increment current section index and set row index back to 0
+            Debug.Log("Row Passed; Section Passed");
+            map.SetConnectorColors(currentSectionIndex, MapNodeState.UNACCESSABLE);
+            currentRowIndex = 0;
+            map.SetFirstRowAccessable(++currentSectionIndex);
         }
-        map.SetRowAccessable(currentRowIndex++);
+        else
+        {
+            Debug.Log("Row Passed");
+            map.SetNextAccessable(currentSectionIndex, ++currentRowIndex, fromNode.OutgoingNodes);
+        }
     }
 
     private void Awake()
@@ -62,9 +71,7 @@ public class MapManager : MonoBehaviour
 
         // Get & Set Variables
         ScrollRect mapScrollRect = FindObjectOfType<MapScrollRect>();
-        GridLayoutGroup mapGridLayout = FindObjectOfType<MapGridLayoutGroup>();
         mapCV = FindObjectOfType<MapCanvasGroup>().GetComponent<CanvasGroup>();
-        map.Set(mapGridLayout, mapScrollRect);
 
         // Show the Map CV
         Show();
@@ -77,7 +84,7 @@ public class MapManager : MonoBehaviour
         mapScrollRect.verticalNormalizedPosition = 0;
 
         // Set the first row to be Accessable
-        NextRow();
+        map.SetFirstRowAccessable(0);
 
         // Start the Stage
         StartCoroutine(GameManager._Instance.StageLoop());

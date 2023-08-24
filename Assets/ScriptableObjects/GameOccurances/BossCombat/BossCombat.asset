@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e02c33385eb9aa54caf185fc2f315c60, type: 3}
+  m_Name: BossCombat
+  m_EditorClassIdentifier: 
+  mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
+  enemy: {fileID: 11400000, guid: 5a31a5c589cb9b746a9b61d0a9c95baa, type: 2}
+  minMaxCurrencyReward: {x: 100, y: 125}
+  chanceForOtherRewards:
+    dictionary:
+    - key: 0
+      value: {x: 1, y: 1}
+    - key: 1
+      value: {x: 1, y: 1}

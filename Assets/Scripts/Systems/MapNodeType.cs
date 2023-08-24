@@ -6,4 +6,5 @@
     Campfire,
     Tavern,
     Event,
+    MiniBoss
 }

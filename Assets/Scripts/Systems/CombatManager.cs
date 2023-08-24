@@ -560,6 +560,9 @@ public partial class CombatManager : MonoBehaviour
                             Circle spawned = spawnedCircles[0];
                             spawned.Cancel();
                         }
+
+                        Destroy(potencyDisplay.gameObject);
+
                         yield break;
                     }
                     yield return null;

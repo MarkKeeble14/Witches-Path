@@ -1207,8 +1207,8 @@ public class GameManager : MonoBehaviour
             if (!shouldBreak)
             {
                 // move to next room
+                MapManager._Instance.UnlockNext(currentNode);
                 MapManager._Instance.Show();
-                MapManager._Instance.NextRow();
             }
             else
             {

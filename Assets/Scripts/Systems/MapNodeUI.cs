@@ -2,6 +2,8 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using System.Collections.Generic;
+using UnityEngine.UI.Extensions;
 
 public enum MapNodeState
 {
@@ -16,7 +18,6 @@ public enum MapNodeState
 public class MapNodeUI : MonoBehaviour
 {
     [SerializeField] private GameOccurance representedGameOccurance;
-
     public Vector2Int Coords { get; set; }
 
     private float alphaTarget = 0f;
@@ -28,6 +29,42 @@ public class MapNodeUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI nodeTypeText;
     [SerializeField] private Image changeColorOf;
     private MapNodeState currentState;
+    [SerializeField] private RectTransform rect;
+    [SerializeField] private RectTransform icon;
+
+    private List<MapNodeUI> incomingNodes = new List<MapNodeUI>();
+    private List<MapNodeUI> outgoingNodes = new List<MapNodeUI>();
+
+    public List<MapNodeUI> OutgoingNodes => outgoingNodes;
+
+    [SerializeField] private UILineRenderer lineRendererPrefab;
+    private List<UILineRenderer> connections = new List<UILineRenderer>();
+    public Vector2 SpawnedOffset { get; private set; }
+    public bool HasBeenSet { get; private set; }
+
+    public void SpawnConnection(MapNodeUI from, MapNodeUI to, float xChange, float yChange, float offsetFromNode, int numLines)
+    {
+        AddIncoming(from);
+        AddOutgoing(to);
+
+        UILineRenderer lineRenderer = Instantiate(lineRendererPrefab, icon);
+
+        Vector2 fromPoint = Vector2.zero;
+        Vector2 toPoint = new Vector2(xChange, yChange);
+        Vector2 vec = toPoint - fromPoint;
+
+        fromPoint += vec * offsetFromNode;
+        toPoint -= vec * offsetFromNode;
+
+        List<Vector2> list = new List<Vector2>();
+        for (var i = 0; i < numLines; i++)
+        {
+            list.Add(Vector3.Lerp(fromPoint, toPoint, (float)i / (numLines - 1)));
+        }
+        lineRenderer.Points = list.ToArray();
+
+        connections.Add(lineRenderer);
+    }
 
     public MapNodeState GetMapNodeState()
     {
@@ -46,6 +83,13 @@ public class MapNodeUI : MonoBehaviour
         currentState = setTo;
     }
 
+    public void SetOffset(float contentSize, Vector2 minMaxHorizontalOffset, Vector2 minMaxVerticalOffset)
+    {
+        icon.sizeDelta = Vector2.one * contentSize;
+        SpawnedOffset = new Vector2(RandomHelper.RandomFloat(minMaxHorizontalOffset), RandomHelper.RandomFloat(minMaxVerticalOffset));
+        icon.anchoredPosition = SpawnedOffset;
+    }
+
     public void CallOnPressed()
     {
         SetMapNodeState(MapNodeState.ONGOING);
@@ -57,6 +101,7 @@ public class MapNodeUI : MonoBehaviour
         this.representedGameOccurance = setTo;
         nodeTypeText.text = setTo.Label;
         changeColorOf.sprite = sprite;
+        HasBeenSet = true;
     }
 
     public void SetShow(bool b)
@@ -77,9 +122,36 @@ public class MapNodeUI : MonoBehaviour
         changeColorOf.color = nodeStateColors[currentState];
     }
 
+    public void SetConnectorColors(MapNodeState state)
+    {
+        foreach (UILineRenderer connector in connections)
+        {
+            connector.color = nodeStateColors[state];
+        }
+    }
+
     public void Lockout()
     {
         SetMapNodeState(MapNodeState.LOCKOUT);
         alphaTarget = 0;
+    }
+    public void AddOutgoing(MapNodeUI node)
+    {
+        outgoingNodes.Add(node);
+    }
+
+    public void AddIncoming(MapNodeUI node)
+    {
+        incomingNodes.Add(node);
+    }
+
+    public bool HasOutgoingConnection(MapNodeUI to)
+    {
+        return outgoingNodes.Contains(to);
+    }
+
+    public bool HasIncomingConnection(MapNodeUI from)
+    {
+        return incomingNodes.Contains(from);
     }
 }

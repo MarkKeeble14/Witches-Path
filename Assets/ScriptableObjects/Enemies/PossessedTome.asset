@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   combatSprite: {fileID: 21300000, guid: a9350431373065247b0f167e7be9be20, type: 3}
   name: Possessed Tome
-  maxHP: 100
-  startingHP: 100
+  maxHP: 10
+  startingHP: 10
   basicAttackDamage: 3
