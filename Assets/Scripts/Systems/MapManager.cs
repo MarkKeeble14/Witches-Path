@@ -54,13 +54,13 @@ public class MapManager : MonoBehaviour
         if (map.SetRowPassed(currentSectionIndex, currentRowIndex))
         {
             // Reached the end of the section, increment current section index and set row index back to 0
-            Debug.Log("Row Passed; Section Passed");
+            // Debug.Log("Row Passed; Section Passed");
             currentRowIndex = 0;
             map.SetFirstRowAccessable(++currentSectionIndex);
         }
         else
         {
-            Debug.Log("Row Passed");
+            // Debug.Log("Row Passed");
             map.SetNextAccessable(currentSectionIndex, ++currentRowIndex, fromNode.OutgoingNodes);
         }
     }
@@ -77,6 +77,7 @@ public class MapManager : MonoBehaviour
         Show();
 
         // Generate the Map
+        map.SetSpawnOn(FindObjectOfType<MapContent>().transform);
         map.Generate();
         StartCoroutine(map.ShowGrid());
 

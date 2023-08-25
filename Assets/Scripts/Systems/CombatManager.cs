@@ -45,7 +45,8 @@ public enum DamageType
     Electricity,
     Fire,
     Heal,
-    Evil
+    Evil,
+    Ward
 }
 
 public enum DamageSource
@@ -100,6 +101,7 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private CanvasGroup enemyCombatSpriteCV;
     [SerializeField] private TurnDisplay turnDisplay;
     [SerializeField] private TextMeshProUGUI effectivenessMultiplierText;
+    [SerializeField] private RectTransform effectivenessMultiplierTextRect;
 
     [Header("Game")]
     [SerializeField] private PopupText popupTextPrefab;
@@ -132,6 +134,7 @@ public partial class CombatManager : MonoBehaviour
     public bool CanCastSpells { get; private set; }
     private bool hasCastQueue;
     private bool isCastingQueue;
+    public bool IsCastingQueue => isCastingQueue;
     [SerializeField] private string castButtonTextEndPlayerTurn = "Cast";
     [SerializeField] private string castButtonTextWhileCasting = "Casting";
     [SerializeField] private string castButtonTextPostCasting = "End Turn";
@@ -512,6 +515,9 @@ public partial class CombatManager : MonoBehaviour
 
         spellSFXSource.Play();
 
+        // Set effectiveness multiplier text to be at zero
+        effectivenessMultiplierTextRect.anchoredPosition = Vector2.zero;
+
         // Play Sequence
         yield return StartCoroutine(PlaySpell(queuedActiveSpell));
     }
@@ -544,7 +550,7 @@ public partial class CombatManager : MonoBehaviour
             {
                 Circle c = circlePool.Get();
                 spawnedCircles.Add(c);
-                c.Set();
+                c.Set(UIManager._Instance.GetDamageTypeColor(spell.MainDamageType));
 
                 t = 0;
                 while (t < delayBetweenSpellNotes)
@@ -627,13 +633,16 @@ public partial class CombatManager : MonoBehaviour
         }, true, 100);
     }
 
-    public void OnNoteHit()
+    public void OnNoteHit(RectTransform ofNoteHit)
     {
         // Play SFX
         if (playSFXOnHit)
         {
             sfxSource.PlayOneShot(hitSound);
         }
+
+        // Set effectiveness multiplier to follow where the last note was hit
+        effectivenessMultiplierTextRect.anchoredPosition = ofNoteHit.anchoredPosition;
 
         // Player Attack
         PlayerBasicAttack();
@@ -649,13 +658,16 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void OnNoteMiss()
+    public void OnNoteMiss(RectTransform ofNoteMissed)
     {
         // Play SFX
         if (playSFXOnMiss)
         {
             sfxSource.PlayOneShot(missSound);
         }
+
+        // Set effectiveness multiplier to follow where the last note was missed
+        effectivenessMultiplierTextRect.anchoredPosition = ofNoteMissed.anchoredPosition;
 
         // Enemy Attack?
         EnemyBasicAttack();
@@ -789,6 +801,9 @@ public partial class CombatManager : MonoBehaviour
 
         // Destroy Circles
         ClearCircleList();
+
+        // Set effectiveness multiplier text to be at zero
+        effectivenessMultiplierTextRect.anchoredPosition = Vector2.zero;
     }
 
     public Turn GetTurn()
@@ -797,27 +812,6 @@ public partial class CombatManager : MonoBehaviour
     }
 
     #endregion
-
-    public void HalfLitFireworkProc()
-    {
-
-    }
-
-    public void MagicRainProc(float damageAmount)
-    {
-
-    }
-
-    public void PhantasmalWhispersProc()
-    {
-
-    }
-
-
-    public void BoulderProc(float damage)
-    {
-
-    }
 
     #region Afflictions
 
@@ -1364,12 +1358,20 @@ public partial class CombatManager : MonoBehaviour
                     int wardUsed = GetWardUsed(characterWard, amount);
                     characterWard -= wardUsed;
                     amount += wardUsed;
-                }
-                // Set New Ward Amount
-                characterHPBar.SetWard(characterWard);
 
-                PopupText text = Instantiate(popupTextPrefab, characterCombatSprite.transform);
-                text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
+                    PopupText wardText = Instantiate(popupTextPrefab, characterCombatSprite.transform);
+                    wardText.Set(Utils.RoundTo(-wardUsed, 1).ToString(), UIManager._Instance.GetDamageTypeColor(DamageType.Ward));
+
+                    // Set New Ward Amount
+                    characterHPBar.SetWard(characterWard);
+                }
+
+
+                if (amount < 0)
+                {
+                    PopupText text = Instantiate(popupTextPrefab, characterCombatSprite.transform);
+                    text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
+                }
 
                 bool r = GameManager._Instance.AlterPlayerHP(amount, damageType, false);
                 characterHPBar.SetCurrentHP(GameManager._Instance.GetCurrentCharacterHP());
@@ -1400,12 +1402,19 @@ public partial class CombatManager : MonoBehaviour
             int wardUsed = GetWardUsed(enemyWard, amount);
             enemyWard -= wardUsed;
             amount += wardUsed;
-        }
-        // Set new Ward Amount
-        enemyHPBar.SetWard(enemyWard);
 
-        PopupText text = Instantiate(popupTextPrefab, enemyCombatSprite.transform);
-        text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
+            PopupText wardText = Instantiate(popupTextPrefab, characterCombatSprite.transform);
+            wardText.Set(Utils.RoundTo(-wardUsed, 1).ToString(), UIManager._Instance.GetDamageTypeColor(DamageType.Ward));
+
+            // Set new Ward Amount
+            enemyHPBar.SetWard(enemyWard);
+        }
+
+        if (amount < 0)
+        {
+            PopupText text = Instantiate(popupTextPrefab, enemyCombatSprite.transform);
+            text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
+        }
 
         if (currentEnemyHP + amount > maxEnemyHP)
         {

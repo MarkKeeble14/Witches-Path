@@ -410,6 +410,11 @@ public abstract class PotionBase : PotionIngredient
         return BalenceManager._Instance.GetValue(Type, specIdentifier, potency);
     }
 
+    protected override void SetKeywords()
+    {
+        generalKeywords.Add(ToolTipKeyword.PotionBase);
+    }
+
 }
 
 public abstract class PotionTargeter : PotionIngredient
@@ -418,6 +423,11 @@ public abstract class PotionTargeter : PotionIngredient
     public abstract Target Target { get; }
     public abstract Sprite PotionSprite { get; }
     public override PotionIngredientCategory Category => PotionIngredientCategory.Targeter;
+
+    protected override void SetKeywords()
+    {
+        generalKeywords.Add(ToolTipKeyword.PotionTargeter);
+    }
 }
 
 public abstract class PotionPotency : PotionIngredient
@@ -430,6 +440,11 @@ public abstract class PotionPotency : PotionIngredient
     protected override string toolTipText => "Potency = " + Potency;
 
     public override PotionIngredientCategory Category => PotionIngredientCategory.Potency;
+
+    protected override void SetKeywords()
+    {
+        generalKeywords.Add(ToolTipKeyword.PotionPotency);
+    }
 }
 
 public abstract class PotionAugmenter : PotionIngredient
@@ -458,6 +473,11 @@ public abstract class PotionAugmenter : PotionIngredient
     protected int GetPotionSpec(string identifier)
     {
         return BalenceManager._Instance.GetValue(Type, identifier);
+    }
+
+    protected override void SetKeywords()
+    {
+        generalKeywords.Add(ToolTipKeyword.PotionAugmenter);
     }
 }
 
@@ -522,10 +542,6 @@ public class HammerHandle : PotionBase
                 throw new UnhandledSwitchCaseException();
         }
     }
-
-    protected override void SetKeywords()
-    {
-    }
 }
 
 public class SelkieSpit : PotionBase
@@ -556,6 +572,7 @@ public class SelkieSpit : PotionBase
     protected override void SetKeywords()
     {
         generalKeywords.Add(ToolTipKeyword.Heal);
+        base.SetKeywords();
     }
 }
 
@@ -576,6 +593,7 @@ public class RawBeef : PotionBase
     protected override void SetKeywords()
     {
         afflictionKeywords.Add(AfflictionType.Vulnerable);
+        base.SetKeywords();
     }
 }
 
@@ -596,6 +614,7 @@ public class TreeSap : PotionBase
     protected override void SetKeywords()
     {
         afflictionKeywords.Add(AfflictionType.Blight);
+        base.SetKeywords();
     }
 }
 
@@ -615,6 +634,7 @@ public class MammalTooth : PotionBase
     protected override void SetKeywords()
     {
         afflictionKeywords.Add(AfflictionType.Power);
+        base.SetKeywords();
     }
 }
 
@@ -629,11 +649,12 @@ public class ScalySkin : PotionBase
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Thorns, GetPotionSpec("StackAmount", potionPotency.Potency), potionTargeting.Target);
     }
-    protected override string toolTipText => "";
+    protected override string toolTipText => "Apply Thorns";
 
     protected override void SetKeywords()
     {
         afflictionKeywords.Add(AfflictionType.Thorns);
+        base.SetKeywords();
     }
 }
 
@@ -653,6 +674,7 @@ public class ChaiTea : PotionBase
     protected override void SetKeywords()
     {
         afflictionKeywords.Add(AfflictionType.Burn);
+        base.SetKeywords();
     }
 }
 
@@ -672,6 +694,7 @@ public class VenomousSack : PotionBase
     protected override void SetKeywords()
     {
         afflictionKeywords.Add(AfflictionType.Poison);
+        base.SetKeywords();
     }
 }
 
@@ -691,6 +714,7 @@ public class RawPork : PotionBase
     protected override void SetKeywords()
     {
         afflictionKeywords.Add(AfflictionType.Weak);
+        base.SetKeywords();
     }
 }
 
@@ -710,6 +734,7 @@ public class Paprika : PotionBase
     protected override void SetKeywords()
     {
         afflictionKeywords.Add(AfflictionType.Embolden);
+        base.SetKeywords();
     }
 }
 
@@ -729,6 +754,7 @@ public class HolyWater : PotionBase
     protected override void SetKeywords()
     {
         afflictionKeywords.Add(AfflictionType.Regeneration);
+        base.SetKeywords();
     }
 }
 
@@ -748,6 +774,7 @@ public class ElectricalWire : PotionBase
     protected override void SetKeywords()
     {
         afflictionKeywords.Add(AfflictionType.Paralyze);
+        base.SetKeywords();
     }
 }
 
@@ -767,6 +794,7 @@ public class CeremonialLeaf : PotionBase
     protected override void SetKeywords()
     {
         afflictionKeywords.Add(AfflictionType.Echo);
+        base.SetKeywords();
     }
 }
 
@@ -786,6 +814,7 @@ public class CrabShell : PotionBase
     protected override void SetKeywords()
     {
         afflictionKeywords.Add(AfflictionType.Protection);
+        base.SetKeywords();
     }
 }
 
@@ -798,10 +827,6 @@ public class GlassBottle : PotionTargeter
     public override Target Target => Target.Character;
     protected override string toolTipText => "Target the Player";
     public override Sprite PotionSprite => Resources.Load<Sprite>("Potions/" + Type.ToString() + "Sprite");
-
-    protected override void SetKeywords()
-    {
-    }
 }
 
 public class BreakableBottle : PotionTargeter
@@ -812,10 +837,6 @@ public class BreakableBottle : PotionTargeter
     public override Target Target => Target.Enemy;
     protected override string toolTipText => "Target the Enemy";
     public override Sprite PotionSprite => Resources.Load<Sprite>("Potions/" + Type.ToString() + "Sprite");
-
-    protected override void SetKeywords()
-    {
-    }
 }
 
 // Potency
@@ -826,10 +847,6 @@ public class CreatureGland : PotionPotency
     public override string EffectOnPotionName => "Faint";
     public override int Potency => 1;
     public override float PotionFillAmount => .2f;
-
-    protected override void SetKeywords()
-    {
-    }
 }
 
 
@@ -841,10 +858,6 @@ public class CreatureFinger : PotionPotency
     public override string EffectOnPotionName => "Mild";
     public override int Potency => 2;
     public override float PotionFillAmount => .4f;
-
-    protected override void SetKeywords()
-    {
-    }
 }
 
 public class CreatureFoot : PotionPotency
@@ -854,9 +867,6 @@ public class CreatureFoot : PotionPotency
     public override PotionIngredientType Type => PotionIngredientType.CreatureFoot;
     public override int Potency => 3;
     public override float PotionFillAmount => .6f;
-    protected override void SetKeywords()
-    {
-    }
 }
 
 public class CreatureClaw : PotionPotency
@@ -866,9 +876,6 @@ public class CreatureClaw : PotionPotency
     public override PotionIngredientType Type => PotionIngredientType.CreatureClaw;
     public override int Potency => 4;
     public override float PotionFillAmount => .8f;
-    protected override void SetKeywords()
-    {
-    }
 }
 
 public class CreatureNose : PotionPotency
@@ -878,8 +885,4 @@ public class CreatureNose : PotionPotency
     public override PotionIngredientType Type => PotionIngredientType.CreatureNose;
     public override int Potency => 5;
     public override float PotionFillAmount => 1;
-
-    protected override void SetKeywords()
-    {
-    }
 }

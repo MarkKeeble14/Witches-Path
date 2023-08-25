@@ -6,7 +6,9 @@ using UnityEngine.EventSystems;
 
 public class Circle : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
-    [SerializeField] private GameObject foreground, background, approach; // Circle objects
+    [SerializeField] private Image foreground, background, approach; // Circle objects
+    [SerializeField] private Image main;
+    private RectTransform mainTransform;
     [SerializeField] private CanvasGroup approachCV;
     [SerializeField] private CanvasGroup mainCV;
     [SerializeField] private float fadeOutMainCVRate;
@@ -21,9 +23,14 @@ public class Circle : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     [SerializeField] private float screenBufferHorizontal;
     [SerializeField] private float screenBufferVertical;
 
-    private float timer;
     private bool isMousedOver;
     private bool active;
+
+    private void Awake()
+    {
+        // Get Reference
+        mainTransform = main.transform as RectTransform;
+    }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
@@ -37,28 +44,25 @@ public class Circle : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 
     public void ResetCircle()
     {
-        timer = 0;
         approachCV.alpha = 0;
         mainCV.alpha = 1;
         approach.transform.localScale = approachStartingScale;
         isMousedOver = false;
     }
 
-    public void Set()
+    public void Set(Color c)
     {
         Vector3 randomScreenPos = new Vector3(Random.Range(0 + screenBufferHorizontal, Screen.width - screenBufferHorizontal),
             Random.Range(0 + screenBufferVertical, Screen.height - screenBufferVertical), 0);
         transform.SetAsFirstSibling();
         transform.position = randomScreenPos;
         active = true;
+        main.color = c;
     }
 
     // Main Update
     private void Update()
     {
-        // Increase timer
-        timer += Time.deltaTime;
-
         if (!active) return;
 
         // Approach Circle modifier
@@ -83,14 +87,14 @@ public class Circle : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     private void OnHit()
     {
         // Debug.Log("Hit");
-        CombatManager._Instance.OnNoteHit();
+        CombatManager._Instance.OnNoteHit(mainTransform);
         StartCoroutine(EndRoutine());
     }
 
     private void OnFail()
     {
         // Debug.Log("Fail");
-        CombatManager._Instance.OnNoteMiss();
+        CombatManager._Instance.OnNoteMiss(mainTransform);
         StartCoroutine(EndRoutine());
     }
 

@@ -213,6 +213,8 @@ public class MapNodeUI : MonoBehaviour
 
     public IEnumerator SetConnectionColors(NodeConnection connection, float delayBetweenSections)
     {
+        if (connection == null) yield break;
+
         Vector2[] points = connection.LineRenderer.Points;
         Vector2[] nextPoints = new Vector2[2];
         nextPoints[0] = points[0];

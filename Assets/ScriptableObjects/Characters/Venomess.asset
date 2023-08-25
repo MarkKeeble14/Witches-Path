@@ -25,6 +25,6 @@ MonoBehaviour:
   basicAttackDamage: 2
   startingActiveSpellSlots: 4
   startingPassiveSpellSlots: 2
-  maxMana: 7
-  startingMana: 7
-  manaPerTurn: 7
+  maxMana: 5
+  startingMana: 5
+  manaPerTurn: 5

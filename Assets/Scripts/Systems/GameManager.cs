@@ -58,8 +58,9 @@ public class GameManager : MonoBehaviour
     [Header("Spells")]
     [SerializeField] private SerializableDictionary<SpellLabel, Rarity> spellRarityMap = new SerializableDictionary<SpellLabel, Rarity>();
     [SerializeField] private PercentageMap<Rarity> spellRarityOdds = new PercentageMap<Rarity>();
-    private List<SpellLabel> allSpells;
     private Dictionary<SpellLabel, SpellDisplay> loadedSpellDisplays = new Dictionary<SpellLabel, SpellDisplay>();
+    [SerializeField] private List<SpellLabel> playerEquippableActiveSpells;
+    [SerializeField] private List<SpellLabel> playerEquippablePassiveSpells;
     private int equippableSpellIndex;
 
     [Header("Active Spells")]
@@ -142,9 +143,6 @@ public class GameManager : MonoBehaviour
 
         // Get List of all Artifact Labels
         allArtifacts = new List<ArtifactLabel>((ArtifactLabel[])Enum.GetValues(typeof(ArtifactLabel)));
-
-        // Get List of all Spell Labels
-        allSpells = new List<SpellLabel>((SpellLabel[])Enum.GetValues(typeof(SpellLabel)));
 
         TryAddPersistentTokens();
 
@@ -243,10 +241,10 @@ public class GameManager : MonoBehaviour
                 {
                     equippableSpellIndex++;
 
-                    if (equippableSpellIndex > allSpells.Count - 1)
+                    if (equippableSpellIndex > playerEquippableActiveSpells.Count - 1)
                         equippableSpellIndex = 0;
 
-                    Debug.Log("Selected: " + allSpells[equippableSpellIndex]);
+                    Debug.Log("Selected: " + playerEquippableActiveSpells[equippableSpellIndex]);
                 }
 
                 // Equip new spell
@@ -255,18 +253,18 @@ public class GameManager : MonoBehaviour
                     equippableSpellIndex--;
 
                     if (equippableSpellIndex < 0)
-                        equippableSpellIndex = allSpells.Count - 1;
+                        equippableSpellIndex = playerEquippableActiveSpells.Count - 1;
 
-                    Debug.Log("Selected: " + allSpells[equippableSpellIndex]);
+                    Debug.Log("Selected: " + playerEquippableActiveSpells[equippableSpellIndex]);
                 }
 
                 if (Input.GetKeyDown(KeyCode.Alpha1))
                 {
-                    EquipSpell(allSpells[equippableSpellIndex]);
+                    EquipSpell(playerEquippableActiveSpells[equippableSpellIndex]);
                 }
                 if (Input.GetKeyDown(KeyCode.Alpha2))
                 {
-                    EquipSpell(allSpells[equippableSpellIndex]);
+                    EquipSpell(playerEquippableActiveSpells[equippableSpellIndex]);
                 }
 
                 break;
@@ -388,6 +386,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Transform spawnVisualSpellDisplayPrefabOn;
     private bool skipSpellSwap;
     private Spell spellToSwap;
+    private bool didSwapSpell;
 
     public void SkipSpellSwap()
     {
@@ -415,6 +414,16 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public bool GetDidSwapSpell()
+    {
+        return didSwapSpell;
+    }
+
+    public void ResetDidSwapSpell()
+    {
+        didSwapSpell = false;
+    }
+
     private IEnumerator SwapSpellSequence(ContentType requiredSpellType, SpellLabel newSpell)
     {
         // First check to see if theres an extra slot to use
@@ -426,6 +435,7 @@ public class GameManager : MonoBehaviour
                 {
                     // Just use it
                     EquipActiveSpell(newSpell);
+                    didSwapSpell = true;
                     yield break;
                 }
                 break;
@@ -435,12 +445,16 @@ public class GameManager : MonoBehaviour
                 {
                     // Just use it
                     EquipPassiveSpell(newSpell);
+                    didSwapSpell = true;
                     yield break;
                 }
                 break;
             default:
                 throw new UnhandledSwitchCaseException();
         }
+
+        // Communicate that we are swapping Spells
+        InSwappingSpellSequence = true;
 
         // Enable extra UI
         foreach (GameObject obj in turnOnForSwapSpellSequence)
@@ -505,13 +519,19 @@ public class GameManager : MonoBehaviour
                     ActiveSpellDisplay activeDisplay = UnequipActiveSpell(spellToSwap.Label);
                     unusedActiveSpellDisplays.Remove(activeDisplay);
                     EquipActiveSpell(newSpell, activeDisplay);
+                    didSwapSpell = true;
                     break;
                 case ContentType.PassiveSpell:
                     PassiveSpellDisplay passiveDisplay = UnequipPassiveSpell(spellToSwap.Label);
                     unusedPassiveSpellDisplays.Remove(passiveDisplay);
                     EquipPassiveSpell(newSpell, passiveDisplay);
+                    didSwapSpell = true;
                     break;
             }
+        }
+        else
+        {
+            didSwapSpell = false;
         }
 
         // Destroy previously spawned visual spell display
@@ -526,7 +546,10 @@ public class GameManager : MonoBehaviour
         // Reset for next time
         spellToSwap = null;
         skipSpellSwap = false;
+        InSwappingSpellSequence = false;
     }
+
+    public bool InSwappingSpellSequence { get; private set; }
 
     public void EquipSpell(SpellLabel label)
     {
@@ -737,25 +760,231 @@ public class GameManager : MonoBehaviour
         return toReturn;
     }
 
+    public void AddActiveSpellSlots(int num)
+    {
+        for (int i = 0; i < num; i++)
+        {
+            SpawnActiveSpellDisplay();
+        }
+    }
+
+    public void AddPassiveSpellSlots(int num)
+    {
+        for (int i = 0; i < num; i++)
+        {
+            SpawnPassiveSpellDisplay();
+        }
+    }
+
+    private void RemoveSpellFromEquippableSpells(SpellLabel spellLabel)
+    {
+        if (playerEquippableActiveSpells.Contains(spellLabel))
+        {
+            playerEquippableActiveSpells.Remove(spellLabel);
+        }
+        else if (playerEquippablePassiveSpells.Contains(spellLabel))
+        {
+            playerEquippablePassiveSpells.Remove(spellLabel);
+        }
+    }
+
+    public ArtifactLabel GetRandomOwnedArtifact()
+    {
+        return RandomHelper.GetRandomFromList(equippedArtifacts.Keys.ToList());
+    }
+
+    public ArtifactLabel GetRandomArtifact(bool removeFromPool = true)
+    {
+        ArtifactLabel artifact = GetRandomArtifactOfRarity(artifactRarityOdds.GetOption());
+        if (removeFromPool)
+        {
+            allArtifacts.Remove(artifact);
+        }
+        return artifact;
+    }
+
+    public ArtifactLabel GetRandomArtifactOfRarity(Rarity r)
+    {
+        List<ArtifactLabel> options = new List<ArtifactLabel>();
+        foreach (ArtifactLabel l in allArtifacts)
+        {
+            if (artifactRarityMap[l] == r)
+            {
+                options.Add(l);
+            }
+        }
+
+        // No Artifacts Remaining
+        if (options.Count == 0)
+        {
+            switch (r)
+            {
+                case Rarity.Common:
+                    return ArtifactLabel.Crown;
+                case Rarity.Rare:
+                    return GetRandomArtifactOfRarity(Rarity.Uncommon);
+                case Rarity.Uncommon:
+                    return GetRandomArtifactOfRarity(Rarity.Common);
+            }
+        }
+
+
+        return RandomHelper.GetRandomFromList(options);
+    }
+
+    public void AddRandomArtifact()
+    {
+        AddArtifact(GetRandomArtifact());
+    }
+
+    public BookLabel GetRandomOwnedBook()
+    {
+        return RandomHelper.GetRandomFromList(equippedBooks.Keys.ToList());
+    }
+
+    public BookLabel GetOwnedBookLabel(int index)
+    {
+        return equippedBooks.Keys.ToList()[index];
+    }
+
+    public Book GetOwnedBook(int index)
+    {
+        return equippedBooks.Values.ToList()[index];
+    }
+
+    public BookLabel GetRandomBook(bool removeFromPool = true)
+    {
+        BookLabel book = GetRandomBookOfRarity(bookRarityOdds.GetOption());
+        if (removeFromPool)
+        {
+            allBooks.Remove(book);
+        }
+        return book;
+    }
+
+    public BookLabel GetRandomBookOfRarity(Rarity r)
+    {
+        List<BookLabel> options = new List<BookLabel>();
+        foreach (BookLabel l in allBooks)
+        {
+            if (bookRarityMap[l] == r)
+            {
+                options.Add(l);
+            }
+        }
+
+        // No Books Remaining
+        // No Artifacts Remaining
+        if (options.Count == 0)
+        {
+            switch (r)
+            {
+                case Rarity.Common:
+                    return BookLabel.WitchesTravelGuide;
+                case Rarity.Rare:
+                    return GetRandomBookOfRarity(Rarity.Uncommon);
+                case Rarity.Uncommon:
+                    return GetRandomBookOfRarity(Rarity.Common);
+            }
+        }
+
+        return RandomHelper.GetRandomFromList(options);
+    }
+
+    // Break
+
+    public SpellLabel GetRandomSpell(bool forceRarity, Rarity rarity, bool removeFromPool = true)
+    {
+        List<SpellLabel> allOptions = new List<SpellLabel>();
+        allOptions.AddRange(playerEquippableActiveSpells);
+        allOptions.AddRange(playerEquippablePassiveSpells);
+
+        // Get the spell
+        SpellLabel spell;
+        if (forceRarity)
+        {
+            spell = GetRandomSpellOfRarity(rarity, allOptions, SpellLabel.WitchesWill);
+        }
+        else
+        {
+            spell = GetRandomSpellOfRarity(spellRarityOdds.GetOption(), allOptions, SpellLabel.WitchesWill);
+        }
+
+        if (removeFromPool)
+        {
+            // chose an Active Spell
+            if (playerEquippableActiveSpells.Contains(spell))
+            {
+                playerEquippableActiveSpells.Remove(spell);
+
+            }
+            else if (playerEquippablePassiveSpells.Contains(spell)) // Chose a Passive Spell
+            {
+                playerEquippablePassiveSpells.Remove(spell);
+            }
+        }
+        return spell;
+
+    }
+
+    public SpellLabel GetRandomActiveSpell(bool removeFromPool = true)
+    {
+        SpellLabel spell = GetRandomSpellOfRarity(spellRarityOdds.GetOption(), playerEquippableActiveSpells, SpellLabel.WitchesWill);
+        if (removeFromPool)
+        {
+            RemoveSpellFromEquippableSpells(spell);
+        }
+        return spell;
+    }
+
+    public SpellLabel GetRandomPassiveSpell(bool removeFromPool = true)
+    {
+        SpellLabel spell = GetRandomSpellOfRarity(spellRarityOdds.GetOption(), playerEquippablePassiveSpells, SpellLabel.CrushJoints);
+        if (removeFromPool)
+        {
+            RemoveSpellFromEquippableSpells(spell);
+        }
+        return spell;
+    }
+
+    public SpellLabel GetRandomSpellOfRarity(Rarity r, List<SpellLabel> allowedOptions, SpellLabel defaultTo)
+    {
+        List<SpellLabel> options = new List<SpellLabel>();
+        foreach (SpellLabel l in allowedOptions)
+        {
+            if (spellRarityMap[l] == r)
+            {
+                options.Add(l);
+            }
+        }
+
+        // No Books Remaining
+        if (options.Count == 0)
+        {
+            return defaultTo;
+        }
+
+        return RandomHelper.GetRandomFromList(options);
+    }
+
+    public void AddRandomBook()
+    {
+        AddBook(GetRandomBook());
+    }
+
     private void EquipCharacterLoadout(Character c)
     {
         // Spawn default num spell slots
         numActiveSpellSlots = c.GetStartingActiveSpellSlots();
+        AddActiveSpellSlots(numActiveSpellSlots);
         numPassiveSpellSlots = c.GetStartingPassiveSpellSlots();
-        for (int i = 0; i < numActiveSpellSlots; i++)
-        {
-            SpawnActiveSpellDisplay();
-        }
-        for (int i = 0; i < numPassiveSpellSlots; i++)
-        {
-            SpawnPassiveSpellDisplay();
-        }
+        AddPassiveSpellSlots(numPassiveSpellSlots);
 
         // Equip starting spells
         foreach (SpellLabel spellLabel in c.GetStartingSpells())
         {
             EquipSpell(spellLabel);
-            allSpells.Remove(spellLabel);
+            RemoveSpellFromEquippableSpells(spellLabel);
         }
 
         // Equip character equipment
@@ -935,8 +1164,6 @@ public class GameManager : MonoBehaviour
                 return new DoctorsReport();
             case ArtifactLabel.SpecialSpinich:
                 return new SpecialSpinach();
-            case ArtifactLabel.HalfLitFirework:
-                return new HalfLitFirework();
             case ArtifactLabel.HealthInsurance:
                 return new HealthInsurance();
             case ArtifactLabel.HolyShield:
@@ -2298,146 +2525,6 @@ public class GameManager : MonoBehaviour
                 return false;
             }
         }
-    }
-
-    public ArtifactLabel GetRandomOwnedArtifact()
-    {
-        return RandomHelper.GetRandomFromList(equippedArtifacts.Keys.ToList());
-    }
-
-    public ArtifactLabel GetRandomArtifact(bool removeFromPool = true)
-    {
-        ArtifactLabel artifact = GetRandomArtifactOfRarity(artifactRarityOdds.GetOption());
-        if (removeFromPool)
-        {
-            allArtifacts.Remove(artifact);
-        }
-        return artifact;
-    }
-
-    public ArtifactLabel GetRandomArtifactOfRarity(Rarity r)
-    {
-        List<ArtifactLabel> options = new List<ArtifactLabel>();
-        foreach (ArtifactLabel l in allArtifacts)
-        {
-            if (artifactRarityMap[l] == r)
-            {
-                options.Add(l);
-            }
-        }
-
-        // No Artifacts Remaining
-        if (options.Count == 0)
-        {
-            switch (r)
-            {
-                case Rarity.Common:
-                    return ArtifactLabel.Crown;
-                case Rarity.Rare:
-                    return GetRandomArtifactOfRarity(Rarity.Uncommon);
-                case Rarity.Uncommon:
-                    return GetRandomArtifactOfRarity(Rarity.Common);
-            }
-        }
-
-
-        return RandomHelper.GetRandomFromList(options);
-    }
-
-    public void AddRandomArtifact()
-    {
-        AddArtifact(GetRandomArtifact());
-    }
-
-    public BookLabel GetRandomOwnedBook()
-    {
-        return RandomHelper.GetRandomFromList(equippedBooks.Keys.ToList());
-    }
-
-    public BookLabel GetOwnedBookLabel(int index)
-    {
-        return equippedBooks.Keys.ToList()[index];
-    }
-
-    public Book GetOwnedBook(int index)
-    {
-        return equippedBooks.Values.ToList()[index];
-    }
-
-    public BookLabel GetRandomBook(bool removeFromPool = true)
-    {
-        BookLabel book = GetRandomBookOfRarity(bookRarityOdds.GetOption());
-        if (removeFromPool)
-        {
-            allBooks.Remove(book);
-        }
-        return book;
-    }
-
-    public BookLabel GetRandomBookOfRarity(Rarity r)
-    {
-        List<BookLabel> options = new List<BookLabel>();
-        foreach (BookLabel l in allBooks)
-        {
-            if (bookRarityMap[l] == r)
-            {
-                options.Add(l);
-            }
-        }
-
-        // No Books Remaining
-        // No Artifacts Remaining
-        if (options.Count == 0)
-        {
-            switch (r)
-            {
-                case Rarity.Common:
-                    return BookLabel.WitchesTravelGuide;
-                case Rarity.Rare:
-                    return GetRandomBookOfRarity(Rarity.Uncommon);
-                case Rarity.Uncommon:
-                    return GetRandomBookOfRarity(Rarity.Common);
-            }
-        }
-
-        return RandomHelper.GetRandomFromList(options);
-    }
-
-    // BrEAk
-
-    public SpellLabel GetRandomSpell(bool removeFromPool = true)
-    {
-        SpellLabel spell = GetRandomSpellOfRarity(spellRarityOdds.GetOption());
-        if (removeFromPool)
-        {
-            allSpells.Remove(spell);
-        }
-        return spell;
-    }
-
-    public SpellLabel GetRandomSpellOfRarity(Rarity r)
-    {
-        List<SpellLabel> options = new List<SpellLabel>();
-        foreach (SpellLabel l in allSpells)
-        {
-            if (spellRarityMap[l] == r)
-            {
-                options.Add(l);
-            }
-        }
-
-        // No Books Remaining
-        if (options.Count == 0)
-        {
-            return SpellLabel.WitchesWill;
-        }
-
-        return RandomHelper.GetRandomFromList(options);
-    }
-
-    public void AddRandomBook()
-    {
-        AddBook(GetRandomBook());
     }
 
     #endregion

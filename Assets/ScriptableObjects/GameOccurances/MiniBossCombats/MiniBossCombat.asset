@@ -15,6 +15,43 @@ MonoBehaviour:
   mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
   enemy: {fileID: 11400000, guid: 5a31a5c589cb9b746a9b61d0a9c95baa, type: 2}
   itemRewards:
-    dictionary: []
+    dictionary:
+    - key: 0
+      value:
+        percentageMap:
+        - key:
+            NumericalType: 1
+            ForceRarity: 0
+            Rarity: 0
+            Numbers: {x: 1, y: 1}
+          value: 100
+    - key: 1
+      value:
+        percentageMap:
+        - key:
+            NumericalType: 0
+            ForceRarity: 0
+            Rarity: 0
+            Numbers: {x: 1, y: 3}
+          value: 100
+    - key: 4
+      value:
+        percentageMap:
+        - key:
+            NumericalType: 1
+            ForceRarity: 0
+            Rarity: 0
+            Numbers: {x: 1, y: 1}
+          value: 100
   currencyRewards:
-    dictionary: []
+    dictionary:
+    - key: 2
+      value:
+        percentageMap:
+        - key: {x: 75, y: 100}
+          value: 100
+    - key: 3
+      value:
+        percentageMap:
+        - key: {x: 1, y: 3}
+          value: 100

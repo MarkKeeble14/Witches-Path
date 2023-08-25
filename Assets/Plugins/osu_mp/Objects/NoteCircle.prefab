@@ -55,9 +55,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 408101e610c02a8458964f88eb3d793d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  foreground: {fileID: 4582394554422702855}
-  background: {fileID: 6852727292848041701}
-  approach: {fileID: 2116150609558744632}
+  foreground: {fileID: 1959941339186210090}
+  background: {fileID: 7290340867792484125}
+  approach: {fileID: 5017953581835957362}
+  main: {fileID: 1338646591907998789}
   approachCV: {fileID: 143783471469377776}
   mainCV: {fileID: 8823728827429583838}
   fadeOutMainCVRate: 5

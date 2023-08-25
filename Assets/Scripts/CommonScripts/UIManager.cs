@@ -54,7 +54,11 @@ public enum ToolTipKeyword
     Mana,
     Damage,
     Defense,
-    Pelts
+    Pelts,
+    PotionBase,
+    PotionTargeter,
+    PotionPotency,
+    PotionAugmenter
 }
 
 public enum TextDecorationLabel
@@ -100,6 +104,9 @@ public class UIManager : MonoBehaviour
     [SerializeField] private SerializableDictionary<DamageType, Color> damageTypeColorMap = new SerializableDictionary<DamageType, Color>();
 
     [SerializeField] private SerializableDictionary<PotionIngredientCategory, Sprite> potionIngredientCategorySpriteMap = new SerializableDictionary<PotionIngredientCategory, Sprite>();
+
+    [SerializeField] private Transform canvas;
+    public Transform Canvas => canvas;
 
     public Sprite GetPotionIngredientCategorySprite(PotionIngredientCategory category)
     {

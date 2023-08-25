@@ -69,7 +69,8 @@ public class AfflictionIcon : MonoBehaviour
 
     public void SpawnToolTip()
     {
-        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(setTo, transform);
+        if (!CombatManager._Instance.IsCastingQueue)
+            spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(setTo, transform);
     }
 
     public void DestroyToolTip()

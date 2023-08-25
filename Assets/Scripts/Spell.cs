@@ -425,15 +425,16 @@ public class MagicRain : PassiveSpell
     public override string Name => "Magic Rain";
     public override SpellLabel Label => SpellLabel.MagicRain;
 
-    protected override string toolTipText => "Every " + procAfter + " Turn" + (procAfter > 1 ? "s" : "") + ", Fire a Projectile Dealing " + damageAmount + " Damage to the Enemy";
+    protected override string toolTipText => "Every " + procAfter + " Turn" + (procAfter > 1 ? "s" : "") + ", Deal " + damageAmount + " Damage to the Enemy";
 
-    private float damageAmount;
+    private int damageAmount;
     private int procAfter;
     private int tracker;
 
     protected override void SetParameters()
     {
         base.SetParameters();
+        damageAmount = (int)GetSpellSpec("DamageAmount");
         procAfter = (int)GetSpellSpec("ProcAfter");
     }
 
@@ -459,7 +460,7 @@ public class MagicRain : PassiveSpell
 
     public override void Proc(bool canDupe)
     {
-        CombatManager._Instance.MagicRainProc(damageAmount);
+        CombatManager._Instance.DamageCombatent(-damageAmount, Target.Enemy, Target.Character, DamageType.Default);
         base.Proc(canDupe);
     }
 
@@ -555,7 +556,7 @@ public abstract class ActiveSpell : Spell
     private int cooldownTracker;
     public Vector2Int CooldownTracker => new Vector2Int(cooldownTracker, cooldown);
     public bool OnCooldown => cooldownTracker > 0;
-    public bool HasMana => GameManager._Instance.GetCurrentPlayerMana() >= manaCost;
+    public bool HasMana => GameManager._Instance.GetCurrentPlayerMana() >= manaCost || CombatManager._Instance.NumFreeSpells > 0;
     public bool CanCast => !OnCooldown && HasMana;
 
     protected abstract DamageType mainDamageType { get; }
@@ -660,7 +661,7 @@ public abstract class ActiveSpell : Spell
     protected override string GetDetailText()
     {
         // Order: Mana -> Cooldown -> Attacks
-        return "\nMana Cost: " + manaCost + " - Cooldown: " + CooldownTracker.y + " - Attacks: " + GetNumNotesString();
+        return "\nMana Cost: " + manaCost + ", Cooldown: " + CooldownTracker.y + ", Attacks: " + GetNumNotesString();
     }
 
     public string GetNumNotesString()

@@ -80,8 +80,13 @@ public class Map
     // Map Data
     private List<MapNodeUI[,]> spawnedGridNodes = new List<MapNodeUI[,]>();
 
-    [Header("References")]
-    [SerializeField] private Transform spawnNodesOn;
+    // References
+    private Transform spawnNodesOn;
+
+    public void SetSpawnOn(Transform t)
+    {
+        spawnNodesOn = t;
+    }
 
     public void Generate()
     {

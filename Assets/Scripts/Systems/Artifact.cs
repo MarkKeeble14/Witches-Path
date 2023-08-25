@@ -519,40 +519,6 @@ public class InvertedPolaroid : Artifact
         CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, enemyStackAmount, Target.Enemy);
         ShowArtifactProc();
     }
-
-}
-
-public class HalfLitFirework : Artifact
-{
-    public override string Name => "Half Lit Firework";
-    protected override ArtifactLabel Label => ArtifactLabel.HalfLitFirework;
-
-    protected override string toolTipText => "Upon Recieving Damage, Fire a Projectile at the Enemy";
-
-    protected override void SetKeywords()
-    {
-    }
-
-    protected override void SetParameters()
-    {
-    }
-
-    public override void OnEquip()
-    {
-        GameManager._Instance.OnPlayerRecieveDamage += Effect;
-    }
-
-    public override void OnUnequip()
-    {
-        GameManager._Instance.OnPlayerRecieveDamage -= Effect;
-    }
-
-    protected override void Effect()
-    {
-        CombatManager._Instance.HalfLitFireworkProc();
-        ShowArtifactProc();
-    }
-
 }
 
 public class ZedsScalpel : Artifact
@@ -1117,33 +1083,43 @@ public class Boulder : Artifact
     public override string Name => "Boulder";
     protected override ArtifactLabel Label => ArtifactLabel.Boulder;
 
-    protected override string toolTipText => "Whenever you Basic Attack " + procAfter + " times, fire an Additional Projectile Dealing " + damageAmount
-         + " Damage to the Enemy. Every time this effect is activated, the Damage Increases by " + damageIncrease;
-
-    protected override void SetKeywords()
-    {
-    }
+    protected override string toolTipText => "Basic Attacking " + procAfter + " times will Deal " + damageAmount
+         + " Additional Damage to the Enemy. Every time this effect is activated, the Damage Increases by " + damageIncrease;
 
     private int tracker;
     private int procAfter;
     private int damageAmount;
     private int damageIncrease;
+    private int defaultDamageAmount;
+
+    protected override void SetKeywords()
+    {
+    }
 
     protected override void SetParameters()
     {
+        Debug.Log("Set Parameters");
         procAfter = (int)GetArtifactSpec("ProcAfter");
-        damageAmount = (int)GetArtifactSpec("DamageAmount");
+        defaultDamageAmount = (int)GetArtifactSpec("DamageAmount");
+        damageAmount = defaultDamageAmount;
         damageIncrease = (int)GetArtifactSpec("DamageIncrease");
     }
 
     public override void OnEquip()
     {
         CombatManager._Instance.OnPlayerAttack += Effect;
+        CombatManager._Instance.OnCombatEnd += ResetOnCombatEnd;
     }
 
     public override void OnUnequip()
     {
         CombatManager._Instance.OnPlayerAttack -= Effect;
+        CombatManager._Instance.OnCombatEnd -= ResetOnCombatEnd;
+    }
+
+    private void ResetOnCombatEnd()
+    {
+        damageAmount = defaultDamageAmount;
     }
 
     protected override void Effect()
@@ -1151,7 +1127,8 @@ public class Boulder : Artifact
         tracker += 1;
         if (tracker >= procAfter)
         {
-            CombatManager._Instance.BoulderProc(damageAmount);
+            Debug.Log(damageAmount);
+            CombatManager._Instance.DamageCombatent(-damageAmount, Target.Enemy, Target.Character, DamageType.Default);
             ShowArtifactProc();
             tracker = 0;
             damageAmount += damageIncrease;

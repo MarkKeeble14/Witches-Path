@@ -14,7 +14,6 @@
     BlueMantis,
     HealthInsurance,
     InvertedPolaroid,
-    HalfLitFirework,
     ZedsScalpel,
     Barricade,
     DoctorsReport,

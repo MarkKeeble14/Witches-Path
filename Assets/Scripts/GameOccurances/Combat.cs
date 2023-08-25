@@ -88,14 +88,17 @@ public abstract class Combat : GameOccurance
                     });
                     break;
                 case RewardType.Spell:
-                    if (info.ForceRarity)
+                    ParseItemRewardInfo(info, delegate
                     {
-                        RewardManager._Instance.AddReward(GameManager._Instance.GetRandomSpellOfRarity(info.Rarity));
-                    }
-                    else
-                    {
-                        RewardManager._Instance.AddReward(GameManager._Instance.GetRandomSpell());
-                    }
+                        if (info.ForceRarity)
+                        {
+                            RewardManager._Instance.AddChooseSpellReward(info.ForceRarity, info.Rarity);
+                        }
+                        else
+                        {
+                            RewardManager._Instance.AddChooseSpellReward();
+                        }
+                    });
                     break;
                 default:
                     throw new UnhandledSwitchCaseException();
@@ -106,6 +109,13 @@ public abstract class Combat : GameOccurance
         foreach (RewardType type in currencyRewards.Keys())
         {
             int num = RandomHelper.RandomIntExclusive(currencyRewards[type].GetOption());
+
+            // if the number is 0, there is no point in showing
+            if (num <= 0)
+            {
+                continue;
+            }
+
             switch (type)
             {
                 case RewardType.Pelts:
@@ -113,6 +123,12 @@ public abstract class Combat : GameOccurance
                     break;
                 case RewardType.Currency:
                     RewardManager._Instance.AddCurrencyReward(num);
+                    break;
+                case RewardType.ActiveSpellSlot:
+                    RewardManager._Instance.AddActiveSpellSlotReward(num);
+                    break;
+                case RewardType.PassiveSpellSlot:
+                    RewardManager._Instance.AddPassiveSpellSlotReward(num);
                     break;
                 default:
                     throw new UnhandledSwitchCaseException();

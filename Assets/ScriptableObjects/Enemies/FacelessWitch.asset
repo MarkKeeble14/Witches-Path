@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b31adb0cf191c0a429a2c11ce960a977, type: 3}
-  m_Name: PossessedTome
+  m_Name: FacelessWitch
   m_EditorClassIdentifier: 
-  combatSprite: {fileID: 21300000, guid: a9350431373065247b0f167e7be9be20, type: 3}
-  name: Possessed Tome
-  maxHP: 75
-  startingHP: 75
-  basicAttackDamage: 3
+  combatSprite: {fileID: -2413806693520163455, guid: 36a0f126a9869ea4983b3b972c87b73c, type: 3}
+  name: Faceless Witch
+  maxHP: 250
+  startingHP: 250
+  basicAttackDamage: 5
