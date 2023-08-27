@@ -99,7 +99,7 @@ public class RewardManager : MonoBehaviour
             for (int i = 0; i < numOptions; i++)
             {
                 // Get new Options
-                Spell spell = GameManager._Instance.GetSpellOfType(GameManager._Instance.GetRandomSpell(forceRarity, rarity));
+                Spell spell = Spell.GetSpellOfType(GameManager._Instance.GetRandomSpell(forceRarity, rarity));
 
                 // Add Spell to Class to Track
                 activeChooseSpellReward.Choices.Add(spell);
@@ -206,7 +206,7 @@ public class RewardManager : MonoBehaviour
         Debug.Log("Adding Artifact Reward: " + label);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         GameObject spawnedToolTip = null;
-        Artifact artifact = GameManager._Instance.GetArtifactOfType(label);
+        Artifact artifact = Artifact.GetArtifactOfType(label);
         spawned.Set(artifact.Name, rewardTypeSpriteDict[RewardType.Artifact],
             delegate
             {
@@ -229,7 +229,7 @@ public class RewardManager : MonoBehaviour
         Debug.Log("Adding Book Reward: " + label);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         GameObject spawnedToolTip = null;
-        Book book = GameManager._Instance.GetBookOfType(label);
+        Book book = Book.GetBookOfType(label);
         spawned.Set(book.Name, rewardTypeSpriteDict[RewardType.Book],
             delegate
             {
@@ -252,7 +252,7 @@ public class RewardManager : MonoBehaviour
         Debug.Log("Adding Potion Ingredient Reward: " + label);
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         GameObject spawnedToolTip = null;
-        PotionIngredient ingredient = GameManager._Instance.GetPotionIngredientOfType(label);
+        PotionIngredient ingredient = PotionIngredient.GetPotionIngredientOfType(label);
         spawned.Set(ingredient.Name, UIManager._Instance.GetPotionIngredientCategorySprite(ingredient.Category),
             delegate
             {

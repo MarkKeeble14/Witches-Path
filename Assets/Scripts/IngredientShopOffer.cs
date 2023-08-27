@@ -9,7 +9,7 @@ public class IngredientShopOffer : ShopOffer
 
     public void Set(PotionIngredientType type, int cost)
     {
-        ingredient = GameManager._Instance.GetPotionIngredientOfType(type);
+        ingredient = PotionIngredient.GetPotionIngredientOfType(type);
         itemText.text = ingredient.Name;
         icon.sprite = UIManager._Instance.GetPotionIngredientCategorySprite(ingredient.Category);
         this.cost = cost;

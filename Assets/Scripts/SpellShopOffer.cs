@@ -7,7 +7,7 @@ public class SpellShopOffer : ShopOffer
 
     public void Set(SpellLabel setTo, int cost)
     {
-        spell = GameManager._Instance.GetSpellOfType(setTo);
+        spell = Spell.GetSpellOfType(setTo);
         this.cost = cost;
 
         itemText.text = Utils.SplitOnCapitalLetters(setTo.ToString());

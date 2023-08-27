@@ -29,8 +29,7 @@ public class Character : ScriptableObject
 
     [Header("Mana")]
     [SerializeField] private int maxMana;
-    [SerializeField] private int startingMana;
-    [SerializeField] private int manaPerTurn;
+    [SerializeField] private int manaPerTurnSubFromMax;
 
     public int GetMaxHP()
     {
@@ -42,19 +41,14 @@ public class Character : ScriptableObject
         return maxMana;
     }
 
-    public int GetManaPerTurn()
+    public int GetManaPerTurnSubFromMax()
     {
-        return manaPerTurn;
+        return manaPerTurnSubFromMax;
     }
 
     public int GetStartingHP()
     {
         return startingHP;
-    }
-
-    public int GetStartingMana()
-    {
-        return startingMana;
     }
 
     public int GetBasicAttackDamage()

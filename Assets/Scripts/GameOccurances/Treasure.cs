@@ -11,6 +11,7 @@ public class Treasure : GameOccurance
     protected override IEnumerator OnResolve()
     {
         Debug.Log(name + ": OnResolve");
+
         yield return null;
     }
 

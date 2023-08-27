@@ -173,6 +173,23 @@ public abstract class Book : PowerupItem
     {
         return base.GetToolTipLabel() + " (" + currentLevel + "/" + MaxLevel + ")";
     }
+
+    public static Book GetBookOfType(BookLabel label)
+    {
+        switch (label)
+        {
+            case BookLabel.WitchesTravelGuide:
+                return new WitchesTravelGuide();
+            case BookLabel.MedicalNovella:
+                return new MedicalNovella();
+            case BookLabel.MerchantsManual:
+                return new MerchantsManual();
+            case BookLabel.BusinessTextbook:
+                return new BusinessTextbook();
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
 }
 
 public class WitchesTravelGuide : Book

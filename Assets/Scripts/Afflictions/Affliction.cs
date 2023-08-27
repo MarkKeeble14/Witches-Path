@@ -92,6 +92,45 @@ public abstract class Affliction : ToolTippable
     {
         return new List<ToolTippable>();
     }
+
+    public static Affliction GetAfflictionOfType(AfflictionType type)
+    {
+        switch (type)
+        {
+            case AfflictionType.Bandages:
+                return new Bandages();
+            case AfflictionType.Blight:
+                return new Blight();
+            case AfflictionType.Burn:
+                return new Burn();
+            case AfflictionType.Echo:
+                return new Echo();
+            case AfflictionType.Embolden:
+                return new Embolden();
+            case AfflictionType.Intangible:
+                return new Intangible();
+            case AfflictionType.OnGuard:
+                return new OnGuard();
+            case AfflictionType.Paralyze:
+                return new Paralyze();
+            case AfflictionType.Poison:
+                return new Poison();
+            case AfflictionType.Power:
+                return new Power();
+            case AfflictionType.Protection:
+                return new Protection();
+            case AfflictionType.Thorns:
+                return new Thorns();
+            case AfflictionType.Vulnerable:
+                return new Vulnerable();
+            case AfflictionType.Weak:
+                return new Weak();
+            case AfflictionType.Regeneration:
+                return new Regeneration();
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
 }
 
 public class Embolden : Affliction
@@ -270,8 +309,8 @@ public class Thorns : Affliction
 
 public class Power : Affliction
 {
-    protected override string specificToolTipText => "Basic Attacks do " + GetStacks() + " more Damage";
-    protected override string genericToolTipText => "Basic Attacks do more Damage equal to the Number of Power Stacks";
+    protected override string specificToolTipText => "Non-Basic Attacks do " + GetStacks() + " more Damage";
+    protected override string genericToolTipText => "Non-Basic Attacks do more Damage equal to the Number of Power Stacks";
 
     public override AfflictionType Type => AfflictionType.Power;
 

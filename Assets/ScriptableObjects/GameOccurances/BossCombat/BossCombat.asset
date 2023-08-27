@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: BossCombat
   m_EditorClassIdentifier: 
   mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
-  enemy: {fileID: 11400000, guid: c208a74696861174e948e227dbaa9387, type: 2}
+  enemyType: 1
   itemRewards:
     dictionary:
     - key: 0

@@ -2,6 +2,29 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
+public class EnemySpecDictionary
+{
+    [SerializeField] private Vector2Int minMaxMaxHP;
+    [SerializeField] private int basicAttackDamage;
+    [SerializeField] private SerializableDictionary<string, int> additionalParameters = new SerializableDictionary<string, int>();
+
+    public int GetSpec(string identifier)
+    {
+        switch (identifier)
+        {
+            case "MinMaxHP":
+                return minMaxMaxHP.x;
+            case "MaxMaxHP":
+                return minMaxMaxHP.y;
+            case "BasicAttackDamage":
+                return basicAttackDamage;
+            default:
+                return additionalParameters[identifier];
+        }
+    }
+}
+
 public enum SpellType
 {
     Active,
@@ -100,9 +123,17 @@ public class BalenceManager : MonoBehaviour
     private SerializableDictionary<ReforgeModifier, int> costToReforgeModifier
         = new SerializableDictionary<ReforgeModifier, int>();
 
+    [Header("Enemies")]
+    [SerializeField] private SerializableDictionary<string, EnemySpecDictionary> enemySpecDict = new SerializableDictionary<string, EnemySpecDictionary>();
+
     private void Awake()
     {
         _Instance = this;
+    }
+
+    public int GetValue(EnemyType enemyType, string identifier)
+    {
+        return enemySpecDict[enemyType.ToString()].GetSpec(identifier);
     }
 
     public List<ReforgeModifierEffect> GetReforgeModifierEffect(ReforgeModifier reforgeModifier)

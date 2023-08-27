@@ -54,31 +54,14 @@ public enum DamageSource
     ActiveSpell,
     PassiveSpell,
     BasicAttack,
-    Book
+    Book,
+    EnemyAttack
 }
 
 public partial class CombatManager : MonoBehaviour
 {
     public static CombatManager _Instance { get; private set; }
 
-    private void Awake()
-    {
-        _Instance = this;
-
-        CreateCirclePool();
-    }
-
-    [Header("Rhythm Settings")]
-    [SerializeField] private Circle circlePrefab; // Circle Object
-    private ObjectPool<Circle> circlePool;
-    private List<Circle> circleList = new List<Circle>(); // Circles List
-    [SerializeField] private Transform parentNoteCirclesTo;
-
-    // Other stuff
-    [SerializeField] private LayerMask noteLayer;
-    [SerializeField] private Image background;
-
-    // Enemy Stuff
     private AudioClip hitSound;
     private AudioClip missSound;
     private Enemy currentEnemy;
@@ -89,12 +72,70 @@ public partial class CombatManager : MonoBehaviour
     private int enemyWard;
     private int characterWard;
 
-    [Header("References")]
+    public float CurrentEnemyBasicAttackDamage => currentEnemy.GetBasicAttackDamage();
+    public int NumFreeSpells { get; set; }
+    public bool InCombat { get; private set; }
+    public bool CanCastSpells { get; private set; }
+    private bool hasCastQueue;
+    private bool isCastingQueue;
+    public bool AllowGameSpaceToolTips => !isCastingQueue;
+
+
+    private bool playerTurnEnded;
+    private Turn currentTurn;
+    private int turnCount;
+
+    private ObjectPool<Circle> circlePool;
+    private List<Circle> circleList = new List<Circle>(); // Circles List
+
+    [Header("Combat Settings")]
+    [SerializeField] private List<DamageType> wardableDamageTypes = new List<DamageType>();
+
+    [Header("Spell Queue")]
+    [SerializeField] private Transform spellQueueDisplayList;
+    private List<InCastQueueActiveSpell> spellQueue = new List<InCastQueueActiveSpell>();
+    [SerializeField] private AudioSource spellSFXSource;
+
+    [Header("Spell Potency")]
+    [SerializeField] private SemicircleLayoutGroup castingSpellSemiCircle;
+    [SerializeField] private float decreaseEffectivenessMultiplierOnMiss = 0.25f;
+    [SerializeField] private float increaseEffectivenessMultiplierOnHit = 0.1f;
+    [SerializeField] private float defaultEffectivenessMultiplier = 1;
+    [SerializeField] private float maxEffectivenessMultiplier;
+    [SerializeField] private float effectivenessMultiplierTextMinScale;
+    [SerializeField] private float effectivenessMultiplierTextMaxScale;
+    [SerializeField] private float animateEffectivenessTextRectScaleSpeed;
+    private float effectivenessMultiplier = 0;
+    private List<Circle> spawnedCircles = new List<Circle>();
+
+    private struct InCastQueueActiveSpell
+    {
+        public SpellPotencyDisplay SpellPotencyDisplay;
+        public QueuedActiveSpell QueuedActiveSpell;
+    }
+
+    [Header("Afflictions")]
+    [SerializeField] private Transform characterAfflictionList;
+    [SerializeField] private Transform enemyAfflictionList;
+    private Dictionary<AfflictionType, Affliction> characterAfflictionMap = new Dictionary<AfflictionType, Affliction>();
+    private Dictionary<AfflictionType, Affliction> enemyAfflictionMap = new Dictionary<AfflictionType, Affliction>();
+    private Dictionary<AfflictionType, AfflictionIcon> characterAfflictionIconTracker = new Dictionary<AfflictionType, AfflictionIcon>();
+    private Dictionary<AfflictionType, AfflictionIcon> enemyAfflictionIconTracker = new Dictionary<AfflictionType, AfflictionIcon>();
+
+    [Header("UI")]
+    [SerializeField] private string castButtonTextEndPlayerTurn = "Cast";
+    [SerializeField] private string castButtonTextWhileCasting = "Casting";
+    [SerializeField] private string castButtonTextPostCasting = "End Turn";
+    [SerializeField] private string castButtonTextEnemyTurn = "Enemy Turn";
+
+    [Header("General References")]
     [SerializeField] private CombatentHPBar characterHPBar;
     [SerializeField] private CombatentHPBar enemyHPBar;
     [SerializeField] private IntentDisplay enemyIntentDisplay;
+    [SerializeField] private TextMeshProUGUI enemyBasicAttackDamageText;
     [SerializeField] private TextMeshProUGUI enemyNameText;
-
+    [SerializeField] private TextMeshProUGUI castButtonText;
+    [SerializeField] private TextMeshProUGUI nextTurnManaChangeText;
     [SerializeField] private Image characterCombatSprite;
     [SerializeField] private Image enemyCombatSprite;
     [SerializeField] private CanvasGroup characterCombatSpriteCV;
@@ -102,9 +143,15 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private TurnDisplay turnDisplay;
     [SerializeField] private TextMeshProUGUI effectivenessMultiplierText;
     [SerializeField] private RectTransform effectivenessMultiplierTextRect;
+    [SerializeField] private Transform parentNoteCirclesTo;
+    [SerializeField] private Image background;
 
-    [Header("Game")]
+    [Header("Prefabs")]
     [SerializeField] private PopupText popupTextPrefab;
+    [SerializeField] private AfflictionIcon afflictionIconPrefab;
+    [SerializeField] private SpellQueueDisplay spellQueueDisplayPrefab;
+    [SerializeField] private SpellPotencyDisplay castingSpellPotencyDisplayPrefab;
+    [SerializeField] private Circle circlePrefab; // Circle Object
 
     [Header("Audio")]
     [SerializeField] private bool playSFXOnHit;
@@ -127,41 +174,14 @@ public partial class CombatManager : MonoBehaviour
     public Action OnEnemyGainAffliction;
     public Action OnEnemyLoseAffliction;
 
-    #region Combat
-
-    public int NumFreeSpells { get; set; }
-    public bool InCombat { get; private set; }
-    public bool CanCastSpells { get; private set; }
-    private bool hasCastQueue;
-    private bool isCastingQueue;
-    public bool IsCastingQueue => isCastingQueue;
-    [SerializeField] private string castButtonTextEndPlayerTurn = "Cast";
-    [SerializeField] private string castButtonTextWhileCasting = "Casting";
-    [SerializeField] private string castButtonTextPostCasting = "End Turn";
-    [SerializeField] private string castButtonTextEnemyTurn = "Enemy Turn";
-    [SerializeField] private TextMeshProUGUI castButtonText;
-
-    private bool playerTurnEnded;
-    private Turn currentTurn;
-    private int turnCount;
-
-    [Header("Spell Queue")]
-    [SerializeField] private SpellQueueDisplay spellQueueDisplayPrefab;
-    [SerializeField] private Transform spellQueueDisplayList;
-    private List<InCastQueueActiveSpell> spellQueue = new List<InCastQueueActiveSpell>();
-    [SerializeField] private AudioSource spellSFXSource;
-
-    private float effectivenessMultiplier = 0;
-    [SerializeField] private float decreaseEffectivenessMultiplierOnMiss = 0.25f;
-    [SerializeField] private float increaseEffectivenessMultiplierOnHit = 0.1f;
-    [SerializeField] private float defaultEffectivenessMultiplier = 1;
-    [SerializeField] private float maxEffectivenessMultiplier;
-    private List<Circle> spawnedCircles = new List<Circle>();
-
-    public void SetPlayerTurnEnded(bool b)
+    private void Awake()
     {
-        playerTurnEnded = b;
+        _Instance = this;
+
+        CreateCirclePool();
     }
+
+    #region Combat Loop
 
     public IEnumerator StartCombat(Combat combat)
     {
@@ -174,10 +194,12 @@ public partial class CombatManager : MonoBehaviour
         enemyCombatSpriteCV.alpha = 1;
 
         // Set Current Variables
-        currentEnemy = combat.Enemy;
+        currentEnemy = combat.SpawnedEnemy;
         maxEnemyHP = currentEnemy.GetMaxHP();
         enemyCombatSprite.sprite = currentEnemy.GetCombatSprite();
         enemyNameText.text = currentEnemy.Name;
+        enemyBasicAttackDamageText.text = currentEnemy.GetBasicAttackDamage().ToString();
+
         // Hired Hand Effect
         if (GameManager._Instance.HasArtifact(ArtifactLabel.HiredHand))
         {
@@ -218,6 +240,8 @@ public partial class CombatManager : MonoBehaviour
         else
         {
             // Enemy is Dead
+            currentEnemy.OnDeath();
+
             // Play Enemy Death Animation
             StartCoroutine(Utils.ChangeCanvasGroupAlpha(enemyCombatSpriteCV, 0, Time.deltaTime * combatSpriteAlphaChangeRate));
 
@@ -263,28 +287,15 @@ public partial class CombatManager : MonoBehaviour
         while (currentEnemyHP > 0 && GameManager._Instance.GetCurrentCharacterHP() > 0)
         {
             // Turn Begin
+            // Set effectiveness multiplier text to be at position zero
+            effectivenessMultiplierTextRect.anchoredPosition = Vector2.zero;
 
             // Increment Turn Count
             turnCount++;
 
-            // Remove Ward from all Combatents
-            enemyWard = 0;
-            enemyHPBar.SetWard(enemyWard);
-            characterWard = 0;
-            characterHPBar.SetWard(characterWard);
-
             // Decide Enemy Intent
-            // ?
-            // Set Intent Display
-
-            // Increase damage by Power
-            int damageIncrease = GetPowerBonus(Target.Enemy);
-            if (damageIncrease > 0)
-            {
-                ShowAfflictionProc(AfflictionType.Power, Target.Enemy);
-            }
-            enemyIntentDisplay.SetIntent(IntentType.Attack);
-            enemyIntentDisplay.SetIntentText((currentEnemy.GetBasicAttackDamage() + damageIncrease).ToString());
+            EnemyAction enemyAction = currentEnemy.GetEnemyIntent();
+            enemyIntentDisplay.SetEnemyAction(enemyAction);
 
             // Player Turn
             yield return StartCoroutine(PlayerTurn());
@@ -295,7 +306,7 @@ public partial class CombatManager : MonoBehaviour
             }
 
             // Enemy Turn
-            yield return StartCoroutine(EnemyTurn());
+            yield return StartCoroutine(EnemyTurn(enemyAction));
 
             if (CheckForCombatOver())
             {
@@ -306,22 +317,11 @@ public partial class CombatManager : MonoBehaviour
             yield return new WaitForSeconds(delayAfterEnemyTurn);
 
             // Reset for Turn
-            ResetCombatentWard(Target.Character);
-            GameManager._Instance.AlterPlayerMana(GameManager._Instance.GetCharacter().GetManaPerTurn());
+            GameManager._Instance.AlterPlayerMana(GameManager._Instance.GetManaPerTurn());
         }
 
         // Call On Combat End
         OnCombatEnd?.Invoke();
-    }
-
-    public int GetPowerBonus(Target owner)
-    {
-        int damageIncrease = 0;
-        if (TargetHasAffliction(AfflictionType.Power, owner))
-        {
-            damageIncrease = GetAffliction(AfflictionType.Power, Target.Enemy).GetStacks();
-        }
-        return damageIncrease;
     }
 
     private IEnumerator PlayerTurn()
@@ -329,6 +329,9 @@ public partial class CombatManager : MonoBehaviour
         Debug.Log("Player Turn Started");
 
         currentTurn = Turn.Player;
+
+        // Reset Ward
+        ResetCombatentWard(Target.Character);
 
         // Allow player to cast spells
         CanCastSpells = true;
@@ -370,15 +373,6 @@ public partial class CombatManager : MonoBehaviour
         }
 
         Debug.Log("Player Turn Ended");
-    }
-
-    [SerializeField] private SpellPotencyDisplay castingSpellPotencyDisplayPrefab;
-    [SerializeField] private SemicircleLayoutGroup castingSpellSemiCircle;
-
-    private struct InCastQueueActiveSpell
-    {
-        public SpellPotencyDisplay SpellPotencyDisplay;
-        public QueuedActiveSpell QueuedActiveSpell;
     }
 
     public void AddSpellToCastQueue(ActiveSpell spell)
@@ -438,12 +432,6 @@ public partial class CombatManager : MonoBehaviour
 
     private IEnumerator CastCharacterQueue()
     {
-        // Disallow tool tips from being spawned while casting is underway
-        foreach (InCastQueueActiveSpell inQueue in spellQueue)
-        {
-            inQueue.SpellPotencyDisplay.SetCanShowToolTips(false);
-        }
-
         // Cast Queue
         isCastingQueue = true;
 
@@ -497,10 +485,6 @@ public partial class CombatManager : MonoBehaviour
         hasCastQueue = true;
     }
 
-    private bool CheckForCombatOver()
-    {
-        return currentEnemyHP <= 0 || GameManager._Instance.GetCurrentCharacterHP() <= 0;
-    }
 
     private IEnumerator CastSpell(InCastQueueActiveSpell queuedActiveSpell)
     {
@@ -522,19 +506,163 @@ public partial class CombatManager : MonoBehaviour
         yield return StartCoroutine(PlaySpell(queuedActiveSpell));
     }
 
-    public float GetActiveSpellEffectivenessMultiplier()
+    private IEnumerator EnemyTurn(EnemyAction enemyAction)
     {
-        return effectivenessMultiplier;
+        Debug.Log("Enemy Turn Started");
+
+        currentTurn = Turn.Enemy;
+
+        // Reset Ward
+        ResetCombatentWard(Target.Enemy);
+
+        // Show Turn Display
+        yield return StartCoroutine(turnDisplay.Show("Enemy Turn", ""));
+
+        OnEnemyTurnStart?.Invoke();
+
+        // Tick Relevant Afflictions
+        ApplyBlightEffectOnMap(enemyAfflictionMap, Target.Enemy);
+        ApplyPoisonEffectOnMap(enemyAfflictionMap, Target.Enemy);
+
+        if (CheckForCombatOver())
+        {
+            yield break;
+        }
+
+        yield return new WaitForSeconds(delayBeforeEnemyAttack);
+
+        yield return StartCoroutine(EnemyActOnIntents(enemyAction.GetEnemyIntents()));
+
+        // Clear Enemy Intent
+        enemyIntentDisplay.ClearIntents();
+
+        // Regeneration Effect
+        if (TargetHasAffliction(AfflictionType.Regeneration, Target.Enemy))
+        {
+            AlterCombatentHP(GetTargetAfflictionStacks(AfflictionType.Regeneration, Target.Enemy), Target.Enemy, DamageType.Heal);
+            ConsumeAfflictionStack(AfflictionType.Regeneration, Target.Enemy);
+        }
+
+        Debug.Log("Enemy Turn Ended");
     }
 
-    private IEnumerator UpdateSpellPotencyDisplay(SpellPotencyDisplay display)
+    private IEnumerator UpdateDuringCombat()
     {
-        while (true)
+        while (InCombat)
         {
-            display.SetCurrentPotency(effectivenessMultiplier);
+            // Set effectiveness multiplier text
+            effectivenessMultiplierText.text = "x" + Utils.RoundTo(effectivenessMultiplier, 2).ToString();
+
+            // Set effectiveness multiplier text scale
+            effectivenessMultiplierTextRect.localScale = Vector3.Lerp(
+                effectivenessMultiplierTextRect.localScale,
+                Vector3.one * MathHelper.Normalize(effectivenessMultiplier, 0, maxEffectivenessMultiplier,
+                effectivenessMultiplierTextMinScale, effectivenessMultiplierTextMaxScale),
+                Time.deltaTime * animateEffectivenessTextRectScaleSpeed);
+
+            // Set mana Texts
+            nextTurnManaChangeText.text = "+" + GameManager._Instance.GetManaPerTurn();
+
+            // Change the text of the cast Button depending on what's happening
+            if (currentTurn == Turn.Enemy)
+            {
+                castButtonText.text = castButtonTextEnemyTurn;
+            }
+            else if (currentTurn == Turn.Player)
+            {
+                if (hasCastQueue)
+                {
+                    castButtonText.text = castButtonTextPostCasting;
+                }
+                else if (isCastingQueue)
+                {
+                    castButtonText.text = castButtonTextWhileCasting;
+                }
+                else
+                {
+                    castButtonText.text = castButtonTextEndPlayerTurn;
+                }
+            }
+
+            // Show Enemy HP
+            enemyHPBar.SetText(currentEnemyHP + " / " + maxEnemyHP);
+
+            // Show Character HP
+            characterHPBar.SetText(GameManager._Instance.GetCurrentCharacterHP() + " / " + GameManager._Instance.GetMaxPlayerHP());
+
             yield return null;
         }
     }
+
+    private void CheckForBonusChange(int prevValue, int newValue, Action<int> onChange, Action<int> endAction)
+    {
+        if (prevValue != newValue) onChange(newValue);
+        endAction(newValue);
+    }
+
+    private void ResetCombat()
+    {
+        // Reset Turn Count
+        turnCount = 0;
+        // Reset Num Free Spells
+        NumFreeSpells = 0;
+
+        isCastingQueue = false;
+        hasCastQueue = false;
+
+        // Clear Afflictions
+        ClearAfflictionMap(enemyAfflictionMap, Target.Enemy);
+        ClearAfflictionMap(characterAfflictionMap, Target.Character);
+
+        ResetCombatentWard(Target.Character);
+        ResetCombatentWard(Target.Enemy);
+
+        // Clear active spell cooldowns
+        GameManager._Instance.ResetActiveSpellCooldowns();
+
+        // Reset Player Mana
+        GameManager._Instance.SetPlayerMana(GameManager._Instance.GetMaxPlayerMana());
+
+        // Reset HP Bars
+        characterHPBar.Clear();
+        enemyHPBar.Clear();
+
+        musicSource.Stop();
+        musicSource.time = 0;
+
+        // Clear Spell Queue
+        while (spellQueue.Count > 0)
+        {
+            InCastQueueActiveSpell spell = spellQueue[0];
+            Destroy(spell.QueuedActiveSpell.Display.gameObject);
+            Destroy(spell.SpellPotencyDisplay.gameObject);
+            spellQueue.RemoveAt(0);
+        }
+
+        // Destroy Circles
+        ClearCircleList();
+
+        // Set effectiveness multiplier text to be at zero
+        effectivenessMultiplierTextRect.anchoredPosition = Vector2.zero;
+    }
+
+    public void SetPlayerTurnEnded(bool b)
+    {
+        playerTurnEnded = b;
+    }
+
+    public Turn GetTurn()
+    {
+        return currentTurn;
+    }
+
+    private bool CheckForCombatOver()
+    {
+        return currentEnemyHP <= 0 || GameManager._Instance.GetCurrentCharacterHP() <= 0;
+    }
+    #endregion
+
+    #region Spell Gameplay
 
     private IEnumerator PlaySpell(InCastQueueActiveSpell queueActiveSpell)
     {
@@ -595,44 +723,6 @@ public partial class CombatManager : MonoBehaviour
         effectivenessMultiplier = defaultEffectivenessMultiplier;
     }
 
-    public void ReleaseCircle(Circle circle)
-    {
-        circlePool.Release(circle);
-        spawnedCircles.Remove(circle);
-    }
-
-
-    private void ClearCircleList()
-    {
-        while (circleList.Count > 0)
-        {
-            Circle c = circleList[0];
-            circleList.RemoveAt(0);
-            circlePool.Release(c);
-        }
-    }
-
-    private void CreateCirclePool()
-    {
-        circlePool = new ObjectPool<Circle>(() =>
-        {
-            Circle c = Instantiate(circlePrefab, parentNoteCirclesTo);
-            c.ResetCircle();
-            c.name += circlePool.CountAll;
-            return c;
-        }, circ =>
-        {
-            circ.gameObject.SetActive(true);
-        }, circ =>
-        {
-            circ.gameObject.SetActive(false);
-            circ.ResetCircle();
-        }, circ =>
-        {
-            Destroy(circ.gameObject);
-        }, true, 100);
-    }
-
     public void OnNoteHit(RectTransform ofNoteHit)
     {
         // Play SFX
@@ -683,147 +773,548 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private IEnumerator EnemyTurn()
+    public float GetActiveSpellEffectivenessMultiplier()
     {
-        Debug.Log("Enemy Turn Started");
-
-        currentTurn = Turn.Enemy;
-
-        // Show Turn Display
-        yield return StartCoroutine(turnDisplay.Show("Enemy Turn", ""));
-
-        OnEnemyTurnStart?.Invoke();
-
-        // Tick Relevant Afflictions
-        ApplyBlightEffectOnMap(enemyAfflictionMap, Target.Enemy);
-        ApplyPoisonEffectOnMap(enemyAfflictionMap, Target.Enemy);
-
-        if (CheckForCombatOver())
-        {
-            yield break;
-        }
-
-        yield return new WaitForSeconds(delayBeforeEnemyAttack);
-
-        ResetCombatentWard(Target.Enemy);
-
-        yield return StartCoroutine(EnemyAttack());
-
-        // Clear Enemy Intent
-        enemyIntentDisplay.ClearIntents();
-
-        // Regeneration Effect
-        if (TargetHasAffliction(AfflictionType.Regeneration, Target.Enemy))
-        {
-            AlterCombatentHP(GetTargetAfflictionStacks(AfflictionType.Regeneration, Target.Enemy), Target.Enemy, DamageType.Heal);
-            ConsumeAfflictionStack(AfflictionType.Regeneration, Target.Enemy);
-        }
-
-        Debug.Log("Enemy Turn Ended");
+        return effectivenessMultiplier;
     }
 
-    private IEnumerator UpdateDuringCombat()
+    private IEnumerator UpdateSpellPotencyDisplay(SpellPotencyDisplay display)
     {
-        while (InCombat)
+        while (true)
         {
-            // Set effectiveness multiplier text
-            effectivenessMultiplierText.text = "x" + Utils.RoundTo(effectivenessMultiplier, 2).ToString();
-
-            // Change the text of the cast Button depending on what's happening
-            if (currentTurn == Turn.Enemy)
-            {
-                castButtonText.text = castButtonTextEnemyTurn;
-            }
-            else if (currentTurn == Turn.Player)
-            {
-                if (hasCastQueue)
-                {
-                    castButtonText.text = castButtonTextPostCasting;
-                }
-                else if (isCastingQueue)
-                {
-                    castButtonText.text = castButtonTextWhileCasting;
-                }
-                else
-                {
-                    castButtonText.text = castButtonTextEndPlayerTurn;
-                }
-            }
-
-            // Show Enemy HP
-            enemyHPBar.SetText(currentEnemyHP + "/" + maxEnemyHP);
-
-            // Show Character HP
-            characterHPBar.SetText(GameManager._Instance.GetCurrentCharacterHP() + "/" + GameManager._Instance.GetMaxPlayerHP());
+            display.SetCurrentPotency(effectivenessMultiplier);
 
             yield return null;
         }
     }
+    #endregion
 
-    private void ResetCombat()
+    #region Circle Management
+    public void ReleaseCircle(Circle circle)
     {
-        // Reset Turn Count
-        turnCount = 0;
-        // Reset Num Free Spells
-        NumFreeSpells = 0;
-
-        isCastingQueue = false;
-        hasCastQueue = false;
-
-        // Clear Afflictions
-        ClearAfflictionMap(enemyAfflictionMap, Target.Enemy);
-        ClearAfflictionMap(characterAfflictionMap, Target.Character);
-
-        ResetCombatentWard(Target.Character);
-        ResetCombatentWard(Target.Enemy);
-
-        // Clear active spell cooldowns
-        GameManager._Instance.ResetActiveSpellCooldowns();
-
-        // Reset Player Mana
-        GameManager._Instance.SetPlayerMana(GameManager._Instance.GetMaxPlayerMana());
-
-        // Reset HP Bars
-        characterHPBar.Clear();
-        enemyHPBar.Clear();
-
-        musicSource.Stop();
-        musicSource.time = 0;
-
-        // Clear Spell Queue
-        while (spellQueue.Count > 0)
-        {
-            InCastQueueActiveSpell spell = spellQueue[0];
-            Destroy(spell.QueuedActiveSpell.Display.gameObject);
-            Destroy(spell.SpellPotencyDisplay.gameObject);
-            spellQueue.RemoveAt(0);
-        }
-
-        // Destroy Circles
-        ClearCircleList();
-
-        // Set effectiveness multiplier text to be at zero
-        effectivenessMultiplierTextRect.anchoredPosition = Vector2.zero;
+        circlePool.Release(circle);
+        spawnedCircles.Remove(circle);
     }
 
-    public Turn GetTurn()
+
+    private void ClearCircleList()
     {
-        return currentTurn;
+        while (circleList.Count > 0)
+        {
+            Circle c = circleList[0];
+            circleList.RemoveAt(0);
+            circlePool.Release(c);
+        }
+    }
+
+    private void CreateCirclePool()
+    {
+        circlePool = new ObjectPool<Circle>(() =>
+        {
+            Circle c = Instantiate(circlePrefab, parentNoteCirclesTo);
+            c.ResetCircle();
+            c.name += circlePool.CountAll;
+            return c;
+        }, circ =>
+        {
+            circ.gameObject.SetActive(true);
+        }, circ =>
+        {
+            circ.gameObject.SetActive(false);
+            circ.ResetCircle();
+        }, circ =>
+        {
+            Destroy(circ.gameObject);
+        }, true, 100);
+    }
+
+    #endregion
+
+    #region Damage Management
+
+
+    [Header("Enemy Animations")]
+    [SerializeField] private RectTransform enemyCombatSpriteRect;
+    [SerializeField] private int spriteOffset = 50;
+    [SerializeField] private float baseEnemyCombatSpriteAnimationSpeed = 25;
+    [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierStart = 1;
+    [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierGain = 1;
+    [SerializeField] private float combatSpriteAlphaChangeRate = 5;
+
+    [Header("Delays")]
+    [SerializeField] private float delayBetweenSpellCasts = 1;
+    [SerializeField] private float delayAfterPlayerDeath = 2;
+    [SerializeField] private float delayAfterEnemyDeath = 2;
+    [SerializeField] private float delayAfterBandagesEffect = 1;
+    [SerializeField] private float delayBeforeEnemyAttack = 1;
+    [SerializeField] private float delayAfterEnemyTurn = 1;
+    // These should maybe go in Spells
+    [SerializeField] private float delayBetweenSpellBatches = .5f;
+    [SerializeField] private float delayBetweenSpellNotes = .25f;
+
+    // Basic Attack
+    private void PlayerBasicAttack()
+    {
+        // Attack the enemy
+        AttackCombatent(GameManager._Instance.DamageFromEquipment + GameManager._Instance.GetBasicAttackDamage(), Target.Enemy, Target.Character, DamageType.Default, DamageSource.BasicAttack);
+
+        // Burn Effect
+        ApplyBurnEffectOnMap(characterAfflictionMap, Target.Character);
+
+        // Only call this if the combat isn't over
+        if (CheckForCombatOver())
+        {
+            OnPlayerAttack?.Invoke();
+        }
+    }
+
+    private IEnumerator AnimateEnemySpriteAttack()
+    {
+        Vector2 originalPos = enemyCombatSpriteRect.anchoredPosition;
+        Vector2 newPos = originalPos - new Vector2(spriteOffset, 0);
+        float animationSpeedMultiplier = enemyCombatSpriteAnimationSpeedMultiplierStart;
+        while (enemyCombatSpriteRect.anchoredPosition.x > newPos.x)
+        {
+            enemyCombatSpriteRect.anchoredPosition = Vector2.MoveTowards(enemyCombatSpriteRect.anchoredPosition, newPos, Time.deltaTime * baseEnemyCombatSpriteAnimationSpeed * animationSpeedMultiplier);
+            animationSpeedMultiplier += Time.deltaTime * enemyCombatSpriteAnimationSpeedMultiplierGain;
+            yield return null;
+        }
+
+        while (enemyCombatSpriteRect.anchoredPosition.x < originalPos.x)
+        {
+            enemyCombatSpriteRect.anchoredPosition = Vector2.MoveTowards(enemyCombatSpriteRect.anchoredPosition, originalPos, Time.deltaTime * baseEnemyCombatSpriteAnimationSpeed * animationSpeedMultiplier);
+            yield return null;
+        }
+    }
+
+    private void EnemyBasicAttack()
+    {
+        int attackDamage = currentEnemy.GetBasicAttackDamage();
+
+        // Reduce the amount of damage by the players defense added by equipment
+        // if the players defense from equipment is negative, consider it zero
+        int defenseFromEquipment = GameManager._Instance.DefenseFromEquipment;
+        if (defenseFromEquipment < 0)
+        {
+            defenseFromEquipment = 0;
+        }
+
+        // Take away from the damage amount the amount of defense
+        attackDamage -= defenseFromEquipment;
+
+        // if doing so makes amount positive, instead just cancel out
+        if (attackDamage < 0)
+        {
+            attackDamage = 0;
+        }
+
+        AttackCombatent(attackDamage, Target.Character, Target.Enemy, DamageType.Default, DamageSource.BasicAttack);
+
+        // Burn Effect
+        ApplyBurnEffectOnMap(enemyAfflictionMap, Target.Enemy);
+
+        // Only call on enemy attack if the player is still alive
+        if (!CheckForCombatOver())
+        {
+            OnEnemyAttack?.Invoke();
+        }
+    }
+
+    private IEnumerator EnemyActOnIntents(List<EnemyIntent> enemyIntents)
+    {
+        foreach (EnemyIntent intent in enemyIntents)
+        {
+            switch (intent)
+            {
+                case EnemySingleAttackIntent singleAttack:
+
+                    yield return StartCoroutine(AnimateEnemySpriteAttack());
+
+                    AttackCombatent(singleAttack.DamageAmount, Target.Character, Target.Enemy, singleAttack.DamageType, DamageSource.EnemyAttack);
+
+                    break;
+                case EnemyMultiAttackIntent multiAttack:
+
+                    yield return StartCoroutine(AnimateEnemySpriteAttack());
+
+                    for (int i = 0; i < multiAttack.NumAttacks; i++)
+                    {
+                        AttackCombatent(multiAttack.DamageAmount, Target.Character, Target.Enemy, multiAttack.DamageType, DamageSource.EnemyAttack);
+                    }
+
+                    break;
+                case EnemyWardIntent ward:
+
+                    GiveCombatentWard(ward.WardAmount, Target.Enemy);
+
+                    break;
+                case EnemyApplyAfflictionIntent apply:
+
+                    yield return StartCoroutine(AnimateEnemySpriteAttack());
+
+                    AddAffliction(apply.AfflictionType, apply.NumStacks, Target.Character);
+
+                    break;
+                case EnemyGainAfflictionIntent gain:
+
+                    AddAffliction(gain.AfflictionType, gain.NumStacks, Target.Enemy);
+
+                    break;
+                default:
+                    throw new UnhandledSwitchCaseException();
+            }
+        }
+    }
+
+    public void AlterCombatentHP(int amount, Target target, DamageType damageType)
+    {
+        // Call the AlterHP function on the appropriate Target
+        PopupText text;
+        switch (target)
+        {
+            case Target.Character:
+
+                // Use Ward
+                if (amount < 0 && wardableDamageTypes.Contains(damageType))
+                {
+                    int wardUsed = UseWard(amount, Target.Character, () => characterWard, i => characterWard += i);
+                    amount += wardUsed;
+
+                    // Only Spawn Text if Amount is still < 0 after using Ward
+                    if (amount < 0)
+                    {
+                        // Spawn popup Text
+                        text = Instantiate(popupTextPrefab, characterCombatSprite.transform);
+                        text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
+                    }
+                }
+                else
+                {
+                    // No Ward to Complicate things
+                    // Spawn popup Text
+                    text = Instantiate(popupTextPrefab, characterCombatSprite.transform);
+                    text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
+                }
+
+                // Finalize player HP damage
+                GameManager._Instance.AlterPlayerHP(amount, damageType, false);
+                characterHPBar.SetCurrentHP(GameManager._Instance.GetCurrentCharacterHP());
+
+                break;
+            case Target.Enemy:
+
+                // Doctors Report Effect
+                if (amount < 0
+                    && GameManager._Instance.HasArtifact(ArtifactLabel.DoctorsReport)
+                    && (amount * -1) > BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "MustBeOver"))
+                {
+                    AddAffliction(AfflictionType.Bandages, (int)BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "StackAmount"), Target.Character);
+                    GameManager._Instance.AnimateArtifact(ArtifactLabel.DoctorsReport);
+                }
+
+                // Use Ward
+                if (amount < 0 && wardableDamageTypes.Contains(damageType))
+                {
+                    int wardUsed = UseWard(amount, Target.Enemy, () => enemyWard, i => enemyWard += i);
+                    amount += wardUsed;
+
+                    // Only Spawn Text if Amount is still < 0 after using Ward
+                    if (amount < 0)
+                    {
+                        // Spawn popup Text
+                        text = Instantiate(popupTextPrefab, enemyCombatSprite.transform);
+                        text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
+                    }
+                }
+                else
+                {
+                    // Spawn Popup text
+                    text = Instantiate(popupTextPrefab, enemyCombatSprite.transform);
+                    text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
+                }
+
+                // tried to heal past max
+                if (currentEnemyHP + amount > maxEnemyHP)
+                {
+                    currentEnemyHP = maxEnemyHP;
+                }
+                else if (currentEnemyHP + amount < 0) // tried to damage past 0
+                {
+                    currentEnemyHP = 0;
+                }
+                else
+                {
+                    // Apply amount
+                    currentEnemyHP += amount;
+                }
+                // Update HP Bar
+                enemyHPBar.SetCurrentHP(currentEnemyHP);
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
+
+    public void AttackCombatent(int amount, Target target, Target attacker, DamageType damageType, DamageSource damageSource)
+    {
+        // Paralyze Effect
+        if (TargetHasAffliction(AfflictionType.Paralyze, attacker))
+        {
+            ConsumeAfflictionStack(AfflictionType.Paralyze, attacker);
+            ShowAfflictionProc(AfflictionType.Paralyze, attacker);
+            return;
+        }
+
+        // Thorns Effect
+        if (TargetHasAffliction(AfflictionType.Thorns, attacker))
+        {
+            int damage = GetTargetAfflictionMap(target)[AfflictionType.Thorns].GetStacks();
+            ShowAfflictionProc(AfflictionType.Thorns, target);
+            AlterCombatentHP(-damage, attacker, DamageType.Default);
+        }
+
+        // Attempted to Basic Attack for less than 0 (i.e., a Heal)
+        if (damageSource == DamageSource.BasicAttack && amount < 0)
+        {
+            AlterCombatentHP(0, target, damageType);
+            return;
+        }
+
+        AlterCombatentHP(-CalculateDamage(amount, attacker, target, damageType, damageSource, true), target, damageType);
+    }
+
+    // Calculation Function
+    // Takes a number and spits out the number post effects
+    public int CalculateDamage(int amount, Target attacker, Target target, DamageType damageType, DamageSource source, bool consumeAfflictions)
+    {
+        // Attacker Effects
+        // Power Effect
+        if (TargetHasAffliction(AfflictionType.Power, attacker)
+            && source != DamageSource.BasicAttack)
+        {
+            amount += GetTargetAfflictionStacks(AfflictionType.Power, attacker);
+        }
+
+        // Black Prism Effect
+        if (attacker == Target.Character
+            && source == DamageSource.ActiveSpell
+            && GameManager._Instance.HasArtifact(ArtifactLabel.BlackPrism))
+        {
+            amount = Mathf.CeilToInt(amount * (BlackPrism.DamageMultiplier / 100));
+            if (consumeAfflictions)
+            {
+                GameManager._Instance.AnimateArtifact(ArtifactLabel.BlackPrism);
+            }
+        }
+
+        // Embolden Effect
+        if (TargetHasAffliction(AfflictionType.Embolden, attacker))
+        {
+            float value = BalenceManager._Instance.GetValue(AfflictionType.Embolden, "MultiplyBy");
+            float multiplyBy = value / 100;
+
+            amount = Mathf.CeilToInt(amount * multiplyBy);
+            if (consumeAfflictions)
+            {
+                ConsumeAfflictionStack(AfflictionType.Embolden, attacker);
+                ShowAfflictionProc(AfflictionType.Embolden, attacker);
+            }
+        }
+
+        // Weak Effect
+        if (TargetHasAffliction(AfflictionType.Weak, attacker))
+        {
+            float value = BalenceManager._Instance.GetValue(AfflictionType.Weak, "MultiplyBy");
+            float multiplyBy = value / 100;
+
+            amount = Mathf.CeilToInt(amount * multiplyBy);
+
+            if (consumeAfflictions)
+            {
+                ConsumeAfflictionStack(AfflictionType.Weak, attacker);
+                ShowAfflictionProc(AfflictionType.Weak, attacker);
+            }
+        }
+
+        // Reciever Effects
+        // Vulnerable Effect
+        if (TargetHasAffliction(AfflictionType.Vulnerable, target))
+        {
+            float value = BalenceManager._Instance.GetValue(AfflictionType.Vulnerable, "MultiplyBy");
+            float multiplyBy = value / 100;
+
+            amount = Mathf.CeilToInt(amount * multiplyBy);
+            if (consumeAfflictions)
+            {
+                ConsumeAfflictionStack(AfflictionType.Vulnerable, target);
+                ShowAfflictionProc(AfflictionType.Vulnerable, target);
+            }
+        }
+
+        // OnGuard Effect
+        if (TargetHasAffliction(AfflictionType.OnGuard, target))
+        {
+            amount -= BalenceManager._Instance.GetValue(AfflictionType.OnGuard, "ReduceBy");
+            // Make sure guarded doesn't make what should be damage instead be a heal
+            if (amount > 0)
+            {
+                amount = 0;
+            }
+
+            if (consumeAfflictions)
+            {
+                ConsumeAfflictionStack(AfflictionType.OnGuard, target);
+                ShowAfflictionProc(AfflictionType.OnGuard, target);
+            }
+        }
+
+        // General
+        // Intangible Effect
+        if (TargetHasAffliction(AfflictionType.Intangible, target))
+        {
+            amount = 1;
+            if (consumeAfflictions)
+            {
+                ConsumeAfflictionStack(AfflictionType.Intangible, target);
+                ShowAfflictionProc(AfflictionType.Intangible, target);
+            }
+        }
+
+        // Barbarians Tactics Effect
+        if (GameManager._Instance.HasArtifact(ArtifactLabel.BarbariansBlade))
+        {
+            amount += BarbariansBlade.DamageIncrease;
+            GameManager._Instance.AnimateArtifact(ArtifactLabel.BarbariansBlade);
+        }
+
+        return amount;
+    }
+
+    // Calculation Function
+    // Takes a number and spits out the number post effects
+    public int CalculateWard(int amount, Target applyingTo)
+    {
+        if (TargetHasAffliction(AfflictionType.Protection, applyingTo))
+        {
+            amount += GetTargetAfflictionStacks(AfflictionType.Protection, applyingTo);
+        }
+        return amount;
+    }
+
+    private int UseWard(int amount, Target target, Func<int> getFunc, Action<int> alterFunc)
+    {
+        // Apply Ward
+        int currentWard = getFunc();
+
+        // if target has ward
+        if (currentWard > 0)
+        {
+            // Get the amount of ward needed to be used
+            int wardUsed = GetWardUsed(currentWard, amount);
+
+            // AlterFunc will change the appropriate ward variable by the amount of ward used
+            alterFunc(-wardUsed);
+
+            // Set HP Bar
+            GetCombatentHPBar(target).SetWard(getFunc());
+
+            if (wardUsed > 0)
+            {
+                // Spawn Text
+                PopupText wardText = Instantiate(popupTextPrefab, GetTargetSpriteImage(target).transform);
+                wardText.Set(Utils.RoundTo(-wardUsed, 1).ToString(), UIManager._Instance.GetDamageTypeColor(DamageType.Ward));
+            }
+
+            // return the amount ward used;
+            return wardUsed;
+        }
+        else
+        {
+            // Target has no ward, just return 0
+            return 0;
+        }
+    }
+
+    public void GiveCombatentWard(int wardAmount, Target target)
+    {
+        wardAmount = CalculateWard(wardAmount, target);
+        switch (target)
+        {
+            case Target.Character:
+                characterWard += wardAmount;
+                characterHPBar.SetWard(characterWard);
+                break;
+            case Target.Enemy:
+                enemyWard += wardAmount;
+                enemyHPBar.SetWard(enemyWard);
+                break;
+        }
+    }
+
+    private int GetWardUsed(int availableWard, int damageIncoming)
+    {
+        damageIncoming *= -1;
+        if (availableWard > damageIncoming)
+        {
+            return damageIncoming;
+        }
+        else
+        {
+            return availableWard;
+        }
+    }
+
+    public void ResetCombatentWard(Target target)
+    {
+        switch (target)
+        {
+            case Target.Character:
+                characterWard = 0;
+                characterHPBar.SetWard(characterWard);
+                break;
+            case Target.Enemy:
+                enemyWard = 0;
+                enemyHPBar.SetWard(enemyWard);
+                break;
+        }
+    }
+
+    public int GetPowerBonus(Target owner)
+    {
+        int powerBonus = 0;
+        if (TargetHasAffliction(AfflictionType.Power, owner))
+        {
+            powerBonus = GetAffliction(AfflictionType.Power, owner).GetStacks();
+        }
+        return powerBonus;
+    }
+
+    public int GetProtectionBonus(Target owner)
+    {
+        int protectionBonus = 0;
+        if (TargetHasAffliction(AfflictionType.Protection, owner))
+        {
+            protectionBonus = GetAffliction(AfflictionType.Protection, owner).GetStacks();
+        }
+        return protectionBonus;
+    }
+
+    private Image GetTargetSpriteImage(Target target)
+    {
+        switch (target)
+        {
+            case Target.Character:
+                return characterCombatSprite;
+            case Target.Enemy:
+                return enemyCombatSprite;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
     }
 
     #endregion
 
     #region Afflictions
-
-    [Header("Afflictions")]
-    [SerializeField] private AfflictionIcon afflictionIconPrefab;
-    [SerializeField] private Transform characterAfflictionList;
-    [SerializeField] private Transform enemyAfflictionList;
-    private Dictionary<AfflictionType, Affliction> characterAfflictionMap = new Dictionary<AfflictionType, Affliction>();
-    private Dictionary<AfflictionType, Affliction> enemyAfflictionMap = new Dictionary<AfflictionType, Affliction>();
-
-    private Dictionary<AfflictionType, AfflictionIcon> characterAfflictionIconTracker = new Dictionary<AfflictionType, AfflictionIcon>();
-    private Dictionary<AfflictionType, AfflictionIcon> enemyAfflictionIconTracker = new Dictionary<AfflictionType, AfflictionIcon>();
 
     public void AddAffliction(AfflictionType type, int num, Target target)
     {
@@ -880,45 +1371,6 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public Affliction GetAfflictionOfType(AfflictionType type)
-    {
-        switch (type)
-        {
-            case AfflictionType.Bandages:
-                return new Bandages();
-            case AfflictionType.Blight:
-                return new Blight();
-            case AfflictionType.Burn:
-                return new Burn();
-            case AfflictionType.Echo:
-                return new Echo();
-            case AfflictionType.Embolden:
-                return new Embolden();
-            case AfflictionType.Intangible:
-                return new Intangible();
-            case AfflictionType.OnGuard:
-                return new OnGuard();
-            case AfflictionType.Paralyze:
-                return new Paralyze();
-            case AfflictionType.Poison:
-                return new Poison();
-            case AfflictionType.Power:
-                return new Power();
-            case AfflictionType.Protection:
-                return new Protection();
-            case AfflictionType.Thorns:
-                return new Thorns();
-            case AfflictionType.Vulnerable:
-                return new Vulnerable();
-            case AfflictionType.Weak:
-                return new Weak();
-            case AfflictionType.Regeneration:
-                return new Regeneration();
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
-    }
-
     private bool SetAffliction(AfflictionType type, int activations, Target target)
     {
         Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(target);
@@ -935,7 +1387,7 @@ public partial class CombatManager : MonoBehaviour
         }
         else
         {
-            Affliction aff = GetAfflictionOfType(type);
+            Affliction aff = Affliction.GetAfflictionOfType(type);
             aff.SetStacks(activations);
             aff.SetOwner(target);
             map.Add(type, aff);
@@ -1126,363 +1578,6 @@ public partial class CombatManager : MonoBehaviour
         displays.Remove(type);
         Destroy(icon.gameObject);
         GetTargetAfflictionMap(t).Remove(type);
-    }
-
-    #endregion
-
-    #region Attacks
-
-    [Header("Enemy Animations")]
-    [SerializeField] private RectTransform enemyCombatSpriteRect;
-    [SerializeField] private int spriteOffset = 50;
-    [SerializeField] private float baseEnemyCombatSpriteAnimationSpeed = 25;
-    [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierStart = 1;
-    [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierGain = 1;
-    [SerializeField] private float combatSpriteAlphaChangeRate = 5;
-
-    [Header("Delays")]
-    [SerializeField] private float delayBetweenSpellCasts = 1;
-    [SerializeField] private float delayAfterPlayerDeath = 2;
-    [SerializeField] private float delayAfterEnemyDeath = 2;
-    [SerializeField] private float delayAfterBandagesEffect = 1;
-    [SerializeField] private float delayBeforeEnemyAttack = 1;
-    [SerializeField] private float delayAfterEnemyTurn = 1;
-    // These should maybe go in Spells
-    [SerializeField] private float delayBetweenSpellBatches = .5f;
-    [SerializeField] private float delayBetweenSpellNotes = .25f;
-
-    // Basic Attack
-    private void PlayerBasicAttack()
-    {
-        // Get damage bonus from the Power Affliction
-        int damageIncrease = GetPowerBonus(Target.Character);
-        if (damageIncrease > 0)
-        {
-            ShowAfflictionProc(AfflictionType.Power, Target.Character);
-        }
-
-        // Increase the players basic attack damage depending on their damage bonus from equipment
-        int damage = GameManager._Instance.DamageFromEquipment + damageIncrease + GameManager._Instance.GetBasicAttackDamage();
-
-        // if the players damage after all this is negative, instead consider it zero
-        // this is done in order to prevent the players basic attacks from healing the enemy, which would suck
-        // Attack the enemy
-        if (damage > 0)
-        {
-            AttackCombatent(-(damage), Target.Character, Target.Enemy, DamageType.Default, DamageSource.BasicAttack);
-        }
-        else
-        {
-            AttackCombatent(0, Target.Character, Target.Enemy, DamageType.Default, DamageSource.BasicAttack);
-        }
-
-        // Burn Effect
-        ApplyBurnEffectOnMap(characterAfflictionMap, Target.Character);
-
-        OnPlayerAttack?.Invoke();
-    }
-
-    private IEnumerator AnimateEnemySpriteAttack()
-    {
-        Vector2 originalPos = enemyCombatSpriteRect.anchoredPosition;
-        Vector2 newPos = originalPos - new Vector2(spriteOffset, 0);
-        float animationSpeedMultiplier = enemyCombatSpriteAnimationSpeedMultiplierStart;
-        while (enemyCombatSpriteRect.anchoredPosition.x > newPos.x)
-        {
-            enemyCombatSpriteRect.anchoredPosition = Vector2.MoveTowards(enemyCombatSpriteRect.anchoredPosition, newPos, Time.deltaTime * baseEnemyCombatSpriteAnimationSpeed * animationSpeedMultiplier);
-            animationSpeedMultiplier += Time.deltaTime * enemyCombatSpriteAnimationSpeedMultiplierGain;
-            yield return null;
-        }
-
-        while (enemyCombatSpriteRect.anchoredPosition.x < originalPos.x)
-        {
-            enemyCombatSpriteRect.anchoredPosition = Vector2.MoveTowards(enemyCombatSpriteRect.anchoredPosition, originalPos, Time.deltaTime * baseEnemyCombatSpriteAnimationSpeed * animationSpeedMultiplier);
-            yield return null;
-        }
-    }
-
-    private void EnemyBasicAttack()
-    {
-        if (AttackCombatent(-currentEnemy.GetBasicAttackDamage(), Target.Enemy, Target.Character, DamageType.Default, DamageSource.BasicAttack))
-        {
-            // Only call on enemy attack if the player is still alive
-            OnEnemyAttack?.Invoke();
-
-            // Burn Effect
-            ApplyBurnEffectOnMap(enemyAfflictionMap, Target.Enemy);
-        }
-    }
-
-    private IEnumerator EnemyAttack()
-    {
-        // Simple way of attacking for now
-        // Once enemies are fully implemented, this will call a spell most likely
-
-        yield return StartCoroutine(AnimateEnemySpriteAttack());
-
-        EnemyBasicAttack();
-    }
-
-    public bool AttackCombatent(int amount, Target attacker, Target target, DamageType damageType, DamageSource source)
-    {
-        // Paralyze Effect
-        if (TargetHasAffliction(AfflictionType.Paralyze, attacker))
-        {
-            ConsumeAfflictionStack(AfflictionType.Paralyze, attacker);
-            ShowAfflictionProc(AfflictionType.Paralyze, attacker);
-            return true;
-        }
-
-        // Black Prism Effect
-        if (attacker == Target.Character
-            && source == DamageSource.ActiveSpell
-            && GameManager._Instance.HasArtifact(ArtifactLabel.BlackPrism))
-        {
-            amount = Mathf.CeilToInt(amount * (BlackPrism.DamageMultiplier / 100));
-            GameManager._Instance.AnimateArtifact(ArtifactLabel.BlackPrism);
-        }
-
-        // Thorns Effect
-        if (amount < 0 && TargetHasAffliction(AfflictionType.Thorns, target))
-        {
-            int damage = GetTargetAfflictionMap(target)[AfflictionType.Thorns].GetStacks();
-            ShowAfflictionProc(AfflictionType.Thorns, target);
-            AlterCombatentHP(-damage, attacker, DamageType.Default);
-        }
-
-        // Embolden Effect
-        if (amount < 0 && TargetHasAffliction(AfflictionType.Embolden, attacker))
-        {
-            float value = BalenceManager._Instance.GetValue(AfflictionType.Embolden, "MultiplyBy");
-            float multiplyBy = value / 100;
-
-            amount = Mathf.CeilToInt(amount * multiplyBy);
-            ConsumeAfflictionStack(AfflictionType.Embolden, attacker);
-            ShowAfflictionProc(AfflictionType.Embolden, attacker);
-        }
-
-        // Weak Effect
-        if (amount < 0 && TargetHasAffliction(AfflictionType.Weak, attacker))
-        {
-            float value = BalenceManager._Instance.GetValue(AfflictionType.Weak, "MultiplyBy");
-            float multiplyBy = value / 100;
-
-            amount = Mathf.CeilToInt(amount * multiplyBy);
-            ConsumeAfflictionStack(AfflictionType.Weak, attacker);
-            ShowAfflictionProc(AfflictionType.Weak, attacker);
-        }
-
-        // Then to Deal Damage
-        return DamageCombatent(amount, target, attacker, damageType);
-    }
-
-    public bool DamageCombatent(int amount, Target combatent, Target attacker, DamageType damageType)
-    {
-        if (amount < 0 && combatent == Target.Character)
-        {
-            // Reduce the amount of damage by the players defense added by equipment
-
-            // if the players defense from equipment is negative, consider it zero
-            int defenseFromEquipment = GameManager._Instance.DefenseFromEquipment;
-            if (defenseFromEquipment < 0)
-            {
-                defenseFromEquipment = 0;
-            }
-
-            // Take away from the damage amount the amount of defense
-            amount += defenseFromEquipment;
-
-            // if doing so makes amount positive, instead just cancel out
-            if (amount > 0)
-            {
-                amount = 0;
-            }
-        }
-
-        // Vulnerable Effect
-        if (amount < 0 && TargetHasAffliction(AfflictionType.Vulnerable, combatent))
-        {
-            float value = BalenceManager._Instance.GetValue(AfflictionType.Vulnerable, "MultiplyBy");
-            float multiplyBy = value / 100;
-
-            amount = Mathf.CeilToInt(amount * multiplyBy);
-            ConsumeAfflictionStack(AfflictionType.Vulnerable, combatent);
-            ShowAfflictionProc(AfflictionType.Vulnerable, combatent);
-        }
-
-        // OnGuard Effect
-        if (amount < 0 && TargetHasAffliction(AfflictionType.OnGuard, combatent))
-        {
-            amount -= BalenceManager._Instance.GetValue(AfflictionType.OnGuard, "ReduceBy");
-            ConsumeAfflictionStack(AfflictionType.OnGuard, combatent);
-            ShowAfflictionProc(AfflictionType.OnGuard, combatent);
-
-            // Make sure guarded doesn't make what should be damage instead be a heal
-            if (amount > 0)
-            {
-                amount = 0;
-            }
-        }
-
-        // Alter HP
-        return AlterCombatentHP(amount, combatent, damageType);
-    }
-
-    private bool AlterCombatentHP(int amount, Target combatent, DamageType damageType)
-    {
-        // Intangible Effect
-        if (amount < 0 && TargetHasAffliction(AfflictionType.Intangible, combatent))
-        {
-            amount = -1;
-            ConsumeAfflictionStack(AfflictionType.Intangible, combatent);
-            ShowAfflictionProc(AfflictionType.Intangible, combatent);
-        }
-
-        // Barbarians Tactics Effect
-        if (amount < 0 && GameManager._Instance.HasArtifact(ArtifactLabel.BarbariansBlade))
-        {
-            amount -= BarbariansBlade.DamageIncrease;
-            GameManager._Instance.AnimateArtifact(ArtifactLabel.BarbariansBlade);
-        }
-
-        // Call the AlterHP function on the appropriate Target
-        switch (combatent)
-        {
-            case Target.Character:
-
-                // Apply Ward
-                if (characterWard > 0 &&
-                    damageType == DamageType.Default
-                    && amount < 0)
-                {
-                    int wardUsed = GetWardUsed(characterWard, amount);
-                    characterWard -= wardUsed;
-                    amount += wardUsed;
-
-                    PopupText wardText = Instantiate(popupTextPrefab, characterCombatSprite.transform);
-                    wardText.Set(Utils.RoundTo(-wardUsed, 1).ToString(), UIManager._Instance.GetDamageTypeColor(DamageType.Ward));
-
-                    // Set New Ward Amount
-                    characterHPBar.SetWard(characterWard);
-                }
-
-
-                if (amount < 0)
-                {
-                    PopupText text = Instantiate(popupTextPrefab, characterCombatSprite.transform);
-                    text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
-                }
-
-                bool r = GameManager._Instance.AlterPlayerHP(amount, damageType, false);
-                characterHPBar.SetCurrentHP(GameManager._Instance.GetCurrentCharacterHP());
-                return r;
-            case Target.Enemy:
-                return AltarEnemyHP(amount, damageType);
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
-    }
-
-    public bool AltarEnemyHP(int amount, DamageType damageType)
-    {
-        // Doctors Report Effect
-        if (amount < 0
-            && GameManager._Instance.HasArtifact(ArtifactLabel.DoctorsReport)
-            && (amount * -1) > BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "MustBeOver"))
-        {
-            AddAffliction(AfflictionType.Bandages, (int)BalenceManager._Instance.GetValue(ArtifactLabel.DoctorsReport, "StackAmount"), Target.Character);
-            GameManager._Instance.AnimateArtifact(ArtifactLabel.DoctorsReport);
-        }
-
-        // Apply Ward
-        if (enemyWard > 0 &&
-            damageType == DamageType.Default
-            && amount < 0)
-        {
-            int wardUsed = GetWardUsed(enemyWard, amount);
-            enemyWard -= wardUsed;
-            amount += wardUsed;
-
-            PopupText wardText = Instantiate(popupTextPrefab, characterCombatSprite.transform);
-            wardText.Set(Utils.RoundTo(-wardUsed, 1).ToString(), UIManager._Instance.GetDamageTypeColor(DamageType.Ward));
-
-            // Set new Ward Amount
-            enemyHPBar.SetWard(enemyWard);
-        }
-
-        if (amount < 0)
-        {
-            PopupText text = Instantiate(popupTextPrefab, enemyCombatSprite.transform);
-            text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
-        }
-
-        if (currentEnemyHP + amount > maxEnemyHP)
-        {
-            currentEnemyHP = maxEnemyHP;
-            enemyHPBar.SetCurrentHP(currentEnemyHP);
-        }
-        else
-        {
-            currentEnemyHP += amount;
-            if (currentEnemyHP < 0)
-                currentEnemyHP = 0;
-            enemyHPBar.SetCurrentHP(currentEnemyHP);
-            if (currentEnemyHP <= 0)
-            {
-                // Enemy Died
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public void GiveCombatentWard(int wardAmount, Target target)
-    {
-        int increaseWardBy = 0;
-        if (TargetHasAffliction(AfflictionType.Protection, target))
-        {
-            increaseWardBy = GetAffliction(AfflictionType.Protection, target).GetStacks();
-            ShowAfflictionProc(AfflictionType.Protection, target);
-        }
-        switch (target)
-        {
-            case Target.Character:
-                characterWard += wardAmount;
-                characterHPBar.SetWard(characterWard);
-                break;
-            case Target.Enemy:
-                enemyWard += wardAmount;
-                characterHPBar.SetWard(enemyWard);
-                break;
-        }
-    }
-
-    private int GetWardUsed(int availableWard, int damageIncoming)
-    {
-        damageIncoming *= -1;
-        if (availableWard > damageIncoming)
-        {
-            return damageIncoming;
-        }
-        else
-        {
-            return availableWard;
-        }
-    }
-
-    public void ResetCombatentWard(Target target)
-    {
-        switch (target)
-        {
-            case Target.Character:
-                characterWard = 0;
-                characterHPBar.SetWard(characterWard);
-                break;
-            case Target.Enemy:
-                enemyWard = 0;
-                enemyHPBar.SetWard(enemyWard);
-                break;
-        }
     }
 
     #endregion

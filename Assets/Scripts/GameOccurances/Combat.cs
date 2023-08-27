@@ -18,8 +18,20 @@ public abstract class Combat : GameOccurance
     [SerializeField] private AudioClip mainMusic; // Music file, attach from editor
     public AudioClip MainMusic { get => mainMusic; }
 
-    [SerializeField] private Enemy enemy;
-    public Enemy Enemy { get => enemy; }
+    [SerializeField] private EnemyType enemyType;
+    private Enemy spawnedEnemy;
+    public Enemy SpawnedEnemy
+    {
+        get
+        {
+            // Spawn enemy if needed
+            if (spawnedEnemy == null)
+            {
+                spawnedEnemy = Enemy.GetEnemyOfType(enemyType);
+            }
+            return spawnedEnemy;
+        }
+    }
 
     [SerializeField]
     private SerializableDictionary<RewardType, PercentageMap<ItemRewardInfo>> itemRewards

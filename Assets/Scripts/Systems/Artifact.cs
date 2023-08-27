@@ -39,6 +39,73 @@ public abstract class Artifact : PowerupItem
     {
         return Resources.Load<Sprite>(SpritePath);
     }
+
+    public static Artifact GetArtifactOfType(ArtifactLabel label)
+    {
+        switch (label)
+        {
+            case ArtifactLabel.VIPCard:
+                return new VIPCard();
+            case ArtifactLabel.Barricade:
+                return new Barricade();
+            case ArtifactLabel.BlueMantis:
+                return new BlueMantis();
+            case ArtifactLabel.CanyonChunk:
+                return new CanyonChunk();
+            case ArtifactLabel.DoctorsReport:
+                return new DoctorsReport();
+            case ArtifactLabel.SpecialSpinich:
+                return new SpecialSpinach();
+            case ArtifactLabel.HealthInsurance:
+                return new HealthInsurance();
+            case ArtifactLabel.HolyShield:
+                return new HolyShield();
+            case ArtifactLabel.InvertedPolaroid:
+                return new InvertedPolaroid();
+            case ArtifactLabel.LooseTrigger:
+                return new LooseTrigger();
+            case ArtifactLabel.BoldInvestments:
+                return new BoldInvestments();
+            case ArtifactLabel.MedicineKit:
+                return new MedicineKit();
+            case ArtifactLabel.MolatovCocktail:
+                return new MolatovCocktail();
+            case ArtifactLabel.Plaguebringer:
+                return new Plaguebringer();
+            case ArtifactLabel.RustyCannon:
+                return new RustyCannon();
+            case ArtifactLabel.SmokeShroud:
+                return new SmokeShroud();
+            case ArtifactLabel.GreedyHands:
+                return new GreedyHands();
+            case ArtifactLabel.VoodooDoll:
+                return new VoodooDoll();
+            case ArtifactLabel.ZedsScalpel:
+                return new ZedsScalpel();
+            case ArtifactLabel.BarbariansBlade:
+                return new BarbariansBlade();
+            case ArtifactLabel.BlackPrism:
+                return new BlackPrism();
+            case ArtifactLabel.Boulder:
+                return new Boulder();
+            case ArtifactLabel.CaveMural:
+                return new CaveMural();
+            case ArtifactLabel.CheapStopwatch:
+                return new CheapStopwatch();
+            case ArtifactLabel.HiredHand:
+                return new HiredHand();
+            case ArtifactLabel.LizardSkinSilk:
+                return new LizardSkinSilk();
+            case ArtifactLabel.LuckyCoin:
+                return new LuckyCoin();
+            case ArtifactLabel.Telescope:
+                return new Telescope();
+            case ArtifactLabel.Crown:
+                return new Crown();
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
 }
 
 public class GreedyHands : Artifact
@@ -663,7 +730,7 @@ public class RustyCannon : Artifact
         tracker += 1;
         if (tracker > numTurns)
         {
-            CombatManager._Instance.DamageCombatent(-damageAmount, Target.Enemy, Target.Character, DamageType.Default);
+            CombatManager._Instance.AlterCombatentHP(-damageAmount, Target.Enemy, DamageType.Default);
             ShowArtifactProc();
             hasActivated = true;
         }
@@ -707,7 +774,7 @@ public class VoodooDoll : Artifact
 
     protected override void Effect()
     {
-        CombatManager._Instance.DamageCombatent(-damageAmount, Target.Enemy, Target.Character, DamageType.Default);
+        CombatManager._Instance.AlterCombatentHP(-damageAmount, Target.Enemy, DamageType.Default);
         ShowArtifactProc();
     }
 }
@@ -1128,7 +1195,7 @@ public class Boulder : Artifact
         if (tracker >= procAfter)
         {
             Debug.Log(damageAmount);
-            CombatManager._Instance.DamageCombatent(-damageAmount, Target.Enemy, Target.Character, DamageType.Default);
+            CombatManager._Instance.AlterCombatentHP(-damageAmount, Target.Enemy, DamageType.Default);
             ShowArtifactProc();
             tracker = 0;
             damageAmount += damageIncrease;

@@ -119,6 +119,64 @@ public abstract class Spell : ToolTippable
     {
         return new List<ToolTippable>();
     }
+
+    public static Spell GetSpellOfType(SpellLabel label)
+    {
+        switch (label)
+        {
+            case SpellLabel.BattleTrance:
+                return new BattleTrance();
+            case SpellLabel.TradeBlood:
+                return new TradeBlood();
+            case SpellLabel.Cripple:
+                return new Cripple();
+            case SpellLabel.CrushJoints:
+                return new CrushJoints();
+            case SpellLabel.Electrifry:
+                return new Electrifry();
+            case SpellLabel.Excite:
+                return new Excite();
+            case SpellLabel.ExposeFlesh:
+                return new ExposeFlesh();
+            case SpellLabel.Fireball:
+                return new Fireball();
+            case SpellLabel.Flurry:
+                return new Flurry();
+            case SpellLabel.Forethought:
+                return new Forethought();
+            case SpellLabel.ImpartialAid:
+                return new ImpartialAid();
+            case SpellLabel.Inferno:
+                return new Inferno();
+            case SpellLabel.Jarkai:
+                return new Jarkai();
+            case SpellLabel.MagicRain:
+                return new MagicRain();
+            case SpellLabel.Overexcite:
+                return new Overexcite();
+            case SpellLabel.Plague:
+                return new Plague();
+            case SpellLabel.PoisonTips:
+                return new PoisonTips();
+            case SpellLabel.Reverberate:
+                return new Reverberate();
+            case SpellLabel.Shock:
+                return new Shock();
+            case SpellLabel.Singe:
+                return new Singe();
+            case SpellLabel.StaticField:
+                return new StaticField();
+            case SpellLabel.Toxify:
+                return new Toxify();
+            case SpellLabel.WitchesWill:
+                return new WitchesWill();
+            case SpellLabel.WitchesWard:
+                return new WitchesWard();
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
+
 }
 
 #region Passive Spells
@@ -460,7 +518,7 @@ public class MagicRain : PassiveSpell
 
     public override void Proc(bool canDupe)
     {
-        CombatManager._Instance.DamageCombatent(-damageAmount, Target.Enemy, Target.Character, DamageType.Default);
+        CombatManager._Instance.AlterCombatentHP(-damageAmount, Target.Enemy, DamageType.Default);
         base.Proc(canDupe);
     }
 
@@ -668,6 +726,16 @@ public abstract class ActiveSpell : Spell
     {
         return (Batches * MinMaxNotesPerBatch.x) + " - " + (Batches * MinMaxNotesPerBatch.y);
     }
+
+    protected int GetCalculatedDamageEnemy(int damage)
+    {
+        return CombatManager._Instance.CalculateDamage(damage, Target.Character, Target.Enemy, mainDamageType, DamageSource.ActiveSpell, false);
+    }
+
+    protected int GetCalculatedWard(int ward, Target target)
+    {
+        return CombatManager._Instance.CalculateWard(ward, target);
+    }
 }
 
 public class Fireball : ActiveSpell
@@ -675,7 +743,7 @@ public class Fireball : ActiveSpell
     public override string Name => "Fireball";
     public override SpellLabel Label => SpellLabel.Fireball;
 
-    protected override string toolTipText => "Deal " + damageAmount + " Damage, Apply " + stackAmount + " Burn";
+    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage, Apply " + stackAmount + " Burn";
 
     protected override DamageType mainDamageType => DamageType.Fire;
 
@@ -697,7 +765,7 @@ public class Fireball : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Fire, DamageSource.ActiveSpell);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, DamageType.Fire, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Burn, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
 }
@@ -707,7 +775,7 @@ public class Shock : ActiveSpell
     public override string Name => "Shock";
     public override SpellLabel Label => SpellLabel.Shock;
 
-    protected override string toolTipText => "Deal " + damageAmount + " Damage, Apply " + stackAmount + " Paralyze";
+    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage, Apply " + stackAmount + " Paralyze";
 
     protected override DamageType mainDamageType => DamageType.Electricity;
 
@@ -729,7 +797,7 @@ public class Shock : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Electricity, DamageSource.ActiveSpell);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, DamageType.Electricity, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
 }
@@ -796,7 +864,7 @@ public class Toxify : ActiveSpell
     public override string Name => "Toxify";
     public override SpellLabel Label => SpellLabel.Toxify;
 
-    protected override string toolTipText => "Deal " + damageAmount + " Damage, Apply " + stackAmount + " Poison";
+    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage, Apply " + stackAmount + " Poison";
 
     protected override DamageType mainDamageType => DamageType.Poison;
 
@@ -818,7 +886,7 @@ public class Toxify : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Poison, DamageSource.ActiveSpell);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Poison, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
 }
@@ -828,7 +896,7 @@ public class Jarkai : ActiveSpell
     public override string Name => "Jarkai";
     public override SpellLabel Label => SpellLabel.Jarkai;
 
-    protected override string toolTipText => "Deal " + damageAmount + " Damage Twice";
+    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage Twice";
 
     protected override DamageType mainDamageType => DamageType.Default;
 
@@ -842,8 +910,10 @@ public class Jarkai : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
+        for (int i = 0; i < 2; i++)
+        {
+            CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
+        }
     }
 }
 
@@ -852,7 +922,7 @@ public class Flurry : ActiveSpell
     public override string Name => "Flurry";
     public override SpellLabel Label => SpellLabel.Flurry;
 
-    protected override string toolTipText => "Deal " + damageAmount + " Damage " + hitAmount + " Times";
+    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage " + hitAmount + " Times";
 
     protected override DamageType mainDamageType => DamageType.Default;
 
@@ -870,7 +940,7 @@ public class Flurry : ActiveSpell
     {
         for (int i = 0; i < hitAmount; i++)
         {
-            CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
+            CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
         }
     }
 }
@@ -913,7 +983,7 @@ public class ExposeFlesh : ActiveSpell
     public override string Name => "Expose Flesh";
     public override SpellLabel Label => SpellLabel.ExposeFlesh;
 
-    protected override string toolTipText => "Apply " + stackAmount + " Vulnerable, Deal " + damageAmount + " Damage";
+    protected override string toolTipText => "Apply " + stackAmount + " Vulnerable, Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage";
 
     protected override DamageType mainDamageType => DamageType.Evil;
 
@@ -940,7 +1010,7 @@ public class ExposeFlesh : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
 }
@@ -950,7 +1020,7 @@ public class Cripple : ActiveSpell
     public override string Name => "Cripple";
     public override SpellLabel Label => SpellLabel.Cripple;
 
-    protected override string toolTipText => "Apply " + stackAmount + " Weak, Deal " + damageAmount + " Damage";
+    protected override string toolTipText => "Apply " + stackAmount + " Weak, Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage";
 
     protected override DamageType mainDamageType => DamageType.Evil;
 
@@ -972,7 +1042,7 @@ public class Cripple : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Weak, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
 }
@@ -982,7 +1052,8 @@ public class TradeBlood : ActiveSpell
     public override string Name => "Trade Blood";
     public override SpellLabel Label => SpellLabel.TradeBlood;
 
-    protected override string toolTipText => "Lose " + selfDamageAmount + " HP, Deal " + otherDamageAmount + " Damage";
+    protected override string toolTipText => "Lose " + selfDamageAmount + " HP, Deal " +
+        GetCalculatedDamageEnemy(otherDamageAmount) + " Damage";
 
     protected override DamageType mainDamageType => DamageType.Evil;
 
@@ -998,8 +1069,8 @@ public class TradeBlood : ActiveSpell
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterPlayerHP(-selfDamageAmount, DamageType.Default);
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-otherDamageAmount), Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
+        GameManager._Instance.AlterPlayerHP(-selfDamageAmount, mainDamageType);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(otherDamageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
     }
 }
 
@@ -1128,7 +1199,7 @@ public class ImpartialAid : ActiveSpell
     public override string Name => "Impartial Aid";
     public override SpellLabel Label => SpellLabel.ImpartialAid;
 
-    protected override string toolTipText => "All Combatents Heal " + healAmount + " HP";
+    protected override string toolTipText => "All Combatents Heal for " + healAmount + " HP";
 
     protected override DamageType mainDamageType => DamageType.Heal;
 
@@ -1148,8 +1219,8 @@ public class ImpartialAid : ActiveSpell
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterPlayerHP(PassValueThroughEffectivenessMultiplier(healAmount), DamageType.Heal);
-        CombatManager._Instance.AltarEnemyHP(PassValueThroughEffectivenessMultiplier(healAmount), DamageType.Heal);
+        CombatManager._Instance.AlterCombatentHP(PassValueThroughEffectivenessMultiplier(healAmount), Target.Character, DamageType.Heal);
+        CombatManager._Instance.AlterCombatentHP(PassValueThroughEffectivenessMultiplier(healAmount), Target.Enemy, DamageType.Heal);
     }
 }
 
@@ -1158,7 +1229,7 @@ public class WitchesWill : ActiveSpell
     public override string Name => "Witches Will";
     public override SpellLabel Label => SpellLabel.WitchesWill;
 
-    protected override string toolTipText => "Deal " + damageAmount + " Damage";
+    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage";
 
     protected override DamageType mainDamageType => DamageType.Default;
 
@@ -1172,7 +1243,7 @@ public class WitchesWill : ActiveSpell
 
     protected override void Effect()
     {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(-damageAmount), Target.Character, Target.Enemy, DamageType.Default, DamageSource.ActiveSpell);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
     }
 }
 
@@ -1181,7 +1252,7 @@ public class WitchesWard : ActiveSpell
     public override string Name => "Witches Ward";
     public override SpellLabel Label => SpellLabel.WitchesWard;
 
-    protected override string toolTipText => "Gain " + wardAmount + " Ward";
+    protected override string toolTipText => "Gain " + GetCalculatedWard(wardAmount, Target.Character) + " Ward";
 
     protected override DamageType mainDamageType => DamageType.Default;
 

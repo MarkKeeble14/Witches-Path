@@ -14,9 +14,12 @@ public class PotionIngredientListEntry : MonoBehaviour, IPointerEnterHandler, IP
 
     [SerializeField] private CanvasGroup cv;
 
+    [SerializeField] private float spawnToolTipDelay = 0.25f;
+
     private Action onPress;
     private PotionIngredient ingredient;
     private GameObject spawnedToolTip;
+    private bool isMousedOver;
 
     public PotionIngredientType Type => ingredient.Type;
     private int quantity;
@@ -38,7 +41,7 @@ public class PotionIngredientListEntry : MonoBehaviour, IPointerEnterHandler, IP
 
     public void Set(PotionIngredientType ingredientType, int quantity, bool interactable)
     {
-        this.ingredient = GameManager._Instance.GetPotionIngredientOfType(ingredientType);
+        this.ingredient = PotionIngredient.GetPotionIngredientOfType(ingredientType);
 
         nameText.text = ingredient.Name;
         this.quantity = quantity;
@@ -65,11 +68,20 @@ public class PotionIngredientListEntry : MonoBehaviour, IPointerEnterHandler, IP
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        isMousedOver = true;
+        StartCoroutine(SpawnToolTipAfterDelay(spawnToolTipDelay));
+    }
+
+    private IEnumerator SpawnToolTipAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (!isMousedOver) yield break;
         SpawnToolTip();
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        isMousedOver = false;
         DestroyToolTip();
     }
 }

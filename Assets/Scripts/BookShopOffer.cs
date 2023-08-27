@@ -11,7 +11,7 @@ public class BookShopOffer : ShopOffer
 
     public void Set(BookLabel setTo, int cost)
     {
-        book = GameManager._Instance.GetBookOfType(setTo);
+        book = Book.GetBookOfType(setTo);
         itemText.text = book.Name;
         this.cost = cost;
 

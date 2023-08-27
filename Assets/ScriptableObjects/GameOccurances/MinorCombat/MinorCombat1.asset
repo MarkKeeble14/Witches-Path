@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: MinorCombat1
   m_EditorClassIdentifier: 
   mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
-  enemy: {fileID: 11400000, guid: 58bb90f725591c24387b950661ff8fee, type: 2}
+  enemyType: 2
   itemRewards:
     dictionary: []
   currencyRewards:

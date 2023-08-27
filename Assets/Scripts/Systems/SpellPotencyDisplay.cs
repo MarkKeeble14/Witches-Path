@@ -21,15 +21,12 @@ public class SpellPotencyDisplay : MonoBehaviour, IPointerEnterHandler, IPointer
 
     private ActiveSpell representingSpell;
     private GameObject spawnedToolTip;
-
-    private bool canShowToolTips;
     private float maxPotency;
 
     public void SetSpell(ActiveSpell spell)
     {
         representingSpell = spell;
         SetMainColor(UIManager._Instance.GetDamageTypeColor(spell.MainDamageType));
-        SetCanShowToolTips(true);
     }
 
     public void SetMainColor(Color color)
@@ -55,14 +52,20 @@ public class SpellPotencyDisplay : MonoBehaviour, IPointerEnterHandler, IPointer
 
     private void Update()
     {
+        // Destroy ToolTip if need be
+        if (!CombatManager._Instance.AllowGameSpaceToolTips && spawnedToolTip != null)
+        {
+            DestroyToolTip();
+        }
+
         goalScale = MathHelper.Normalize(currentPotency, 0, maxPotency, minMaxScale.x, minMaxScale.y);
         toScale.localScale = Vector3.Lerp(toScale.localScale, goalScale * Vector3.one, Time.deltaTime * animateScaleSpeed);
         cv.alpha = Mathf.Lerp(cv.alpha, 1, Time.deltaTime * animateAlphaSpeed);
     }
+
     private void SpawnToolTip()
     {
-        if (canShowToolTips)
-            spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(representingSpell, transform);
+        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(representingSpell, transform);
     }
 
     private void DestroyToolTip()
@@ -72,26 +75,12 @@ public class SpellPotencyDisplay : MonoBehaviour, IPointerEnterHandler, IPointer
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (canShowToolTips)
+        if (CombatManager._Instance.AllowGameSpaceToolTips)
             SpawnToolTip();
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
         DestroyToolTip();
-    }
-
-    public bool GetCanShowToolTips()
-    {
-        return canShowToolTips;
-    }
-
-    public void SetCanShowToolTips(bool b)
-    {
-        if (!b)
-        {
-            DestroyToolTip();
-        }
-        canShowToolTips = b;
     }
 }

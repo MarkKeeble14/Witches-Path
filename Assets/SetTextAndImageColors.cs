@@ -36,9 +36,16 @@ public class SetTextAndImageColors : MonoBehaviour
     private void Start()
     {
         UISectionInformation setTo = UIManager._Instance.GetUISectionInformation(uiSection);
-        i.color = setTo.Color;
-        text.color = setTo.Color;
-        i.sprite = setTo.Icon;
-        text.text = setTo.Text;
+        if (text)
+        {
+            text.color = setTo.Color;
+            text.text = setTo.Text;
+        }
+
+        if (i)
+        {
+            i.color = setTo.Color;
+            i.sprite = setTo.Icon;
+        }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class TextPopOTextChangeMoveTowards : TextPopOnTextChange
+public class TextPopOnTextChangeMoveTowards : TextPopOnTextChange
 {
     protected override void UpdateFunc()
     {

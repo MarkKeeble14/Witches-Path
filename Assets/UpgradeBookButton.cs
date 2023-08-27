@@ -29,7 +29,7 @@ public class UpgradeBookButton : MonoBehaviour
         Book currentBook = GameManager._Instance.GetOwnedBook(0);
 
         // Get a new book of the same type
-        Book upgradedBook = GameManager._Instance.GetBookOfType(currentBook.GetLabel());
+        Book upgradedBook = Book.GetBookOfType(currentBook.GetLabel());
 
         // Level that book up to the current books level, then one level more
         int timesToLevel = currentBook.GetCurrentLevel();

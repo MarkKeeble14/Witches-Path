@@ -400,7 +400,7 @@ public class GameManager : MonoBehaviour
 
     public IEnumerator StartSwapSpellSequnce(SpellLabel label)
     {
-        Spell spell = GetSpellOfType(label);
+        Spell spell = Spell.GetSpellOfType(label);
         switch (spell)
         {
             case ActiveSpell:
@@ -464,7 +464,7 @@ public class GameManager : MonoBehaviour
 
         // Spawn Visual Spell Display to Give Player Info
         VisualSpellDisplay spawned = Instantiate(visualSpellDisplayPrefab, spawnVisualSpellDisplayPrefabOn);
-        spawned.SetSpell(GetSpellOfType(newSpell));
+        spawned.SetSpell(Spell.GetSpellOfType(newSpell));
 
         // Tell all displays of the specified type that the swap sequence IS happening 
         switch (requiredSpellType)
@@ -553,7 +553,7 @@ public class GameManager : MonoBehaviour
 
     public void EquipSpell(SpellLabel label)
     {
-        Spell spell = GetSpellOfType(label);
+        Spell spell = Spell.GetSpellOfType(label);
         switch (spell)
         {
             case ActiveSpell:
@@ -605,7 +605,7 @@ public class GameManager : MonoBehaviour
         }
 
         spellDisplay.SetEmpty(false);
-        PassiveSpell newSpell = (PassiveSpell)GetSpellOfType(label);
+        PassiveSpell newSpell = (PassiveSpell)Spell.GetSpellOfType(label);
         newSpell.OnEquip();
 
         spellDisplay.SetPassiveSpell(newSpell);
@@ -666,7 +666,7 @@ public class GameManager : MonoBehaviour
         }
 
         spellDisplay.SetEmpty(false);
-        ActiveSpell newSpell = (ActiveSpell)GetSpellOfType(label);
+        ActiveSpell newSpell = (ActiveSpell)Spell.GetSpellOfType(label);
         newSpell.OnEquip();
 
         spellDisplay.SetActiveSpell(newSpell);
@@ -1091,147 +1091,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public Spell GetSpellOfType(SpellLabel label)
-    {
-        switch (label)
-        {
-            case SpellLabel.BattleTrance:
-                return new BattleTrance();
-            case SpellLabel.TradeBlood:
-                return new TradeBlood();
-            case SpellLabel.Cripple:
-                return new Cripple();
-            case SpellLabel.CrushJoints:
-                return new CrushJoints();
-            case SpellLabel.Electrifry:
-                return new Electrifry();
-            case SpellLabel.Excite:
-                return new Excite();
-            case SpellLabel.ExposeFlesh:
-                return new ExposeFlesh();
-            case SpellLabel.Fireball:
-                return new Fireball();
-            case SpellLabel.Flurry:
-                return new Flurry();
-            case SpellLabel.Forethought:
-                return new Forethought();
-            case SpellLabel.ImpartialAid:
-                return new ImpartialAid();
-            case SpellLabel.Inferno:
-                return new Inferno();
-            case SpellLabel.Jarkai:
-                return new Jarkai();
-            case SpellLabel.MagicRain:
-                return new MagicRain();
-            case SpellLabel.Overexcite:
-                return new Overexcite();
-            case SpellLabel.Plague:
-                return new Plague();
-            case SpellLabel.PoisonTips:
-                return new PoisonTips();
-            case SpellLabel.Reverberate:
-                return new Reverberate();
-            case SpellLabel.Shock:
-                return new Shock();
-            case SpellLabel.Singe:
-                return new Singe();
-            case SpellLabel.StaticField:
-                return new StaticField();
-            case SpellLabel.Toxify:
-                return new Toxify();
-            case SpellLabel.WitchesWill:
-                return new WitchesWill();
-            case SpellLabel.WitchesWard:
-                return new WitchesWard();
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
-    }
-
-    public Artifact GetArtifactOfType(ArtifactLabel label)
-    {
-        switch (label)
-        {
-            case ArtifactLabel.VIPCard:
-                return new VIPCard();
-            case ArtifactLabel.Barricade:
-                return new Barricade();
-            case ArtifactLabel.BlueMantis:
-                return new BlueMantis();
-            case ArtifactLabel.CanyonChunk:
-                return new CanyonChunk();
-            case ArtifactLabel.DoctorsReport:
-                return new DoctorsReport();
-            case ArtifactLabel.SpecialSpinich:
-                return new SpecialSpinach();
-            case ArtifactLabel.HealthInsurance:
-                return new HealthInsurance();
-            case ArtifactLabel.HolyShield:
-                return new HolyShield();
-            case ArtifactLabel.InvertedPolaroid:
-                return new InvertedPolaroid();
-            case ArtifactLabel.LooseTrigger:
-                return new LooseTrigger();
-            case ArtifactLabel.BoldInvestments:
-                return new BoldInvestments();
-            case ArtifactLabel.MedicineKit:
-                return new MedicineKit();
-            case ArtifactLabel.MolatovCocktail:
-                return new MolatovCocktail();
-            case ArtifactLabel.Plaguebringer:
-                return new Plaguebringer();
-            case ArtifactLabel.RustyCannon:
-                return new RustyCannon();
-            case ArtifactLabel.SmokeShroud:
-                return new SmokeShroud();
-            case ArtifactLabel.GreedyHands:
-                return new GreedyHands();
-            case ArtifactLabel.VoodooDoll:
-                return new VoodooDoll();
-            case ArtifactLabel.ZedsScalpel:
-                return new ZedsScalpel();
-            case ArtifactLabel.BarbariansBlade:
-                return new BarbariansBlade();
-            case ArtifactLabel.BlackPrism:
-                return new BlackPrism();
-            case ArtifactLabel.Boulder:
-                return new Boulder();
-            case ArtifactLabel.CaveMural:
-                return new CaveMural();
-            case ArtifactLabel.CheapStopwatch:
-                return new CheapStopwatch();
-            case ArtifactLabel.HiredHand:
-                return new HiredHand();
-            case ArtifactLabel.LizardSkinSilk:
-                return new LizardSkinSilk();
-            case ArtifactLabel.LuckyCoin:
-                return new LuckyCoin();
-            case ArtifactLabel.Telescope:
-                return new Telescope();
-            case ArtifactLabel.Crown:
-                return new Crown();
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
-    }
-
-    public Book GetBookOfType(BookLabel label)
-    {
-        switch (label)
-        {
-            case BookLabel.WitchesTravelGuide:
-                return new WitchesTravelGuide();
-            case BookLabel.MedicalNovella:
-                return new MedicalNovella();
-            case BookLabel.MerchantsManual:
-                return new MerchantsManual();
-            case BookLabel.BusinessTextbook:
-                return new BusinessTextbook();
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
-    }
-
     public void RemoveArtifactFromPool(ArtifactLabel label)
     {
         allArtifacts.Remove(label);
@@ -1245,7 +1104,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        Artifact artifact = GetArtifactOfType(type);
+        Artifact artifact = Artifact.GetArtifactOfType(type);
         artifact.OnEquip();
 
         ArtifactDisplay spawned = Instantiate(artifactDisplay, artifactBar);
@@ -1269,7 +1128,7 @@ public class GameManager : MonoBehaviour
 
     public void AddBook(BookLabel type)
     {
-        Book book = GetBookOfType(type);
+        Book book = Book.GetBookOfType(type);
 
         BookDisplay spawned = Instantiate(bookDisplay, bookBar);
         spawned.SetItem(book);
@@ -1633,7 +1492,13 @@ public class GameManager : MonoBehaviour
         manaFromEquipment += changeBy;
 
         maxPlayerMana = characterMaxMana + manaFromEquipment;
+
         AlterPlayerMana(changeBy);
+    }
+
+    public int GetManaPerTurn()
+    {
+        return maxPlayerMana - playerCharacter.GetManaPerTurnSubFromMax();
     }
 
     public Character GetCharacter()
@@ -1762,59 +1627,6 @@ public class GameManager : MonoBehaviour
         AlterPlayerHP(Mathf.CeilToInt(maxPlayerHP * percentHP), DamageType.Heal);
     }
 
-    public PotionIngredient GetPotionIngredientOfType(PotionIngredientType type)
-    {
-        switch (type)
-        {
-            case PotionIngredientType.BreakableBottle:
-                return new BreakableBottle();
-            case PotionIngredientType.CeremonialLeaf:
-                return new CeremonialLeaf();
-            case PotionIngredientType.ChaiTea:
-                return new ChaiTea();
-            case PotionIngredientType.CrabShell:
-                return new CrabShell();
-            case PotionIngredientType.CreatureClaw:
-                return new CreatureClaw();
-            case PotionIngredientType.CreatureFinger:
-                return new CreatureFinger();
-            case PotionIngredientType.CreatureFoot:
-                return new CreatureFoot();
-            case PotionIngredientType.CreatureGland:
-                return new CreatureGland();
-            case PotionIngredientType.CreatureNose:
-                return new CreatureNose();
-            case PotionIngredientType.ElectricalWire:
-                return new ElectricalWire();
-            case PotionIngredientType.GlassBottle:
-                return new GlassBottle();
-            case PotionIngredientType.HammerHandle:
-                return new HammerHandle();
-            case PotionIngredientType.MammalTooth:
-                return new MammalTooth();
-            case PotionIngredientType.Paprika:
-                return new Paprika();
-            case PotionIngredientType.RawBeef:
-                return new RawBeef();
-            case PotionIngredientType.RawPork:
-                return new RawPork();
-            case PotionIngredientType.ScalySkin:
-                return new ScalySkin();
-            case PotionIngredientType.HolyWater:
-                return new HolyWater();
-            case PotionIngredientType.SelkieSpit:
-                return new SelkieSpit();
-            case PotionIngredientType.TreeSap:
-                return new BreakableBottle();
-            case PotionIngredientType.VenomousSack:
-                return new VenomousSack();
-            case PotionIngredientType.RainCloud:
-                return new RainCloud();
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
-    }
-
     public void ReSpawnPotionIngredientToBrewList(PotionIngredientType type)
     {
         foreach (PotionIngredientListEntry entry in spawnedBrewPotionIngredientListEntries)
@@ -1837,13 +1649,13 @@ public class GameManager : MonoBehaviour
         cur.AddOnPressAction(delegate
         {
             // Get an instance of the ingredient
-            PotionIngredient ingredient = GetPotionIngredientOfType(type);
+            PotionIngredient ingredient = PotionIngredient.GetPotionIngredientOfType(type);
 
             // Onlly allow the click if we can actually add the ingredient to the pot
             if (currentPotion.HasComponentOfType(ingredient)) return;
 
             // Add the ingredient to the potion
-            currentPotion.AddIngredient(GetPotionIngredientOfType(type));
+            currentPotion.AddIngredient(ingredient);
 
             // Remove it from the players inventory
             if (RemovePotionIngredient(type))
@@ -2191,7 +2003,7 @@ public class GameManager : MonoBehaviour
 
     #region Event 
 
-    private string[] CureAllStrings(string[] arr)
+    public string[] CureAllStrings(string[] arr)
     {
         string[] res = new string[arr.Length];
         for (int i = 0; i < arr.Length; i++)

@@ -7,7 +7,7 @@ public class ArtifactShopOffer : ShopOffer
 
     public void Set(ArtifactLabel setTo, int cost)
     {
-        artifact = GameManager._Instance.GetArtifactOfType(setTo);
+        artifact = Artifact.GetArtifactOfType(setTo);
         itemText.text = artifact.Name;
         this.cost = cost;
 

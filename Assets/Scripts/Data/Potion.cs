@@ -208,7 +208,6 @@ public class Potion : ToolTippable
     private Action onUse;
     private string label;
     private string defaultLabel = "Unbrewed";
-    private bool hasBeenBrewed;
 
     public Potion()
     {
@@ -291,8 +290,6 @@ public class Potion : ToolTippable
             res += "Potion of " + CurPotionBaseIngredient.EffectOnPotionName;
             label = res;
         }
-
-        hasBeenBrewed = true;
     }
 
     public void Use()
@@ -394,6 +391,59 @@ public abstract class PotionIngredient : ToolTippable
     public string GetToolTipText()
     {
         return UIManager._Instance.HighlightKeywords(toolTipText);
+    }
+
+    public static PotionIngredient GetPotionIngredientOfType(PotionIngredientType type)
+    {
+        switch (type)
+        {
+            case PotionIngredientType.BreakableBottle:
+                return new BreakableBottle();
+            case PotionIngredientType.CeremonialLeaf:
+                return new CeremonialLeaf();
+            case PotionIngredientType.ChaiTea:
+                return new ChaiTea();
+            case PotionIngredientType.CrabShell:
+                return new CrabShell();
+            case PotionIngredientType.CreatureClaw:
+                return new CreatureClaw();
+            case PotionIngredientType.CreatureFinger:
+                return new CreatureFinger();
+            case PotionIngredientType.CreatureFoot:
+                return new CreatureFoot();
+            case PotionIngredientType.CreatureGland:
+                return new CreatureGland();
+            case PotionIngredientType.CreatureNose:
+                return new CreatureNose();
+            case PotionIngredientType.ElectricalWire:
+                return new ElectricalWire();
+            case PotionIngredientType.GlassBottle:
+                return new GlassBottle();
+            case PotionIngredientType.HammerHandle:
+                return new HammerHandle();
+            case PotionIngredientType.MammalTooth:
+                return new MammalTooth();
+            case PotionIngredientType.Paprika:
+                return new Paprika();
+            case PotionIngredientType.RawBeef:
+                return new RawBeef();
+            case PotionIngredientType.RawPork:
+                return new RawPork();
+            case PotionIngredientType.ScalySkin:
+                return new ScalySkin();
+            case PotionIngredientType.HolyWater:
+                return new HolyWater();
+            case PotionIngredientType.SelkieSpit:
+                return new SelkieSpit();
+            case PotionIngredientType.TreeSap:
+                return new TreeSap();
+            case PotionIngredientType.VenomousSack:
+                return new VenomousSack();
+            case PotionIngredientType.RainCloud:
+                return new RainCloud();
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
     }
 }
 
@@ -530,17 +580,7 @@ public class HammerHandle : PotionBase
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
         int damageAmount = GetPotionSpec("DamageAmount", potionPotency.Potency);
-        switch (potionTargeting.Target)
-        {
-            case Target.Character:
-                GameManager._Instance.AlterPlayerHP(-damageAmount, DamageType.Default);
-                break;
-            case Target.Enemy:
-                CombatManager._Instance.AltarEnemyHP(-damageAmount, DamageType.Default);
-                break;
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
+        CombatManager._Instance.AlterCombatentHP(-damageAmount, potionTargeting.Target, DamageType.Default);
     }
 }
 
@@ -556,17 +596,7 @@ public class SelkieSpit : PotionBase
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
         int healAmount = GetPotionSpec("HealAmount", potionPotency.Potency);
-        switch (potionTargeting.Target)
-        {
-            case Target.Character:
-                GameManager._Instance.AlterPlayerHP(healAmount, DamageType.Heal);
-                break;
-            case Target.Enemy:
-                CombatManager._Instance.AltarEnemyHP(healAmount, DamageType.Heal);
-                break;
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
+        CombatManager._Instance.AlterCombatentHP(healAmount, potionTargeting.Target, DamageType.Heal);
     }
 
     protected override void SetKeywords()
