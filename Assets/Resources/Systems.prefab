@@ -3773,6 +3773,8 @@ MonoBehaviour:
       value: (Potion Ingredient) Determines the Strength of the Potion
     - key: PotionAugmenter
       value: (Potion Ingredient) Alters how the Potion Works
+    - key: Intent
+      value: 'The enemies '
   UISectionMap:
     dictionary:
     - key: 0
@@ -3890,6 +3892,22 @@ MonoBehaviour:
       value: {r: 0, g: 0.5, b: 0, a: 1}
     - key: AfflictionRemoved
       value: {r: 0.76862746, g: 0.76862746, b: 0.76862746, a: 1}
+  multiTokenAfflictions:
+    dictionary:
+    - key: Poison
+      value:
+      - Poison
+      - Coated
+    - key: Battle
+      value:
+      - Battle
+      - Frenzied
+    - key: On
+      value:
+      - On
+      - Guard
+  multiTokenKeywords:
+    dictionary: []
 --- !u!1 &1790111349770885094
 GameObject:
   m_ObjectHideFlags: 0
@@ -8006,6 +8024,18 @@ MonoBehaviour:
     - key: Protection
       value:
         dictionary: []
+    - key: Levitating
+      value:
+        dictionary:
+        - key: PercentOfHP
+          value: 25
+    - key: BattleFrenzied
+      value:
+        dictionary:
+        - key: EmboldenAmount
+          value: 2
+        - key: DamageToApply
+          value: 20
   passiveSpellSpecDict:
     dictionary:
     - key: PoisonTips
@@ -8400,46 +8430,6 @@ MonoBehaviour:
       value: 2
     - key: 4
       value: 2
-  enemySpecDict:
-    dictionary:
-    - key: PossessedTome
-      value:
-        minMaxMaxHP: {x: 75, y: 80}
-        basicAttackDamage: 3
-        additionalParameters:
-          dictionary: []
-    - key: MimicChest
-      value:
-        minMaxMaxHP: {x: 96, y: 104}
-        basicAttackDamage: 4
-        additionalParameters:
-          dictionary: []
-    - key: PanickedWizard
-      value:
-        minMaxMaxHP: {x: 150, y: 160}
-        basicAttackDamage: 4
-        additionalParameters:
-          dictionary: []
-    - key: FacelessWitch
-      value:
-        minMaxMaxHP: {x: 230, y: 237}
-        basicAttackDamage: 5
-        additionalParameters:
-          dictionary: []
-    - key: HauntedClock
-      value:
-        minMaxMaxHP: {x: 60, y: 70}
-        basicAttackDamage: 3
-        additionalParameters:
-          dictionary:
-          - key: PowerStacksPerTurn
-            value: 1
-          - key: WardAmountPerTurn
-            value: 5
-          - key: MinDamageAmount
-            value: 2
-          - key: MaxDamageAmount
-            value: 4
 --- !u!1 &3764866126739295380
 GameObject:
   m_ObjectHideFlags: 0

@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 
 public class EnemyBasicAttackDamageDisplay : SingleVariableCustomToolTipLabelAndText
 {
-    protected override float Variable => CombatManager._Instance.CurrentEnemyBasicAttackDamage;
+    protected override float Variable => CombatManager._Instance.CurrentEnemy.GetBasicAttackDamage();
 }
 
 public abstract class CustomToolTipLabelAndText : MonoBehaviour, ToolTippable, IPointerEnterHandler, IPointerExitHandler

@@ -679,12 +679,23 @@ public class DoctorsReport : Artifact
         stackAmount = (int)GetArtifactSpec("StackAmount");
     }
 
+    private void CheckDamageAmount(int amount)
+    {
+        if (amount > mustBeOver)
+        {
+            CombatManager._Instance.AddAffliction(AfflictionType.Bandages, stackAmount, Target.Character);
+            GameManager._Instance.AnimateArtifact(ArtifactLabel.DoctorsReport);
+        }
+    }
+
     public override void OnEquip()
     {
+        CombatManager._Instance.OnEnemyTakeDamage += CheckDamageAmount;
     }
 
     public override void OnUnequip()
     {
+        CombatManager._Instance.OnEnemyTakeDamage -= CheckDamageAmount;
     }
 
     protected override void Effect()

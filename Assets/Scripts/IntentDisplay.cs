@@ -12,7 +12,8 @@ public enum IntentType
     Ward,
     GainAffliction,
     ApplyAffliction,
-    MultiAttack
+    MultiAttack,
+    Heal
 }
 
 public class IntentDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler

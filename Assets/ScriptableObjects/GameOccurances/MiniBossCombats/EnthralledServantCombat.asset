@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a2d99bcf4013af2468069684297c7200, type: 3}
-  m_Name: MiniBossCombat
+  m_Name: EnthralledServantCombat
   m_EditorClassIdentifier: 
   mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
-  enemy: {fileID: 11400000, guid: 5a31a5c589cb9b746a9b61d0a9c95baa, type: 2}
+  enemyType: 8
   itemRewards:
     dictionary:
     - key: 0

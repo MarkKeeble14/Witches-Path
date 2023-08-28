@@ -9,11 +9,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e02c33385eb9aa54caf185fc2f315c60, type: 3}
-  m_Name: BossCombat
+  m_Script: {fileID: 11500000, guid: a2d99bcf4013af2468069684297c7200, type: 3}
+  m_Name: PanickedWizardCombat
   m_EditorClassIdentifier: 
   mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
-  enemyType: 1
+  enemyType: 0
   itemRewards:
     dictionary:
     - key: 0
@@ -21,17 +21,26 @@ MonoBehaviour:
         percentageMap:
         - key:
             NumericalType: 1
-            ForceRarity: 1
-            Rarity: 2
+            ForceRarity: 0
+            Rarity: 0
             Numbers: {x: 1, y: 1}
+          value: 100
+    - key: 1
+      value:
+        percentageMap:
+        - key:
+            NumericalType: 0
+            ForceRarity: 0
+            Rarity: 0
+            Numbers: {x: 1, y: 3}
           value: 100
     - key: 4
       value:
         percentageMap:
         - key:
             NumericalType: 1
-            ForceRarity: 1
-            Rarity: 2
+            ForceRarity: 0
+            Rarity: 0
             Numbers: {x: 1, y: 1}
           value: 100
   currencyRewards:
@@ -39,20 +48,10 @@ MonoBehaviour:
     - key: 2
       value:
         percentageMap:
-        - key: {x: 100, y: 125}
+        - key: {x: 75, y: 100}
           value: 100
     - key: 3
       value:
         percentageMap:
-        - key: {x: 3, y: 4}
-          value: 100
-    - key: 6
-      value:
-        percentageMap:
-        - key: {x: 1, y: 1}
-          value: 100
-    - key: 7
-      value:
-        percentageMap:
-        - key: {x: 0, y: 1}
+        - key: {x: 1, y: 3}
           value: 100

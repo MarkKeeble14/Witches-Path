@@ -111,6 +111,9 @@ public class UIManager : MonoBehaviour
 
     [SerializeField] private SerializableDictionary<string, Color> effectTextColors = new SerializableDictionary<string, Color>();
 
+    [SerializeField] private SerializableDictionary<string, string[]> multiTokenAfflictions = new SerializableDictionary<string, string[]>();
+    [SerializeField] private SerializableDictionary<string, string[]> multiTokenKeywords = new SerializableDictionary<string, string[]>();
+
     public Color GetEffectTextColor(string key)
     {
         return effectTextColors[key];
@@ -158,11 +161,83 @@ public class UIManager : MonoBehaviour
                 continue;
             }
 
+            // Token is an Keyword with Multiple Tokens
+            if (multiTokenKeywords.ContainsKey(token))
+            {
+                string[] multiTokens = multiTokenKeywords[token];
+                bool valid = true;
+                for (int p = 0; p < multiTokens.Length; p++)
+                {
+                    if (i + p > toolTipTextTokens.Length - 1)
+                    {
+                        valid = false;
+                        break;
+                    }
+                    if (toolTipTextTokens[i + p] != multiTokens[p])
+                    {
+                        valid = false;
+                        break;
+                    }
+                }
+
+                if (valid)
+                {
+                    string fullText = "";
+                    for (int p = 0; p < multiTokens.Length; p++)
+                    {
+                        fullText += multiTokens[p];
+                        if (p < multiTokens.Length - 1)
+                        {
+                            fullText += " ";
+                        }
+                    }
+                    res += DecorateTextWithAppropriateColor(TextDecorationLabel.Keyword, fullText);
+                    i += multiTokens.Length - 1;
+                    continue;
+                }
+            }
+
             // Token is an Affliction
-            if (afflictionTypes.Contains(token))
+            if (afflictionTypes.Contains(token) && !multiTokenAfflictions.ContainsKey(token))
             {
                 res += DecorateTextWithAppropriateColor(TextDecorationLabel.Affliction, token);
                 continue;
+            }
+
+            // Token is an Affliction with Multiple Tokens
+            if (multiTokenAfflictions.ContainsKey(token))
+            {
+                string[] multiTokens = multiTokenAfflictions[token];
+                bool valid = true;
+                for (int p = 0; p < multiTokens.Length; p++)
+                {
+                    if (i + p > toolTipTextTokens.Length - 1)
+                    {
+                        valid = false;
+                        break;
+                    }
+                    if (toolTipTextTokens[i + p] != multiTokens[p])
+                    {
+                        valid = false;
+                        break;
+                    }
+                }
+
+                if (valid)
+                {
+                    string fullText = "";
+                    for (int p = 0; p < multiTokens.Length; p++)
+                    {
+                        fullText += multiTokens[p];
+                        if (p < multiTokens.Length - 1)
+                        {
+                            fullText += " ";
+                        }
+                    }
+                    res += DecorateTextWithAppropriateColor(TextDecorationLabel.Affliction, fullText);
+                    i += multiTokens.Length - 1;
+                    continue;
+                }
             }
 
             // Token is a Number

@@ -435,23 +435,6 @@ public class Map
         }
     }
 
-    private void OverrideForcedIndices()
-    {
-        /*
-        for (int i = 0; i < mapGridSize.x; i++)
-        {
-            if (!forcedNodeIndices.ContainsKey(i)) continue;
-
-            for (int p = 0; p < mapGridSize.y; p++)
-            {
-                MapNodeUI node = spawnedGridNodes[i, p];
-                MapNodeType type = forcedNodeIndices[i];
-                node.Set(GetMapNodeOfType(type), mapNodeIconDict[type]);
-            }
-        }
-        */
-    }
-
     public IEnumerator ShowGrid()
     {
         yield return MapManager._Instance.StartCoroutine(ActOnEachGridCellWithDelay(cell =>
@@ -469,21 +452,38 @@ public class Map
         }
         else
         {
-            return RandomHelper.GetRandomFromList(mapNodes[type]);
+            GameOccurance r = RandomHelper.GetRandomFromList(mapNodes[type]);
+
+            // Remove the Occurance from the pool if it is a type we should be doing so for, as well as if there are still other available instances, just to avoid breaking completely
+            if (type == MapNodeType.MiniBoss || type == MapNodeType.MinorFight)
+            {
+                if (mapNodes[type].Count > 1)
+                    mapNodes[type].Remove(r);
+            }
+
+            return r;
         }
     }
 
     private GameOccurance GetEventMapNode()
     {
-        List<OptionEvent> possibleEvents = new List<OptionEvent>();
+        List<OptionEventWithCondition> possibleEvents = new List<OptionEventWithCondition>();
         foreach (OptionEventWithCondition optionEvent in optionEventMapNodes)
         {
             OptionEvent e = optionEvent.GetOptionEvent();
             if (GameManager._Instance.ParseEventCondition(e, optionEvent.GetConditionString()))
             {
-                possibleEvents.Add(e);
+                possibleEvents.Add(optionEvent);
             }
         }
-        return RandomHelper.GetRandomFromList(possibleEvents);
+
+        // Get a possible Option Event
+        OptionEventWithCondition r = RandomHelper.GetRandomFromList(possibleEvents);
+
+        // Remove it from the list of possibilities if thats not going to break things
+        if (optionEventMapNodes.Count > 1)
+            optionEventMapNodes.Remove(r);
+
+        return r.GetOptionEvent();
     }
 }

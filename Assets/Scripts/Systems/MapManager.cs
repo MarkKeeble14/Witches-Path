@@ -1,15 +1,20 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class MapManager : MonoBehaviour
 {
     public static MapManager _Instance { get; private set; }
 
-    [SerializeField] private Map map;
+    [SerializeField] private float beginningAnimationScrollRate = 5;
+    [SerializeField] private float beforeScrollDelay = 1;
+    [SerializeField] private bool useLerp;
+    [SerializeField] private float lerpGraceRange = 0.1f;
     [SerializeField] private float buildConnectorDelay;
-    private CanvasGroup mapCV;
-
     [SerializeField] private string nextStage;
+
+    [SerializeField] private Map map;
+    private CanvasGroup mapCV;
 
     public bool HasNextStage => nextStage.Length > 0;
 
@@ -82,13 +87,51 @@ public class MapManager : MonoBehaviour
         StartCoroutine(map.ShowGrid());
 
         // Reset the Position
-        mapScrollRect.verticalNormalizedPosition = 0;
+        StartCoroutine(ShowLevel(mapScrollRect, beginningAnimationScrollRate));
 
         // Set the first row to be Accessable
         map.SetFirstRowAccessable(0);
 
         // Start the Stage
         StartCoroutine(GameManager._Instance.StageLoop());
+    }
+
+    private IEnumerator ShowLevel(ScrollRect scrollRect, float scrollRate)
+    {
+        // Start at Top
+        scrollRect.verticalNormalizedPosition = 1;
+        // Disable Scrolling
+        scrollRect.vertical = false;
+        scrollRect.horizontal = false;
+
+        // Debug.Log("Show Level Called");
+        yield return new WaitForSeconds(beforeScrollDelay);
+        // Debug.Log("After Delay");
+
+        // Animate down
+        while (scrollRect.verticalNormalizedPosition > 0 || (useLerp && scrollRect.verticalNormalizedPosition <= lerpGraceRange))
+        {
+            // Debug.Log("Scrolling: " + scrollRect.verticalNormalizedPosition);
+
+            // Scroll
+            if (useLerp)
+            {
+                // Lerp
+                scrollRect.verticalNormalizedPosition = Mathf.Lerp(scrollRect.verticalNormalizedPosition, 0, Time.deltaTime * scrollRate);
+            }
+            else
+            {
+                // Move Towards
+                scrollRect.verticalNormalizedPosition = Mathf.MoveTowards(scrollRect.verticalNormalizedPosition, 0, Time.deltaTime * scrollRate);
+            }
+
+            yield return null;
+        }
+        // Debug.Log("Done Scrolling");
+
+        // Enable Scrolling
+        scrollRect.vertical = true;
+        scrollRect.horizontal = true;
     }
 
     public void Clear()

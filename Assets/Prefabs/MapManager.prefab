@@ -44,6 +44,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36fba719ae8067146b70ee74e8ff47bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  beginningAnimationScrollRate: 0.75
+  beforeScrollDelay: 0.5
+  useLerp: 0
+  lerpGraceRange: 0.1
+  buildConnectorDelay: 0.05
+  nextStage: 
   map:
     mapSections:
     - Content: 0
@@ -146,12 +152,11 @@ MonoBehaviour:
     mapNodes:
       dictionary:
       - key: 0
-        value:
-        - {fileID: 11400000, guid: 4a8c072a50d2db141884587a09c9b779, type: 2}
-        - {fileID: 11400000, guid: 7bae952cbc8c7f74d8010f1f5cd1d515, type: 2}
+        value: []
+      - key: 6
+        value: []
       - key: 1
-        value:
-        - {fileID: 11400000, guid: 4443f57486e50f24d87d1fee2e2b2e34, type: 2}
+        value: []
       - key: 2
         value:
         - {fileID: 11400000, guid: c30c5abef1ff9ba4fbd2aa4434599934, type: 2}
@@ -161,9 +166,6 @@ MonoBehaviour:
       - key: 4
         value:
         - {fileID: 11400000, guid: b65ce5b92625d60479642ecbd5a823f1, type: 2}
-      - key: 6
-        value:
-        - {fileID: 11400000, guid: c5be366deb16c174b9b1fa3e4067be77, type: 2}
     optionEventMapNodes: []
     delayBetweenShowingCells: 0.025
     mapNodeIconDict:
@@ -186,5 +188,3 @@ MonoBehaviour:
     connectorOffsetFromNode: 0.25
     mapNodePrefab: {fileID: 5932683331434114181, guid: 07ed74b0a56adf64583b8214596c03bb, type: 3}
     mapLayout: {fileID: 2457742011578673596, guid: 8b9be5afbcf2502489c8b33a7cabaa85, type: 3}
-  buildConnectorDelay: 0.05
-  nextStage: 
