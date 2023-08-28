@@ -7,6 +7,7 @@ using System.IO;
 using UnityEngine.UI;
 using UnityEngine.Pool;
 using TMPro;
+using DG.Tweening;
 
 public enum Turn
 {
@@ -75,11 +76,11 @@ public partial class CombatManager : MonoBehaviour
     public float CurrentEnemyBasicAttackDamage => currentEnemy.GetBasicAttackDamage();
     public int NumFreeSpells { get; set; }
     public bool InCombat { get; private set; }
+    private bool combatScreenOpen;
     public bool CanCastSpells { get; private set; }
     private bool hasCastQueue;
     private bool isCastingQueue;
     public bool AllowGameSpaceToolTips => !isCastingQueue;
-
 
     private bool playerTurnEnded;
     private Turn currentTurn;
@@ -128,21 +129,27 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private string castButtonTextPostCasting = "End Turn";
     [SerializeField] private string castButtonTextEnemyTurn = "Enemy Turn";
 
-    [Header("General References")]
-    [SerializeField] private CombatentHPBar characterHPBar;
+    [Header("Enemy")]
     [SerializeField] private CombatentHPBar enemyHPBar;
     [SerializeField] private IntentDisplay enemyIntentDisplay;
     [SerializeField] private TextMeshProUGUI enemyBasicAttackDamageText;
     [SerializeField] private TextMeshProUGUI enemyNameText;
+    [SerializeField] private Image enemyCombatSprite;
+    [SerializeField] private CanvasGroup enemyCombatSpriteCV;
+    [SerializeField] private EffectTextDisplay enemyEffectTextDisplay;
+
+    [Header("Character")]
+    [SerializeField] private CombatentHPBar characterHPBar;
+    [SerializeField] private Image characterCombatSprite;
+    [SerializeField] private CanvasGroup characterCombatSpriteCV;
+    [SerializeField] private EffectTextDisplay characterEffectTextDisplay;
     [SerializeField] private TextMeshProUGUI castButtonText;
     [SerializeField] private TextMeshProUGUI nextTurnManaChangeText;
-    [SerializeField] private Image characterCombatSprite;
-    [SerializeField] private Image enemyCombatSprite;
-    [SerializeField] private CanvasGroup characterCombatSpriteCV;
-    [SerializeField] private CanvasGroup enemyCombatSpriteCV;
-    [SerializeField] private TurnDisplay turnDisplay;
     [SerializeField] private TextMeshProUGUI effectivenessMultiplierText;
     [SerializeField] private RectTransform effectivenessMultiplierTextRect;
+
+    [Header("General References")]
+    [SerializeField] private TurnDisplay turnDisplay;
     [SerializeField] private Transform parentNoteCirclesTo;
     [SerializeField] private Image background;
 
@@ -159,9 +166,36 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private AudioSource sfxSource;
     [SerializeField] private AudioSource musicSource;
 
+    [Header("Animations")]
+    [Header("Enemy Animations")]
+    [SerializeField] private RectTransform enemyCombatSpriteRect;
+    [SerializeField] private int spriteOffset = 50;
+    [SerializeField] private float baseEnemyCombatSpriteAnimationSpeed = 25;
+    [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierStart = 1;
+    [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierGain = 1;
+    [SerializeField] private float combatSpriteAlphaChangeRate = 5;
+
+    [Header("Shake Combatent")]
+    [SerializeField] private float shakeCombatentDuration = 1;
+    [SerializeField] private float shakeCombatentStrength = 10;
+    [SerializeField] private int shakeCombatentVibrato = 10;
+    [SerializeField] private float shakeCombatentRandomness = 0;
+
+    [Header("Delays")]
+    [SerializeField] private float delayBetweenSpellCasts = 1;
+    [SerializeField] private float delayAfterPlayerDeath = 2;
+    [SerializeField] private float delayAfterEnemyDeath = 2;
+    [SerializeField] private float delayAfterBandagesEffect = 1;
+    [SerializeField] private float delayBeforeEnemyAttack = 1;
+    [SerializeField] private float delayAfterEnemyTurn = 1;
+
+    // These should maybe go in Spells
+    [SerializeField] private float delayBetweenSpellBatches = .5f;
+    [SerializeField] private float delayBetweenSpellNotes = .25f;
+
     // Callbacks
-    public Action OnPlayerAttack;
-    public Action OnEnemyAttack;
+    public Action OnPlayerBasicAttack;
+    public Action OnEnemyBasicAttack;
     public Action OnCombatStart;
     public Action OnPlayerTurnStart;
     public Action OnEnemyTurnStart;
@@ -173,6 +207,7 @@ public partial class CombatManager : MonoBehaviour
     public Action OnCharacterLoseAffliction;
     public Action OnEnemyGainAffliction;
     public Action OnEnemyLoseAffliction;
+
 
     private void Awake()
     {
@@ -188,6 +223,7 @@ public partial class CombatManager : MonoBehaviour
         Debug.Log("Combat Started: " + combat);
 
         // Set Up Combat
+        combatScreenOpen = true;
 
         // Enemy Stuff
         // Reset enemy sprite CV from last Combat Dying
@@ -264,6 +300,8 @@ public partial class CombatManager : MonoBehaviour
 
         // Reset
         ResetCombat();
+
+        combatScreenOpen = false;
 
         GameManager._Instance.ResolveCurrentEvent();
     }
@@ -832,26 +870,6 @@ public partial class CombatManager : MonoBehaviour
 
     #region Damage Management
 
-
-    [Header("Enemy Animations")]
-    [SerializeField] private RectTransform enemyCombatSpriteRect;
-    [SerializeField] private int spriteOffset = 50;
-    [SerializeField] private float baseEnemyCombatSpriteAnimationSpeed = 25;
-    [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierStart = 1;
-    [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierGain = 1;
-    [SerializeField] private float combatSpriteAlphaChangeRate = 5;
-
-    [Header("Delays")]
-    [SerializeField] private float delayBetweenSpellCasts = 1;
-    [SerializeField] private float delayAfterPlayerDeath = 2;
-    [SerializeField] private float delayAfterEnemyDeath = 2;
-    [SerializeField] private float delayAfterBandagesEffect = 1;
-    [SerializeField] private float delayBeforeEnemyAttack = 1;
-    [SerializeField] private float delayAfterEnemyTurn = 1;
-    // These should maybe go in Spells
-    [SerializeField] private float delayBetweenSpellBatches = .5f;
-    [SerializeField] private float delayBetweenSpellNotes = .25f;
-
     // Basic Attack
     private void PlayerBasicAttack()
     {
@@ -862,9 +880,9 @@ public partial class CombatManager : MonoBehaviour
         ApplyBurnEffectOnMap(characterAfflictionMap, Target.Character);
 
         // Only call this if the combat isn't over
-        if (CheckForCombatOver())
+        if (!CheckForCombatOver())
         {
-            OnPlayerAttack?.Invoke();
+            OnPlayerBasicAttack?.Invoke();
         }
     }
 
@@ -916,7 +934,7 @@ public partial class CombatManager : MonoBehaviour
         // Only call on enemy attack if the player is still alive
         if (!CheckForCombatOver())
         {
-            OnEnemyAttack?.Invoke();
+            OnEnemyBasicAttack?.Invoke();
         }
     }
 
@@ -1218,12 +1236,8 @@ public partial class CombatManager : MonoBehaviour
             // Set HP Bar
             GetCombatentHPBar(target).SetWard(getFunc());
 
-            if (wardUsed > 0)
-            {
-                // Spawn Text
-                PopupText wardText = Instantiate(popupTextPrefab, GetTargetSpriteImage(target).transform);
-                wardText.Set(Utils.RoundTo(-wardUsed, 1).ToString(), UIManager._Instance.GetDamageTypeColor(DamageType.Ward));
-            }
+            // Spawn Text
+            SpawnEffectText(EffectTextStyle.UpAndFade, "Warded", UIManager._Instance.GetDamageTypeColor(DamageType.Ward), target);
 
             // return the amount ward used;
             return wardUsed;
@@ -1299,19 +1313,6 @@ public partial class CombatManager : MonoBehaviour
         return protectionBonus;
     }
 
-    private Image GetTargetSpriteImage(Target target)
-    {
-        switch (target)
-        {
-            case Target.Character:
-                return characterCombatSprite;
-            case Target.Enemy:
-                return enemyCombatSprite;
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
-    }
-
     #endregion
 
     #region Afflictions
@@ -1371,7 +1372,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private bool SetAffliction(AfflictionType type, int activations, Target target)
+    private bool SetAffliction(AfflictionType type, int numStacks, Target target)
     {
         Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(target);
         Transform parentTo = GetTargetParentAfflictionTo(target);
@@ -1381,14 +1382,23 @@ public partial class CombatManager : MonoBehaviour
         // Affliction Map already contains
         if (map.ContainsKey(type))
         {
-            map[type].AlterStacks(activations);
+            map[type].AlterStacks(numStacks);
             ShowAfflictionProc(type, target);
             isNewInstance = false;
+
+            // Spawn Effect Text
+            SpawnEffectText(EffectTextStyle.Fade, "+" + numStacks + " " + map[type].GetToolTipLabel(), UIManager._Instance.GetEffectTextColor(map[type].Sign + "Affliction"), target);
+
+            // Animate
+            if (map[type].Sign == AfflictionSign.Negative)
+            {
+                ShakeCombatent(target);
+            }
         }
         else
         {
             Affliction aff = Affliction.GetAfflictionOfType(type);
-            aff.SetStacks(activations);
+            aff.SetStacks(numStacks);
             aff.SetOwner(target);
             map.Add(type, aff);
 
@@ -1397,10 +1407,20 @@ public partial class CombatManager : MonoBehaviour
             GetTargetAfflictionDisplays(target).Add(type, spawned);
             ShowAfflictionProc(type, target);
             isNewInstance = true;
+
+            // Spawn Effect Text
+            SpawnEffectText(EffectTextStyle.Fade, aff.GetToolTipLabel(), UIManager._Instance.GetEffectTextColor(aff.Sign + "Affliction"), target);
+
+            // Animate
+            if (aff.Sign == AfflictionSign.Negative)
+            {
+                ShakeCombatent(target);
+            }
         }
 
         // Update hp bar
         UpdateHPBarAfflictions(type, target);
+
         return isNewInstance;
     }
 
@@ -1480,6 +1500,9 @@ public partial class CombatManager : MonoBehaviour
         displays.Remove(type);
         Destroy(i.gameObject);
         map.Remove(type);
+
+        // Spawn Effect Text
+        SpawnEffectText(EffectTextStyle.Fade, aff.GetToolTipLabel() + " Wears Off", UIManager._Instance.GetEffectTextColor("AfflictionRemoved"), target);
 
         // update hp bar
         UpdateHPBarAfflictions(type, target);
@@ -1578,6 +1601,57 @@ public partial class CombatManager : MonoBehaviour
         displays.Remove(type);
         Destroy(icon.gameObject);
         GetTargetAfflictionMap(t).Remove(type);
+    }
+
+    #endregion
+
+    #region UI
+
+    private Image GetTargetSpriteImage(Target target)
+    {
+        switch (target)
+        {
+            case Target.Character:
+                return characterCombatSprite;
+            case Target.Enemy:
+                return enemyCombatSprite;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
+
+    public void SpawnEffectText(EffectTextStyle style, string text, Color c, Target owner)
+    {
+        if (!combatScreenOpen) return;
+        switch (owner)
+        {
+            case Target.Character:
+                characterEffectTextDisplay.SpawnEffectText(style, text, c);
+                return;
+            case Target.Enemy:
+                enemyEffectTextDisplay.SpawnEffectText(style, text, c);
+                return;
+        }
+    }
+
+    public void SpawnEffectIcon(EffectIconStyle style, Sprite sprite, Target owner)
+    {
+        if (!combatScreenOpen) return;
+        switch (owner)
+        {
+            case Target.Character:
+                characterEffectTextDisplay.SpawnEffectIcon(style, sprite);
+                return;
+            case Target.Enemy:
+                enemyEffectTextDisplay.SpawnEffectIcon(style, sprite);
+                return;
+        }
+    }
+
+    public void ShakeCombatent(Target target)
+    {
+        RectTransform rect = GetTargetSpriteImage(target).transform as RectTransform;
+        rect.DOShakeAnchorPos(shakeCombatentDuration, shakeCombatentStrength, shakeCombatentVibrato, shakeCombatentRandomness, false, true, ShakeRandomnessMode.Harmonic);
     }
 
     #endregion

@@ -22,7 +22,7 @@ public class PassiveSpellDisplay : SpellDisplay
     {
         this.spell = spell;
         spellIcon.sprite = spell.GetSpellSprite();
-        nameText.text = spell.Label.ToString();
+        nameText.text = spell.Name;
         isAvailable = false;
     }
 

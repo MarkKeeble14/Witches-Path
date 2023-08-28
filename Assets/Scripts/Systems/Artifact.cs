@@ -28,6 +28,7 @@ public abstract class Artifact : PowerupItem
     protected void ShowArtifactProc()
     {
         GameManager._Instance.AnimateArtifact(Label);
+        CombatManager._Instance.SpawnEffectIcon(EffectIconStyle.FadeAndGrow, GetSprite(), Target.Character);
     }
 
     public ArtifactLabel GetLabel()
@@ -132,12 +133,12 @@ public class GreedyHands : Artifact
 
     public override void OnEquip()
     {
-        CombatManager._Instance.OnPlayerAttack += Effect;
+        CombatManager._Instance.OnPlayerBasicAttack += Effect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnPlayerAttack -= Effect;
+        CombatManager._Instance.OnPlayerBasicAttack -= Effect;
     }
 
     protected override void Effect()
@@ -1174,13 +1175,13 @@ public class Boulder : Artifact
 
     public override void OnEquip()
     {
-        CombatManager._Instance.OnPlayerAttack += Effect;
+        CombatManager._Instance.OnPlayerBasicAttack += Effect;
         CombatManager._Instance.OnCombatEnd += ResetOnCombatEnd;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnPlayerAttack -= Effect;
+        CombatManager._Instance.OnPlayerBasicAttack -= Effect;
         CombatManager._Instance.OnCombatEnd -= ResetOnCombatEnd;
     }
 

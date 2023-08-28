@@ -123,6 +123,7 @@ public abstract class Book : PowerupItem
     protected void ShowBookProc()
     {
         GameManager._Instance.AnimateBook(Label);
+        CombatManager._Instance.SpawnEffectIcon(EffectIconStyle.FadeAndGrow, GetSprite(), Target.Character);
     }
 
     protected void ShowBookLevelUp()

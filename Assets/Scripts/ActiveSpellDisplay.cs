@@ -15,7 +15,6 @@ public class ActiveSpellDisplay : SpellDisplay
 
     [SerializeField] private TextMeshProUGUI keyBindingText;
     [SerializeField] private TextMeshProUGUI spellCDText;
-    [SerializeField] private TextMeshProUGUI spellNumNotesText;
     [SerializeField] private TextMeshProUGUI spellManaCostText;
 
     private KeyCode keyBinding;
@@ -63,10 +62,6 @@ public class ActiveSpellDisplay : SpellDisplay
         // Auxillary info
         spellCD = spell.CooldownTracker.y;
         spellManaCost = spell.GetManaCost();
-
-        // Set Text
-        // Num Notes Never Changes
-        spellNumNotesText.text = spell.GetNumNotesString();
 
         isAvailable = false;
     }

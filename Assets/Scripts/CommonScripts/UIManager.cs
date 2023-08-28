@@ -109,6 +109,13 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Transform canvas;
     public Transform Canvas => canvas;
 
+    [SerializeField] private SerializableDictionary<string, Color> effectTextColors = new SerializableDictionary<string, Color>();
+
+    public Color GetEffectTextColor(string key)
+    {
+        return effectTextColors[key];
+    }
+
     public Sprite GetPotionIngredientCategorySprite(PotionIngredientCategory category)
     {
         return potionIngredientCategorySpriteMap[category];

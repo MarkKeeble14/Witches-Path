@@ -164,6 +164,8 @@ GameObject:
   - component: {fileID: 6844619046009752547}
   - component: {fileID: 1459331017470932661}
   - component: {fileID: 8614651942384901619}
+  - component: {fileID: 758789534793415336}
+  - component: {fileID: 3068344871855979412}
   m_Layer: 0
   m_Name: HPText
   m_TagString: Untagged
@@ -262,7 +264,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 1
+  m_enableWordWrapping: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
@@ -288,6 +290,34 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &758789534793415336
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2318666516277080836}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83931a3a226bcc34eb1768b9111a8db0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &3068344871855979412
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2318666516277080836}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efe254073d8503948b96b40e0c35ef9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  scaledTextSize: 96
+  animationSpeed: 25
+  gracePeriod: 0.25
+  graceRange: 6
 --- !u!1 &3047788110360380565
 GameObject:
   m_ObjectHideFlags: 0
@@ -518,6 +548,8 @@ GameObject:
   - component: {fileID: 4605846595150931829}
   - component: {fileID: 6535776032850704058}
   - component: {fileID: 7211912558538219002}
+  - component: {fileID: 7124680898177626239}
+  - component: {fileID: 2902925480444905896}
   m_Layer: 0
   m_Name: WardText
   m_TagString: Untagged
@@ -616,7 +648,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 1
+  m_enableWordWrapping: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
@@ -642,3 +674,31 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &7124680898177626239
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6816947238726562667}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83931a3a226bcc34eb1768b9111a8db0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2902925480444905896
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6816947238726562667}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efe254073d8503948b96b40e0c35ef9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  scaledTextSize: 96
+  animationSpeed: 25
+  gracePeriod: 0.25
+  graceRange: 6

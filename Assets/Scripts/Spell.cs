@@ -253,12 +253,12 @@ public class PoisonTips : PassiveSpell
 
     public override void OnEquip()
     {
-        CombatManager._Instance.OnPlayerAttack += CallEffect;
+        CombatManager._Instance.OnPlayerBasicAttack += CallEffect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnPlayerAttack -= CallEffect;
+        CombatManager._Instance.OnPlayerBasicAttack -= CallEffect;
     }
 
     protected override void Effect()
@@ -267,14 +267,14 @@ public class PoisonTips : PassiveSpell
         if (tracker >= procAfter)
         {
             tracker = 0;
-            CombatManager._Instance.OnPlayerAttack += OnNextAttack;
+            CombatManager._Instance.OnPlayerBasicAttack += OnNextAttack;
         }
     }
 
     private void OnNextAttack()
     {
         Proc(true);
-        CombatManager._Instance.OnPlayerAttack -= OnNextAttack;
+        CombatManager._Instance.OnPlayerBasicAttack -= OnNextAttack;
     }
 
     public override void Proc(bool canDupe)
@@ -382,12 +382,12 @@ public class Inferno : PassiveSpell
 
     public override void OnEquip()
     {
-        CombatManager._Instance.OnPlayerAttack += CallEffect;
+        CombatManager._Instance.OnPlayerBasicAttack += CallEffect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnPlayerAttack -= CallEffect;
+        CombatManager._Instance.OnPlayerBasicAttack -= CallEffect;
     }
 
     protected override void Effect()
@@ -443,12 +443,12 @@ public class BattleTrance : PassiveSpell
 
     public override void OnEquip()
     {
-        CombatManager._Instance.OnPlayerAttack += CallEffect;
+        CombatManager._Instance.OnPlayerBasicAttack += CallEffect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnPlayerAttack -= CallEffect;
+        CombatManager._Instance.OnPlayerBasicAttack -= CallEffect;
     }
 
     protected override void Effect()
@@ -559,12 +559,12 @@ public class CrushJoints : PassiveSpell
 
     public override void OnEquip()
     {
-        CombatManager._Instance.OnPlayerAttack += CallEffect;
+        CombatManager._Instance.OnPlayerBasicAttack += CallEffect;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.OnPlayerAttack -= CallEffect;
+        CombatManager._Instance.OnPlayerBasicAttack -= CallEffect;
     }
 
     protected override void Effect()
@@ -573,7 +573,7 @@ public class CrushJoints : PassiveSpell
         if (tracker >= procAfter)
         {
             tracker = 0;
-            CombatManager._Instance.OnPlayerAttack += OnNextAttack;
+            CombatManager._Instance.OnPlayerBasicAttack += OnNextAttack;
         }
     }
 
@@ -586,7 +586,7 @@ public class CrushJoints : PassiveSpell
     private void OnNextAttack()
     {
         Proc(true);
-        CombatManager._Instance.OnPlayerAttack -= OnNextAttack;
+        CombatManager._Instance.OnPlayerBasicAttack -= OnNextAttack;
     }
 
     public override string GetSecondaryText()
