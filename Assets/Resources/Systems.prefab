@@ -3759,9 +3759,11 @@ MonoBehaviour:
     - key: Mana
       value: Used to Cast Spells while in Combat
     - key: Damage
-      value: The amount of damage your basic attacks do
+      value: The amount of damage your Basic Attacks do. The minimum Damage a Basic
+        Attack can do is 1
     - key: Defense
-      value: An amount of damage taken off of enemy basic attacks
+      value: An amount of damage taken off of enemy Basic Attacks. The minimum Damage
+        an Enemy Basic Attack can do is 1
     - key: Pelts
       value: Used in trade for Equipment-related services at the Clothier in the
         Tavern
@@ -7533,7 +7535,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8aec68f8d3c0c88439b338141286d512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  wardableDamageTypes: 0000000005000000
+  wardableDamageTypes: 00000000050000000300000002000000
   spellQueueDisplayList: {fileID: 8716774992422608165}
   spellSFXSource: {fileID: 6555249208185791786}
   castingSpellSemiCircle: {fileID: 6709795648143763488}

@@ -37,7 +37,6 @@ public class AfflictionIcon : MonoBehaviour
         // Set Transforms Actual Scale Scale
         image.transform.localScale = targetScale * Vector3.one;
 
-
         SetStacksRemaining(Utils.RoundTo(setTo.GetStacks(), 0).ToString());
     }
 

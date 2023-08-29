@@ -14,7 +14,11 @@ public enum EnemyType
     HolyGrail,
     EnchantedMace,
     EnthralledServant,
-    AncientDaggerSet
+    AncientDaggerSet,
+    InfestedRatPack,
+    TheScienceExperiment,
+    SpiritOfContempt,
+    SpiritsTombGolem
 }
 
 public abstract class Enemy
@@ -124,6 +128,14 @@ public abstract class Enemy
                 return new EnthralledServant();
             case EnemyType.AncientDaggerSet:
                 return new AncientDaggerSet();
+            case EnemyType.InfestedRatPack:
+                return new InfestedRatPack();
+            case EnemyType.TheScienceExperiment:
+                return new TheScienceExperiment();
+            case EnemyType.SpiritOfContempt:
+                return new SpiritOfContempt();
+            case EnemyType.SpiritsTombGolem:
+                return new SpiritsTombGolem();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -148,7 +160,7 @@ public class PossessedTome : Enemy
     {
         // Set Callbacks
         CombatManager._Instance.OnCombatStart += ApplyLevitating;
-        CombatManager._Instance.OnCombatEnd -= ApplyLevitating;
+        CombatManager._Instance.OnCombatEnd += () => CombatManager._Instance.OnCombatStart -= ApplyLevitating;
 
         // Add Actions
         PercentageMap<EnemyAction> notLevitatingMap = new PercentageMap<EnemyAction>();
@@ -251,7 +263,7 @@ public class EnchantedMace : Enemy
     protected override void SetUpBehaviour()
     {
         CombatManager._Instance.OnCombatStart += ApplyBattleFrenzied;
-        CombatManager._Instance.OnCombatEnd -= ApplyBattleFrenzied;
+        CombatManager._Instance.OnCombatEnd += () => CombatManager._Instance.OnCombatStart -= ApplyBattleFrenzied;
 
         // Turn 1
         PercentageMap<EnemyAction> turn1Map = new PercentageMap<EnemyAction>();
@@ -286,7 +298,7 @@ public class AncientDaggerSet : Enemy
     protected override void SetUpBehaviour()
     {
         CombatManager._Instance.OnCombatStart += ApplyPoisonCoated;
-        CombatManager._Instance.OnCombatEnd -= ApplyPoisonCoated;
+        CombatManager._Instance.OnCombatEnd += () => CombatManager._Instance.OnCombatStart -= ApplyPoisonCoated;
 
         // Turn 1 & 3
         PercentageMap<EnemyAction> turn1And3Map = new PercentageMap<EnemyAction>();
@@ -309,6 +321,127 @@ public class AncientDaggerSet : Enemy
         AddEnemyBehaviour(() => (CombatManager._Instance.TurnCount - 1) % 4 == 0 || (CombatManager._Instance.TurnCount - 1) % 4 == 2, turn1And3Map);
         AddEnemyBehaviour(() => (CombatManager._Instance.TurnCount - 1) % 4 == 1, turn2Map);
         AddEnemyBehaviour(() => (CombatManager._Instance.TurnCount - 1) % 4 == 3, turn4Map);
+    }
+}
+
+public class TheScienceExperiment : Enemy
+{
+    public override string Name => "The Science Experiment";
+    public override EnemyType EnemyType => EnemyType.TheScienceExperiment;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(60, 70);
+    protected override int basicAttackDamage => 2;
+
+    private int buffer;
+
+    private void ApplyThorns()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Thorns, 1, Target.Enemy);
+    }
+
+    private void ConsumeThornsStack()
+    {
+        if (buffer == 0)
+        {
+            buffer++;
+            return;
+        }
+        CombatManager._Instance.ConsumeAfflictionStack(AfflictionType.Thorns, Target.Enemy);
+    }
+
+
+    protected override void SetUpBehaviour()
+    {
+        CombatManager._Instance.OnCombatStart += ApplyThorns;
+        CombatManager._Instance.OnCombatEnd = () => CombatManager._Instance.OnCombatStart -= ApplyThorns;
+
+        CombatManager._Instance.OnEnemyTurnStart += ConsumeThornsStack;
+        CombatManager._Instance.OnEnemyTurnStart -= ConsumeThornsStack;
+
+        // Turn 1s
+        PercentageMap<EnemyAction> turn1Map = new PercentageMap<EnemyAction>();
+        turn1Map.AddOption(MakeOption(50, null, new EnemyWardIntent(10)));
+        turn1Map.AddOption(MakeOption(50, null, new EnemyWardIntent(6), new EnemySingleAttackIntent(4, DamageType.Default)));
+
+        // Turn 2s
+        PercentageMap<EnemyAction> turn2Map = new PercentageMap<EnemyAction>();
+        turn2Map.AddOption(MakeOption(30, null, new EnemyGainAfflictionIntent(AfflictionType.Thorns, 1)));
+        turn1Map.AddOption(MakeOption(70, null, new EnemyWardIntent(12)));
+
+        // Add behaviours
+        AddEnemyBehaviour(() => (CombatManager._Instance.TurnCount - 1) % 2 == 0, turn1Map);
+        AddEnemyBehaviour(() => (CombatManager._Instance.TurnCount - 1) % 2 == 1, turn2Map);
+    }
+}
+
+public class SpiritOfContempt : Enemy
+{
+    public override string Name => "Spirit of Contempt";
+    public override EnemyType EnemyType => EnemyType.SpiritOfContempt;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(60, 70);
+    protected override int basicAttackDamage => 4;
+
+    private bool canBigAttack;
+
+    private void ApplyGhostly()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Ghostly, 5, Target.Enemy);
+    }
+
+    protected override void SetUpBehaviour()
+    {
+        CombatManager._Instance.OnCombatStart += ApplyGhostly;
+        CombatManager._Instance.OnCombatEnd += () => CombatManager._Instance.OnCombatStart -= ApplyGhostly;
+
+        // Actions
+        EnemyAction attackAndVulnerable = MakeEnemyAction(() => canBigAttack = true, new EnemySingleAttackIntent(6, DamageType.Evil), new EnemyApplyAfflictionIntent(AfflictionType.Vulnerable, 3));
+
+        PercentageMap<EnemyAction> nonBigAttackMap = new PercentageMap<EnemyAction>();
+        nonBigAttackMap.AddOption(MakeOption(100, attackAndVulnerable));
+
+        // 
+        PercentageMap<EnemyAction> bigAttackActionMap = new PercentageMap<EnemyAction>();
+        bigAttackActionMap.AddOption(MakeOption(50, attackAndVulnerable));
+        bigAttackActionMap.AddOption(MakeOption(50, () => canBigAttack = false, new EnemySingleAttackIntent(13, DamageType.Evil)));
+
+        // Add behaviours
+        AddEnemyBehaviour(() => !canBigAttack, nonBigAttackMap);
+        AddEnemyBehaviour(() => canBigAttack, bigAttackActionMap);
+    }
+}
+
+public class SpiritsTombGolem : Enemy
+{
+    public override string Name => "Spirits Tomb Golem";
+    public override EnemyType EnemyType => EnemyType.SpiritsTombGolem;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(110, 120);
+    protected override int basicAttackDamage => 4;
+
+    protected override void SetUpBehaviour()
+    {
+        // Turn 1s
+        PercentageMap<EnemyAction> turn1sMap = new PercentageMap<EnemyAction>();
+        turn1sMap.AddOption(MakeOption(100, null, new EnemyApplyAfflictionIntent(AfflictionType.Weak, 5), new EnemyApplyAfflictionIntent(AfflictionType.Vulnerable, 1), new EnemyWardIntent(8)));
+
+        // Turn 2s
+        PercentageMap<EnemyAction> turn2sMap = new PercentageMap<EnemyAction>();
+        turn2sMap.AddOption(MakeOption(100, null, new EnemyApplyAfflictionIntent(AfflictionType.Paralyze, 3), new EnemyWardIntent(8)));
+
+        // Turn 3s
+        PercentageMap<EnemyAction> turn3sMap = new PercentageMap<EnemyAction>();
+        turn3sMap.AddOption(MakeOption(50, null, new EnemySingleAttackIntent(10, DamageType.Fire), new EnemyApplyAfflictionIntent(AfflictionType.Burn, 3)));
+        turn3sMap.AddOption(MakeOption(50, null, new EnemySingleAttackIntent(17, DamageType.Evil), new EnemyApplyAfflictionIntent(AfflictionType.Weak, 3)));
+
+        // Turn 4s
+        PercentageMap<EnemyAction> turn4sMap = new PercentageMap<EnemyAction>();
+        turn4sMap.AddOption(MakeOption(100, null, new EnemyGainAfflictionIntent(AfflictionType.Protection, 3), new EnemyGainAfflictionIntent(AfflictionType.Power, 3), new EnemyWardIntent(8)));
+
+        // then back to turn 1
+
+        // Add to Behaviour tree
+        AddEnemyBehaviour(() => (CombatManager._Instance.TurnCount - 1) % 4 == 0, turn1sMap);
+        AddEnemyBehaviour(() => (CombatManager._Instance.TurnCount - 1) % 4 == 1, turn2sMap);
+        AddEnemyBehaviour(() => (CombatManager._Instance.TurnCount - 1) % 4 == 2, turn3sMap);
+        AddEnemyBehaviour(() => (CombatManager._Instance.TurnCount - 1) % 4 == 3, turn4sMap);
     }
 }
 
@@ -340,7 +473,7 @@ public class PanickedWizard : Enemy
 
 public class EnthralledServant : Enemy
 {
-    public override string Name => "EnthralledServant";
+    public override string Name => "Enthralled Servant";
     public override EnemyType EnemyType => EnemyType.EnthralledServant;
     protected override Vector2Int minMaxHPAmount => new Vector2Int(200, 210);
     protected override int basicAttackDamage => 5;
@@ -366,6 +499,49 @@ public class EnthralledServant : Enemy
 
         AddEnemyBehaviour(() => canBuff, canBuffMap);
         AddEnemyBehaviour(() => !canBuff, cannotBuffMap);
+    }
+}
+
+public class InfestedRatPack : Enemy
+{
+    public override string Name => "Infested Rat Pack";
+    public override EnemyType EnemyType => EnemyType.InfestedRatPack;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(200, 210);
+    protected override int basicAttackDamage => 3;
+
+    private int numAttacks = 4;
+    private bool canBuff = true;
+
+    private void ApplyPoisonCoated()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.PoisonCoated, 1, Target.Enemy);
+    }
+
+    protected override void SetUpBehaviour()
+    {
+        CombatManager._Instance.OnCombatStart += ApplyPoisonCoated;
+        CombatManager._Instance.OnCombatEnd -= ApplyPoisonCoated;
+
+        PercentageMap<EnemyAction> firstTurnMap = new PercentageMap<EnemyAction>();
+        PercentageMap<EnemyAction> attackMap = new PercentageMap<EnemyAction>();
+        PercentageMap<EnemyAction> buffMap = new PercentageMap<EnemyAction>();
+
+        firstTurnMap.AddOption(MakeOption(100, null, new EnemyApplyAfflictionIntent(AfflictionType.Blight, 5),
+            new EnemyApplyAfflictionIntent(AfflictionType.Vulnerable, 3), new EnemyApplyAfflictionIntent(AfflictionType.Weak, 3)));
+
+        attackMap.AddOption(MakeOption(80, () => canBuff = true, new EnemyMultiAttackIntent(2, () => numAttacks, DamageType.Default)));
+        attackMap.AddOption(MakeOption(20, () => canBuff = true, new EnemySingleAttackIntent(8, DamageType.Default), new EnemyApplyAfflictionIntent(AfflictionType.Weak, 5)));
+
+        buffMap.AddOption(MakeOption(50, () => canBuff = false, new EnemyGainAfflictionIntent(AfflictionType.PoisonCoated, 2), new EnemyWardIntent(10)));
+        buffMap.AddOption(MakeOption(50, delegate
+        {
+            numAttacks++;
+            canBuff = false;
+        }, new EnemyGainAfflictionIntent(AfflictionType.Power, 1), new EnemyWardIntent(10)));
+
+        AddEnemyBehaviour(() => CombatManager._Instance.TurnCount == 1, firstTurnMap);
+        AddEnemyBehaviour(() => CombatManager._Instance.TurnCount > 1, attackMap);
+        AddEnemyBehaviour(() => CombatManager._Instance.TurnCount > 1 && canBuff, buffMap);
     }
 }
 

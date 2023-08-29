@@ -20,7 +20,8 @@ public enum AfflictionType
     Regeneration,
     Levitating,
     BattleFrenzied,
-    PoisonCoated
+    PoisonCoated,
+    Ghostly,
 }
 
 public enum AfflictionSign
@@ -38,7 +39,7 @@ public abstract class Affliction : ToolTippable
     protected abstract string genericToolTipText { get; }
 
     // Determines whether or not to remove the affliction
-    public bool CanBeCleared => stacks <= 0;
+    public virtual bool CanBeCleared => stacks <= 0;
     private int stacks;
 
     // Who does this specific instance of affliction belong to
@@ -78,12 +79,22 @@ public abstract class Affliction : ToolTippable
     public void SetStacks(int v)
     {
         stacks = v;
+        CheckForRemoval();
     }
 
     // Setter
     public void AlterStacks(int v)
     {
         stacks += v;
+        CheckForRemoval();
+    }
+
+    private void CheckForRemoval()
+    {
+        if (CanBeCleared)
+        {
+            CombatManager._Instance.RemoveAffliction(GetOwner(), Type);
+        }
     }
 
     // Setter
@@ -140,7 +151,7 @@ public abstract class Affliction : ToolTippable
 
     public string GetToolTipText()
     {
-        return UIManager._Instance.HighlightKeywords(stacks > 0 ? specificToolTipText : genericToolTipText);
+        return UIManager._Instance.HighlightKeywords(!CanBeCleared ? specificToolTipText : genericToolTipText);
     }
 
     public List<ToolTippable> GetOtherToolTippables()
@@ -188,6 +199,8 @@ public abstract class Affliction : ToolTippable
                 return new BattleFrenzied();
             case AfflictionType.PoisonCoated:
                 return new PoisonCoated();
+            case AfflictionType.Ghostly:
+                return new Ghostly();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -371,12 +384,13 @@ public class Thorns : Affliction
 
 public class Power : Affliction
 {
-    protected override string specificToolTipText => "Non-Basic Attacks do " + GetStacks() + " more Damage";
-    protected override string genericToolTipText => "Non-Basic Attacks do more Damage equal to the Number of Power Stacks";
+    protected override string specificToolTipText => "Damage Dealt by Non-Basic Attacks is Changed by " + GetStacks();
+    protected override string genericToolTipText => "Damage Dealt by Non-Basic Attacks is Changed by the Number of Power Stacks";
 
     public override AfflictionType Type => AfflictionType.Power;
 
     public override AfflictionSign Sign => AfflictionSign.Positive;
+    public override bool CanBeCleared => GetStacks() == 0;
 
     protected override void SetKeywords()
     {
@@ -385,12 +399,13 @@ public class Power : Affliction
 
 public class Protection : Affliction
 {
-    protected override string specificToolTipText => "Ward Gained is Increased by " + GetStacks();
-    protected override string genericToolTipText => "Ward Gained is Increased by the Number of Protection Stacks";
+    protected override string specificToolTipText => "Ward Gained is Changed by " + GetStacks();
+    protected override string genericToolTipText => "Ward Gained is Changed by the Number of Protection Stacks";
 
     public override AfflictionType Type => AfflictionType.Protection;
 
     public override AfflictionSign Sign => AfflictionSign.Positive;
+    public override bool CanBeCleared => GetStacks() == 0;
 
     protected override void SetKeywords()
     {
@@ -414,9 +429,9 @@ public class Regeneration : Affliction
 
 public class Levitating : Affliction
 {
-    protected override string specificToolTipText => "Upon taking " + currentDamageNeededToTake + " more Damage this Turn, this Affliction will be Removed. When this Affliction is Removed, " +
+    protected override string specificToolTipText => "Levitating enemies Attacks are unaffected by Ward. Upon taking " + currentDamageNeededToTake + " more Damage this Turn, this Affliction will be Removed. When this Affliction is Removed, " +
         "the Enemies current Intent will be Forgotten.";
-    protected override string genericToolTipText => "This Affliction is Removed upon taking a certain amount of Damage in a Turn. When this Affliction is Removed, " +
+    protected override string genericToolTipText => "Levitating enemies Attacks are unaffected by Ward. This Affliction is Removed upon taking a certain amount of Damage in a Turn. When this Affliction is Removed, " +
         "the Enemies current Intent will be Forgotten";
 
     public override AfflictionType Type => AfflictionType.Levitating;
@@ -471,7 +486,6 @@ public class Levitating : Affliction
                 CombatManager._Instance.OnEnemyTakeDamage += TookDamage;
                 break;
         }
-        Debug.Log(damageNeededToTake);
     }
 
     public override void Unapply()
@@ -596,6 +610,53 @@ public class PoisonCoated : Affliction
                 return;
             case Target.Enemy:
                 CombatManager._Instance.OnEnemyAttack -= ApplyPoison;
+                return;
+        }
+    }
+}
+
+public class Ghostly : Affliction
+{
+    protected override string Name => "Ghostly";
+    protected override string specificToolTipText => "At the Beginning of Every Turn, Gain " + GetStacks() + " Intangible";
+    protected override string genericToolTipText => "At the Beginning of Every Turn, Gain Intangible equal to the number of Ghostly Stacks";
+
+    public override AfflictionType Type => AfflictionType.Ghostly;
+
+    public override AfflictionSign Sign => AfflictionSign.Positive;
+
+    private void ApplyIntangible()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Intangible, GetStacks(), GetOwner());
+    }
+
+    protected override void SetKeywords()
+    {
+        afflictionKeywords.Add(AfflictionType.Intangible);
+    }
+
+    public override void Apply()
+    {
+        switch (GetOwner())
+        {
+            case Target.Character:
+                CombatManager._Instance.OnPlayerTurnStart += ApplyIntangible;
+                return;
+            case Target.Enemy:
+                CombatManager._Instance.OnEnemyTurnStart += ApplyIntangible;
+                return;
+        }
+    }
+
+    public override void Unapply()
+    {
+        switch (GetOwner())
+        {
+            case Target.Character:
+                CombatManager._Instance.OnPlayerTurnStart -= ApplyIntangible;
+                return;
+            case Target.Enemy:
+                CombatManager._Instance.OnEnemyTurnStart -= ApplyIntangible;
                 return;
         }
     }

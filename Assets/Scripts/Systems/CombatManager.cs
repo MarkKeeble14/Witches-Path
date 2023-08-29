@@ -170,6 +170,7 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float delayAfterBandagesEffect = 1;
     [SerializeField] private float delayBeforeEnemyAttack = 1;
     [SerializeField] private float delayAfterEnemyTurn = 1;
+    [SerializeField] private float delayBetweenEnemyMultiAttacks = 0.1f;
 
     // These should maybe go in Spells
     [SerializeField] private float delayBetweenSpellBatches = .5f;
@@ -303,11 +304,11 @@ public partial class CombatManager : MonoBehaviour
         // Show Turn Display
         yield return StartCoroutine(turnDisplay.Show("Combat Start", ""));
 
-        // Call OnCombatStart
-        OnCombatStart?.Invoke();
-
         // Set settings
         InCombat = true;
+
+        // Call OnCombatStart
+        OnCombatStart?.Invoke();
 
         StartCoroutine(UpdateDuringCombat());
 
@@ -868,8 +869,16 @@ public partial class CombatManager : MonoBehaviour
     // Basic Attack
     private void PlayerBasicAttack()
     {
+        int basicAttackDamage = GameManager._Instance.DamageFromEquipment + GameManager._Instance.GetBasicAttackDamage();
+
+        // the minimum a basic attack can do is manually set to 1
+        if (basicAttackDamage <= 0)
+        {
+            basicAttackDamage = 1;
+        }
+
         // Attack the enemy
-        AttackCombatent(GameManager._Instance.DamageFromEquipment + GameManager._Instance.GetBasicAttackDamage(), Target.Enemy, Target.Character, DamageType.Default, DamageSource.BasicAttack);
+        AttackCombatent(basicAttackDamage, Target.Enemy, Target.Character, DamageType.Default, DamageSource.BasicAttack);
 
         // Burn Effect
         ApplyBurnEffectOnMap(characterAfflictionMap, Target.Character);
@@ -915,10 +924,10 @@ public partial class CombatManager : MonoBehaviour
         // Take away from the damage amount the amount of defense
         attackDamage -= defenseFromEquipment;
 
-        // if doing so makes amount positive, instead just cancel out
-        if (attackDamage < 0)
+        // the minimum a basic attack can do is manually set to 1
+        if (attackDamage <= 0)
         {
-            attackDamage = 0;
+            attackDamage = 1;
         }
 
         AttackCombatent(attackDamage, Target.Character, Target.Enemy, DamageType.Default, DamageSource.BasicAttack);
@@ -964,6 +973,8 @@ public partial class CombatManager : MonoBehaviour
                     for (int i = 0; i < multiAttack.NumAttacks; i++)
                     {
                         AttackCombatent(multiAttack.DamageAmount, Target.Character, Target.Enemy, multiAttack.DamageType, DamageSource.EnemyAttack);
+
+                        yield return new WaitForSeconds(delayBetweenEnemyMultiAttacks);
                     }
 
                     break;
@@ -1003,6 +1014,17 @@ public partial class CombatManager : MonoBehaviour
 
     public void AlterCombatentHP(int amount, Target target, DamageType damageType)
     {
+        if (amount < 0)
+        {
+            // Intangible Effect
+            if (TargetHasAffliction(AfflictionType.Intangible, target))
+            {
+                amount = -1;
+                ConsumeAfflictionStack(AfflictionType.Intangible, target);
+                ShowAfflictionProc(AfflictionType.Intangible, target);
+            }
+        }
+
         // Call the AlterHP function on the appropriate Target
         PopupText text;
         switch (target)
@@ -1110,7 +1132,7 @@ public partial class CombatManager : MonoBehaviour
         }
 
         // Thorns Effect
-        if (TargetHasAffliction(AfflictionType.Thorns, attacker))
+        if (TargetHasAffliction(AfflictionType.Thorns, target))
         {
             int damage = GetTargetAfflictionMap(target)[AfflictionType.Thorns].GetStacks();
             ShowAfflictionProc(AfflictionType.Thorns, target);
@@ -1228,11 +1250,6 @@ public partial class CombatManager : MonoBehaviour
         if (TargetHasAffliction(AfflictionType.Intangible, target))
         {
             amount = 1;
-            if (consumeAfflictions)
-            {
-                ConsumeAfflictionStack(AfflictionType.Intangible, target);
-                ShowAfflictionProc(AfflictionType.Intangible, target);
-            }
         }
 
         // Barbarians Tactics Effect
@@ -1258,6 +1275,12 @@ public partial class CombatManager : MonoBehaviour
 
     private int UseWard(int amount, Target target, Func<int> getFunc, Action<int> alterFunc)
     {
+        // Levitating Effect
+        if (TargetHasAffliction(AfflictionType.Levitating, target))
+        {
+            return 0;
+        }
+
         // Apply Ward
         int currentWard = getFunc();
 
@@ -1419,15 +1442,18 @@ public partial class CombatManager : MonoBehaviour
         // Affliction Map already contains
         if (map.ContainsKey(type))
         {
-            map[type].AlterStacks(numStacks);
+            Affliction aff = map[type];
+            aff.AlterStacks(numStacks);
+
             ShowAfflictionProc(type, target);
             isNewInstance = false;
 
             // Spawn Effect Text
-            SpawnEffectText(EffectTextStyle.Fade, "+" + numStacks + " " + map[type].GetToolTipLabel(), UIManager._Instance.GetEffectTextColor(map[type].Sign + "Affliction"), target);
+            SpawnEffectText(EffectTextStyle.Fade, (numStacks > 0 ? "+" : "") + numStacks + " " + aff.GetToolTipLabel(),
+                UIManager._Instance.GetEffectTextColor(aff.Sign + "Affliction"), target);
 
             // Animate
-            if (map[type].Sign == AfflictionSign.Negative)
+            if (aff.Sign == AfflictionSign.Negative)
             {
                 ShakeCombatent(target);
             }
@@ -1542,22 +1568,6 @@ public partial class CombatManager : MonoBehaviour
 
         // update hp bar
         UpdateHPBarAfflictions(type, target);
-
-        // there remains at least a stack of the affliction, do not remove
-        if (!aff.CanBeCleared) return;
-
-        // there are no stacks of the affliction remaining, remove
-        RemoveAffliction(target, type);
-
-        switch (target)
-        {
-            case Target.Character:
-                OnCharacterLoseAffliction?.Invoke();
-                break;
-            case Target.Enemy:
-                OnEnemyLoseAffliction?.Invoke();
-                break;
-        }
     }
 
     public void RemoveAffliction(Target target, AfflictionType type)
@@ -1574,15 +1584,6 @@ public partial class CombatManager : MonoBehaviour
         // Unapply
         removingAff.Unapply();
 
-        // Animate
-        if (removingAff.Sign == AfflictionSign.Positive)
-        {
-            ShakeCombatent(target);
-        }
-
-        // Spawn Effect Text
-        SpawnEffectText(EffectTextStyle.Fade, removingAff.GetToolTipLabel() + " Wears Off", UIManager._Instance.GetEffectTextColor("AfflictionRemoved"), target);
-
         // Destroy UI
         Dictionary<AfflictionType, AfflictionIcon> displays = GetTargetAfflictionDisplays(target);
         AfflictionIcon icon = displays[type];
@@ -1591,6 +1592,29 @@ public partial class CombatManager : MonoBehaviour
 
         // Remove Affliction
         GetTargetAfflictionMap(target).Remove(type);
+
+        // Animate
+        if (removingAff.Sign == AfflictionSign.Positive)
+        {
+            ShakeCombatent(target);
+        }
+
+        // Update hp bar
+        UpdateHPBarAfflictions(type, target);
+
+        // Spawn Effect Text
+        SpawnEffectText(EffectTextStyle.Fade, removingAff.GetToolTipLabel() + " Wears Off", UIManager._Instance.GetEffectTextColor("AfflictionRemoved"), target);
+
+        // Callbacks
+        switch (target)
+        {
+            case Target.Character:
+                OnCharacterLoseAffliction?.Invoke();
+                break;
+            case Target.Enemy:
+                OnEnemyLoseAffliction?.Invoke();
+                break;
+        }
     }
 
     private int GetTargetAfflictionStacks(AfflictionType type, Target target)

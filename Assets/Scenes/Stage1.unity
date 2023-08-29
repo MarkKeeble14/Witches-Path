@@ -342,6 +342,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.minMaxVerticalOffset.x
       value: -50
       objectReference: {fileID: 0}
@@ -382,12 +386,116 @@ PrefabInstance:
       value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].Size.x
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].Size.y
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].Size.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].Size.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].Size.x
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].Size.y
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].Size.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].Size.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].Size.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].Size.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[5].Size.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[5].Size.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].Content
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].Content
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].Content
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[5].Content
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].NumPaths
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].NumPaths
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].NumPaths
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].NumPaths
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.forcedNodeIndices.dictionary.Array.size
       value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSectionNodeSizeDict.dictionary.Array.size
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].SizingInfo.CellSize
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].SizingInfo.CellSize
+      value: 350
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].SizingInfo.CellSize
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].SizingInfo.CellSize
+      value: 600
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].SizingInfo.CellSize
+      value: 600
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[5].SizingInfo.CellSize
+      value: 600
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.optionEventMapNodes.Array.data[0].optionEvent
@@ -446,12 +554,68 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].ChanceToConnectPaths.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].ChanceToConnectPaths.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].SizingInfo.ContentSize
+      value: 75
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].SizingInfo.ContentSize
+      value: 300
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].ChanceToConnectPaths.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].ChanceToConnectPaths.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].SizingInfo.ContentSize
+      value: 75
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].ChanceToConnectPaths.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].ChanceToConnectPaths.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].SizingInfo.ContentSize
+      value: 600
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].ChanceToConnectPaths.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].ChanceToConnectPaths.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].SizingInfo.ContentSize
+      value: 600
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[5].SizingInfo.ContentSize
+      value: 600
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapNodes.dictionary.Array.data[0].value.Array.size
-      value: 6
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapNodes.dictionary.Array.data[1].value.Array.size
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapNodes.dictionary.Array.data[2].value.Array.size
@@ -492,7 +656,15 @@ PrefabInstance:
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapNodes.dictionary.Array.data[0].value.Array.data[6]
       value: 
-      objectReference: {fileID: 11400000, guid: 4a8c072a50d2db141884587a09c9b779, type: 2}
+      objectReference: {fileID: 11400000, guid: 9e7e49a3976887847817ed3d31996500, type: 2}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapNodes.dictionary.Array.data[0].value.Array.data[7]
+      value: 
+      objectReference: {fileID: 11400000, guid: 4862cc6d1b1afb24ea904e1b8484c068, type: 2}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapNodes.dictionary.Array.data[0].value.Array.data[8]
+      value: 
+      objectReference: {fileID: 11400000, guid: f556b961ad7bd604e8b78af165a5be23, type: 2}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapNodes.dictionary.Array.data[1].value.Array.data[0]
       value: 
@@ -501,6 +673,10 @@ PrefabInstance:
       propertyPath: map.mapNodes.dictionary.Array.data[1].value.Array.data[1]
       value: 
       objectReference: {fileID: 11400000, guid: 3e18287ccae5f534dae7278efea94c24, type: 2}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapNodes.dictionary.Array.data[1].value.Array.data[2]
+      value: 
+      objectReference: {fileID: 11400000, guid: 4c410cafef507084193abb44d59c992b, type: 2}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapNodes.dictionary.Array.data[2].value.Array.data[0]
       value: 
@@ -516,6 +692,70 @@ PrefabInstance:
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSectionNodeSizeDict.dictionary.Array.data[2].value
       value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].SizingInfo.MinMaxVerticalOffset.x
+      value: -50
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].SizingInfo.MinMaxVerticalOffset.y
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].SizingInfo.MinMaxVerticalOffset.x
+      value: -50
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].SizingInfo.MinMaxVerticalOffset.y
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].SizingInfo.MinMaxVerticalOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].SizingInfo.MinMaxVerticalOffset.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].SizingInfo.MinMaxVerticalOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].SizingInfo.MinMaxVerticalOffset.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].SizingInfo.MinMaxHorizontalOffset.x
+      value: -50
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].SizingInfo.MinMaxHorizontalOffset.y
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].SizingInfo.MinMaxHorizontalOffset.x
+      value: -50
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].SizingInfo.MinMaxHorizontalOffset.y
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].SizingInfo.MinMaxHorizontalOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].SizingInfo.MinMaxHorizontalOffset.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].SizingInfo.MinMaxHorizontalOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].SizingInfo.MinMaxHorizontalOffset.y
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSectionNodeSizeDict.dictionary.Array.data[0].value.CellSize
@@ -540,6 +780,22 @@ PrefabInstance:
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSectionNodeSizeDict.dictionary.Array.data[2].value.ContentSize
       value: 500
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].ForcedNodeIndicies.dictionary.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].ForcedNodeIndicies.dictionary.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].ForcedNodeIndicies.dictionary.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].ForcedNodeIndicies.dictionary.Array.size
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5332111636835463515, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: m_RootOrder
