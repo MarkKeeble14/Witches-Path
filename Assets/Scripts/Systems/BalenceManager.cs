@@ -13,8 +13,6 @@ public class ActiveSpellSpecDictionary
 {
     [SerializeField] private int cooldown;
     [SerializeField] private int manaCost;
-    [SerializeField] private int batches;
-    [SerializeField] private Vector2Int minMaxBatches;
     [SerializeField] private SerializableDictionary<string, int> additionalParameters = new SerializableDictionary<string, int>();
 
     public int GetSpec(string identifier)
@@ -25,12 +23,6 @@ public class ActiveSpellSpecDictionary
                 return cooldown;
             case "ManaCost":
                 return manaCost;
-            case "Batches":
-                return batches;
-            case "MinNotesPerBatch":
-                return minMaxBatches.x;
-            case "MaxNotesPerBatch":
-                return minMaxBatches.y;
             default:
                 return additionalParameters[identifier];
         }

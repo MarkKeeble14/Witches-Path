@@ -67,6 +67,9 @@ public class Map
     [SerializeField] private SerializableDictionary<MapNodeType, List<GameOccurance>> mapNodes = new SerializableDictionary<MapNodeType, List<GameOccurance>>();
     [SerializeField] private List<OptionEventWithCondition> optionEventMapNodes = new List<OptionEventWithCondition>();
 
+    [Header("General Settings")]
+    [SerializeField] private List<MapNodeType> lazySetters = new List<MapNodeType>();
+
     [Header("Visual Settings")]
     [SerializeField] private float delayBetweenShowingCells = .1f;
     [SerializeField] private SerializableDictionary<MapNodeType, Sprite> mapNodeIconDict = new SerializableDictionary<MapNodeType, Sprite>();
@@ -291,6 +294,7 @@ public class Map
 
     private void PopulateNodes(MapNodeUI[,] mapNodes, MapSectionInfo sectionInfo, GridLayoutGroup grid)
     {
+        // Opening if statement non-boss or mini-boss sections
         if (sectionInfo.Content == MapSection.Regular)
         {
             // if it is a regular section, we create paths
@@ -399,13 +403,11 @@ public class Map
             // Disable any nodes that have not been set (to generate "holes")
             DisableUnset(mapNodes);
         }
-        else
+        else // if it is a boss or miniboss section, we simply set all nodes
         {
-            // if it is a boss or miniboss section, we simply set all nodes
             foreach (MapNodeUI node in mapNodes)
             {
-                MapNodeType nodeType = randomNodeTypeOdds[sectionInfo.Content].GetOption();
-                node.Set(GetMapNodeOfType(nodeType), mapNodeIconDict[nodeType]);
+                SetNodeGameOccurance(node, randomNodeTypeOdds[sectionInfo.Content].GetOption());
             }
         }
     }
@@ -421,7 +423,66 @@ public class Map
         {
             nodeType = randomNodeTypeOdds[sectionInfo.Content].GetOption();
         }
-        node.Set(GetMapNodeOfType(nodeType), mapNodeIconDict[nodeType]);
+
+        // Defer from setting the Game Occurance for now; instead, we'll be setting it upon entering the node itself
+        if (lazySetters.Contains(nodeType))
+        {
+            node.Set(null, mapNodeIconDict[nodeType], nodeType);
+        }
+        else  // Otherwise, if we are to set nodes of this type right away, then do so
+        {
+            SetNodeGameOccurance(node, nodeType);
+        }
+    }
+
+    public void SetNodeGameOccurance(MapNodeUI node, MapNodeType nodeType)
+    {
+        node.Set(GetGameOccuranceOfType(nodeType), mapNodeIconDict[nodeType], nodeType);
+    }
+
+    public GameOccurance GetGameOccuranceOfType(MapNodeType nodeType)
+    {
+        if (nodeType == MapNodeType.Event)
+        {
+            // Determine which Option Events can Occur
+            List<OptionEventWithCondition> possibleEvents = new List<OptionEventWithCondition>();
+            foreach (OptionEventWithCondition optionEvent in optionEventMapNodes)
+            {
+                OptionEvent e = optionEvent.GetOptionEvent();
+                if (GameManager._Instance.ParseEventCondition(e, optionEvent.GetConditionString()))
+                {
+                    possibleEvents.Add(optionEvent);
+                }
+            }
+
+            // Get a possible Option Event from the Option Events we've determined may Occur
+            OptionEventWithCondition r = RandomHelper.GetRandomFromList(possibleEvents);
+
+            // Remove it from the list of possibilities if thats not going to break things to eliminate duplicates
+            if (optionEventMapNodes.Count > 1)
+            {
+                optionEventMapNodes.Remove(r);
+            }
+
+            return r.GetOptionEvent();
+        }
+        else if (nodeType == MapNodeType.MinorFight || nodeType == MapNodeType.MiniBoss || nodeType == MapNodeType.Boss)
+        {
+            // Get a Game Occurance of the type we want
+            GameOccurance r = RandomHelper.GetRandomFromList(mapNodes[nodeType]);
+
+            // Provided removing the Occurance won't leave us with no more Game Occurances to take, remove it so we don't have repeats
+            if (mapNodes[nodeType].Count > 1)
+            {
+                mapNodes[nodeType].Remove(r);
+            }
+
+            return r;
+        }
+        else
+        {
+            return RandomHelper.GetRandomFromList(mapNodes[nodeType]);
+        }
     }
 
     private void DisableUnset(MapNodeUI[,] mapNodes)
@@ -441,49 +502,5 @@ public class Map
         {
             cell.SetShow(true);
         }, delayBetweenShowingCells));
-    }
-
-
-    private GameOccurance GetMapNodeOfType(MapNodeType type)
-    {
-        if (type == MapNodeType.Event)
-        {
-            return GetEventMapNode();
-        }
-        else
-        {
-            GameOccurance r = RandomHelper.GetRandomFromList(mapNodes[type]);
-
-            // Remove the Occurance from the pool if it is a type we should be doing so for, as well as if there are still other available instances, just to avoid breaking completely
-            if (type == MapNodeType.MiniBoss || type == MapNodeType.MinorFight)
-            {
-                if (mapNodes[type].Count > 1)
-                    mapNodes[type].Remove(r);
-            }
-
-            return r;
-        }
-    }
-
-    private GameOccurance GetEventMapNode()
-    {
-        List<OptionEventWithCondition> possibleEvents = new List<OptionEventWithCondition>();
-        foreach (OptionEventWithCondition optionEvent in optionEventMapNodes)
-        {
-            OptionEvent e = optionEvent.GetOptionEvent();
-            if (GameManager._Instance.ParseEventCondition(e, optionEvent.GetConditionString()))
-            {
-                possibleEvents.Add(optionEvent);
-            }
-        }
-
-        // Get a possible Option Event
-        OptionEventWithCondition r = RandomHelper.GetRandomFromList(possibleEvents);
-
-        // Remove it from the list of possibilities if thats not going to break things
-        if (optionEventMapNodes.Count > 1)
-            optionEventMapNodes.Remove(r);
-
-        return r.GetOptionEvent();
     }
 }

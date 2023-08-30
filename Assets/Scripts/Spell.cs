@@ -604,6 +604,20 @@ public class CrushJoints : PassiveSpell
 
 #region Active Spells
 
+public class SpellNoteBatch
+{
+    public int NumNotes { get; private set; }
+    public float DelayBetweenNotes { get; private set; }
+    public float DelayAfterBatch { get; private set; }
+
+    public SpellNoteBatch(int numNotes, float delayBetweenNotes, float delayAfterBatch)
+    {
+        NumNotes = numNotes;
+        DelayBetweenNotes = delayBetweenNotes;
+        DelayAfterBatch = delayAfterBatch;
+    }
+}
+
 public abstract class ActiveSpell : Spell
 {
     protected override SpellType Type => SpellType.Active;
@@ -621,14 +635,13 @@ public abstract class ActiveSpell : Spell
 
     public DamageType MainDamageType => mainDamageType;
 
-    // Testing
-    public Vector2Int MinMaxNotesPerBatch { get; private set; }
-    public int Batches { get; private set; }
 
     public AudioClip AssociatedSoundClip { get => Resources.Load<AudioClip>("ActiveSpellData/TestClip"); }
 
     public virtual AudioClip HitSound { get => Resources.Load<AudioClip>("ActiveSpellData/DefaultHitSound"); }
     public virtual AudioClip MissSound { get => Resources.Load<AudioClip>("ActiveSpellData/DefaultMissSound"); }
+
+    public List<SpellNoteBatch> Batches = new List<SpellNoteBatch>();
 
     public override void CallEffect()
     {
@@ -675,8 +688,23 @@ public abstract class ActiveSpell : Spell
         base.SetParameters();
         cooldown = (int)GetSpellSpec("Cooldown");
         manaCost = GetSpellSpec("ManaCost");
-        Batches = GetSpellSpec("Batches");
-        MinMaxNotesPerBatch = new Vector2Int(GetSpellSpec("MinNotesPerBatch"), GetSpellSpec("MaxNotesPerBatch"));
+        SetBatches();
+    }
+
+    protected virtual void SetBatches()
+    {
+        Batches.Add(new SpellNoteBatch(3, 0.5f, 0.5f));
+        Batches.Add(new SpellNoteBatch(2, .35f, 0.5f));
+    }
+
+    private int GetNumNotes()
+    {
+        int result = 0;
+        foreach (SpellNoteBatch batch in Batches)
+        {
+            result += batch.NumNotes;
+        }
+        return result;
     }
 
     public void SetOnCooldown()
@@ -719,12 +747,7 @@ public abstract class ActiveSpell : Spell
     protected override string GetDetailText()
     {
         // Order: Mana -> Cooldown -> Attacks
-        return "\nMana Cost: " + manaCost + ", Cooldown: " + CooldownTracker.y + ", Attacks: " + GetNumNotesString();
-    }
-
-    public string GetNumNotesString()
-    {
-        return (Batches * MinMaxNotesPerBatch.x) + " - " + (Batches * MinMaxNotesPerBatch.y);
+        return "\nMana Cost: " + manaCost + ", Cooldown: " + CooldownTracker.y + ", Attacks: " + GetNumNotes();
     }
 
     protected int GetCalculatedDamageEnemy(int damage)
@@ -1268,6 +1291,11 @@ public class WitchesWard : ActiveSpell
     {
         base.SetParameters();
         wardAmount = (int)GetSpellSpec("WardAmount");
+    }
+
+    protected override void SetBatches()
+    {
+        Batches.Add(new SpellNoteBatch(0, 0, 0.25f));
     }
 
     protected override void Effect()

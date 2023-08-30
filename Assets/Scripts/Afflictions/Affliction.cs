@@ -429,10 +429,8 @@ public class Regeneration : Affliction
 
 public class Levitating : Affliction
 {
-    protected override string specificToolTipText => "Levitating enemies Attacks are unaffected by Ward. Upon taking " + currentDamageNeededToTake + " more Damage this Turn, this Affliction will be Removed. When this Affliction is Removed, " +
-        "the Enemies current Intent will be Forgotten.";
-    protected override string genericToolTipText => "Levitating enemies Attacks are unaffected by Ward. This Affliction is Removed upon taking a certain amount of Damage in a Turn. When this Affliction is Removed, " +
-        "the Enemies current Intent will be Forgotten";
+    protected override string specificToolTipText => "Levitating enemies Attacks are unaffected by Ward. Upon taking " + currentDamageNeededToTake + " more Damage this Turn, this Affliction will be Removed";
+    protected override string genericToolTipText => "Levitating enemies Attacks are unaffected by Ward. This Affliction is Removed upon taking a certain amount of Damage in a Turn";
 
     public override AfflictionType Type => AfflictionType.Levitating;
 
@@ -507,7 +505,7 @@ public class Levitating : Affliction
 public class BattleFrenzied : Affliction
 {
     protected override string Name => "Battle Frenzied";
-    protected override string specificToolTipText => "Upon Dealing at or Above " + damageToActivate + " Damage, Gain " + emboldenAmount + " Embolden";
+    protected override string specificToolTipText => "Upon Dealing at or Above " + damageToActivate + " Damage, Gain " + GetStacks() + " Embolden";
     protected override string genericToolTipText => "Gain some amount of Embolden Upon dealing at or Above a certain amount of Damage";
 
     public override AfflictionType Type => AfflictionType.BattleFrenzied;
@@ -515,7 +513,6 @@ public class BattleFrenzied : Affliction
     public override AfflictionSign Sign => AfflictionSign.Positive;
 
     private int damageToActivate;
-    private int emboldenAmount;
 
     private void CheckDamageAmount(int amount)
     {
@@ -533,12 +530,11 @@ public class BattleFrenzied : Affliction
     protected override void SetParameters()
     {
         damageToActivate = GetAfflictionSpec("DamageToApply");
-        emboldenAmount = GetAfflictionSpec("EmboldenAmount");
     }
 
     private void Activate()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Embolden, emboldenAmount, GetOwner());
+        CombatManager._Instance.AddAffliction(AfflictionType.Embolden, GetStacks(), GetOwner());
     }
 
     public override void Apply()

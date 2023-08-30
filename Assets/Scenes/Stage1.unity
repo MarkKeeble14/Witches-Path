@@ -611,7 +611,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapNodes.dictionary.Array.data[0].value.Array.size
-      value: 9
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapNodes.dictionary.Array.data[1].value.Array.size
@@ -660,11 +660,15 @@ PrefabInstance:
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapNodes.dictionary.Array.data[0].value.Array.data[7]
       value: 
-      objectReference: {fileID: 11400000, guid: 4862cc6d1b1afb24ea904e1b8484c068, type: 2}
+      objectReference: {fileID: 11400000, guid: dfe479a16d000394f9abc5f962fb870e, type: 2}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapNodes.dictionary.Array.data[0].value.Array.data[8]
       value: 
-      objectReference: {fileID: 11400000, guid: f556b961ad7bd604e8b78af165a5be23, type: 2}
+      objectReference: {fileID: 11400000, guid: 4b60147169dff1a499d8981069a3693a, type: 2}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapNodes.dictionary.Array.data[0].value.Array.data[9]
+      value: 
+      objectReference: {fileID: 11400000, guid: f7e50a792d105024ca1d4de95ccbb52a, type: 2}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapNodes.dictionary.Array.data[1].value.Array.data[0]
       value: 
@@ -693,6 +697,14 @@ PrefabInstance:
       propertyPath: map.mapSectionNodeSizeDict.dictionary.Array.data[2].value
       value: 100
       objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapNodes.dictionary.Array.data[0].value.Array.data[10]
+      value: 
+      objectReference: {fileID: 11400000, guid: 4862cc6d1b1afb24ea904e1b8484c068, type: 2}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapNodes.dictionary.Array.data[0].value.Array.data[11]
+      value: 
+      objectReference: {fileID: 11400000, guid: f556b961ad7bd604e8b78af165a5be23, type: 2}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[0].SizingInfo.MinMaxVerticalOffset.x
       value: -50

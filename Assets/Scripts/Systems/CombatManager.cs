@@ -172,10 +172,6 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float delayAfterEnemyTurn = 1;
     [SerializeField] private float delayBetweenEnemyMultiAttacks = 0.1f;
 
-    // These should maybe go in Spells
-    [SerializeField] private float delayBetweenSpellBatches = .5f;
-    [SerializeField] private float delayBetweenSpellNotes = .25f;
-
     // Callbacks
     public Action OnPlayerBasicAttack;
     public Action OnPlayerTurnStart;
@@ -705,17 +701,21 @@ public partial class CombatManager : MonoBehaviour
         Coroutine updatePotencyDisplay = StartCoroutine(UpdateSpellPotencyDisplay(potencyDisplay));
         float t = 0;
 
-        for (int i = 0; i < spell.Batches; i++)
+        // Foreach Batch in the Spell
+        for (int i = 0; i < spell.Batches.Count; i++)
         {
+            // Get Current Batch
+            SpellNoteBatch currentBatch = spell.Batches[i];
+
             // Spawn Batch of Circles
-            for (int p = 0; p < RandomHelper.RandomIntInclusive(spell.MinMaxNotesPerBatch); p++)
+            for (int p = 0; p < currentBatch.NumNotes; p++)
             {
                 Circle c = circlePool.Get();
                 spawnedCircles.Add(c);
                 c.Set(UIManager._Instance.GetDamageTypeColor(spell.MainDamageType));
 
                 t = 0;
-                while (t < delayBetweenSpellNotes)
+                while (t < currentBatch.DelayBetweenNotes)
                 {
                     t += Time.deltaTime;
 
@@ -739,7 +739,7 @@ public partial class CombatManager : MonoBehaviour
 
             // Depending on how many are hit, spell power is increased
             t = 0;
-            while (t < delayBetweenSpellBatches)
+            while (t < currentBatch.DelayAfterBatch)
             {
                 t += Time.deltaTime;
                 yield return null;
@@ -1017,7 +1017,7 @@ public partial class CombatManager : MonoBehaviour
         if (amount < 0)
         {
             // Intangible Effect
-            if (TargetHasAffliction(AfflictionType.Intangible, target))
+            if (TargetHasAffliction(AfflictionType.Intangible, target) && amount < -1)
             {
                 amount = -1;
                 ConsumeAfflictionStack(AfflictionType.Intangible, target);
@@ -1170,6 +1170,12 @@ public partial class CombatManager : MonoBehaviour
             && source != DamageSource.BasicAttack)
         {
             amount += GetTargetAfflictionStacks(AfflictionType.Power, attacker);
+            // Make sure that negative Power values don't wind up making a damaging attack heal instead,
+            // rather whatever action is trying to do that action is simply zeroed out
+            if (amount < 0)
+            {
+                amount = 0;
+            }
         }
 
         // Black Prism Effect
@@ -1228,12 +1234,12 @@ public partial class CombatManager : MonoBehaviour
             }
         }
 
-        // OnGuard Effect
+        // On Guard Effect
         if (TargetHasAffliction(AfflictionType.OnGuard, target))
         {
             amount -= BalenceManager._Instance.GetValue(AfflictionType.OnGuard, "ReduceBy");
             // Make sure guarded doesn't make what should be damage instead be a heal
-            if (amount > 0)
+            if (amount < 0)
             {
                 amount = 0;
             }
@@ -1246,12 +1252,6 @@ public partial class CombatManager : MonoBehaviour
         }
 
         // General
-        // Intangible Effect
-        if (TargetHasAffliction(AfflictionType.Intangible, target))
-        {
-            amount = 1;
-        }
-
         // Barbarians Tactics Effect
         if (GameManager._Instance.HasArtifact(ArtifactLabel.BarbariansBlade))
         {
@@ -1269,6 +1269,11 @@ public partial class CombatManager : MonoBehaviour
         if (TargetHasAffliction(AfflictionType.Protection, applyingTo))
         {
             amount += GetTargetAfflictionStacks(AfflictionType.Protection, applyingTo);
+            // Make sure that negative Protection values don't wind up taking away Ward, instead whatever action is trying to give that ward is simply zeroed out
+            if (amount < 0)
+            {
+                amount = 0;
+            }
         }
         return amount;
     }
@@ -1572,12 +1577,6 @@ public partial class CombatManager : MonoBehaviour
 
     public void RemoveAffliction(Target target, AfflictionType type)
     {
-        // Replace the current enemy action with an empty one
-        if (type == AfflictionType.Levitating)
-        {
-            ReplaceCurrentEnemyAction(new EnemyAction(new List<EnemyIntent>(), null));
-        }
-
         // Get the Affliction we're Removing
         Affliction removingAff = GetTargetAfflictionMap(target)[type];
 

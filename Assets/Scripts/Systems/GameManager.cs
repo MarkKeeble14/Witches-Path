@@ -2019,18 +2019,18 @@ public class GameManager : MonoBehaviour
         EventLabel label = optionEvent.EventLabel;
         bool hasRewards = false;
 
-        Debug.Log("Parsing Event Effect: " + effects);
+        // Debug.Log("Parsing Event Effect: " + effects);
         string[] commands = CureAllStrings(effects.Split(';'));
-        Debug.Log("NumCommands: " + commands.Length);
+        // Debug.Log("NumCommands: " + commands.Length);
 
         foreach (string command in commands)
         {
             string[] commandParts = CureAllStrings(command.Split(':'));
-            Debug.Log("Command: " + command + ", NumParts = " + commandParts.Length);
+            // Debug.Log("Command: " + command + ", NumParts = " + commandParts.Length);
             if (commandParts.Length == 1)
             {
                 string singleCommand = commandParts[0];
-                Debug.Log("Single Command: " + singleCommand);
+                // Debug.Log("Single Command: " + singleCommand);
                 switch (singleCommand)
                 {
                     case "AddRandomArtifact":
@@ -2066,7 +2066,7 @@ public class GameManager : MonoBehaviour
                 string commandPart = commandParts[0];
                 string argument = commandParts[1];
 
-                Debug.Log("Argument Command: " + commandPart + ", Argument = " + argument);
+                // Debug.Log("Argument Command: " + commandPart + ", Argument = " + argument);
                 switch (commandPart)
                 {
                     case "AlterGold":
@@ -2197,13 +2197,13 @@ public class GameManager : MonoBehaviour
         if (condition.ToLower().Equals("true")) return true;
 
         EventLabel label = optionEvent.EventLabel;
-        Debug.Log("Parsing Event Condition: " + condition);
+        // Debug.Log("Parsing Event Condition: " + condition);
         string[] conditionParts = CureAllStrings(condition.Split(':'));
 
         if (conditionParts.Length == 1)
         {
             string singleCondition = conditionParts[0];
-            Debug.Log("Single Condition: " + singleCondition);
+            // Debug.Log("Single Condition: " + singleCondition);
             switch (singleCondition)
             {
                 default:
@@ -2316,12 +2316,12 @@ public class GameManager : MonoBehaviour
             if (BalenceManager._Instance.EventHasValue(label, param))
             {
                 v = BalenceManager._Instance.GetValue(label, param);
-                Debug.Log("Parsed Argument: " + v);
+                // Debug.Log("Parsed Argument: " + v);
                 return true;
             }
             else
             {
-                Debug.Log("Failed to Parse Argument");
+                // Debug.Log("Failed to Parse Argument");
                 v = Utils.StandardSentinalValue;
                 return false;
             }

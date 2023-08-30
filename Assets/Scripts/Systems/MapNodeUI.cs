@@ -67,6 +67,7 @@ public class MapNodeUI : MonoBehaviour
 
     public Vector2 SpawnedOffset { get; private set; }
     public bool HasBeenSet { get; private set; }
+    private MapNodeType nodeType;
 
     public void SpawnConnection(MapNodeUI from, MapNodeUI to, float xChange, float yChange, float offsetFromNode, int numLines)
     {
@@ -120,17 +121,25 @@ public class MapNodeUI : MonoBehaviour
     {
         if (GameManager._Instance.CanSetCurrentGameOccurance)
         {
+            // Lazy Setting
+            MapManager._Instance.SetNode(this, nodeType);
+
             SetMapNodeState(MapNodeState.ONGOING);
             StartCoroutine(GameManager._Instance.SetCurrentGameOccurance(this));
         }
     }
 
-    public void Set(GameOccurance setTo, Sprite sprite)
+    public void Set(GameOccurance setTo, Sprite sprite, MapNodeType type)
     {
-        this.representedGameOccurance = setTo;
-        nodeTypeText.text = setTo.Label;
+        nodeType = type;
         changeColorOf.sprite = sprite;
         HasBeenSet = true;
+        if (setTo == null)
+        {
+            return;
+        }
+        this.representedGameOccurance = setTo;
+        nodeTypeText.text = setTo.Label;
     }
 
     public void SetShow(bool b)

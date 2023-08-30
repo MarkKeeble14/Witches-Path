@@ -143,4 +143,9 @@ public class MapManager : MonoBehaviour
     {
         return buildConnectorDelay;
     }
+
+    public void SetNode(MapNodeUI node, MapNodeType nodeType)
+    {
+        map.SetNodeGameOccurance(node, nodeType);
+    }
 }
