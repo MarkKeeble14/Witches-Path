@@ -8,6 +8,8 @@ using DG.Tweening;
 
 public abstract class SpellDisplay : MonoBehaviour
 {
+    protected Spell Spell { get; private set; }
+
     [SerializeField] protected TextMeshProUGUI text;
     [SerializeField] protected TextMeshProUGUI nameText;
     [SerializeField] protected Image progressBar;
@@ -25,7 +27,6 @@ public abstract class SpellDisplay : MonoBehaviour
     [SerializeField] private float changeScaleSpeed = 1f;
 
     [SerializeField] private GameObject[] disableWhenEmpty;
-    private bool isEmpty;
 
     protected SpellDisplayState displayState = SpellDisplayState.Normal;
     private Tweener shakeTweener;
@@ -35,9 +36,7 @@ public abstract class SpellDisplay : MonoBehaviour
         targetScale = regularScale;
     }
 
-    public bool IsAvailable => isAvailable;
-
-    protected bool isAvailable = true;
+    public bool IsEmpty { get; private set; }
 
     [SerializeField] private Sprite defaultSprite;
 
@@ -59,7 +58,7 @@ public abstract class SpellDisplay : MonoBehaviour
     public void SetSpellDisplayState(SpellDisplayState displayState)
     {
         this.displayState = displayState;
-        if (displayState == SpellDisplayState.SwapSequence)
+        if (displayState == SpellDisplayState.Selected)
         {
             shakeTweener = transform.DOShakePosition(1, 3, 10, 90, false, false).SetLoops(-1);
         }
@@ -74,31 +73,38 @@ public abstract class SpellDisplay : MonoBehaviour
         targetScale = maxScale;
     }
 
-    public void Unset()
+    public virtual void SetSpell(Spell spell)
+    {
+        Spell = spell;
+        spellIcon.sprite = spell.GetSpellSprite();
+        nameText.text = spell.Name;
+        spell.SetEquippedTo(this);
+        SetEmpty(false);
+    }
+
+    public virtual void Unset()
     {
         nameText.text = "";
         text.text = "";
         spellIcon.sprite = defaultSprite;
         progressBar.fillAmount = 1;
-        isAvailable = true;
+        SetEmpty(true);
     }
 
     public void SetEmpty(bool isEmpty)
     {
-        this.isEmpty = isEmpty;
+        IsEmpty = isEmpty;
         foreach (GameObject obj in disableWhenEmpty)
         {
             obj.SetActive(!isEmpty);
         }
     }
 
-    public abstract Spell GetSpell();
-
     public void SpawnToolTip()
     {
         // Only spawn ToolTip if spell is set
-        if (!isEmpty)
-            spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(GetSpell(), transform);
+        if (!IsEmpty)
+            spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(Spell, transform);
     }
 
     public void DestroyToolTip()

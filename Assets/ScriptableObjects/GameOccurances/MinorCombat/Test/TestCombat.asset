@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: TestCombat
   m_EditorClassIdentifier: 
   mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
-  enemyType: 9
+  enemyType: 7
   itemRewards:
     dictionary: []
   currencyRewards:

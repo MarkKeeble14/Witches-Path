@@ -45,6 +45,8 @@ public abstract class Spell : ToolTippable
     protected List<ToolTipKeyword> GeneralKeywords = new List<ToolTipKeyword>();
     protected List<AfflictionType> AfflictionKeywords = new List<AfflictionType>();
 
+    private SpellDisplay equippedTo;
+
     public Spell()
     {
         SetParameters();
@@ -73,12 +75,6 @@ public abstract class Spell : ToolTippable
 
     // Will activate on equipping the Spell
     public abstract void OnEquip();
-
-    // Animations
-    protected void ShowSpellProc()
-    {
-        GameManager._Instance.AnimateSpell(Label);
-    }
 
     // Balence Manager Getters
     protected int GetSpellSpec(string specIdentifier)
@@ -118,6 +114,22 @@ public abstract class Spell : ToolTippable
     public List<ToolTippable> GetOtherToolTippables()
     {
         return new List<ToolTippable>();
+    }
+
+    // Animations
+    protected void ShowSpellProc()
+    {
+        equippedTo.AnimateScale();
+    }
+
+    public void SetEquippedTo(SpellDisplay equippedTo)
+    {
+        this.equippedTo = equippedTo;
+    }
+
+    public SpellDisplay GetEquippedTo()
+    {
+        return equippedTo;
     }
 
     public static Spell GetSpellOfType(SpellLabel label)
@@ -200,6 +212,15 @@ public abstract class PassiveSpell : Spell
     // Calls the effect, could also be used to trigger other function calls or another thing at the same time (even if it's just Debugging) as calling Effect
     public override void CallEffect()
     {
+        // Paralyze Effect
+        if (CombatManager._Instance.TargetHasAffliction(AfflictionType.Paralyze, Target.Character))
+        {
+            CombatManager._Instance.ConsumeAfflictionStack(AfflictionType.Paralyze, Target.Character);
+            CombatManager._Instance.ShowAfflictionProc(AfflictionType.Paralyze, Target.Character);
+            CombatManager._Instance.ShakeCombatent(Target.Character);
+            return;
+        }
+
         Effect();
     }
 
@@ -604,16 +625,52 @@ public class CrushJoints : PassiveSpell
 
 #region Active Spells
 
+public enum ScreenQuadrant
+{
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+    Any
+}
+
+public class SpellNote
+{
+    public float DelayAfter { get; private set; }
+    public ScreenQuadrant ScreenQuadrant { get; private set; }
+    public SpellNote(float delayAfter, ScreenQuadrant spawnInQuadrant = ScreenQuadrant.Any)
+    {
+        DelayAfter = delayAfter;
+        ScreenQuadrant = spawnInQuadrant;
+    }
+}
+
 public class SpellNoteBatch
 {
-    public int NumNotes { get; private set; }
-    public float DelayBetweenNotes { get; private set; }
+    private List<SpellNote> spellNotes;
+
+    public SpellNote GetNote(int index)
+    {
+        return spellNotes[index];
+    }
+
+    public int NumNotes => spellNotes.Count;
     public float DelayAfterBatch { get; private set; }
+
+    public SpellNoteBatch(List<SpellNote> notes, float delayAfterBatch)
+    {
+        spellNotes = notes;
+        DelayAfterBatch = delayAfterBatch;
+    }
 
     public SpellNoteBatch(int numNotes, float delayBetweenNotes, float delayAfterBatch)
     {
-        NumNotes = numNotes;
-        DelayBetweenNotes = delayBetweenNotes;
+        spellNotes = new List<SpellNote>();
+        for (int i = 0; i < numNotes; i++)
+        {
+            SpellNote note = new SpellNote(delayBetweenNotes);
+            spellNotes.Add(note);
+        }
         DelayAfterBatch = delayAfterBatch;
     }
 }
@@ -651,6 +708,15 @@ public abstract class ActiveSpell : Spell
 
     public void Cast()
     {
+        // Paralyze Effect
+        if (CombatManager._Instance.TargetHasAffliction(AfflictionType.Paralyze, Target.Character))
+        {
+            CombatManager._Instance.ConsumeAfflictionStack(AfflictionType.Paralyze, Target.Character);
+            CombatManager._Instance.ShowAfflictionProc(AfflictionType.Paralyze, Target.Character);
+            CombatManager._Instance.ShakeCombatent(Target.Character);
+            return;
+        }
+
         // Echo Effect
         if (CombatManager._Instance.TargetHasAffliction(AfflictionType.Echo, Target.Character))
         {
@@ -693,8 +759,31 @@ public abstract class ActiveSpell : Spell
 
     protected virtual void SetBatches()
     {
-        Batches.Add(new SpellNoteBatch(3, 0.5f, 0.5f));
-        Batches.Add(new SpellNoteBatch(2, .35f, 0.5f));
+        /*
+         * Examples
+        Batches.Add(new SpellNoteBatch(new List<SpellNote>()
+        {
+            new SpellNote(.5f, ScreenQuadrant.TopLeft),
+            new SpellNote(.45f, ScreenQuadrant.TopRight),
+            new SpellNote(.4f, ScreenQuadrant.BottomLeft),
+            new SpellNote(.35f, ScreenQuadrant.BottomRight),
+        }, 0));
+
+        Batches.Add(new SpellNoteBatch(new List<SpellNote>()
+        {
+            new SpellNote(.5f, ScreenQuadrant.TopLeft),
+            new SpellNote(.25f, ScreenQuadrant.BottomRight),
+        }, 0));
+
+        Batches.Add(new SpellNoteBatch(new List<SpellNote>()
+        {
+            new SpellNote(.5f),
+            new SpellNote(.25f),
+        }, .25f));
+        */
+
+        Batches.Add(new SpellNoteBatch(2, .5f, .5f));
+        Batches.Add(new SpellNoteBatch(3, .5f, .5f));
     }
 
     private int GetNumNotes()
@@ -1262,6 +1351,12 @@ public class WitchesWill : ActiveSpell
     {
         base.SetParameters();
         damageAmount = (int)GetSpellSpec("DamageAmount");
+    }
+
+    protected override void SetBatches()
+    {
+        Batches.Add(new SpellNoteBatch(2, .5f, 0.5f));
+        Batches.Add(new SpellNoteBatch(2, .45f, 0.25f));
     }
 
     protected override void Effect()

@@ -6,12 +6,12 @@ using DG.Tweening;
 public enum SpellDisplayState
 {
     Normal,
-    SwapSequence
+    Selected
 }
 
 public class ActiveSpellDisplay : SpellDisplay
 {
-    private ActiveSpell spell;
+    private ActiveSpell ActiveSpell => (ActiveSpell)Spell;
 
     [SerializeField] private TextMeshProUGUI keyBindingText;
     [SerializeField] private TextMeshProUGUI spellCDText;
@@ -19,51 +19,45 @@ public class ActiveSpellDisplay : SpellDisplay
 
     private KeyCode keyBinding;
     private int spellCD;
-    private int spellManaCost;
 
     public void TryCast()
     {
-        if (displayState == SpellDisplayState.SwapSequence)
-        {
-            GameManager._Instance.SetSpellToSwap(spell);
-            return;
-        }
-
         // Only allow for spell casts while in combat
         if (CombatManager._Instance.CanCastSpells)
         {
             // Debug.Log("Attempting to Cast: " + spellToCast);
-            if (spell.CanCast)
+            if (ActiveSpell.CanCast)
             {
                 // Debug.Log("Adding: " + spellToCast + " to Queue");
-                CombatManager._Instance.AddSpellToCastQueue(spell);
+                CombatManager._Instance.AddSpellToCastQueue(ActiveSpell);
             }
             else
             {
-                Debug.Log("Can't Cast: " + spell);
-                if (spell.OnCooldown)
+                Debug.Log("Can't Cast: " + ActiveSpell);
+                if (ActiveSpell.OnCooldown)
                 {
-                    Debug.Log("Spell: " + spell + " Cooling Down: " + spell.CooldownTracker);
+                    Debug.Log("Spell: " + ActiveSpell + " Cooling Down: " + ActiveSpell.CooldownTracker);
                 }
-                if (!spell.HasMana)
+                if (!ActiveSpell.HasMana)
                 {
-                    Debug.Log("Not Enough Mana to Cast Spell: " + spell);
+                    Debug.Log("Not Enough Mana to Cast Spell: " + ActiveSpell);
                 }
             }
         }
     }
 
-    public void SetActiveSpell(ActiveSpell spell)
+    public override void SetSpell(Spell spell)
     {
-        this.spell = spell;
-        spellIcon.sprite = spell.GetSpellSprite();
-        nameText.text = spell.Label.ToString();
+        base.SetSpell(spell);
 
-        // Auxillary info
-        spellCD = spell.CooldownTracker.y;
-        spellManaCost = spell.GetManaCost();
+        spellCD = ActiveSpell.CooldownTracker.y;
+    }
 
-        isAvailable = false;
+    public override void Unset()
+    {
+        base.Unset();
+
+        spellCD = 0;
     }
 
     public void SetKeyBinding(KeyCode keyCode)
@@ -77,7 +71,7 @@ public class ActiveSpellDisplay : SpellDisplay
         base.Update();
 
         // Guard
-        if (spell == null)
+        if (ActiveSpell == null)
         {
             return;
         }
@@ -89,10 +83,10 @@ public class ActiveSpellDisplay : SpellDisplay
         }
 
         // Show Cooldown
-        if (spell.CooldownTracker.x > 0)
+        if (ActiveSpell.CooldownTracker.x > 0)
         {
-            progressBar.fillAmount = 1 - ((float)spell.CooldownTracker.x / spell.CooldownTracker.y);
-            text.text = Utils.RoundTo(spell.CooldownTracker.x, 0).ToString();
+            progressBar.fillAmount = 1 - ((float)ActiveSpell.CooldownTracker.x / ActiveSpell.CooldownTracker.y);
+            text.text = Utils.RoundTo(ActiveSpell.CooldownTracker.x, 0).ToString();
         }
         else
         {
@@ -109,17 +103,7 @@ public class ActiveSpellDisplay : SpellDisplay
         else
         {
             spellCDText.text = spellCD.ToString();
-            spellManaCostText.text = spellManaCost.ToString();
+            spellManaCostText.text = ActiveSpell.GetManaCost().ToString();
         }
-    }
-
-    public ActiveSpell GetActiveSpell()
-    {
-        return spell;
-    }
-
-    public override Spell GetSpell()
-    {
-        return spell;
     }
 }

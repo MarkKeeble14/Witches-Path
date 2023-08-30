@@ -119,7 +119,15 @@ public class MapNodeUI : MonoBehaviour
 
     public void CallOnPressed()
     {
-        if (GameManager._Instance.CanSetCurrentGameOccurance)
+        if (GetMapNodeState() == MapNodeState.COMPLETED)
+        {
+            if (RewardManager._Instance.NumOutstandingRewards > 0)
+            {
+                StartCoroutine(RewardManager._Instance.ShowRewardScreen(() => MapManager._Instance.Show()));
+                MapManager._Instance.Hide();
+            }
+        }
+        else if (GameManager._Instance.CanSetCurrentGameOccurance)
         {
             // Lazy Setting
             MapManager._Instance.SetNode(this, nodeType);
@@ -149,7 +157,8 @@ public class MapNodeUI : MonoBehaviour
 
     private void Update()
     {
-        canvasGroup.blocksRaycasts = currentState == MapNodeState.ACCESSABLE;
+        // Set interactable
+        canvasGroup.blocksRaycasts = currentState == MapNodeState.ACCESSABLE || currentState == MapNodeState.COMPLETED;
 
         // Change alpha of canvas group to show/hide the UI
         if (canvasGroup.alpha != alphaTarget)
@@ -157,6 +166,7 @@ public class MapNodeUI : MonoBehaviour
             canvasGroup.alpha = Mathf.MoveTowards(canvasGroup.alpha, alphaTarget, Time.deltaTime * changeAlphaRate);
         }
 
+        // Change Color
         changeColorOf.color = nodeStateColors[currentState];
     }
 
@@ -165,6 +175,7 @@ public class MapNodeUI : MonoBehaviour
         SetMapNodeState(MapNodeState.LOCKOUT);
         alphaTarget = 0;
     }
+
     public void AddOutgoing(MapNodeUI node)
     {
         outgoingNodes.Add(node);

@@ -20,7 +20,7 @@ public class SpellShopOffer : ShopOffer
 
     protected override void Purchase()
     {
-        GameManager._Instance.EquipSpell(spell.Label);
+        GameManager._Instance.AddSpellToSpellBook(spell);
     }
 
     // Tool Tips

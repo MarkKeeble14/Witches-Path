@@ -13,6 +13,11 @@ public abstract class EnemyIntent : ToolTippable
 
     protected abstract string toolTipText { get; }
 
+    public EnemyIntent()
+    {
+        AddKeywords();
+    }
+
     public List<AfflictionType> GetAfflictionKeyWords()
     {
         return afflictionKeywords;
@@ -40,19 +45,33 @@ public abstract class EnemyIntent : ToolTippable
 
     public string GetToolTipText()
     {
-        return "This enemy Intends to " + UIManager._Instance.HighlightKeywords(toolTipText);
+        return "This enemy Intends to " + GetIntentText();
     }
+
+    public string GetIntentText()
+    {
+        return UIManager._Instance.HighlightKeywords(toolTipText);
+    }
+}
+
+public enum EnemyAttackAnimationStyle
+{
+    Once,
+    PerAttack,
+    None
 }
 
 public abstract class EnemyAttackIntent : EnemyIntent
 {
-    private Func<int> damageAmount { get; set; }
     public int DamageAmount => damageAmount();
+    private Func<int> damageAmount { get; set; }
     public DamageType DamageType { get; private set; }
+    public EnemyAttackAnimationStyle AttackAnimationStyle { get; private set; }
 
-    public EnemyAttackIntent(Func<int> damageAmount, DamageType damageType)
+    public EnemyAttackIntent(Func<int> damageAmount, DamageType damageType, EnemyAttackAnimationStyle animationStyle) : base()
     {
         this.damageAmount = damageAmount;
+        AttackAnimationStyle = animationStyle;
         DamageType = damageType;
     }
 }
@@ -65,11 +84,11 @@ public class EnemySingleAttackIntent : EnemyAttackIntent
     protected override string toolTipText => "Attack for "
         + CombatManager._Instance.CalculateDamage(DamageAmount, Target.Enemy, Target.Character, DamageType, DamageSource.EnemyAttack, false) + " Damage";
 
-    public EnemySingleAttackIntent(Func<int> damageAmount, DamageType damageType) : base(damageAmount, damageType)
+    public EnemySingleAttackIntent(Func<int> damageAmount, DamageType damageType) : base(damageAmount, damageType, EnemyAttackAnimationStyle.Once)
     {
     }
 
-    public EnemySingleAttackIntent(int damageAmount, DamageType damageType) : base(() => damageAmount, damageType)
+    public EnemySingleAttackIntent(int damageAmount, DamageType damageType) : base(() => damageAmount, damageType, EnemyAttackAnimationStyle.Once)
     {
     }
 }
@@ -83,23 +102,40 @@ public class EnemyMultiAttackIntent : EnemyAttackIntent
 
     public int NumAttacks => numAttacks();
     protected Func<int> numAttacks { get; private set; }
+    public float TimeBetweenAttacks { get; private set; }
 
-    public EnemyMultiAttackIntent(Func<int> damageAmount, Func<int> numAttacks, DamageType damageType) : base(damageAmount, damageType)
+
+    public EnemyMultiAttackIntent(Func<int> damageAmount, Func<int> numAttacks, DamageType damageType, EnemyAttackAnimationStyle animationStyle = EnemyAttackAnimationStyle.PerAttack,
+        float timeBetweenAttacks = 0.1f)
+        : base(damageAmount, damageType, animationStyle)
     {
         this.numAttacks = numAttacks;
-    }
-    public EnemyMultiAttackIntent(Func<int> damageAmount, int numAttacks, DamageType damageType) : base(damageAmount, damageType)
-    {
-        this.numAttacks = () => numAttacks;
-    }
-    public EnemyMultiAttackIntent(int damageAmount, Func<int> numAttacks, DamageType damageType) : base(() => damageAmount, damageType)
-    {
-        this.numAttacks = numAttacks;
+        TimeBetweenAttacks = timeBetweenAttacks;
     }
 
-    public EnemyMultiAttackIntent(int damageAmount, int numAttacks, DamageType damageType) : base(() => damageAmount, damageType)
+    public EnemyMultiAttackIntent(Func<int> damageAmount, int numAttacks, DamageType damageType, EnemyAttackAnimationStyle animationStyle = EnemyAttackAnimationStyle.PerAttack,
+        float timeBetweenAttacks = 0.1f)
+        : base(damageAmount, damageType, animationStyle)
     {
         this.numAttacks = () => numAttacks;
+        TimeBetweenAttacks = timeBetweenAttacks;
+    }
+
+    public EnemyMultiAttackIntent(int damageAmount, Func<int> numAttacks, DamageType damageType, EnemyAttackAnimationStyle animationStyle = EnemyAttackAnimationStyle.PerAttack,
+        float timeBetweenAttacks = 0.1f)
+        : base(() => damageAmount, damageType, animationStyle)
+    {
+        this.numAttacks = numAttacks;
+        TimeBetweenAttacks = timeBetweenAttacks;
+    }
+
+    public EnemyMultiAttackIntent(int damageAmount, int numAttacks, DamageType damageType, EnemyAttackAnimationStyle animationStyle = EnemyAttackAnimationStyle.PerAttack,
+        float timeBetweenAttacks = 0.1f
+        )
+        : base(() => damageAmount, damageType, animationStyle)
+    {
+        this.numAttacks = () => numAttacks;
+        TimeBetweenAttacks = timeBetweenAttacks;
     }
 }
 
@@ -112,12 +148,12 @@ public class EnemyWardIntent : EnemyIntent
     public int WardAmount => wardAmount();
     protected override string toolTipText => "Gain " + CombatManager._Instance.CalculateWard(WardAmount, Target.Enemy) + " Ward";
 
-    public EnemyWardIntent(Func<int> wardAmount)
+    public EnemyWardIntent(Func<int> wardAmount) : base()
     {
         this.wardAmount = wardAmount;
     }
 
-    public EnemyWardIntent(int wardAmount)
+    public EnemyWardIntent(int wardAmount) : base()
     {
         this.wardAmount = () => wardAmount;
     }
@@ -139,12 +175,12 @@ public class EnemyHealIntent : EnemyIntent
     public int HealAmount => healAmount();
     protected override string toolTipText => "Heal for " + HealAmount + " HP";
 
-    public EnemyHealIntent(Func<int> healAmount)
+    public EnemyHealIntent(Func<int> healAmount) : base()
     {
         this.healAmount = healAmount;
     }
 
-    public EnemyHealIntent(int healAmount)
+    public EnemyHealIntent(int healAmount) : base()
     {
         this.healAmount = () => healAmount;
     }
@@ -163,7 +199,7 @@ public abstract class EnemyAfflictionIntent : EnemyIntent
     private Func<int> numStacks { get; set; }
     public int NumStacks => numStacks();
 
-    public EnemyAfflictionIntent(AfflictionType affType, Func<int> numStacks)
+    public EnemyAfflictionIntent(AfflictionType affType, Func<int> numStacks) : base()
     {
         AfflictionType = affType;
         afflictionKeywords.Add(affType);

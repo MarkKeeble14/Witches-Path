@@ -48,7 +48,7 @@ public class AfflictionIcon : MonoBehaviour
     public void SetAffliction(Affliction aff)
     {
         setTo = aff;
-        SetTypeText(Utils.SplitOnCapitalLetters(aff.Type.ToString()));
+        SetTypeText(aff.Name);
     }
 
     public void SetSprite(Sprite s)

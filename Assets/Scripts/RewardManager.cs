@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -41,6 +42,7 @@ public class RewardManager : MonoBehaviour
     [SerializeField] private Transform rewardList;
     [SerializeField] private GameObject rewardScreen;
     private List<RewardDisplay> spawnedRewards = new List<RewardDisplay>();
+    public int NumOutstandingRewards => spawnedRewards.Count;
 
     [SerializeField] private Vector2 toolTipOffset;
 
@@ -57,6 +59,7 @@ public class RewardManager : MonoBehaviour
     public int NumSpellsPerChoice { get; private set; }
     [SerializeField] private int defaultNumSpellsPerChoice = 3;
     private int maxNumSpellsPerChoice = 5;
+    private bool cancelSpellRewardDecision;
 
     public void AlterNumSpellsPerChoice(int alterBy)
     {
@@ -79,8 +82,6 @@ public class RewardManager : MonoBehaviour
         resolved = true;
     }
 
-    private bool cancelSpellRewardDecision;
-
     public void CancelSpellRewardDecision()
     {
         cancelSpellRewardDecision = true;
@@ -93,19 +94,19 @@ public class RewardManager : MonoBehaviour
 
         List<VisualSpellDisplay> spawnedOptions = new List<VisualSpellDisplay>();
 
-        bool hasStartedSpellSwapSequence = false;
         if (activeChooseSpellReward.Choices.Count == 0)
         {
             for (int i = 0; i < numOptions; i++)
             {
                 // Get new Options
-                Spell spell = Spell.GetSpellOfType(GameManager._Instance.GetRandomSpell(forceRarity, rarity));
+                Spell spell = GameManager._Instance.GetRandomSpell(forceRarity, rarity);
 
                 // Add Spell to Class to Track
                 activeChooseSpellReward.Choices.Add(spell);
             }
         }
 
+        bool hasChosen = false;
         for (int i = 0; i < activeChooseSpellReward.Choices.Count; i++)
         {
             Spell spell = activeChooseSpellReward.Choices[i];
@@ -119,8 +120,8 @@ public class RewardManager : MonoBehaviour
             // Add Events
             spawned.AddOnClick(delegate
             {
-                StartCoroutine(GameManager._Instance.StartSwapSpellSequnce(spell.Label));
-                hasStartedSpellSwapSequence = true;
+                GameManager._Instance.AddSpellToSpellBook(spell);
+                hasChosen = true;
             });
             GameObject spawnedToolTip = null;
             spawned.AddOnEnter(delegate
@@ -134,7 +135,8 @@ public class RewardManager : MonoBehaviour
         }
 
         // Wait until we either cancel the decision, or we HAD started the sequence and are no longer in the sequence
-        yield return new WaitUntil(() => cancelSpellRewardDecision || (hasStartedSpellSwapSequence && !GameManager._Instance.InSwappingSpellSequence));
+        yield return new WaitUntil(() => cancelSpellRewardDecision || hasChosen);
+        cancelSpellRewardDecision = false;
 
         // Reset
         // Destroy Options
@@ -145,36 +147,21 @@ public class RewardManager : MonoBehaviour
             Destroy(current.gameObject);
         }
 
-        // if we have swapped a spell
-        if (hasStartedSpellSwapSequence && GameManager._Instance.GetDidSwapSpell())
+        // if we have chosen a spell
+        if (hasChosen)
         {
             spawnedRewards.Remove(activeChooseSpellReward.Listing);
             if (activeChooseSpellReward.Listing != null)
+            {
                 Destroy(activeChooseSpellReward.Listing.gameObject);
+            }
+
+            // Reset
             activeChooseSpellReward = null;
-
-            // Reset this Checker
-            GameManager._Instance.ResetDidSwapSpell();
-
-            // Disable Screen
-            selectSpellScreen.SetActive(false);
         }
-        else // We haven't swapped a spell
-        {
-            if (cancelSpellRewardDecision)
-            {
-                cancelSpellRewardDecision = false;
 
-                // Disable Screen
-                selectSpellScreen.SetActive(false);
-            }
-            else
-            {
-                cancelSpellRewardDecision = false;
-                yield return StartCoroutine(ShowSpellRewardDecision(numOptions, forceRarity, rarity));
-            }
-
-        }
+        // Disable Screen
+        selectSpellScreen.SetActive(false);
     }
 
     public void AddChooseSpellReward(bool forceRarity = false, Rarity rarity = Rarity.Common)
@@ -351,20 +338,17 @@ public class RewardManager : MonoBehaviour
         spawnedRewards.Add(spawned);
     }
 
-    public IEnumerator ShowRewardScreen()
+    public IEnumerator ShowRewardScreen(Action onEndAction = null)
     {
         rewardScreen.gameObject.SetActive(true);
 
         yield return new WaitUntil(() => resolved);
         resolved = false;
 
-        ClearRewardsScreen();
-        HideRewardScreen();
-    }
-
-    public void HideRewardScreen()
-    {
         rewardScreen.SetActive(false);
+
+        // Call any Actions on End if Specified to
+        onEndAction?.Invoke();
     }
 
     public void ClearRewardsScreen()

@@ -388,6 +388,34 @@ public class UIManager : MonoBehaviour
         return list.gameObject;
     }
 
+    public GameObject SpawnOnlyAfflictionAndKeywordsToolTips(ToolTippable spawningFor, Transform spawningOn)
+    {
+        // Determine how many tool tips we're spawning
+        List<ToolTipKeyword> generalKeywords = spawningFor.GetGeneralKeyWords();
+        List<AfflictionType> afflictionKeywords = spawningFor.GetAfflictionKeyWords();
+        int numToolTips = generalKeywords.Count + afflictionKeywords.Count;
+
+        // Spawn the ToolTipList object that will house all of our other tooltips
+        ToolTipList list = SpawnToolTipList(spawningOn, numToolTips, 1);
+        Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
+
+        // Spawn ToolTips for Affliction Keywords
+        for (int i = 0; i < generalKeywords.Count; i++)
+        {
+            ToolTipKeyword keyword = generalKeywords[i];
+            SpawnToolTip(HighlightKeywords(keyword.ToString()), GetKeyWordText(keyword.ToString()), vLayout);
+        }
+
+        // Spawn ToolTips for Additional Keywords
+        for (int i = 0; i < afflictionKeywords.Count; i++)
+        {
+            AfflictionType keyword = afflictionKeywords[i];
+            SpawnToolTip(HighlightKeywords(Utils.SplitOnCapitalLetters(keyword.ToString())), Affliction.GetAfflictionOfType(keyword).GetToolTipText(), vLayout);
+        }
+
+        return list.gameObject;
+    }
+
     public GameObject SpawnEqualListingToolTips(List<ToolTippable> listings, Transform spawningOn)
     {
         // Spawn the ToolTipList object that will house all of our other tooltips
@@ -435,7 +463,7 @@ public class UIManager : MonoBehaviour
         for (int i = 0; i < afflictionKeywords.Count; i++)
         {
             AfflictionType keyword = afflictionKeywords[i];
-            SpawnToolTip(HighlightKeywords(keyword.ToString()), Affliction.GetAfflictionOfType(keyword).GetToolTipText(), vLayout);
+            SpawnToolTip(HighlightKeywords(Utils.SplitOnCapitalLetters(keyword.ToString())), Affliction.GetAfflictionOfType(keyword).GetToolTipText(), vLayout);
         }
 
         return list.gameObject;
@@ -486,7 +514,7 @@ public class UIManager : MonoBehaviour
             for (int p = 0; p < afflictionKeywords.Count; p++)
             {
                 AfflictionType keyword = afflictionKeywords[p];
-                SpawnToolTip(HighlightKeywords(keyword.ToString()), Affliction.GetAfflictionOfType(keyword).GetToolTipText(), vLayout);
+                SpawnToolTip(HighlightKeywords(Utils.SplitOnCapitalLetters(keyword.ToString())), Affliction.GetAfflictionOfType(keyword).GetToolTipText(), vLayout);
             }
         }
 

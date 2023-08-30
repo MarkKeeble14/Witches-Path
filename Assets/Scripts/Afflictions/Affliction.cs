@@ -34,7 +34,7 @@ public abstract class Affliction : ToolTippable
 {
     public abstract AfflictionType Type { get; }
     public abstract AfflictionSign Sign { get; }
-    protected virtual string Name => Type.ToString();
+    public string Name => Utils.SplitOnCapitalLetters(Type.ToString());
     protected abstract string specificToolTipText { get; }
     protected abstract string genericToolTipText { get; }
 
@@ -252,7 +252,6 @@ public class Vulnerable : Affliction
 
 public class OnGuard : Affliction
 {
-    protected override string Name => "On Guard";
     protected override string specificToolTipText => "Damage Taken is Reduced by " + GetAfflictionSpec("ReduceBy");
     protected override string genericToolTipText => "Damage Taken is Reduced by " + GetAfflictionSpec("ReduceBy");
 
@@ -466,7 +465,6 @@ public class Levitating : Affliction
     protected override void SetParameters()
     {
         percentOfHP = (float)GetAfflictionSpec("PercentOfHP") / 100;
-        Debug.Log(percentOfHP);
     }
 
     public override void Apply()
@@ -504,9 +502,8 @@ public class Levitating : Affliction
 
 public class BattleFrenzied : Affliction
 {
-    protected override string Name => "Battle Frenzied";
     protected override string specificToolTipText => "Upon Dealing at or Above " + damageToActivate + " Damage, Gain " + GetStacks() + " Embolden";
-    protected override string genericToolTipText => "Gain some amount of Embolden Upon dealing at or Above a certain amount of Damage";
+    protected override string genericToolTipText => "Gain Embolden equal to the number of Embolden Stacks Upon dealing Damage equal to or Above " + damageToActivate;
 
     public override AfflictionType Type => AfflictionType.BattleFrenzied;
 
@@ -566,9 +563,8 @@ public class BattleFrenzied : Affliction
 
 public class PoisonCoated : Affliction
 {
-    protected override string Name => "Poison Coated";
     protected override string specificToolTipText => "Upon Attacking, Apply " + GetStacks() + " Posion to the Reciever";
-    protected override string genericToolTipText => "Upon Attacking, Apply some amount of Poison to the Reciever";
+    protected override string genericToolTipText => "Upon Attacking, Apply Poison equal to the number of Poison Coated Stacks to the Reciever";
 
     public override AfflictionType Type => AfflictionType.PoisonCoated;
 
@@ -613,7 +609,6 @@ public class PoisonCoated : Affliction
 
 public class Ghostly : Affliction
 {
-    protected override string Name => "Ghostly";
     protected override string specificToolTipText => "At the Beginning of Every Turn, Gain " + GetStacks() + " Intangible";
     protected override string genericToolTipText => "At the Beginning of Every Turn, Gain Intangible equal to the number of Ghostly Stacks";
 

@@ -65,8 +65,8 @@ public partial class CombatManager : MonoBehaviour
 
     private bool playerTurnEnded;
     private Turn currentTurn;
-    private int turnCount;
-    public int TurnCount => turnCount;
+    private int turnNumber;
+    public int TurnNumber => turnNumber;
 
     private ObjectPool<Circle> circlePool;
     private List<Circle> circleList = new List<Circle>(); // Circles List
@@ -170,7 +170,6 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float delayAfterBandagesEffect = 1;
     [SerializeField] private float delayBeforeEnemyAttack = 1;
     [SerializeField] private float delayAfterEnemyTurn = 1;
-    [SerializeField] private float delayBetweenEnemyMultiAttacks = 0.1f;
 
     // Callbacks
     public Action OnPlayerBasicAttack;
@@ -208,19 +207,22 @@ public partial class CombatManager : MonoBehaviour
     {
         Debug.Log("Combat Started: " + combat);
 
-        // Set Up Combat
-        combatScreenOpen = true;
-
-        // Enemy Stuff
-        // Reset enemy sprite CV from last Combat Dying
-        enemyCombatSpriteCV.alpha = 1;
-
         // Set Current Variables
         currentEnemy = combat.SpawnedEnemy;
         maxEnemyHP = currentEnemy.GetMaxHP();
         enemyCombatSprite.sprite = currentEnemy.GetCombatSprite();
         enemyNameText.text = currentEnemy.Name;
         enemyBasicAttackDamageText.text = currentEnemy.GetBasicAttackDamage().ToString();
+
+        // Get Spells
+        yield return StartCoroutine(GameManager._Instance.SelectSpellsForCombat(currentEnemy));
+
+        // Set Up Combat
+        combatScreenOpen = true;
+
+        // Enemy Stuff
+        // Reset enemy sprite CV from last Combat Dying
+        enemyCombatSpriteCV.alpha = 1;
 
         // Hired Hand Effect
         if (GameManager._Instance.HasArtifact(ArtifactLabel.HiredHand))
@@ -287,6 +289,8 @@ public partial class CombatManager : MonoBehaviour
         // Reset
         ResetCombat();
 
+        GameManager._Instance.UnselectSpellsFromCombat();
+
         combatScreenOpen = false;
 
         GameManager._Instance.ResolveCurrentEvent();
@@ -306,6 +310,12 @@ public partial class CombatManager : MonoBehaviour
         // Call OnCombatStart
         OnCombatStart?.Invoke();
 
+        // Allow Enemy to Act on OnCombatStart Actions
+        foreach (EnemyAction action in currentEnemy.GetOnCombatStartActions())
+        {
+            yield return StartCoroutine(EnemyActOnAction(action));
+        }
+
         StartCoroutine(UpdateDuringCombat());
 
         while (currentEnemyHP > 0 && GameManager._Instance.GetCurrentCharacterHP() > 0)
@@ -315,7 +325,7 @@ public partial class CombatManager : MonoBehaviour
             effectivenessMultiplierTextRect.anchoredPosition = Vector2.zero;
 
             // Increment Turn Count
-            turnCount++;
+            turnNumber++;
 
             // Decide Enemy Intent
             currentEnemyAction = currentEnemy.GetEnemyIntent();
@@ -368,7 +378,7 @@ public partial class CombatManager : MonoBehaviour
         hasCastQueue = false;
 
         // Show Turn Display
-        yield return StartCoroutine(turnDisplay.Show("Player Turn", turnCount > 1 ? turnCount + Utils.GetNumericalSuffix(turnCount) + " Turn" : ""));
+        yield return StartCoroutine(turnDisplay.Show("Player Turn", turnNumber > 1 ? turnNumber + Utils.GetNumericalSuffix(turnNumber) + " Turn" : ""));
 
         OnPlayerTurnStart?.Invoke();
 
@@ -550,6 +560,12 @@ public partial class CombatManager : MonoBehaviour
 
         OnEnemyTurnStart?.Invoke();
 
+        // Allow Enemy to Act on OnTurnStart Actions
+        foreach (EnemyAction action in currentEnemy.GetOnTurnStartActions())
+        {
+            yield return StartCoroutine(EnemyActOnAction(action));
+        }
+
         // Tick Relevant Afflictions
         ApplyBlightEffectOnMap(enemyAfflictionMap, Target.Enemy);
         ApplyPoisonEffectOnMap(enemyAfflictionMap, Target.Enemy);
@@ -633,7 +649,7 @@ public partial class CombatManager : MonoBehaviour
     private void ResetCombat()
     {
         // Reset Turn Count
-        turnCount = 0;
+        turnNumber = 0;
         // Reset Num Free Spells
         NumFreeSpells = 0;
 
@@ -710,12 +726,13 @@ public partial class CombatManager : MonoBehaviour
             // Spawn Batch of Circles
             for (int p = 0; p < currentBatch.NumNotes; p++)
             {
+                SpellNote currentNote = currentBatch.GetNote(p);
                 Circle c = circlePool.Get();
                 spawnedCircles.Add(c);
-                c.Set(UIManager._Instance.GetDamageTypeColor(spell.MainDamageType));
+                c.Set(currentNote.ScreenQuadrant, UIManager._Instance.GetDamageTypeColor(spell.MainDamageType));
 
                 t = 0;
-                while (t < currentBatch.DelayBetweenNotes)
+                while (t < currentNote.DelayAfter)
                 {
                     t += Time.deltaTime;
 
@@ -945,18 +962,27 @@ public partial class CombatManager : MonoBehaviour
     private IEnumerator EnemyActOnAction(EnemyAction enemyAction)
     {
         List<EnemyIntent> enemyIntents = enemyAction.GetEnemyIntents();
-        bool hasAnimatedAttack = false;
 
+        bool hasAnimatedSprite = false;
         foreach (EnemyIntent intent in enemyIntents)
         {
+            // Paralyze Effect
+            if (TargetHasAffliction(AfflictionType.Paralyze, Target.Enemy))
+            {
+                ConsumeAfflictionStack(AfflictionType.Paralyze, Target.Enemy);
+                ShowAfflictionProc(AfflictionType.Paralyze, Target.Enemy);
+                ShakeCombatent(Target.Enemy);
+                continue;
+            }
+
             switch (intent)
             {
                 case EnemySingleAttackIntent singleAttack:
 
-                    if (!hasAnimatedAttack)
+                    if (singleAttack.AttackAnimationStyle != EnemyAttackAnimationStyle.None)
                     {
                         yield return StartCoroutine(AnimateEnemySpriteAttack());
-                        hasAnimatedAttack = true;
+                        hasAnimatedSprite = true;
                     }
 
                     AttackCombatent(singleAttack.DamageAmount, Target.Character, Target.Enemy, singleAttack.DamageType, DamageSource.EnemyAttack);
@@ -964,17 +990,19 @@ public partial class CombatManager : MonoBehaviour
                     break;
                 case EnemyMultiAttackIntent multiAttack:
 
-                    if (!hasAnimatedAttack)
-                    {
-                        yield return StartCoroutine(AnimateEnemySpriteAttack());
-                        hasAnimatedAttack = true;
-                    }
-
                     for (int i = 0; i < multiAttack.NumAttacks; i++)
                     {
+                        // Either animate every attack or only the first attack depending on what is set
+                        if (multiAttack.AttackAnimationStyle == EnemyAttackAnimationStyle.PerAttack
+                            || (multiAttack.AttackAnimationStyle == EnemyAttackAnimationStyle.Once && !hasAnimatedSprite))
+                        {
+                            yield return StartCoroutine(AnimateEnemySpriteAttack());
+                            hasAnimatedSprite = true;
+                        }
+
                         AttackCombatent(multiAttack.DamageAmount, Target.Character, Target.Enemy, multiAttack.DamageType, DamageSource.EnemyAttack);
 
-                        yield return new WaitForSeconds(delayBetweenEnemyMultiAttacks);
+                        yield return new WaitForSeconds(multiAttack.TimeBetweenAttacks);
                     }
 
                     break;
@@ -985,10 +1013,10 @@ public partial class CombatManager : MonoBehaviour
                     break;
                 case EnemyApplyAfflictionIntent apply:
 
-                    if (!hasAnimatedAttack)
+                    if (!hasAnimatedSprite)
                     {
                         yield return StartCoroutine(AnimateEnemySpriteAttack());
-                        hasAnimatedAttack = true;
+                        hasAnimatedSprite = true;
                     }
 
                     AddAffliction(apply.AfflictionType, apply.NumStacks, Target.Character);
@@ -1123,14 +1151,6 @@ public partial class CombatManager : MonoBehaviour
 
     public void AttackCombatent(int amount, Target target, Target attacker, DamageType damageType, DamageSource damageSource)
     {
-        // Paralyze Effect
-        if (TargetHasAffliction(AfflictionType.Paralyze, attacker))
-        {
-            ConsumeAfflictionStack(AfflictionType.Paralyze, attacker);
-            ShowAfflictionProc(AfflictionType.Paralyze, attacker);
-            return;
-        }
-
         // Thorns Effect
         if (TargetHasAffliction(AfflictionType.Thorns, target))
         {

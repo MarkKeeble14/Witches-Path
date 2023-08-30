@@ -15,7 +15,16 @@ MonoBehaviour:
   mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
   enemyType: 15
   itemRewards:
-    dictionary: []
+    dictionary:
+    - key: 4
+      value:
+        percentageMap:
+        - key:
+            NumericalType: 0
+            ForceRarity: 0
+            Rarity: 0
+            Numbers: {x: 1, y: 1}
+          value: 100
   currencyRewards:
     dictionary:
     - key: 2

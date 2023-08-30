@@ -50,12 +50,45 @@ public class Circle : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         isMousedOver = false;
     }
 
-    public void Set(Color c)
+    private void RandomizeScreenPosition(ScreenQuadrant setToQuadrant)
     {
-        Vector3 randomScreenPos = new Vector3(Random.Range(0 + screenBufferHorizontal, Screen.width - screenBufferHorizontal),
-            Random.Range(0 + screenBufferVertical, Screen.height - screenBufferVertical), 0);
+        Vector3 position;
+        switch (setToQuadrant)
+        {
+            case ScreenQuadrant.BottomLeft:
+                position = new Vector3(Random.Range(0 + screenBufferHorizontal, Screen.width / 2),
+                    Random.Range(0 + screenBufferVertical, Screen.height / 2), 0);
+                break;
+
+            case ScreenQuadrant.BottomRight:
+                position = new Vector3(Random.Range(Screen.width / 2, Screen.width - screenBufferHorizontal),
+                    Random.Range(0 + screenBufferVertical, Screen.height / 2), 0);
+                break;
+
+            case ScreenQuadrant.TopLeft:
+                position = new Vector3(Random.Range(0 + screenBufferHorizontal, Screen.width / 2),
+                    Random.Range(Screen.height / 2, Screen.height - screenBufferVertical), 0);
+                break;
+
+            case ScreenQuadrant.TopRight:
+                position = new Vector3(Random.Range(Screen.width / 2, Screen.width - screenBufferHorizontal),
+                    Random.Range(Screen.height / 2, Screen.height - screenBufferVertical), 0);
+                break;
+
+            default:
+                position = new Vector3(Random.Range(0 + screenBufferHorizontal, Screen.width - screenBufferHorizontal),
+                    Random.Range(0 + screenBufferVertical, Screen.height - screenBufferVertical), 0);
+                break;
+
+        }
+
         transform.SetAsFirstSibling();
-        transform.position = randomScreenPos;
+        transform.position = position;
+    }
+
+    public void Set(ScreenQuadrant setToQuadrant, Color c)
+    {
+        RandomizeScreenPosition(setToQuadrant);
         active = true;
         main.color = c;
     }

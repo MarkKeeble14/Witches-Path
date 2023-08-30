@@ -182,7 +182,7 @@ MonoBehaviour:
   disableWhenEmpty:
   - {fileID: 6472576427333266472}
   - {fileID: 9197949876086430732}
-  defaultSprite: {fileID: -2413806693520163455, guid: 36a0f126a9869ea4983b3b972c87b73c, type: 3}
+  defaultSprite: {fileID: 0}
   infoBlock: {fileID: 9197949876086430732}
   button: {fileID: 2623201666934144440}
 --- !u!225 &1066416173362555348

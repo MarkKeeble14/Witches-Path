@@ -1,9 +1,11 @@
 ﻿using UnityEngine.EventSystems;
 using System;
+using UnityEngine;
+using TMPro;
 
 public class VisualSpellDisplay : SpellDisplay, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
-    private Spell spell;
+    [SerializeField] private TextMeshProUGUI typeText;
 
     private Action onClick;
     private Action onEnter;
@@ -24,11 +26,6 @@ public class VisualSpellDisplay : SpellDisplay, IPointerClickHandler, IPointerEn
         onExit += a;
     }
 
-    public override Spell GetSpell()
-    {
-        return spell;
-    }
-
     public void OnPointerClick(PointerEventData eventData)
     {
         onClick?.Invoke();
@@ -44,22 +41,45 @@ public class VisualSpellDisplay : SpellDisplay, IPointerClickHandler, IPointerEn
         onExit?.Invoke();
     }
 
-    public void SetSpell(Spell spell)
+    public override void Unset()
     {
-        this.spell = spell;
-        spellIcon.sprite = spell.GetSpellSprite();
-        nameText.text = spell.GetToolTipLabel();
+        base.Unset();
+        onEnter -= SpawnToolTip;
+        onExit -= DestroyToolTip;
+    }
 
-        string[] tokens = spell.GetToolTipText().Split(',');
-        string r = "";
-        for (int i = 0; i < tokens.Length; i++)
+    public override void SetSpell(Spell spell)
+    {
+        base.SetSpell(spell);
+
+        onEnter += SpawnToolTip;
+        onExit += DestroyToolTip;
+
+        switch (spell)
         {
-            r += tokens[i];
-            if (i < tokens.Length - 1)
-            {
-                r += "\n";
-            }
+            case ActiveSpell activeSpell:
+                typeText.text = "Active";
+
+                // Show Detail of Spells
+                string[] tokens = spell.GetToolTipText().Split(',');
+                string r = "";
+                for (int i = 0; i < tokens.Length; i++)
+                {
+                    r += tokens[i];
+                    if (i < tokens.Length - 1)
+                    {
+                        r += "\n";
+                    }
+                }
+                text.text = r;
+
+                break;
+            case PassiveSpell passiveSpell:
+                typeText.text = "Passive";
+                text.text = spell.GetToolTipText();
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
         }
-        text.text = r;
     }
 }

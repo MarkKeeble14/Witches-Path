@@ -410,10 +410,9 @@ MonoBehaviour:
   disableWhenEmpty:
   - {fileID: 152138716901173661}
   - {fileID: 4560675855426494866}
-  defaultSprite: {fileID: -2413806693520163455, guid: 36a0f126a9869ea4983b3b972c87b73c, type: 3}
+  defaultSprite: {fileID: 0}
   keyBindingText: {fileID: 7521110085264810116}
   spellCDText: {fileID: 4760069679280669780}
-  spellNumNotesText: {fileID: 0}
   spellManaCostText: {fileID: 1503162447121349425}
 --- !u!114 &5923457629666137040
 MonoBehaviour:
