@@ -34,4 +34,16 @@ public class PassiveSpellDisplay : SpellDisplay
             text.text = PassiveSpell.GetSecondaryText();
         }
     }
+
+    public override void Unset()
+    {
+        base.Unset();
+
+        // Set progress bar Fill
+        progressBar.fillAmount = 1;
+
+        // Deal with Secondary Text
+        infoBlock.SetActive(false);
+        text.text = "";
+    }
 }

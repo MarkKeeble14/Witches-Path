@@ -174,6 +174,7 @@ public partial class CombatManager : MonoBehaviour
     // Callbacks
     public Action OnPlayerBasicAttack;
     public Action OnPlayerTurnStart;
+    public Action OnPlayerTurnEnd;
     public Action OnPassiveSpellProc;
     public Action OnActiveSpellQueued;
     public Action OnActiveSpellActivated;
@@ -184,6 +185,7 @@ public partial class CombatManager : MonoBehaviour
 
     public Action OnEnemyBasicAttack;
     public Action OnEnemyTurnStart;
+    public Action OnEnemyTurnEnd;
     public Action OnEnemyGainAffliction;
     public Action OnEnemyLoseAffliction;
     public Action<int> OnEnemyTakeDamage;
@@ -191,6 +193,8 @@ public partial class CombatManager : MonoBehaviour
 
     public Action OnCombatStart;
     public Action OnCombatEnd;
+
+    public Action OnResetCombat;
 
     private EnemyAction currentEnemyAction;
 
@@ -336,7 +340,7 @@ public partial class CombatManager : MonoBehaviour
 
             if (CheckForCombatOver())
             {
-                yield break;
+                break;
             }
 
             // Enemy Turn
@@ -344,7 +348,7 @@ public partial class CombatManager : MonoBehaviour
 
             if (CheckForCombatOver())
             {
-                yield break;
+                break;
             }
 
             // End of Turn
@@ -411,6 +415,8 @@ public partial class CombatManager : MonoBehaviour
             AlterCombatentHP(GetTargetAfflictionStacks(AfflictionType.Regeneration, Target.Character), Target.Character, DamageType.Heal);
             ConsumeAfflictionStack(AfflictionType.Regeneration, Target.Character);
         }
+
+        OnPlayerTurnEnd?.Invoke();
 
         Debug.Log("Player Turn Ended");
     }
@@ -589,6 +595,8 @@ public partial class CombatManager : MonoBehaviour
             ConsumeAfflictionStack(AfflictionType.Regeneration, Target.Enemy);
         }
 
+        OnEnemyTurnEnd?.Invoke();
+
         Debug.Log("Enemy Turn Ended");
     }
 
@@ -690,6 +698,9 @@ public partial class CombatManager : MonoBehaviour
 
         // Set effectiveness multiplier text to be at zero
         effectivenessMultiplierTextRect.anchoredPosition = Vector2.zero;
+
+        // Callback
+        OnResetCombat?.Invoke();
     }
 
     public void SetPlayerTurnEnded(bool b)
@@ -1301,9 +1312,22 @@ public partial class CombatManager : MonoBehaviour
     private int UseWard(int amount, Target target, Func<int> getFunc, Action<int> alterFunc)
     {
         // Levitating Effect
-        if (TargetHasAffliction(AfflictionType.Levitating, target))
+        switch (target)
         {
-            return 0;
+            case Target.Character:
+                if (TargetHasAffliction(AfflictionType.Levitating, Target.Enemy))
+                {
+                    return 0;
+                }
+                break;
+            case Target.Enemy:
+                if (TargetHasAffliction(AfflictionType.Levitating, Target.Character))
+                {
+                    return 0;
+                }
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
         }
 
         // Apply Ward

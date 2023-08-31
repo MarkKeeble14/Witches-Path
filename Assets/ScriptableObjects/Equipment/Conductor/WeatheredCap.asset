@@ -9,7 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b924829fe90b9d5438ebf2815aa699b4, type: 3}
-  m_Name: WitchesHut
+  m_Script: {fileID: 11500000, guid: 98534009e97ceb5448ac9e327d399c94, type: 3}
+  m_Name: WeatheredCap
   m_EditorClassIdentifier: 
-  eventLabel: 2
+  name: Weathered Cap
+  rarity: 1
+  damageChange: 0
+  defenseChange: 1
+  manaChange: 1
+  AfflictionKeywords: 
+  GeneralKeywords: 

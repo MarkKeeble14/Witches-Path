@@ -30,6 +30,18 @@ public enum SpellLabel
     CrushJoints,
     WitchesWill,
     WitchesWard,
+    TeslaCoil,
+    Hurt
+}
+
+public enum SpellColor
+{
+    Curse,
+    Status,
+    Green,
+    Red,
+    Blue,
+    Grey
 }
 
 [System.Serializable]
@@ -38,13 +50,15 @@ public abstract class Spell : ToolTippable
     public abstract string Name { get; }
     public abstract SpellLabel Label { get; }
     protected abstract SpellType Type { get; }
+    public abstract SpellColor Color { get; }
+    public abstract Rarity Rarity { get; }
+    public int OutOfCombatCooldown { get; private set; }
     public string SpritePath => "Spells/" + Label.ToString().ToLower();
 
     protected abstract string toolTipText { get; }
 
     protected List<ToolTipKeyword> GeneralKeywords = new List<ToolTipKeyword>();
     protected List<AfflictionType> AfflictionKeywords = new List<AfflictionType>();
-
     private SpellDisplay equippedTo;
 
     public Spell()
@@ -63,6 +77,7 @@ public abstract class Spell : ToolTippable
     protected virtual void SetParameters()
     {
         // 
+        OutOfCombatCooldown = GetSpellSpec("OutOfCombatCooldown");
     }
 
     // Overridable Functions to determine Spell Effect
@@ -75,6 +90,8 @@ public abstract class Spell : ToolTippable
 
     // Will activate on equipping the Spell
     public abstract void OnEquip();
+    // Will activate on unequipping the Spell
+    public abstract void OnUnequip();
 
     // Balence Manager Getters
     protected int GetSpellSpec(string specIdentifier)
@@ -184,6 +201,10 @@ public abstract class Spell : ToolTippable
                 return new WitchesWill();
             case SpellLabel.WitchesWard:
                 return new WitchesWard();
+            case SpellLabel.TeslaCoil:
+                return new TeslaCoil();
+            case SpellLabel.Hurt:
+                return new Hurt();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -200,14 +221,29 @@ public abstract class PassiveSpell : Spell
     // A Global variable determining whether or not a passive spell being activated should duplicate itself
     public static int NumDuplicateProcs { get; set; }
 
-    // Called when the spell is unequipped
-    public abstract void OnUnequip();
+    // Called when the spell is Equipped
+    public override void OnEquip()
+    {
+        CombatManager._Instance.OnResetCombat += ResetOnCombatReset;
+    }
+
+    // Called when the spell is Unequipped
+    public override void OnUnequip()
+    {
+        CombatManager._Instance.OnResetCombat -= ResetOnCombatReset;
+    }
+
+    protected virtual void ResetOnCombatReset()
+    {
+        // 
+    }
 
     // Unless overriden will return an empty string. If returning a non-empty string, the passive spell display will include this information
     public virtual string GetSecondaryText()
     {
         return "";
     }
+
 
     // Calls the effect, could also be used to trigger other function calls or another thing at the same time (even if it's just Debugging) as calling Effect
     public override void CallEffect()
@@ -249,6 +285,9 @@ public abstract class PassiveSpell : Spell
 
 public class PoisonTips : PassiveSpell
 {
+    public override SpellLabel Label => SpellLabel.PoisonTips;
+    public override SpellColor Color => SpellColor.Green;
+    public override Rarity Rarity => Rarity.Basic;
     public override string Name => "Poison Tips";
 
     private int tracker;
@@ -257,7 +296,6 @@ public class PoisonTips : PassiveSpell
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Poison";
 
-    public override SpellLabel Label => SpellLabel.PoisonTips;
 
     protected override void SetKeywords()
     {
@@ -274,11 +312,13 @@ public class PoisonTips : PassiveSpell
 
     public override void OnEquip()
     {
+        base.OnEquip();
         CombatManager._Instance.OnPlayerBasicAttack += CallEffect;
     }
 
     public override void OnUnequip()
     {
+        base.OnUnequip();
         CombatManager._Instance.OnPlayerBasicAttack -= CallEffect;
     }
 
@@ -313,12 +353,19 @@ public class PoisonTips : PassiveSpell
     {
         return (float)tracker / procAfter;
     }
+
+    protected override void ResetOnCombatReset()
+    {
+        tracker = 0;
+    }
 }
 
 public class StaticField : PassiveSpell
 {
-    public override string Name => "Static Field";
     public override SpellLabel Label => SpellLabel.StaticField;
+    public override SpellColor Color => SpellColor.Blue;
+    public override Rarity Rarity => Rarity.Basic;
+    public override string Name => "Static Field";
 
     protected override string toolTipText => "Every " + procAfter + " Turn" + (procAfter > 1 ? "s" : "") + ", Apply " + stackAmount + " Paralyze to the Enemy";
 
@@ -341,11 +388,13 @@ public class StaticField : PassiveSpell
 
     public override void OnEquip()
     {
+        base.OnEquip();
         CombatManager._Instance.OnPlayerTurnStart += CallEffect;
     }
 
     public override void OnUnequip()
     {
+        base.OnUnequip();
         CombatManager._Instance.OnPlayerTurnStart -= CallEffect;
     }
 
@@ -374,13 +423,19 @@ public class StaticField : PassiveSpell
     {
         return (float)tracker / procAfter;
     }
+
+    protected override void ResetOnCombatReset()
+    {
+        tracker = 0;
+    }
 }
 
 public class Inferno : PassiveSpell
 {
-    public override string Name => "Inferno";
-
     public override SpellLabel Label => SpellLabel.Inferno;
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Basic;
+    public override string Name => "Inferno";
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Burn";
 
@@ -403,11 +458,13 @@ public class Inferno : PassiveSpell
 
     public override void OnEquip()
     {
+        base.OnEquip();
         CombatManager._Instance.OnPlayerBasicAttack += CallEffect;
     }
 
     public override void OnUnequip()
     {
+        base.OnUnequip();
         CombatManager._Instance.OnPlayerBasicAttack -= CallEffect;
     }
 
@@ -436,12 +493,19 @@ public class Inferno : PassiveSpell
     {
         return (float)tracker / procAfter;
     }
+
+    protected override void ResetOnCombatReset()
+    {
+        tracker = 0;
+    }
 }
 
 public class BattleTrance : PassiveSpell
 {
-    public override string Name => "Battle Trance";
     public override SpellLabel Label => SpellLabel.BattleTrance;
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Battle Trance";
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain " + stackAmount + " Embolden";
 
@@ -464,11 +528,13 @@ public class BattleTrance : PassiveSpell
 
     public override void OnEquip()
     {
+        base.OnEquip();
         CombatManager._Instance.OnPlayerBasicAttack += CallEffect;
     }
 
     public override void OnUnequip()
     {
+        base.OnUnequip();
         CombatManager._Instance.OnPlayerBasicAttack -= CallEffect;
     }
 
@@ -497,12 +563,19 @@ public class BattleTrance : PassiveSpell
     {
         return (float)tracker / procAfter;
     }
+
+    protected override void ResetOnCombatReset()
+    {
+        tracker = 0;
+    }
 }
 
 public class MagicRain : PassiveSpell
 {
-    public override string Name => "Magic Rain";
     public override SpellLabel Label => SpellLabel.MagicRain;
+    public override SpellColor Color => SpellColor.Blue;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Magic Rain";
 
     protected override string toolTipText => "Every " + procAfter + " Turn" + (procAfter > 1 ? "s" : "") + ", Deal " + damageAmount + " Damage to the Enemy";
 
@@ -519,11 +592,13 @@ public class MagicRain : PassiveSpell
 
     public override void OnEquip()
     {
+        base.OnEquip();
         CombatManager._Instance.OnPlayerTurnStart += CallEffect;
     }
 
     public override void OnUnequip()
     {
+        base.OnUnequip();
         CombatManager._Instance.OnPlayerTurnStart -= CallEffect;
     }
 
@@ -552,10 +627,99 @@ public class MagicRain : PassiveSpell
     {
         return (float)tracker / procAfter;
     }
+
+    protected override void ResetOnCombatReset()
+    {
+        tracker = 0;
+    }
+}
+
+public class TeslaCoil : PassiveSpell
+{
+    public override SpellLabel Label => SpellLabel.TeslaCoil;
+    public override SpellColor Color => SpellColor.Blue;
+    public override Rarity Rarity => Rarity.Basic;
+    public override string Name => "Tesla Coil";
+
+    protected override string toolTipText => "At the Beginning of Every turn, Deal " + damageAmount + " Damage to the Enemy";
+
+    private int damageAmount;
+
+    protected override void SetParameters()
+    {
+        base.SetParameters();
+        damageAmount = (int)GetSpellSpec("DamageAmount");
+    }
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        CombatManager._Instance.OnPlayerTurnStart += CallEffect;
+    }
+
+    public override void OnUnequip()
+    {
+        base.OnUnequip();
+        CombatManager._Instance.OnPlayerTurnStart -= CallEffect;
+    }
+
+    protected override void Effect()
+    {
+        Proc(true);
+    }
+
+    public override void Proc(bool canDupe)
+    {
+        CombatManager._Instance.AlterCombatentHP(-damageAmount, Target.Enemy, DamageType.Default);
+        base.Proc(canDupe);
+    }
+}
+
+public class Hurt : PassiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Hurt;
+    public override SpellColor Color => SpellColor.Curse;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Hurt";
+
+    protected override string toolTipText => "At the End of Every turn, Take " + damageAmount + " Damage";
+
+    private int damageAmount;
+
+    protected override void SetParameters()
+    {
+        base.SetParameters();
+        damageAmount = (int)GetSpellSpec("DamageAmount");
+    }
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        CombatManager._Instance.OnPlayerTurnEnd += CallEffect;
+    }
+
+    public override void OnUnequip()
+    {
+        base.OnUnequip();
+        CombatManager._Instance.OnPlayerTurnEnd -= CallEffect;
+    }
+
+    protected override void Effect()
+    {
+        Proc(true);
+    }
+
+    public override void Proc(bool canDupe)
+    {
+        CombatManager._Instance.AlterCombatentHP(-damageAmount, Target.Character, DamageType.Evil);
+        base.Proc(canDupe);
+    }
 }
 
 public class CrushJoints : PassiveSpell
 {
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Common;
     public override string Name => "Crush Joints";
     public override SpellLabel Label => SpellLabel.CrushJoints;
 
@@ -580,11 +744,13 @@ public class CrushJoints : PassiveSpell
 
     public override void OnEquip()
     {
+        base.OnEquip();
         CombatManager._Instance.OnPlayerBasicAttack += CallEffect;
     }
 
     public override void OnUnequip()
     {
+        base.OnUnequip();
         CombatManager._Instance.OnPlayerBasicAttack -= CallEffect;
     }
 
@@ -618,6 +784,11 @@ public class CrushJoints : PassiveSpell
     public override float GetPercentProgress()
     {
         return (float)tracker / procAfter;
+    }
+
+    protected override void ResetOnCombatReset()
+    {
+        tracker = 0;
     }
 }
 
@@ -739,6 +910,11 @@ public abstract class ActiveSpell : Spell
         //
     }
 
+    public override void OnUnequip()
+    {
+        //
+    }
+
     protected float GetEffectivenessMultiplier()
     {
         return CombatManager._Instance.GetActiveSpellEffectivenessMultiplier();
@@ -852,8 +1028,10 @@ public abstract class ActiveSpell : Spell
 
 public class Fireball : ActiveSpell
 {
-    public override string Name => "Fireball";
     public override SpellLabel Label => SpellLabel.Fireball;
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Basic;
+    public override string Name => "Fireball";
 
     protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage, Apply " + stackAmount + " Burn";
 
@@ -884,8 +1062,10 @@ public class Fireball : ActiveSpell
 
 public class Shock : ActiveSpell
 {
-    public override string Name => "Shock";
     public override SpellLabel Label => SpellLabel.Shock;
+    public override SpellColor Color => SpellColor.Blue;
+    public override Rarity Rarity => Rarity.Basic;
+    public override string Name => "Shock";
 
     protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage, Apply " + stackAmount + " Paralyze";
 
@@ -916,8 +1096,10 @@ public class Shock : ActiveSpell
 
 public class Singe : ActiveSpell
 {
-    public override string Name => "Singe";
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Basic;
     public override SpellLabel Label => SpellLabel.Singe;
+    public override string Name => "Singe";
 
     protected override string toolTipText => "Apply " + stackAmount + " Burn";
 
@@ -945,8 +1127,10 @@ public class Singe : ActiveSpell
 
 public class Plague : ActiveSpell
 {
-    public override string Name => "Plague";
+    public override SpellColor Color => SpellColor.Green;
+    public override Rarity Rarity => Rarity.Basic;
     public override SpellLabel Label => SpellLabel.Plague;
+    public override string Name => "Plague";
 
     protected override string toolTipText => "Apply " + stackAmount + " Poison";
 
@@ -973,8 +1157,10 @@ public class Plague : ActiveSpell
 
 public class Toxify : ActiveSpell
 {
-    public override string Name => "Toxify";
+    public override SpellColor Color => SpellColor.Green;
+    public override Rarity Rarity => Rarity.Basic;
     public override SpellLabel Label => SpellLabel.Toxify;
+    public override string Name => "Toxify";
 
     protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage, Apply " + stackAmount + " Poison";
 
@@ -1005,8 +1191,10 @@ public class Toxify : ActiveSpell
 
 public class Jarkai : ActiveSpell
 {
-    public override string Name => "Jarkai";
     public override SpellLabel Label => SpellLabel.Jarkai;
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Jarkai";
 
     protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage Twice";
 
@@ -1031,8 +1219,10 @@ public class Jarkai : ActiveSpell
 
 public class Flurry : ActiveSpell
 {
-    public override string Name => "Flurry";
     public override SpellLabel Label => SpellLabel.Flurry;
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Uncommon;
+    public override string Name => "Flurry";
 
     protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage " + hitAmount + " Times";
 
@@ -1059,8 +1249,10 @@ public class Flurry : ActiveSpell
 
 public class Electrifry : ActiveSpell
 {
-    public override string Name => "Electrifry";
     public override SpellLabel Label => SpellLabel.Electrifry;
+    public override SpellColor Color => SpellColor.Blue;
+    public override Rarity Rarity => Rarity.Rare;
+    public override string Name => "Electrifry";
 
     protected override string toolTipText => "Apply " + paralyzeAmount + " Paralyze, Apply " + burnAmount + " Burn";
 
@@ -1092,8 +1284,10 @@ public class Electrifry : ActiveSpell
 
 public class ExposeFlesh : ActiveSpell
 {
-    public override string Name => "Expose Flesh";
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Uncommon;
     public override SpellLabel Label => SpellLabel.ExposeFlesh;
+    public override string Name => "Expose Flesh";
 
     protected override string toolTipText => "Apply " + stackAmount + " Vulnerable, Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage";
 
@@ -1129,8 +1323,10 @@ public class ExposeFlesh : ActiveSpell
 
 public class Cripple : ActiveSpell
 {
-    public override string Name => "Cripple";
     public override SpellLabel Label => SpellLabel.Cripple;
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Cripple";
 
     protected override string toolTipText => "Apply " + stackAmount + " Weak, Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage";
 
@@ -1161,8 +1357,10 @@ public class Cripple : ActiveSpell
 
 public class TradeBlood : ActiveSpell
 {
-    public override string Name => "Trade Blood";
+    public override SpellColor Color => SpellColor.Green;
+    public override Rarity Rarity => Rarity.Rare;
     public override SpellLabel Label => SpellLabel.TradeBlood;
+    public override string Name => "Trade Blood";
 
     protected override string toolTipText => "Lose " + selfDamageAmount + " HP, Deal " +
         GetCalculatedDamageEnemy(otherDamageAmount) + " Damage";
@@ -1188,8 +1386,10 @@ public class TradeBlood : ActiveSpell
 
 public class Excite : ActiveSpell
 {
-    public override string Name => "Excite";
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Uncommon;
     public override SpellLabel Label => SpellLabel.Excite;
+    public override string Name => "Excite";
 
     protected override string toolTipText => "Gain " + stackAmount + " Embolden";
 
@@ -1217,6 +1417,8 @@ public class Excite : ActiveSpell
 
 public class Overexcite : ActiveSpell
 {
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Rare;
     public override string Name => "Overexcite";
     public override SpellLabel Label => SpellLabel.Overexcite;
 
@@ -1250,8 +1452,10 @@ public class Overexcite : ActiveSpell
 
 public class Forethought : ActiveSpell
 {
-    public override string Name => "Forethought";
     public override SpellLabel Label => SpellLabel.Forethought;
+    public override SpellColor Color => SpellColor.Green;
+    public override Rarity Rarity => Rarity.Rare;
+    public override string Name => "Forethought";
 
     protected override string toolTipText => "Gain " + stackAmount + " Intangible";
 
@@ -1279,6 +1483,8 @@ public class Forethought : ActiveSpell
 
 public class Reverberate : ActiveSpell
 {
+    public override SpellColor Color => SpellColor.Blue;
+    public override Rarity Rarity => Rarity.Rare;
     public override string Name => "Reverberate";
     public override SpellLabel Label => SpellLabel.Reverberate;
 
@@ -1308,6 +1514,8 @@ public class Reverberate : ActiveSpell
 
 public class ImpartialAid : ActiveSpell
 {
+    public override SpellColor Color => SpellColor.Blue;
+    public override Rarity Rarity => Rarity.Rare;
     public override string Name => "Impartial Aid";
     public override SpellLabel Label => SpellLabel.ImpartialAid;
 
@@ -1338,8 +1546,10 @@ public class ImpartialAid : ActiveSpell
 
 public class WitchesWill : ActiveSpell
 {
-    public override string Name => "Witches Will";
     public override SpellLabel Label => SpellLabel.WitchesWill;
+    public override SpellColor Color => SpellColor.Grey;
+    public override Rarity Rarity => Rarity.Basic;
+    public override string Name => "Witches Will";
 
     protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage";
 
@@ -1367,8 +1577,10 @@ public class WitchesWill : ActiveSpell
 
 public class WitchesWard : ActiveSpell
 {
-    public override string Name => "Witches Ward";
+    public override SpellColor Color => SpellColor.Grey;
+    public override Rarity Rarity => Rarity.Basic;
     public override SpellLabel Label => SpellLabel.WitchesWard;
+    public override string Name => "Witches Ward";
 
     protected override string toolTipText => "Gain " + GetCalculatedWard(wardAmount, Target.Character) + " Ward";
 

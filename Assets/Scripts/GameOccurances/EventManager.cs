@@ -26,33 +26,51 @@ public class EventManager : MonoBehaviour
     [SerializeField] private GameObject optionsDisplayContainer;
     [SerializeField] private OptionEventOptionDisplay optionEventOptionPrefab;
 
-    private bool chainingEvents;
-    private OptionEvent currentOptionEvent;
+    private List<OptionEventOptionDisplay> spawnedOptionDisplays = new List<OptionEventOptionDisplay>();
     private EventOptionOutcome currentOutcome;
 
     [SerializeField] private Transform resolveButton;
+
+    private OptionEvent chainEvent;
+    private bool wait;
 
     public void SetOutcome(EventOptionOutcome outcome)
     {
         currentOutcome = outcome;
     }
 
-    public void SetChainingEvents(bool b)
+    public void ChainEvent(OptionEvent optionEvent)
     {
-        chainingEvents = b;
+        chainEvent = optionEvent;
     }
 
-    private List<OptionEventOptionDisplay> spawnedOptionDisplays = new List<OptionEventOptionDisplay>();
+    public void SetWait(bool b)
+    {
+        wait = b;
+    }
 
     public IEnumerator StartOptionEvent(OptionEvent optionEvent)
     {
-        currentOptionEvent = optionEvent;
+        // Reset
+        // Unset Chain Event
+        chainEvent = null;
+        SetOutcome(null);
+        resolved = false;
 
-        List<EventOption> optionEventOptions = optionEvent.GetVerifiedEventOptions();
+        yield return new WaitUntil(() => !wait);
+
+        // Update Event Data
+        optionEvent.UpdateEventData();
+
+        // Get Viable Event Options (Conditional Options which Conditions Evaluate out to be true)
+        List<EventOption> optionEventOptions = optionEvent.GetViableEventOptions();
+
+        // Set Event Information
         eventNameDisplay.text = optionEvent.EventName;
         eventTextDisplay.text = optionEvent.EventText;
         eventArtDisplay.sprite = optionEvent.EventArt;
 
+        // Destroy Previous Options that are unneccessary to populate the current event
         while (spawnedOptionDisplays.Count > optionEventOptions.Count)
         {
             int index = spawnedOptionDisplays.Count - 1;
@@ -61,6 +79,7 @@ public class EventManager : MonoBehaviour
             Destroy(option.gameObject);
         }
 
+        // Spawn new Options
         optionsDisplayContainer.gameObject.SetActive(true);
         for (int i = 0; i < optionEventOptions.Count; i++)
         {
@@ -78,23 +97,17 @@ public class EventManager : MonoBehaviour
             display.Set(cur);
         }
 
+        // Wait until the player has selected an Option
         yield return new WaitUntil(() => currentOutcome != null);
 
-        yield return StartCoroutine(GameManager._Instance.ParseEventEffect(optionEvent, currentOutcome.CodeString));
+        // Call the Effect
+        currentOutcome.CallEffect();
 
+        // if whatever the player did killed the player, know that the player is dead
         bool gameOver = false;
         if (GameManager._Instance.GameOvered)
         {
             gameOver = true;
-        }
-
-        // if chaining events is set, we reset certain things & variables but not everything
-        // Break if chaining, do not do anything further
-        if (chainingEvents)
-        {
-            currentOutcome = null;
-            SetChainingEvents(false);
-            yield break;
         }
 
         // Destroy options
@@ -105,20 +118,28 @@ public class EventManager : MonoBehaviour
             Destroy(display.gameObject);
         }
 
-        optionsDisplayContainer.gameObject.SetActive(false);
+        // 2nd Screen Sequence (Result of Outcome, Don't need to Show Here if Chaining)
+        if (chainEvent == null)
+        {
+            // Hide Options
+            optionsDisplayContainer.gameObject.SetActive(false);
 
-        resolveButton.gameObject.SetActive(true);
+            // Show Resolve Button so Player may continue
+            resolveButton.gameObject.SetActive(true);
 
-        eventTextDisplay.text = currentOutcome.ResultText;
+            // Set event Result Text
+            eventTextDisplay.text = currentOutcome.ResultText;
 
-        yield return new WaitUntil(() => resolved || gameOver);
+            // Wait until Player has clicked Resolve Button
+            yield return new WaitUntil(() => resolved || gameOver);
 
-        resolveButton.gameObject.SetActive(false);
-
-        // Reset for next use
-        currentOutcome = null;
-        currentOptionEvent = null;
-        resolved = false;
+            // Hide Resolve Button
+            resolveButton.gameObject.SetActive(false);
+        }
+        else // Chain Events
+        {
+            yield return StartCoroutine(StartOptionEvent(chainEvent));
+        }
 
         GameManager._Instance.ResolveCurrentEvent();
     }

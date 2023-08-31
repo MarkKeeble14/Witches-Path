@@ -54,7 +54,7 @@ public class Utils
 
     public static string GetPluralization(int num)
     {
-        return num > 1 ? "es" : "";
+        return num > 1 ? "s" : "";
     }
 
     public static string ConvVector3ToStringAbs(Vector3 v, int roundTo, string format, float minValue)

@@ -11,14 +11,17 @@ public enum SpellType
 [System.Serializable]
 public class ActiveSpellSpecDictionary
 {
-    [SerializeField] private int cooldown;
-    [SerializeField] private int manaCost;
+    [SerializeField] private int cooldown = 1;
+    [SerializeField] private int manaCost = 1;
+    [SerializeField] private int outOfCombatCooldown = 1;
     [SerializeField] private SerializableDictionary<string, int> additionalParameters = new SerializableDictionary<string, int>();
 
     public int GetSpec(string identifier)
     {
         switch (identifier)
         {
+            case "OutOfCombatCooldown":
+                return outOfCombatCooldown;
             case "Cooldown":
                 return cooldown;
             case "ManaCost":
@@ -33,11 +36,18 @@ public class ActiveSpellSpecDictionary
 [System.Serializable]
 public class PassiveSpellSpecDictionary
 {
+    [SerializeField] private int outOfCombatCooldown;
     [SerializeField] private SerializableDictionary<string, int> additionalParameters = new SerializableDictionary<string, int>();
 
     public int GetSpec(string identifier)
     {
-        return additionalParameters[identifier];
+        switch (identifier)
+        {
+            case "OutOfCombatCooldown":
+                return outOfCombatCooldown;
+            default:
+                return additionalParameters[identifier];
+        }
     }
 }
 
@@ -187,7 +197,8 @@ public class BalenceManager : MonoBehaviour
 
     public bool EventHasValue(EventLabel label, string valueIdentifier)
     {
-        return eventSpecDict.ContainsKey(label.ToString());
+        if (!eventSpecDict.ContainsKey(label.ToString())) return false;
+        return eventSpecDict[label.ToString()].ContainsKey(valueIdentifier);
     }
 
     public int GetCostToReforge(ReforgeModifier reforgeModifier)

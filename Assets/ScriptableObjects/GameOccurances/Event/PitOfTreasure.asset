@@ -10,6 +10,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b924829fe90b9d5438ebf2815aa699b4, type: 3}
-  m_Name: WitchesHut
+  m_Name: PitOfTreasure
   m_EditorClassIdentifier: 
-  eventLabel: 2
+  eventLabel: 4

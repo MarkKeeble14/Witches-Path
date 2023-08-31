@@ -6,6 +6,7 @@ public class Character : ScriptableObject
 {
     [Header("UI")]
     [SerializeField] private Sprite combatSprite;
+    [SerializeField] private SpellColor color;
 
     [Header("Starting Stats")]
     [SerializeField] private Robe startingRobe;
@@ -16,6 +17,10 @@ public class Character : ScriptableObject
 
     [SerializeField] private int startingCurrency;
     [SerializeField] private int startingClothierCurrency;
+
+    [SerializeField] private SpellLabel defaultActiveSpell;
+    [SerializeField] private SpellLabel defaultPassiveSpell;
+
 
     [Header("Combat Settings")]
     [Header("Health")]
@@ -104,5 +109,20 @@ public class Character : ScriptableObject
     public Sprite GetCombatSprite()
     {
         return combatSprite;
+    }
+
+    public SpellLabel GetDefaultActiveSpell()
+    {
+        return defaultActiveSpell;
+    }
+
+    public SpellLabel GetDefaultPassiveSpell()
+    {
+        return defaultPassiveSpell;
+    }
+
+    public SpellColor GetColor()
+    {
+        return color;
     }
 }

@@ -211,7 +211,7 @@ public class EnemyApplyAfflictionIntent : EnemyAfflictionIntent
 {
     public override IntentType Type => IntentType.ApplyAffliction;
     protected override string name => "Applying Affliction";
-    protected override string toolTipText => "Apply " + NumStacks + " " + Affliction.GetAfflictionOfType(AfflictionType).GetToolTipLabel() + " to You";
+    protected override string toolTipText => "Apply " + NumStacks + " " + Affliction.GetAfflictionOfType(AfflictionType).GetToolTipLabel();
 
     public EnemyApplyAfflictionIntent(AfflictionType affType, Func<int> numStacks) : base(affType, numStacks)
     {
@@ -226,7 +226,7 @@ public class EnemyGainAfflictionIntent : EnemyAfflictionIntent
 {
     public override IntentType Type => IntentType.GainAffliction;
     protected override string name => "Gaining Affliction";
-    protected override string toolTipText => "Apply " + NumStacks + " " + Affliction.GetAfflictionOfType(AfflictionType).GetToolTipLabel() + " to Itself";
+    protected override string toolTipText => "Gain " + NumStacks + " " + Affliction.GetAfflictionOfType(AfflictionType).GetToolTipLabel();
 
     public EnemyGainAfflictionIntent(AfflictionType affType, Func<int> numStacks) : base(affType, numStacks)
     {

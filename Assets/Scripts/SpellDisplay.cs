@@ -30,15 +30,14 @@ public abstract class SpellDisplay : MonoBehaviour
 
     protected SpellDisplayState displayState = SpellDisplayState.Normal;
     private Tweener shakeTweener;
+    public bool IsEmpty { get; private set; }
+
+    [SerializeField] private Sprite defaultSprite;
 
     private void Start()
     {
         targetScale = regularScale;
     }
-
-    public bool IsEmpty { get; private set; }
-
-    [SerializeField] private Sprite defaultSprite;
 
     protected void Update()
     {
@@ -89,6 +88,7 @@ public abstract class SpellDisplay : MonoBehaviour
         spellIcon.sprite = defaultSprite;
         progressBar.fillAmount = 1;
         SetEmpty(true);
+        Spell = null;
     }
 
     public void SetEmpty(bool isEmpty)
@@ -100,7 +100,7 @@ public abstract class SpellDisplay : MonoBehaviour
         }
     }
 
-    public void SpawnToolTip()
+    public virtual void SpawnToolTip()
     {
         // Only spawn ToolTip if spell is set
         if (!IsEmpty)

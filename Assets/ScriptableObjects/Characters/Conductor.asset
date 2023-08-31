@@ -10,23 +10,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ca226392ff22ceb429a58fa99900c73d, type: 3}
-  m_Name: Venomess
+  m_Name: Conductor
   m_EditorClassIdentifier: 
   combatSprite: {fileID: -2413806693520163455, guid: e074a9b4b276847b0b578d2c96d2c1db, type: 3}
-  color: 2
-  startingRobe: {fileID: 11400000, guid: c50f538457cbd8f4a911bfae3f970d78, type: 2}
-  startingHat: {fileID: 11400000, guid: 427716a4784833947b46ed413f751470, type: 2}
-  startingWand: {fileID: 11400000, guid: acda65fe9855c2547963cd46c0c48fba, type: 2}
+  color: 4
+  startingRobe: {fileID: 11400000, guid: 29a94e8c51f13c14195f9d8fe2d1325a, type: 2}
+  startingHat: {fileID: 11400000, guid: 25aed1f039ce03b48909163c0b372e49, type: 2}
+  startingWand: {fileID: 11400000, guid: 4fc1ffb14e640924681a2a6c216fce58, type: 2}
   startingBook: 0
-  startingSpells: 16000000160000001700000017000000070000000800000000000000
+  startingSpells: 16000000160000001700000017000000050000000500000018000000
   startingCurrency: 100
-  startingClothierCurrency: 1
+  startingClothierCurrency: 0
   defaultActiveSpell: 22
-  defaultPassiveSpell: 0
+  defaultPassiveSpell: 20
   maxHP: 150
   startingHP: 150
-  basicAttackDamage: 2
-  startingActiveSpellSlots: 3
-  startingPassiveSpellSlots: 2
-  maxMana: 5
+  basicAttackDamage: 1
+  startingActiveSpellSlots: 4
+  startingPassiveSpellSlots: 1
+  maxMana: 8
   manaPerTurnSubFromMax: 0

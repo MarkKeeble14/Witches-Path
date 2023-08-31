@@ -99,7 +99,15 @@ public class RewardManager : MonoBehaviour
             for (int i = 0; i < numOptions; i++)
             {
                 // Get new Options
-                Spell spell = GameManager._Instance.GetRandomSpell(forceRarity, rarity);
+                Spell spell;
+                if (forceRarity)
+                {
+                    spell = GameManager._Instance.GetRandomSpellConsideringRarity(rarity);
+                }
+                else
+                {
+                    spell = GameManager._Instance.GetRandomSpell();
+                }
 
                 // Add Spell to Class to Track
                 activeChooseSpellReward.Choices.Add(spell);
@@ -359,5 +367,23 @@ public class RewardManager : MonoBehaviour
             spawnedRewards.RemoveAt(0);
             Destroy(reward.gameObject);
         }
+    }
+
+    public void AddRandomArtifactReward(int num = 1)
+    {
+        for (int i = 0; i < num; i++)
+            AddReward(GameManager._Instance.GetRandomArtifact());
+    }
+
+    public void AddRandomPotionIngredientReward(int num = 1)
+    {
+        for (int i = 0; i < num; i++)
+            AddReward(GameManager._Instance.GetRandomPotionIngredient());
+    }
+
+    public void AddRandomBookReward(int num = 1)
+    {
+        for (int i = 0; i < num; i++)
+            AddReward(GameManager._Instance.GetRandomBook());
     }
 }

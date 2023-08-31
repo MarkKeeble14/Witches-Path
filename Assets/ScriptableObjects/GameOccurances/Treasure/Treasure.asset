@@ -12,4 +12,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e47396c957469b45b612473249544ca, type: 3}
   m_Name: Treasure
   m_EditorClassIdentifier: 
-  treasureEvent: {fileID: 11400000, guid: 79985fc6c87e7474f823b3313e1dcbf6, type: 2}

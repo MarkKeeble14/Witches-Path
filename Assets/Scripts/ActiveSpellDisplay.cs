@@ -22,6 +22,11 @@ public class ActiveSpellDisplay : SpellDisplay
 
     public void TryCast()
     {
+        if (ActiveSpell == null)
+        {
+            return;
+        }
+
         // Only allow for spell casts while in combat
         if (CombatManager._Instance.CanCastSpells)
         {

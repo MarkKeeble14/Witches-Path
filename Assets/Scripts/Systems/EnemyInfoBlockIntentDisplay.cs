@@ -30,7 +30,7 @@ public class EnemyInfoBlockIntentDisplay : MonoBehaviour, IPointerEnterHandler, 
             {
                 if (i == setIntents.Count - 2)
                 {
-                    result += ", and ";
+                    result += " and ";
                 }
             }
             else if (setIntents.Count > 2) // More than Two Intents

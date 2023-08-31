@@ -13,18 +13,20 @@ MonoBehaviour:
   m_Name: HotHead
   m_EditorClassIdentifier: 
   combatSprite: {fileID: 21300000, guid: 3afe9266576aa4041b27d5775e70022c, type: 3}
+  color: 3
   startingRobe: {fileID: 11400000, guid: a40bfcb8936ea604694906ae95a367e2, type: 2}
   startingHat: {fileID: 11400000, guid: a707352352167154381b4d14c6832951, type: 2}
   startingWand: {fileID: 11400000, guid: a794f23a6bced8a4f869c3618d2329a4, type: 2}
   startingBook: 0
-  startingSpells: 16000000170000000400000002000000
+  startingSpells: 16000000160000001700000017000000060000000400000002000000
   startingCurrency: 100
-  startingClothierCurrency: 1
+  startingClothierCurrency: 0
+  defaultActiveSpell: 22
+  defaultPassiveSpell: 2
   maxHP: 90
   startingHP: 90
   basicAttackDamage: 2
-  startingActiveSpellSlots: 4
-  startingPassiveSpellSlots: 2
-  maxMana: 8
-  startingMana: 8
-  manaPerTurn: 7
+  startingActiveSpellSlots: 2
+  startingPassiveSpellSlots: 3
+  maxMana: 7
+  manaPerTurnSubFromMax: 1

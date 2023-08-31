@@ -9,7 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b924829fe90b9d5438ebf2815aa699b4, type: 3}
-  m_Name: WitchesHut
+  m_Script: {fileID: 11500000, guid: 7cbed65488024b2499d1beaa216d9242, type: 3}
+  m_Name: LightningRod
   m_EditorClassIdentifier: 
-  eventLabel: 2
+  name: Lightning Rod
+  rarity: 1
+  damageChange: 1
+  defenseChange: 0
+  manaChange: 1
+  AfflictionKeywords: 
+  GeneralKeywords: 

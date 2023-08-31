@@ -7,6 +7,16 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 [System.Serializable]
+public struct SpellColorInfo
+{
+    [SerializeField] private Color color;
+    [SerializeField] private Color textColor;
+
+    public Color Color => color;
+    public Color TextColor => textColor;
+}
+
+[System.Serializable]
 public struct UISectionInformation
 {
     [SerializeField] private string text;
@@ -59,6 +69,7 @@ public enum ToolTipKeyword
     PotionTargeter,
     PotionPotency,
     PotionAugmenter,
+    Multiplier
 }
 
 public enum TextDecorationLabel
@@ -106,6 +117,10 @@ public class UIManager : MonoBehaviour
 
     [SerializeField] private SerializableDictionary<PotionIngredientCategory, Sprite> potionIngredientCategorySpriteMap = new SerializableDictionary<PotionIngredientCategory, Sprite>();
 
+    [SerializeField] private SerializableDictionary<Rarity, Color> rarityColorMap = new SerializableDictionary<Rarity, Color>();
+
+    [SerializeField] private SerializableDictionary<SpellColor, SpellColorInfo> spellColorMap = new SerializableDictionary<SpellColor, SpellColorInfo>();
+
     [SerializeField] private Transform canvas;
     public Transform Canvas => canvas;
 
@@ -117,6 +132,16 @@ public class UIManager : MonoBehaviour
     public Color GetEffectTextColor(string key)
     {
         return effectTextColors[key];
+    }
+
+    public SpellColorInfo GetSpellColor(SpellColor color)
+    {
+        return spellColorMap[color];
+    }
+
+    public Color GetRarityColor(Rarity r)
+    {
+        return rarityColorMap[r];
     }
 
     public Sprite GetPotionIngredientCategorySprite(PotionIngredientCategory category)
@@ -236,6 +261,27 @@ public class UIManager : MonoBehaviour
                     }
                     res += DecorateTextWithAppropriateColor(TextDecorationLabel.Affliction, fullText);
                     i += multiTokens.Length - 1;
+                    continue;
+                }
+            }
+
+            // Token has a comma at the end which might interfere with determining if it's a keyword or not
+            if (token[token.Length - 1].Equals(','))
+            {
+                string sub = token.Substring(0, token.Length - 1);
+
+                // Token was in fact a Key Word
+                if (keyWordData.ContainsKey(sub))
+                {
+                    res += DecorateTextWithAppropriateColor(TextDecorationLabel.Keyword, sub) + ",";
+                    continue;
+
+                }
+
+                // Token was in fact an Affliction
+                if (afflictionTypes.Contains(sub))
+                {
+                    res += DecorateTextWithAppropriateColor(TextDecorationLabel.Affliction, sub) + ",";
                     continue;
                 }
             }

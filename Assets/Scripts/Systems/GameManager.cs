@@ -17,35 +17,6 @@ public enum ContentType
     Spell
 }
 
-[System.Serializable]
-public class Spellbook
-{
-    private List<Spell> availableSpells;
-    private List<Spell> reservedSpells;
-
-    public int NumAvailable => availableSpells.Count;
-
-    public void AddSpell(Spell spell)
-    {
-        availableSpells.Add(spell);
-    }
-
-    public Spellbook(IEnumerable<SpellLabel> spellLabels)
-    {
-        reservedSpells = new List<Spell>();
-        availableSpells = new List<Spell>();
-        foreach (SpellLabel spellLabel in spellLabels)
-        {
-            availableSpells.Add(Spell.GetSpellOfType(spellLabel));
-        }
-    }
-
-    public List<Spell> GetAvailableSpells()
-    {
-        return availableSpells;
-    }
-}
-
 public class GameManager : MonoBehaviour
 {
     public static GameManager _Instance { get; private set; }
@@ -76,6 +47,7 @@ public class GameManager : MonoBehaviour
     private Dictionary<ArtifactLabel, Artifact> equippedArtifacts = new Dictionary<ArtifactLabel, Artifact>();
     private List<ArtifactLabel> allArtifacts;
     private int artifactIndex;
+    public int NumArtifacts => equippedArtifacts.Count;
 
     [Header("Books")]
     [SerializeField] private Transform bookBar;
@@ -88,12 +60,12 @@ public class GameManager : MonoBehaviour
 
     [Header("Spells")]
     [SerializeField] private PercentageMap<Rarity> spellRarityOdds = new PercentageMap<Rarity>();
-    [SerializeField] private SerializableDictionary<SpellLabel, Rarity> spellRarityMap = new SerializableDictionary<SpellLabel, Rarity>();
     [SerializeField] private List<SpellLabel> playerEquippableActiveSpells;
     [SerializeField] private List<SpellLabel> playerEquippablePassiveSpells;
     private int equippableSpellIndex;
     private List<Spell> equippedSpells = new List<Spell>();
     private Spellbook spellBook;
+    public int NumSpells => spellBook.GetSpellBookEntries().Count;
 
     [Header("Active Spells")]
     [SerializeField] private KeyCode[] activeSpellBindings;
@@ -110,24 +82,29 @@ public class GameManager : MonoBehaviour
     private List<PassiveSpellDisplay> passiveSpellDisplays = new List<PassiveSpellDisplay>();
     private int numPassiveSpellSlots;
 
-    [Header("Select Spells Screen")]
+    [Header("Select Spells For Combat Screen")]
     [SerializeField] private VisualSpellDisplay visualSpellDisplayPrefab;
-    [SerializeField] private GameObject selectSpellsScreen;
+    [SerializeField] private GameObject selectSpellsForCombatScreen;
     [SerializeField] private Transform parentSelectSpellOptionsTo;
-    [SerializeField] private Button confirmSelectSpellsButton;
-    [SerializeField] private TextMeshProUGUI confirmSelectSpellsText;
-    [SerializeField] private TypewriterByWord selectSpellsScreenTitleTypewriter;
-    private bool spellSelectionConfirmed;
+    [SerializeField] private Button confirmSelectSpellsForCombatButton;
+    [SerializeField] private TextMeshProUGUI confirmSelectSpellsForCombatText;
+    [SerializeField] private TypewriterByWord selectSpellsForCombatScreenTitleTypewriter;
+    private bool spellSelectionForCombatConfirmed;
 
     [Header("Spell Book Screen")]
     [SerializeField] private GameObject spellBookScreen;
     [SerializeField] private Transform spellBookSpawnSpellDisplaysOn;
     private List<VisualSpellDisplay> spellBookSpawnedSpellDisplays = new List<VisualSpellDisplay>();
 
+    [Header("Select Spell Screen")]
+    [SerializeField] private GameObject selectSpellScreen;
+    [SerializeField] private Transform spawnSelectSpellDisplaysOn;
+
     [Header("Potions")]
     private Dictionary<PotionIngredientType, int> potionIngredientMap = new Dictionary<PotionIngredientType, int>();
     private Potion currentPotion;
     private List<Potion> availablePotions = new List<Potion>();
+    public int NumPotions => availablePotions.Count;
 
     [Header("Equipment")]
     [SerializeField] private List<Hat> equippableHats = new List<Hat>();
@@ -150,6 +127,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI clothierCurrencyText;
     [SerializeField] private TextMeshProUGUI damageText;
     [SerializeField] private TextMeshProUGUI defenseText;
+    [SerializeField] private TextMeshProUGUI timerText;
 
     [Header("Delays")]
     [SerializeField] private float delayOnReachNode = 0.5f;
@@ -206,6 +184,8 @@ public class GameManager : MonoBehaviour
         EquipCharacterLoadout(playerCharacter);
 
         CanSetCurrentGameOccurance = true;
+
+        OnEnterNewRoom += () => spellBook.TickOutOfCombatCooldowns();
     }
 
     private void SetEquipmentToolTippables(List<Equipment> equipment)
@@ -235,6 +215,19 @@ public class GameManager : MonoBehaviour
         manaText.text = Mathf.RoundToInt(currentPlayerMana).ToString() + "/" + Mathf.RoundToInt(maxPlayerMana).ToString();
         currencyText.text = Mathf.RoundToInt(currentPlayerCurrency).ToString();
         clothierCurrencyText.text = Mathf.RoundToInt(currentPlayerClothierCurrency).ToString();
+
+        // Set Timer Text
+        int hours = TimeSpan.FromSeconds(Time.realtimeSinceStartup).Hours;
+        int minutes = TimeSpan.FromSeconds(Time.realtimeSinceStartup).Minutes;
+        int seconds = TimeSpan.FromSeconds(Time.realtimeSinceStartup).Seconds;
+        if (hours > 0)
+        {
+            timerText.text = string.Format("{0:0}:{0:0}:{1:00}", hours, minutes, seconds);
+        }
+        else
+        {
+            timerText.text = string.Format("{0:0}:{1:00}", minutes, seconds);
+        }
 
         // Guard Against Negatives
         // The players basic attacks will deal their basic attack damage + DamageFromEquipment + Bonus Damage from their Power Affliction (if applicable)
@@ -404,21 +397,32 @@ public class GameManager : MonoBehaviour
 
     public bool EquipSpell(Spell spell)
     {
-        equippedSpells.Add(spell);
+        bool didEquip;
         switch (spell)
         {
             case ActiveSpell activeSpell:
-                return EquipActiveSpell(activeSpell);
+                didEquip = EquipActiveSpell(activeSpell);
+                break;
             case PassiveSpell passiveSpell:
-                return EquipPassiveSpell(passiveSpell);
+                didEquip = EquipPassiveSpell(passiveSpell);
+                break;
             default:
                 throw new UnhandledSwitchCaseException();
         }
+
+        if (didEquip)
+        {
+            equippedSpells.Add(spell);
+            spell.OnEquip();
+        }
+
+        return didEquip;
     }
 
     public void UnequipSpell(Spell spell)
     {
         equippedSpells.Remove(spell);
+        spell.OnUnequip();
         switch (spell)
         {
             case ActiveSpell activeSpell:
@@ -470,7 +474,6 @@ public class GameManager : MonoBehaviour
         // if there isn't any unused passive spell slots, then we can't equip this spell (something has probably gone wrong?)
         if (spellDisplay == null) return false;
 
-        spell.OnEquip();
         spellDisplay.SetSpell(spell);
 
         equippedPassiveSpells.Add(spellDisplay, spell);
@@ -499,7 +502,6 @@ public class GameManager : MonoBehaviour
         if (spellDisplay == null) return false;
 
         spellDisplay.SetSpell(spell);
-        spell.OnEquip();
 
         // Track Lists
         equippedActiveSpells.Add(spellDisplay, spell);
@@ -577,14 +579,19 @@ public class GameManager : MonoBehaviour
         // No Artifacts Remaining
         if (options.Count == 0)
         {
+            // Attempt to instead return an Artifact of the rarity underneath the asked for
             switch (r)
             {
-                case Rarity.Common:
+                case Rarity.Basic:
                     return ArtifactLabel.Crown;
-                case Rarity.Rare:
-                    return GetRandomArtifactOfRarity(Rarity.Uncommon);
+                case Rarity.Common:
+                    return GetRandomArtifactOfRarity(Rarity.Basic);
                 case Rarity.Uncommon:
                     return GetRandomArtifactOfRarity(Rarity.Common);
+                case Rarity.Rare:
+                    return GetRandomArtifactOfRarity(Rarity.Uncommon);
+                default:
+                    throw new UnhandledSwitchCaseException();
             }
         }
 
@@ -665,12 +672,16 @@ public class GameManager : MonoBehaviour
         {
             switch (r)
             {
-                case Rarity.Common:
+                case Rarity.Basic:
                     return BookLabel.WitchesTravelGuide;
-                case Rarity.Rare:
-                    return GetRandomBookOfRarity(Rarity.Uncommon);
+                case Rarity.Common:
+                    return GetRandomBookOfRarity(Rarity.Basic);
                 case Rarity.Uncommon:
                     return GetRandomBookOfRarity(Rarity.Common);
+                case Rarity.Rare:
+                    return GetRandomBookOfRarity(Rarity.Uncommon);
+                default:
+                    throw new UnhandledSwitchCaseException();
             }
         }
 
@@ -686,76 +697,85 @@ public class GameManager : MonoBehaviour
 
     #region Spells
 
-    public Spell GetRandomSpell(bool forceRarity, Rarity rarity, bool removeFromPool = true)
+    public Spell GetRandomOwnedSpell()
     {
-        List<SpellLabel> allOptions = new List<SpellLabel>();
-        allOptions.AddRange(playerEquippableActiveSpells);
-        allOptions.AddRange(playerEquippablePassiveSpells);
+        return RandomHelper.GetRandomFromList(spellBook.GetSpellBookEntries()).Spell;
+    }
 
-        // Get the spell
-        Spell spell;
-        if (forceRarity)
+    public Spell GetRandomSpell(bool removeFromPool = false)
+    {
+        // We do not care about the Rarity
+        if (RandomHelper.RandomBool()) // Active Spell
         {
-            spell = GetRandomSpellOfRarity(rarity, allOptions, SpellLabel.WitchesWill);
-        }
-        else
-        {
-            spell = GetRandomSpellOfRarity(spellRarityOdds.GetOption(), allOptions, SpellLabel.WitchesWill);
-        }
-
-        if (removeFromPool)
-        {
-            // chose an Active Spell
-            if (playerEquippableActiveSpells.Contains(spell.Label))
+            Spell spell = GetRandomSpellWithConditions(playerEquippableActiveSpells,
+                spell => spell.Color == playerCharacter.GetColor() || spell.Color == SpellColor.Grey);
+            if (removeFromPool)
             {
                 playerEquippableActiveSpells.Remove(spell.Label);
-
             }
-            else if (playerEquippablePassiveSpells.Contains(spell.Label)) // Chose a Passive Spell
+            return spell;
+        }
+        else // Passive Spell
+        {
+            Spell spell = GetRandomSpellWithConditions(playerEquippablePassiveSpells,
+                spell => spell.Color == playerCharacter.GetColor() || spell.Color == SpellColor.Grey);
+            if (removeFromPool)
             {
                 playerEquippablePassiveSpells.Remove(spell.Label);
             }
+            return spell;
         }
-        return spell;
-
     }
 
-    public Spell GetRandomActiveSpell(bool removeFromPool = true)
+    public Spell GetRandomSpellConsideringRarity(Rarity rarity, Func<List<SpellLabel>> getListFunc, SpellLabel defaultSpell, bool removeFromPool = false)
     {
-        Spell spell = GetRandomSpellOfRarity(spellRarityOdds.GetOption(), playerEquippableActiveSpells, SpellLabel.WitchesWill);
+        Spell spell = null;
+        for (int i = (int)rarity; i > 0; i--)
+        {
+            spell = GetRandomSpellWithConditions(getListFunc(), spell => spell.Rarity == (Rarity)i
+            && (spell.Color == playerCharacter.GetColor() || spell.Color == SpellColor.Grey));
+            if (spell != null)
+            {
+                break;
+            }
+        }
+
+        if (spell == null)
+        {
+            spell = Spell.GetSpellOfType(defaultSpell);
+        }
+
         if (removeFromPool)
         {
-            RemoveSpellFromEquippableSpells(spell.Label);
+            getListFunc().Remove(spell.Label);
         }
         return spell;
     }
 
-    public Spell GetRandomPassiveSpell(bool removeFromPool = true)
+    public Spell GetRandomSpellConsideringRarity(Rarity rarity, bool removeFromPool = false)
     {
-        Spell spell = GetRandomSpellOfRarity(spellRarityOdds.GetOption(), playerEquippablePassiveSpells, SpellLabel.CrushJoints);
-        if (removeFromPool)
+        if (RandomHelper.RandomBool()) // Active Spell
         {
-            RemoveSpellFromEquippableSpells(spell.Label);
+            return GetRandomSpellConsideringRarity(rarity, () => playerEquippableActiveSpells, playerCharacter.GetDefaultActiveSpell(), removeFromPool);
         }
-        return spell;
+        else // Passive Spell
+        {
+            return GetRandomSpellConsideringRarity(rarity, () => playerEquippablePassiveSpells, playerCharacter.GetDefaultPassiveSpell(), removeFromPool);
+        }
     }
 
-    public Spell GetRandomSpellOfRarity(Rarity r, List<SpellLabel> allowedOptions, SpellLabel defaultTo)
+    public Spell GetRandomSpellWithConditions(List<SpellLabel> allowedOptions, Func<Spell, bool> includeConditions)
     {
         List<SpellLabel> options = new List<SpellLabel>();
         foreach (SpellLabel l in allowedOptions)
         {
-            if (spellRarityMap[l] == r)
+            if (includeConditions(Spell.GetSpellOfType(l)))
             {
                 options.Add(l);
             }
         }
 
-        // No Books Remaining
-        if (options.Count == 0)
-        {
-            return Spell.GetSpellOfType(defaultTo);
-        }
+        if (options.Count <= 0) return null;
 
         return Spell.GetSpellOfType(RandomHelper.GetRandomFromList(options));
     }
@@ -805,10 +825,10 @@ public class GameManager : MonoBehaviour
     public IEnumerator SelectSpellsForCombat(Enemy combatEnemy)
     {
         // Set the screen to be visible
-        selectSpellsScreen.SetActive(true);
+        selectSpellsForCombatScreen.SetActive(true);
 
         // Start Typewriter effect
-        selectSpellsScreenTitleTypewriter.StartShowingText(true);
+        selectSpellsForCombatScreenTitleTypewriter.StartShowingText(true);
 
         // Set things according to the enemy so the player knows what they're fighting
         enemyNameText.text = combatEnemy.Name;
@@ -820,39 +840,72 @@ public class GameManager : MonoBehaviour
         List<Spell> selectedSpells = new List<Spell>();
         List<VisualSpellDisplay> spawnedSelections = new List<VisualSpellDisplay>();
 
-        foreach (Spell spell in spellBook.GetAvailableSpells())
+        foreach (SpellbookEntry entry in spellBook.GetSpellBookEntries())
         {
+            Spell spell = entry.Spell;
+
             VisualSpellDisplay spawned = Instantiate(visualSpellDisplayPrefab, parentSelectSpellOptionsTo);
             spawnedSelections.Add(spawned);
             spawned.SetSpell(spell);
-            spawned.AddOnClick(delegate
+            spawned.SetAvailableState(entry.OutOfCombatCooldown);
+
+            if (entry.OutOfCombatCooldown <= 0 && (spell.Color == SpellColor.Curse || spell.Color == SpellColor.Status))
             {
-                if (selectedSpells.Contains(spell))
+                // Curses and Statuses are Automatically Loaded and Locked
+                EquipSpell(spell);
+                spawned.SetSpellDisplayState(SpellDisplayState.Selected);
+            }
+            else
+            {
+                // Other Spells must be chosen
+                spawned.AddOnClick(delegate
                 {
-                    UnequipSpell(spell);
-                    selectedSpells.Remove(spell);
-                    spawned.SetSpellDisplayState(SpellDisplayState.Normal);
-                }
-                else
-                {
-                    if (EquipSpell(spell))
+                    if (selectedSpells.Contains(spell))
                     {
-                        selectedSpells.Add(spell);
-                        spawned.SetSpellDisplayState(SpellDisplayState.Selected);
+                        UnequipSpell(spell);
+                        selectedSpells.Remove(spell);
+                        spawned.SetSpellDisplayState(SpellDisplayState.Normal);
                     }
-                }
-            });
+                    else
+                    {
+                        if (EquipSpell(spell))
+                        {
+                            selectedSpells.Add(spell);
+                            spawned.SetSpellDisplayState(SpellDisplayState.Selected);
+                        }
+                    }
+                });
+            }
         }
 
         // Spawn Choices
-        while (!spellSelectionConfirmed)
+        // To proceed, the player must click the confirm button
+        // The player must equip at least one spell (provided they have any)
+        while (!spellSelectionForCombatConfirmed)
         {
-            confirmSelectSpellsText.text = selectedSpells.Count + " / " + (numActiveSpellSlots + numPassiveSpellSlots);
-            confirmSelectSpellsButton.interactable = equippedActiveSpells.Count > 0 || equippedPassiveSpells.Count > 0;
+            // Set button text and interactable state
+            // if the player has absolutely no available Spells, just allow them to proceed
+            confirmSelectSpellsForCombatText.text = selectedSpells.Count + " / " + (numActiveSpellSlots + numPassiveSpellSlots);
+            if (spellBook.NumSpells(SpellType.Active, SpellOutOfCombatState.Available) == 0
+                && spellBook.NumSpells(SpellType.Passive, SpellOutOfCombatState.Available) == 0)
+            {
+                confirmSelectSpellsForCombatButton.interactable = true;
+            }
+            else
+            {
+                // Otherwise, they must have at least one Spell selected
+                confirmSelectSpellsForCombatButton.interactable = selectedSpells.Count > 0;
+            }
 
             yield return null;
         }
-        spellSelectionConfirmed = false;
+        spellSelectionForCombatConfirmed = false;
+
+        // Player has made selected
+        foreach (Spell spell in selectedSpells)
+        {
+            spellBook.SetSpellUnavailable(spell);
+        }
 
         // Destroy spawned objects
         while (spawnedSelections.Count > 0)
@@ -865,12 +918,12 @@ public class GameManager : MonoBehaviour
 
         ClearEnemyInfoBlockIntentDisplays();
 
-        selectSpellsScreen.SetActive(false);
+        selectSpellsForCombatScreen.SetActive(false);
     }
 
     public void ConfirmSpellSelection()
     {
-        spellSelectionConfirmed = true;
+        spellSelectionForCombatConfirmed = true;
     }
 
     public void UnselectSpellsFromCombat()
@@ -891,6 +944,11 @@ public class GameManager : MonoBehaviour
     public void AddSpellToSpellBook(Spell spell)
     {
         spellBook.AddSpell(spell);
+    }
+
+    public void RemoveSpellFromSpellBook(Spell spell)
+    {
+        spellBook.RemoveSpell(spell);
     }
 
     public void ReduceActiveSpellCDsByPercent(float normalizedPercent)
@@ -1359,10 +1417,12 @@ public class GameManager : MonoBehaviour
         // Opening 
         if (spellBookScreen.activeInHierarchy)
         {
-            foreach (Spell spell in spellBook.GetAvailableSpells())
+            foreach (SpellbookEntry entry in spellBook.GetSpellBookEntries())
             {
+                Spell spell = entry.Spell;
                 VisualSpellDisplay spawned = Instantiate(visualSpellDisplayPrefab, spellBookSpawnSpellDisplaysOn);
                 spawned.SetSpell(spell);
+                spawned.SetAvailableState(entry.OutOfCombatCooldown);
                 spellBookSpawnedSpellDisplays.Add(spawned);
             }
         }
@@ -1381,6 +1441,43 @@ public class GameManager : MonoBehaviour
         MapManager._Instance.ToggleVisibility();
     }
 
+    public IEnumerator RemoveSpellSequence()
+    {
+        yield return StartCoroutine(SelectSpellSequence(spell => RemoveSpellFromSpellBook(spell)));
+    }
+
+    public IEnumerator SelectSpellSequence(Action<Spell> doWithSelected)
+    {
+        selectSpellScreen.SetActive(true);
+
+        List<VisualSpellDisplay> spawnedDisplays = new List<VisualSpellDisplay>();
+        Spell selectedSpell = null;
+
+        // Opening 
+        foreach (SpellbookEntry entry in spellBook.GetSpellBookEntries())
+        {
+            Spell spell = entry.Spell;
+            VisualSpellDisplay spawned = Instantiate(visualSpellDisplayPrefab, spawnSelectSpellDisplaysOn);
+            spawned.SetSpell(spell);
+            spawnedDisplays.Add(spawned);
+            spawned.AddOnClick(() => selectedSpell = spell);
+        }
+
+        yield return new WaitUntil(() => selectedSpell != null);
+
+        selectSpellScreen.SetActive(false);
+
+        // Closing
+        while (spawnedDisplays.Count > 0)
+        {
+            VisualSpellDisplay cur = spawnedDisplays[0];
+            spawnedDisplays.RemoveAt(0);
+            cur.SetSpellDisplayState(SpellDisplayState.Normal);
+            Destroy(cur.gameObject);
+        }
+
+        doWithSelected(selectedSpell);
+    }
 
     public bool CheckCanAfford(float amount)
     {
@@ -1445,6 +1542,12 @@ public class GameManager : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    public void AlterPlayerMaxHP(int changeBy)
+    {
+        maxPlayerHP += changeBy;
+        AlterPlayerHP(changeBy, DamageType.Heal);
     }
 
     public int GetCurrentCharacterHP()
@@ -2015,184 +2118,7 @@ public class GameManager : MonoBehaviour
         return res;
     }
 
-    public IEnumerator ParseEventEffect(OptionEvent optionEvent, string effects)
-    {
-        if (effects.Length == 0) yield break;
-        EventLabel label = optionEvent.EventLabel;
-        bool hasRewards = false;
-
-        // Debug.Log("Parsing Event Effect: " + effects);
-        string[] commands = CureAllStrings(effects.Split(';'));
-        // Debug.Log("NumCommands: " + commands.Length);
-
-        foreach (string command in commands)
-        {
-            string[] commandParts = CureAllStrings(command.Split(':'));
-            // Debug.Log("Command: " + command + ", NumParts = " + commandParts.Length);
-            if (commandParts.Length == 1)
-            {
-                string singleCommand = commandParts[0];
-                // Debug.Log("Single Command: " + singleCommand);
-                switch (singleCommand)
-                {
-                    case "AddRandomArtifact":
-                        RewardManager._Instance.AddReward(GetRandomArtifact());
-                        hasRewards = true;
-                        break;
-                    case "AddRandomBook":
-                        RewardManager._Instance.AddReward(GetRandomBook());
-                        hasRewards = true;
-                        break;
-                    case "RemoveRandomArtifact":
-                        if (equippedArtifacts.Count > 0)
-                            RemoveArtifact(GetRandomOwnedArtifact());
-                        break;
-                    case "RemoveRandomBook":
-                        if (equippedBooks.Count > 0)
-                            RemoveBook(GetRandomOwnedBook());
-                        break;
-                    case "AddRandomPotionIngredient":
-                        RewardManager._Instance.AddReward(GetRandomPotionIngredient());
-                        hasRewards = true;
-                        break;
-                    case "RemoveRandomPotionIngredient":
-                        if (GetNumPotionIngredients() > 0)
-                            RemovePotionIngredient(GetRandomOwnedPotionIngredient());
-                        break;
-                    default:
-                        throw new UnhandledSwitchCaseException(singleCommand);
-                }
-            }
-            else
-            {
-                string commandPart = commandParts[0];
-                string argument = commandParts[1];
-
-                // Debug.Log("Argument Command: " + commandPart + ", Argument = " + argument);
-                switch (commandPart)
-                {
-                    case "AlterGold":
-                        int goldAmount;
-                        if (TryParseArgument(label, argument, out goldAmount))
-                        {
-                            if (goldAmount > 0)
-                            {
-                                RewardManager._Instance.AddCurrencyReward((int)goldAmount);
-                                hasRewards = true;
-                            }
-                            else
-                            {
-                                AlterCurrency(goldAmount);
-                            }
-                        }
-                        else
-                        {
-                            Debug.Log("Could not Convert Argument: " + argument + " to Int");
-                        }
-                        break;
-                    case "AlterHP":
-                        int hpAmount;
-                        if (TryParseArgument(label, argument, out hpAmount))
-                        {
-                            AlterPlayerHP(hpAmount, DamageType.Default);
-                        }
-                        else
-                        {
-                            Debug.Log("Could not Convert Argument: " + argument + " to Int");
-                        }
-                        break;
-                    case "RemoveArtifact":
-                        ArtifactLabel removedArtifact;
-                        if (Enum.TryParse<ArtifactLabel>(argument, out removedArtifact))
-                        {
-                            RemoveArtifact(removedArtifact);
-                        }
-                        else
-                        {
-                            Debug.Log("Could not Convert Argument: " + argument + " to ArtifactLabel");
-                        }
-                        break;
-                    case "RemoveBook":
-                        BookLabel removedBook;
-                        if (Enum.TryParse<BookLabel>(argument, out removedBook))
-                        {
-                            RemoveBook(removedBook);
-                        }
-                        else
-                        {
-                            Debug.Log("Could not Convert Argument: " + argument + " to BookLabel");
-                        }
-                        break;
-                    case "AddArtifact":
-                        ArtifactLabel addedArtifact;
-                        if (Enum.TryParse<ArtifactLabel>(argument, out addedArtifact))
-                        {
-                            RewardManager._Instance.AddReward(addedArtifact);
-                            hasRewards = true;
-
-                        }
-                        else
-                        {
-                            Debug.Log("Could not Convert Argument: " + argument + " to ArtifactLabel");
-                        }
-                        break;
-                    case "AddBook":
-                        BookLabel addedBook;
-                        if (Enum.TryParse<BookLabel>(argument, out addedBook))
-                        {
-                            RewardManager._Instance.AddReward(addedBook);
-                            hasRewards = true;
-                        }
-                        else
-                        {
-                            Debug.Log("Could not Convert Argument: " + argument + " to BookLabel");
-                        }
-                        break;
-                    case "AddRandomPotionIngredient":
-                        int numIngredients;
-                        if (TryParseArgument(label, argument, out numIngredients))
-                        {
-                            for (int i = 0; i < numIngredients; i++)
-                            {
-                                RewardManager._Instance.AddReward(GetRandomPotionIngredient());
-                            }
-                            hasRewards = true;
-                        }
-                        else
-                        {
-                            Debug.Log("Could not Convert Argument: " + argument + " to Int");
-                        }
-                        break;
-                    case "ChainEvent":
-                        int index;
-                        if (TryParseArgument(label, argument, out index))
-                        {
-                            EventManager._Instance.SetChainingEvents(true);
-                            EventManager._Instance.SetOutcome(null);
-                            StartCoroutine(EventManager._Instance.StartOptionEvent(optionEvent.GetChainEvent(index)));
-                        }
-                        else
-                        {
-                            Debug.Log("Could not Convert Argument: " + argument + " to Int");
-                        }
-                        break;
-                    default:
-                        throw new UnhandledSwitchCaseException(commandPart + ", " + argument);
-                }
-            }
-        }
-
-        if (hasRewards)
-        {
-            yield return StartCoroutine(RewardManager._Instance.ShowRewardScreen());
-        }
-        else
-        {
-            yield return null;
-        }
-    }
-
-    public bool ParseEventCondition(OptionEvent optionEvent, string condition)
+    public bool ParseEventCondition(OptionEventGameOccurance optionEvent, string condition)
     {
         if (condition.Length == 0) return true;
         if (condition.ToLower().Equals("false")) return false;
@@ -2306,6 +2232,13 @@ public class GameManager : MonoBehaviour
     private PotionIngredientType GetRandomOwnedPotionIngredient()
     {
         return RandomHelper.GetRandomFromList(potionIngredientMap.Keys.ToList());
+    }
+
+    public Potion GetRandomOwnedPotion()
+    {
+        if (availablePotions.Count > 0)
+            return RandomHelper.GetRandomFromList(availablePotions);
+        return null;
     }
 
     private bool TryParseArgument(EventLabel label, string s, out int v)

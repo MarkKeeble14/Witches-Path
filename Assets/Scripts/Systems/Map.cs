@@ -41,7 +41,7 @@ public struct MapSectionInfo
 [System.Serializable]
 public class OptionEventWithCondition
 {
-    [SerializeField] private OptionEvent optionEvent;
+    [SerializeField] private OptionEventGameOccurance optionEvent;
     [SerializeField] private string conditionString;
     public string Name => optionEvent.EventLabel.ToString();
 
@@ -50,7 +50,7 @@ public class OptionEventWithCondition
         return conditionString;
     }
 
-    public OptionEvent GetOptionEvent()
+    public OptionEventGameOccurance GetOptionEvent()
     {
         return optionEvent;
     }
@@ -448,7 +448,15 @@ public class Map
             List<OptionEventWithCondition> possibleEvents = new List<OptionEventWithCondition>();
             foreach (OptionEventWithCondition optionEvent in optionEventMapNodes)
             {
-                OptionEvent e = optionEvent.GetOptionEvent();
+                OptionEventGameOccurance e = optionEvent.GetOptionEvent();
+
+                if (optionEvent.GetConditionString().ToLower() == "force")
+                {
+                    possibleEvents.Clear();
+                    possibleEvents.Add(optionEvent);
+                    break;
+                }
+
                 if (GameManager._Instance.ParseEventCondition(e, optionEvent.GetConditionString()))
                 {
                     possibleEvents.Add(optionEvent);
@@ -459,7 +467,7 @@ public class Map
             OptionEventWithCondition r = RandomHelper.GetRandomFromList(possibleEvents);
 
             // Remove it from the list of possibilities if thats not going to break things to eliminate duplicates
-            if (optionEventMapNodes.Count > 1)
+            if (possibleEvents.Count > 1)
             {
                 optionEventMapNodes.Remove(r);
             }

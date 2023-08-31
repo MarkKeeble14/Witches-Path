@@ -1,6 +1,8 @@
 ﻿public enum Rarity
 {
     Common,
+    Basic,
     Uncommon,
-    Rare
+    Rare,
+    Event
 }
