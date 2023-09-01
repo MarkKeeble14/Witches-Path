@@ -34,7 +34,7 @@ public abstract class ShopOffer : MonoBehaviour, IPointerClickHandler, IPointerE
         if (cost <= GameManager._Instance.GetPlayerCurrency())
         {
             Purchase();
-            GameManager._Instance.AlterCurrency(-cost);
+            GameManager._Instance.AlterGold(-cost);
 
             // Make Offer Uninteractable
             cv.blocksRaycasts = false;

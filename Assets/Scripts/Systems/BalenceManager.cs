@@ -2,12 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum SpellType
-{
-    Active,
-    Passive
-}
-
 [System.Serializable]
 public class ActiveSpellSpecDictionary
 {
@@ -86,8 +80,8 @@ public class BalenceManager : MonoBehaviour
 
     [Header("Events")]
     [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, int>> eventSpecDict
-        = new SerializableDictionary<string, SerializableDictionary<string, int>>();
+    private SerializableDictionary<EventLabel, SerializableDictionary<string, int>> eventSpecDict
+        = new SerializableDictionary<EventLabel, SerializableDictionary<string, int>>();
 
     [Header("Potions")]
     [SerializeField]
@@ -190,15 +184,15 @@ public class BalenceManager : MonoBehaviour
         return mapNodeSpecDict[type.ToString()][identifier];
     }
 
-    public int GetValue(EventLabel type, string identifier)
+    public int GetValue(EventLabel label, string identifier)
     {
-        return eventSpecDict[type.ToString()][identifier];
+        return eventSpecDict[label][identifier];
     }
 
     public bool EventHasValue(EventLabel label, string valueIdentifier)
     {
-        if (!eventSpecDict.ContainsKey(label.ToString())) return false;
-        return eventSpecDict[label.ToString()].ContainsKey(valueIdentifier);
+        if (!eventSpecDict.ContainsKey(label)) return false;
+        return eventSpecDict[label].ContainsKey(valueIdentifier);
     }
 
     public int GetCostToReforge(ReforgeModifier reforgeModifier)

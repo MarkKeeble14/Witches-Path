@@ -40,28 +40,24 @@ public class GameManager : MonoBehaviour
 
     [Header("Artifacts")]
     [SerializeField] private Transform artifactBar;
-    [SerializeField] private SerializableDictionary<ArtifactLabel, Rarity> artifactRarityMap = new SerializableDictionary<ArtifactLabel, Rarity>();
-
     [SerializeField] private PercentageMap<Rarity> artifactRarityOdds = new PercentageMap<Rarity>();
     private Dictionary<ArtifactLabel, ArtifactDisplay> artifactDisplayTracker = new Dictionary<ArtifactLabel, ArtifactDisplay>();
     private Dictionary<ArtifactLabel, Artifact> equippedArtifacts = new Dictionary<ArtifactLabel, Artifact>();
-    private List<ArtifactLabel> allArtifacts;
-    private int artifactIndex;
+    private List<ArtifactLabel> awardableArtifacts = new List<ArtifactLabel>();
+    [SerializeField] private List<ArtifactLabel> unawardableArtifacts = new List<ArtifactLabel>();
     public int NumArtifacts => equippedArtifacts.Count;
 
     [Header("Books")]
     [SerializeField] private Transform bookBar;
-    [SerializeField] private SerializableDictionary<BookLabel, Rarity> bookRarityMap = new SerializableDictionary<BookLabel, Rarity>();
     [SerializeField] private PercentageMap<Rarity> bookRarityOdds = new PercentageMap<Rarity>();
     private Dictionary<BookLabel, BookDisplay> bookDisplayTracker = new Dictionary<BookLabel, BookDisplay>();
     private Dictionary<BookLabel, Book> equippedBooks = new Dictionary<BookLabel, Book>();
-    private List<BookLabel> allBooks;
-    private int bookIndex;
+    private List<BookLabel> awardableBooks = new List<BookLabel>();
+    [SerializeField] private List<BookLabel> unawardableBooks = new List<BookLabel>();
 
     [Header("Spells")]
-    [SerializeField] private PercentageMap<Rarity> spellRarityOdds = new PercentageMap<Rarity>();
-    [SerializeField] private List<SpellLabel> playerEquippableActiveSpells;
-    [SerializeField] private List<SpellLabel> playerEquippablePassiveSpells;
+    [SerializeField] private List<SpellLabel> unviableSpellRewards;
+    private List<SpellLabel> viableSpellRewards = new List<SpellLabel>();
     private int equippableSpellIndex;
     private List<Spell> equippedSpells = new List<Spell>();
     private Spellbook spellBook;
@@ -119,6 +115,11 @@ public class GameManager : MonoBehaviour
     [Header("Test")]
     [SerializeField] private ContentType currentlyTesting;
     [SerializeField] private int numRandomIngredientsOnStart;
+    [SerializeField] private int numRandomCursesOnStart;
+    private List<BookLabel> allBook;
+    private List<ArtifactLabel> allArtifact;
+    private int artifactIndex;
+    private int bookIndex;
 
     [Header("References")]
     [SerializeField] private TextMeshProUGUI hpText;
@@ -144,6 +145,10 @@ public class GameManager : MonoBehaviour
     public bool GameOvered => GetCurrentCharacterHP() <= 0;
     public bool CanSetCurrentGameOccurance { get; private set; }
 
+    // Spell Reward Offers
+    public Func<Spell, bool> AcceptSpellRewardFunc => spell => !spellRewardsMustMatchCharacterColor || (spellRewardsMustMatchCharacterColor && spell.Color == GetCharacterColor());
+    private bool spellRewardsMustMatchCharacterColor = true;
+
     private void Awake()
     {
         _Instance = this;
@@ -153,25 +158,55 @@ public class GameManager : MonoBehaviour
     {
         CallOnGameStart();
 
+        // Test
         for (int i = 0; i < numRandomIngredientsOnStart; i++)
         {
             AddRandomPotionIngredient();
+        }
+        // Test
+        for (int i = 0; i < numRandomCursesOnStart; i++)
+        {
+            AddSpellToSpellBook(GetRandomSpellWithConditions(spell => spell.Color == SpellColor.Curse));
         }
     }
 
     public void CallOnGameStart()
     {
+        // Get List of all Books & Artifacts for Testing
+        allBook = new List<BookLabel>((BookLabel[])Enum.GetValues(typeof(BookLabel)));
+        allArtifact = new List<ArtifactLabel>((ArtifactLabel[])Enum.GetValues(typeof(ArtifactLabel)));
+
         // Get List of all Book Labels
-        allBooks = new List<BookLabel>((BookLabel[])Enum.GetValues(typeof(BookLabel)));
+        foreach (BookLabel label in Enum.GetValues(typeof(BookLabel)))
+        {
+            if (!unawardableBooks.Contains(label))
+            {
+                awardableBooks.Add(label);
+            }
+        }
 
         // Get List of all Artifact Labels
-        allArtifacts = new List<ArtifactLabel>((ArtifactLabel[])Enum.GetValues(typeof(ArtifactLabel)));
+        foreach (ArtifactLabel label in Enum.GetValues(typeof(ArtifactLabel)))
+        {
+            if (!unawardableArtifacts.Contains(label))
+            {
+                awardableArtifacts.Add(label);
+            }
+        }
 
         TryAddPersistentTokens();
 
+        // Setup On Specific Room Action Map
         foreach (MapNodeType type in Enum.GetValues(typeof(MapNodeType)))
         {
             OnEnterSpecificRoomActionMap.Add(type, null);
+        }
+
+        // Setup Viable Spell Rewards
+        foreach (SpellLabel label in Enum.GetValues(typeof(SpellLabel)))
+        {
+            if (!unviableSpellRewards.Contains(label))
+                viableSpellRewards.Add(label);
         }
 
         // Set equipment Tool Tippables
@@ -279,10 +314,10 @@ public class GameManager : MonoBehaviour
                 {
                     equippableSpellIndex++;
 
-                    if (equippableSpellIndex > playerEquippableActiveSpells.Count - 1)
+                    if (equippableSpellIndex > viableSpellRewards.Count - 1)
                         equippableSpellIndex = 0;
 
-                    Debug.Log("Selected: " + playerEquippableActiveSpells[equippableSpellIndex]);
+                    Debug.Log("Selected: " + viableSpellRewards[equippableSpellIndex]);
                 }
 
                 // Equip new spell
@@ -291,15 +326,15 @@ public class GameManager : MonoBehaviour
                     equippableSpellIndex--;
 
                     if (equippableSpellIndex < 0)
-                        equippableSpellIndex = playerEquippableActiveSpells.Count - 1;
+                        equippableSpellIndex = viableSpellRewards.Count - 1;
 
-                    Debug.Log("Selected: " + playerEquippableActiveSpells[equippableSpellIndex]);
+                    Debug.Log("Selected: " + viableSpellRewards[equippableSpellIndex]);
                 }
 
                 if (Input.GetKeyDown(KeyCode.Alpha1))
                 {
                     // 
-                    AddSpellToSpellBook(playerEquippableActiveSpells[equippableSpellIndex]);
+                    AddSpellToSpellBook(viableSpellRewards[equippableSpellIndex]);
                 }
                 if (Input.GetKeyDown(KeyCode.Alpha2))
                 {
@@ -315,10 +350,10 @@ public class GameManager : MonoBehaviour
                 {
                     artifactIndex++;
 
-                    if (artifactIndex > allArtifacts.Count - 1)
+                    if (artifactIndex > allArtifact.Count - 1)
                         artifactIndex = 0;
 
-                    Debug.Log("Selected: " + allArtifacts[artifactIndex]);
+                    Debug.Log("Selected: " + allArtifact[artifactIndex]);
                 }
 
                 // Equip new artifact
@@ -327,19 +362,19 @@ public class GameManager : MonoBehaviour
                     artifactIndex--;
 
                     if (artifactIndex < 0)
-                        artifactIndex = allArtifacts.Count - 1;
+                        artifactIndex = allArtifact.Count - 1;
 
-                    Debug.Log("Selected: " + allArtifacts[artifactIndex]);
+                    Debug.Log("Selected: " + allArtifact[artifactIndex]);
                 }
 
                 if (Input.GetKeyDown(KeyCode.Alpha1))
                 {
-                    AddArtifact(allArtifacts[artifactIndex]);
+                    AddArtifact(allArtifact[artifactIndex]);
                 }
 
                 if (Input.GetKeyDown(KeyCode.Alpha2))
                 {
-                    RemoveArtifact(allArtifacts[artifactIndex]);
+                    RemoveArtifact(allArtifact[artifactIndex]);
                 }
 
                 break;
@@ -351,10 +386,10 @@ public class GameManager : MonoBehaviour
                 {
                     bookIndex++;
 
-                    if (bookIndex > allBooks.Count - 1)
+                    if (bookIndex > allBook.Count - 1)
                         bookIndex = 0;
 
-                    Debug.Log("Selected: " + allBooks[bookIndex]);
+                    Debug.Log("Selected: " + allBook[bookIndex]);
                 }
 
                 // Equip new book
@@ -363,19 +398,19 @@ public class GameManager : MonoBehaviour
                     bookIndex--;
 
                     if (bookIndex < 0)
-                        bookIndex = allBooks.Count - 1;
+                        bookIndex = allBook.Count - 1;
 
-                    Debug.Log("Selected: " + allBooks[bookIndex]);
+                    Debug.Log("Selected: " + allBook[bookIndex]);
                 }
 
                 if (Input.GetKeyDown(KeyCode.Alpha1))
                 {
-                    SwapBooks(bookDisplayTracker.Keys.First(), allBooks[bookIndex]);
+                    SwapBooks(bookDisplayTracker.Keys.First(), allBook[bookIndex]);
                 }
 
                 if (Input.GetKeyDown(KeyCode.Alpha2))
                 {
-                    RemoveBook(allBooks[bookIndex]);
+                    RemoveBook(allBook[bookIndex]);
                 }
 
                 break;
@@ -560,7 +595,7 @@ public class GameManager : MonoBehaviour
         ArtifactLabel artifact = GetRandomArtifactOfRarity(artifactRarityOdds.GetOption());
         if (removeFromPool)
         {
-            allArtifacts.Remove(artifact);
+            awardableArtifacts.Remove(artifact);
         }
         return artifact;
     }
@@ -568,9 +603,9 @@ public class GameManager : MonoBehaviour
     public ArtifactLabel GetRandomArtifactOfRarity(Rarity r)
     {
         List<ArtifactLabel> options = new List<ArtifactLabel>();
-        foreach (ArtifactLabel l in allArtifacts)
+        foreach (ArtifactLabel l in awardableArtifacts)
         {
-            if (artifactRarityMap[l] == r)
+            if (Artifact.GetArtifactOfType(l).Rarity == r)
             {
                 options.Add(l);
             }
@@ -590,6 +625,8 @@ public class GameManager : MonoBehaviour
                     return GetRandomArtifactOfRarity(Rarity.Common);
                 case Rarity.Rare:
                     return GetRandomArtifactOfRarity(Rarity.Uncommon);
+                case Rarity.Boss:
+                    return GetRandomArtifactOfRarity(Rarity.Rare);
                 default:
                     throw new UnhandledSwitchCaseException();
             }
@@ -650,7 +687,7 @@ public class GameManager : MonoBehaviour
         BookLabel book = GetRandomBookOfRarity(bookRarityOdds.GetOption());
         if (removeFromPool)
         {
-            allBooks.Remove(book);
+            awardableBooks.Remove(book);
         }
         return book;
     }
@@ -658,9 +695,9 @@ public class GameManager : MonoBehaviour
     public BookLabel GetRandomBookOfRarity(Rarity r)
     {
         List<BookLabel> options = new List<BookLabel>();
-        foreach (BookLabel l in allBooks)
+        foreach (BookLabel l in awardableBooks)
         {
-            if (bookRarityMap[l] == r)
+            if (Book.GetBookOfType(l).Rarity == r)
             {
                 options.Add(l);
             }
@@ -702,82 +739,50 @@ public class GameManager : MonoBehaviour
         return RandomHelper.GetRandomFromList(spellBook.GetSpellBookEntries()).Spell;
     }
 
-    public Spell GetRandomSpell(bool removeFromPool = false)
+    public Spell GetRandomActiveSpell(Func<Spell, bool> includeConditions, bool removeFromPool = false)
     {
-        // We do not care about the Rarity
-        if (RandomHelper.RandomBool()) // Active Spell
-        {
-            Spell spell = GetRandomSpellWithConditions(playerEquippableActiveSpells,
-                spell => spell.Color == playerCharacter.GetColor() || spell.Color == SpellColor.Grey);
-            if (removeFromPool)
-            {
-                playerEquippableActiveSpells.Remove(spell.Label);
-            }
-            return spell;
-        }
-        else // Passive Spell
-        {
-            Spell spell = GetRandomSpellWithConditions(playerEquippablePassiveSpells,
-                spell => spell.Color == playerCharacter.GetColor() || spell.Color == SpellColor.Grey);
-            if (removeFromPool)
-            {
-                playerEquippablePassiveSpells.Remove(spell.Label);
-            }
-            return spell;
-        }
+        return GetRandomSpellWithConditions(spell => spell.Type == SpellType.Active && includeConditions(spell), removeFromPool);
+    }
+    public Spell GetRandomPassiveSpell(Func<Spell, bool> includeConditions, bool removeFromPool = false)
+    {
+        return GetRandomSpellWithConditions(spell => spell.Type == SpellType.Passive && includeConditions(spell), removeFromPool);
     }
 
-    public Spell GetRandomSpellConsideringRarity(Rarity rarity, Func<List<SpellLabel>> getListFunc, SpellLabel defaultSpell, bool removeFromPool = false)
+    public SpellColor GetCharacterColor()
     {
-        Spell spell = null;
-        for (int i = (int)rarity; i > 0; i--)
-        {
-            spell = GetRandomSpellWithConditions(getListFunc(), spell => spell.Rarity == (Rarity)i
-            && (spell.Color == playerCharacter.GetColor() || spell.Color == SpellColor.Grey));
-            if (spell != null)
-            {
-                break;
-            }
-        }
-
-        if (spell == null)
-        {
-            spell = Spell.GetSpellOfType(defaultSpell);
-        }
-
-        if (removeFromPool)
-        {
-            getListFunc().Remove(spell.Label);
-        }
-        return spell;
+        return playerCharacter.GetColor();
     }
 
-    public Spell GetRandomSpellConsideringRarity(Rarity rarity, bool removeFromPool = false)
-    {
-        if (RandomHelper.RandomBool()) // Active Spell
-        {
-            return GetRandomSpellConsideringRarity(rarity, () => playerEquippableActiveSpells, playerCharacter.GetDefaultActiveSpell(), removeFromPool);
-        }
-        else // Passive Spell
-        {
-            return GetRandomSpellConsideringRarity(rarity, () => playerEquippablePassiveSpells, playerCharacter.GetDefaultPassiveSpell(), removeFromPool);
-        }
-    }
-
-    public Spell GetRandomSpellWithConditions(List<SpellLabel> allowedOptions, Func<Spell, bool> includeConditions)
+    public Spell GetRandomSpellWithConditions(Func<Spell, bool> includeConditions, bool removeFromPool = false)
     {
         List<SpellLabel> options = new List<SpellLabel>();
-        foreach (SpellLabel l in allowedOptions)
+        foreach (SpellLabel label in viableSpellRewards)
         {
-            if (includeConditions(Spell.GetSpellOfType(l)))
+            Spell spell = Spell.GetSpellOfType(label);
+            if (includeConditions(spell))
             {
-                options.Add(l);
+                // Debug.Log(spell + ", Passed Conditions");
+                options.Add(label);
             }
         }
 
-        if (options.Count <= 0) return null;
+        // Default
+        if (options.Count <= 0)
+        {
+            SpellLabel defaultSpell;
+            if (RandomHelper.RandomBool())
+                defaultSpell = playerCharacter.GetDefaultActiveSpell();
+            else
+                defaultSpell = playerCharacter.GetDefaultPassiveSpell();
+            return Spell.GetSpellOfType(defaultSpell);
+        }
 
-        return Spell.GetSpellOfType(RandomHelper.GetRandomFromList(options));
+        SpellLabel chosenSpellLabel = RandomHelper.GetRandomFromList(options);
+        if (removeFromPool)
+        {
+            viableSpellRewards.Remove(chosenSpellLabel);
+        }
+        return Spell.GetSpellOfType(chosenSpellLabel);
     }
 
     [SerializeField] private TextMeshProUGUI enemyNameText;
@@ -944,11 +949,13 @@ public class GameManager : MonoBehaviour
     public void AddSpellToSpellBook(Spell spell)
     {
         spellBook.AddSpell(spell);
+        StartCoroutine(ShowAddSpellSequence(spell));
     }
 
     public void RemoveSpellFromSpellBook(Spell spell)
     {
         spellBook.RemoveSpell(spell);
+        StartCoroutine(ShowRemoveSpellSequence(spell));
     }
 
     public void ReduceActiveSpellCDsByPercent(float normalizedPercent)
@@ -991,20 +998,7 @@ public class GameManager : MonoBehaviour
             SpawnPassiveSpellDisplay();
         }
     }
-
-    private void RemoveSpellFromEquippableSpells(SpellLabel spellLabel)
-    {
-        if (playerEquippableActiveSpells.Contains(spellLabel))
-        {
-            playerEquippableActiveSpells.Remove(spellLabel);
-        }
-        else if (playerEquippablePassiveSpells.Contains(spellLabel))
-        {
-            playerEquippablePassiveSpells.Remove(spellLabel);
-        }
-    }
     #endregion
-
 
     private void EquipCharacterLoadout(Character c)
     {
@@ -1023,8 +1017,8 @@ public class GameManager : MonoBehaviour
         EquipEquipment(c.GetStartingWand());
         AddBook(c.GetStartingBook());
 
-        // Remove Owned Book from All Books
-        allBooks.Remove(GetOwnedBookLabel(0));
+        // Remove Owned Book from Awardable Books
+        awardableBooks.Remove(GetOwnedBookLabel(0));
 
         // Set player stats
         maxPlayerHP = c.GetMaxHP();
@@ -1123,7 +1117,7 @@ public class GameManager : MonoBehaviour
 
     public void RemoveArtifactFromPool(ArtifactLabel label)
     {
-        allArtifacts.Remove(label);
+        awardableArtifacts.Remove(label);
     }
 
     public void AddArtifact(ArtifactLabel type)
@@ -1170,22 +1164,19 @@ public class GameManager : MonoBehaviour
 
     public void RemoveBook(BookLabel type)
     {
-        Book book = equippedBooks[type];
-
         Destroy(bookDisplayTracker[type].gameObject);
         bookDisplayTracker.Remove(type);
 
         equippedBooks.Remove(type);
     }
 
+    [ContextMenu("Upgrade Books")]
     public void UpgradeBooks()
     {
         foreach (KeyValuePair<BookLabel, Book> b in equippedBooks)
         {
             b.Value.TryCallLevelUp(true);
         }
-
-        ResolveCurrentEvent();
     }
 
     public void SwapBooks(BookLabel swappingOut, BookLabel swappingTo)
@@ -1208,14 +1199,6 @@ public class GameManager : MonoBehaviour
         if (bookDisplayTracker.ContainsKey(label))
         {
             bookDisplayTracker[label].AnimateScale();
-        }
-    }
-
-    private void PrintPotionIngredientMap()
-    {
-        foreach (KeyValuePair<PotionIngredientType, int> kvp in potionIngredientMap)
-        {
-            Debug.Log(kvp);
         }
     }
 
@@ -1441,29 +1424,135 @@ public class GameManager : MonoBehaviour
         MapManager._Instance.ToggleVisibility();
     }
 
-    public IEnumerator RemoveSpellSequence()
+    public Spellbook GetSpellbook()
     {
-        yield return StartCoroutine(SelectSpellSequence(spell => RemoveSpellFromSpellBook(spell)));
+        return spellBook;
     }
 
-    public IEnumerator SelectSpellSequence(Action<Spell> doWithSelected)
+    public void RemoveRandomSpellOfColor(SpellColor ofColor)
+    {
+        RemoveRandomSpellsMatchingConditions(spell => spell.Color == ofColor);
+    }
+
+    public void RemoveRandomSpellsMatchingConditions(Func<Spell, bool> removeCondition)
+    {
+        // Make list of all spells matching condition
+        List<Spell> toRemove = new List<Spell>();
+        foreach (SpellbookEntry entry in spellBook.GetSpellBookEntries())
+        {
+            if (removeCondition(entry.Spell))
+            {
+                toRemove.Add(entry.Spell);
+            }
+        }
+
+        if (toRemove.Count <= 0) return;
+
+        // Remove a random one from the list
+        RemoveSpellFromSpellBook(RandomHelper.GetRandomFromList(toRemove));
+    }
+
+    public void RemoveAllSpellsOfColor(SpellColor ofColor)
+    {
+        RemoveAllSpellsMatchingConditions(spell => spell.Color == ofColor);
+    }
+
+    public void RemoveAllSpellsMatchingConditions(Func<Spell, bool> removeCondition)
+    {
+        // Make list of all spells matching condition
+        List<Spell> toRemove = new List<Spell>();
+        foreach (SpellbookEntry entry in spellBook.GetSpellBookEntries())
+        {
+            if (removeCondition(entry.Spell))
+            {
+                toRemove.Add(entry.Spell);
+            }
+        }
+
+        // Remove all from the list
+        foreach (Spell spell in toRemove)
+        {
+            RemoveSpellFromSpellBook(spell);
+        }
+    }
+
+    public IEnumerator RemoveSpellSequence(Func<Spell, bool> viableSpellFunc, int numSpells = 1)
+    {
+        yield return StartCoroutine(SelectSpellSequence(spell => RemoveSpellFromSpellBook(spell), numSpells, viableSpellFunc));
+    }
+
+    public IEnumerator TransformSpellSequence(Func<Spell, bool> viableSpellFunc, int numSpells = 1)
+    {
+        yield return StartCoroutine(SelectSpellSequence(spell =>
+        {
+            RemoveSpellFromSpellBook(spell);
+            AddSpellToSpellBook(GetRandomSpellWithConditions(newSpell => AcceptSpellRewardFunc(newSpell) && newSpell.Type == spell.Type && newSpell.Rarity == spell.Rarity));
+        }, numSpells, viableSpellFunc));
+    }
+
+    public IEnumerator DuplicateSpellSequence(Func<Spell, bool> viableSpellFunc, int numSpells = 1)
+    {
+        yield return StartCoroutine(SelectSpellSequence(spell =>
+        {
+            AddSpellToSpellBook(spell);
+        }, numSpells, viableSpellFunc));
+    }
+
+    public IEnumerator TradeSpellSequence(Spell newSpell, Func<Spell, bool> viableSpellFunc)
+    {
+        yield return StartCoroutine(SelectSpellSequence(spell =>
+        {
+            RemoveSpellFromSpellBook(spell);
+            AddSpellToSpellBook(newSpell);
+        }, 1, viableSpellFunc));
+    }
+
+    public IEnumerator SelectSpellSequence(Action<Spell> doWithSelected, int numToSelect, Func<Spell, bool> viableSpell)
     {
         selectSpellScreen.SetActive(true);
 
         List<VisualSpellDisplay> spawnedDisplays = new List<VisualSpellDisplay>();
-        Spell selectedSpell = null;
+
+        List<Spell> selectedSpells = new List<Spell>();
 
         // Opening 
         foreach (SpellbookEntry entry in spellBook.GetSpellBookEntries())
         {
             Spell spell = entry.Spell;
+
+            if (!viableSpell(spell))
+            {
+                continue;
+            }
+
             VisualSpellDisplay spawned = Instantiate(visualSpellDisplayPrefab, spawnSelectSpellDisplaysOn);
             spawned.SetSpell(spell);
             spawnedDisplays.Add(spawned);
-            spawned.AddOnClick(() => selectedSpell = spell);
+            spawned.AddOnClick(delegate
+            {
+                if (selectedSpells.Contains(spell))
+                {
+                    // Deselect
+                    // Select
+                    selectedSpells.Remove(spell);
+                    if (numToSelect > 1)
+                    {
+                        spawned.SetSpellDisplayState(SpellDisplayState.Normal);
+                    }
+                }
+                else
+                {
+                    // Select
+                    selectedSpells.Add(spell);
+                    if (numToSelect > 1)
+                    {
+                        spawned.SetSpellDisplayState(SpellDisplayState.Selected);
+                    }
+                }
+            });
         }
 
-        yield return new WaitUntil(() => selectedSpell != null);
+        yield return new WaitUntil(() => selectedSpells.Count >= numToSelect);
 
         selectSpellScreen.SetActive(false);
 
@@ -1476,15 +1565,29 @@ public class GameManager : MonoBehaviour
             Destroy(cur.gameObject);
         }
 
-        doWithSelected(selectedSpell);
+        foreach (Spell spell in selectedSpells)
+        {
+            doWithSelected(spell);
+        }
     }
 
-    public bool CheckCanAfford(float amount)
+    public void IncreaseStat(BaseStat stat, int incBy)
     {
-        return currentPlayerCurrency >= amount;
+        switch (stat)
+        {
+            case BaseStat.Damage:
+                DamageFromEquipment += incBy;
+                return;
+            case BaseStat.Defense:
+                DefenseFromEquipment += incBy;
+                return;
+            case BaseStat.Mana:
+                AlterManaFromEquipment(incBy);
+                return;
+        }
     }
 
-    public void AlterCurrency(int amount)
+    public void AlterGold(int amount)
     {
         // Spawn Popup Text
         PopupText spawned = Instantiate(popupTextPrefab, currencyText.transform);
@@ -1493,7 +1596,7 @@ public class GameManager : MonoBehaviour
         currentPlayerCurrency += amount;
     }
 
-    public void AlterClothierCurrency(int amount)
+    public void AlterPelts(int amount)
     {
         // Spawn Popup Text
         PopupText spawned = Instantiate(popupTextPrefab, clothierCurrencyText.transform);
@@ -1502,7 +1605,7 @@ public class GameManager : MonoBehaviour
         currentPlayerClothierCurrency += amount;
     }
 
-    public bool AlterPlayerHP(int amount, DamageType damageType, bool spawnPopupText = true)
+    public bool AlterPlayerCurrentHP(int amount, DamageType damageType, bool spawnPopupText = true)
     {
         // Barricade Effect
         if (amount < -1 && HasArtifact(ArtifactLabel.Barricade))
@@ -1547,7 +1650,7 @@ public class GameManager : MonoBehaviour
     public void AlterPlayerMaxHP(int changeBy)
     {
         maxPlayerHP += changeBy;
-        AlterPlayerHP(changeBy, DamageType.Heal);
+        AlterPlayerCurrentHP(changeBy, DamageType.Heal);
     }
 
     public int GetCurrentCharacterHP()
@@ -1575,7 +1678,7 @@ public class GameManager : MonoBehaviour
         return maxPlayerMana;
     }
 
-    public void AlterPlayerMana(int amount)
+    public void AlterPlayerCurrentMana(int amount)
     {
         if (currentPlayerMana + amount > maxPlayerMana)
         {
@@ -1591,7 +1694,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void SetPlayerMana(int playerMana)
+    public void SetCurrentPlayerMana(int playerMana)
     {
         currentPlayerMana = playerMana;
     }
@@ -1602,7 +1705,7 @@ public class GameManager : MonoBehaviour
 
         maxPlayerMana = characterMaxMana + manaFromEquipment;
 
-        AlterPlayerMana(changeBy);
+        AlterPlayerCurrentMana(changeBy);
     }
 
     public int GetManaPerTurn()
@@ -1705,6 +1808,74 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    [Header("Spellbook Change Sequences")]
+    [SerializeField] private float spellbookChangeFadeOutRate = 1;
+    [SerializeField] private float spellbookChangeFadeInRate = 1;
+    [SerializeField] private float spellbookChangeScaleRate = 1;
+    [SerializeField] private float spellbookChangeDelayBeforeFadingOut;
+    [SerializeField] private Vector2 addSpellDisplaySizeDelta = new Vector2(300, 400);
+    public IEnumerator ShowAddSpellSequence(Spell spell)
+    {
+        // Spawn Visual
+        VisualSpellDisplay spellDisplay = Instantiate(visualSpellDisplayPrefab, UIManager._Instance.Canvas);
+        spellDisplay.SetSpell(spell);
+        RectTransform spellDisplayRect = spellDisplay.transform as RectTransform;
+        spellDisplayRect.sizeDelta = addSpellDisplaySizeDelta;
+        CanvasGroup spellDisplayCV = spellDisplay.GetCanvasGroup();
+
+        // Scale Up
+        spellDisplay.SetScaleLocked(true);
+        Coroutine changeScale = StartCoroutine(Utils.ChangeScale(spellDisplayRect, spellDisplayRect.localScale * 2, spellbookChangeScaleRate, 0));
+
+        // Slowly Fade Visual In
+        spellDisplayCV.alpha = 0;
+        yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(spellDisplayCV, 1, spellbookChangeFadeInRate));
+
+        // Wait
+        yield return new WaitForSeconds(spellbookChangeDelayBeforeFadingOut);
+
+        // Slowly Fade Visual Out
+        yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(spellDisplayCV, 0, spellbookChangeFadeOutRate));
+
+        // Stop Scaling
+        StopCoroutine(changeScale);
+
+        // Destroy Visual
+        Destroy(spellDisplayCV.gameObject);
+    }
+
+    public IEnumerator ShowRemoveSpellSequence(Spell spell)
+    {
+        // Spawn Visual
+        VisualSpellDisplay spellDisplay = Instantiate(visualSpellDisplayPrefab, UIManager._Instance.Canvas);
+        spellDisplay.SetSpell(spell);
+        spellDisplay.SetSpellDisplayState(SpellDisplayState.Selected);
+        RectTransform spellDisplayRect = spellDisplay.transform as RectTransform;
+        spellDisplayRect.sizeDelta = addSpellDisplaySizeDelta;
+        CanvasGroup spellDisplayCV = spellDisplay.GetCanvasGroup();
+        spellDisplayCV.alpha = 0;
+
+        // Scale Down
+        spellDisplay.SetScaleLocked(true);
+        Coroutine changeScale = StartCoroutine(Utils.ChangeScale(spellDisplayRect, Vector3.zero, spellbookChangeScaleRate, 0));
+
+        // Slowly Fade Visual In
+        yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(spellDisplayCV, 1, spellbookChangeFadeInRate));
+
+        // Wait
+        yield return new WaitForSeconds(spellbookChangeDelayBeforeFadingOut);
+
+        // Slowly Fade Visual Out
+        yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(spellDisplayCV, 0, spellbookChangeFadeOutRate));
+
+        // Stop Scaling
+        StopCoroutine(changeScale);
+
+        // Destroy Visual
+        spellDisplay.SetSpellDisplayState(SpellDisplayState.Normal);
+        Destroy(spellDisplayCV.gameObject);
+    }
+
     #endregion
 
     #region Campfire
@@ -1729,7 +1900,7 @@ public class GameManager : MonoBehaviour
     {
         float value = BalenceManager._Instance.GetValue(MapNodeType.Campfire, "HealPercent");
         float percentHP = value / 100;
-        AlterPlayerHP(Mathf.CeilToInt(maxPlayerHP * percentHP), DamageType.Heal);
+        AlterPlayerCurrentHP(Mathf.CeilToInt(maxPlayerHP * percentHP), DamageType.Heal);
     }
 
     public void ReSpawnPotionIngredientToBrewList(PotionIngredientType type)
@@ -1993,7 +2164,7 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < numArtifactShopOffers; i++)
         {
             // Ran out of aartifacts
-            if (allArtifacts.Count == 0)
+            if (awardableArtifacts.Count == 0)
             {
                 break;
             }
@@ -2001,10 +2172,10 @@ public class GameManager : MonoBehaviour
             ArtifactShopOffer offer = Instantiate(artifactShopOfferPrefab, merchantInfo.parentSpawnsTo);
 
             // Get artifact that will be offered
-            ArtifactLabel offered = GetRandomArtifact();
+            Artifact offered = Artifact.GetArtifactOfType(GetRandomArtifact());
 
             // Determine cost
-            int cost = Mathf.RoundToInt(RandomHelper.RandomFloat(minMaxArtifactCostDict[artifactRarityMap[offered]]));
+            int cost = Mathf.RoundToInt(RandomHelper.RandomFloat(minMaxArtifactCostDict[offered.Rarity]));
             offer.Set(offered, cost);
             shopArtifactList.Add(offer);
         }
@@ -2013,7 +2184,7 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < numBookShopOffers; i++)
         {
             // Ran out of aartifacts
-            if (allBooks.Count == 0)
+            if (awardableBooks.Count == 0)
             {
                 break;
             }
@@ -2021,10 +2192,10 @@ public class GameManager : MonoBehaviour
             BookShopOffer offer = Instantiate(bookShopOfferPrefab, librarianInfo.parentSpawnsTo);
 
             // Get artifact that will be offered
-            BookLabel offered = GetRandomBook();
+            Book offered = Book.GetBookOfType(GetRandomBook());
 
             // Determine cost
-            int cost = Mathf.RoundToInt(RandomHelper.RandomFloat(minMaxBookCostDict[bookRarityMap[offered]]));
+            int cost = Mathf.RoundToInt(RandomHelper.RandomFloat(minMaxBookCostDict[offered.Rarity]));
             offer.Set(offered, cost);
             shopBookList.Add(offer);
         }
@@ -2118,13 +2289,12 @@ public class GameManager : MonoBehaviour
         return res;
     }
 
-    public bool ParseEventCondition(OptionEventGameOccurance optionEvent, string condition)
+    public bool ParseEventCondition(EventLabel eventLabel, string condition)
     {
         if (condition.Length == 0) return true;
         if (condition.ToLower().Equals("false")) return false;
         if (condition.ToLower().Equals("true")) return true;
 
-        EventLabel label = optionEvent.EventLabel;
         // Debug.Log("Parsing Event Condition: " + condition);
         string[] conditionParts = CureAllStrings(condition.Split(':'));
 
@@ -2134,6 +2304,8 @@ public class GameManager : MonoBehaviour
             // Debug.Log("Single Condition: " + singleCondition);
             switch (singleCondition)
             {
+                case "BookCanBeUpgraded":
+                    return GetOwnedBook(0).CanLevelUp;
                 default:
                     throw new UnhandledSwitchCaseException(singleCondition);
             }
@@ -2148,9 +2320,9 @@ public class GameManager : MonoBehaviour
             {
                 case "MinGoldAmount":
                     int minGoldAmount;
-                    if (TryParseArgument(label, argument, out minGoldAmount))
+                    if (TryParseArgument(eventLabel, argument, out minGoldAmount))
                     {
-                        return GetPlayerCurrency() > minGoldAmount;
+                        return GetPlayerCurrency() >= minGoldAmount;
                     }
                     else
                     {
@@ -2159,7 +2331,7 @@ public class GameManager : MonoBehaviour
                     break;
                 case "MaxGoldAmount":
                     int maxGoldAmount;
-                    if (TryParseArgument(label, argument, out maxGoldAmount))
+                    if (TryParseArgument(eventLabel, argument, out maxGoldAmount))
                     {
                         return GetPlayerCurrency() < maxGoldAmount;
                     }
@@ -2170,9 +2342,9 @@ public class GameManager : MonoBehaviour
                     break;
                 case "MinHPAmount":
                     int minHPAmount;
-                    if (TryParseArgument(label, argument, out minHPAmount))
+                    if (TryParseArgument(eventLabel, argument, out minHPAmount))
                     {
-                        return GetCurrentCharacterHP() > minHPAmount;
+                        return GetCurrentCharacterHP() >= minHPAmount;
                     }
                     else
                     {
@@ -2181,7 +2353,7 @@ public class GameManager : MonoBehaviour
                     break;
                 case "MaxHPAmount":
                     int maxHPAmount;
-                    if (TryParseArgument(label, argument, out maxHPAmount))
+                    if (TryParseArgument(eventLabel, argument, out maxHPAmount))
                     {
                         return GetCurrentCharacterHP() < maxHPAmount;
                     }
@@ -2210,6 +2382,28 @@ public class GameManager : MonoBehaviour
                     else
                     {
                         Debug.Log("Could not Convert Argument: " + argument + " to BookLabel");
+                    }
+                    break;
+                case "MinSpells":
+                    int minSpells;
+                    if (TryParseArgument(eventLabel, argument, out minSpells))
+                    {
+                        return spellBook.GetSpellBookEntries().Count >= minSpells;
+                    }
+                    else
+                    {
+                        Debug.Log("Could not Convert Argument: " + argument + " to Int");
+                    }
+                    break;
+                case "MinCurses":
+                    int minCurses;
+                    if (TryParseArgument(eventLabel, argument, out minCurses))
+                    {
+                        return spellBook.NumSpells(SpellColor.Curse) >= minCurses;
+                    }
+                    else
+                    {
+                        Debug.Log("Could not Convert Argument: " + argument + " to Int");
                     }
                     break;
                 default:
@@ -2400,7 +2594,7 @@ public class GameManager : MonoBehaviour
             }
 
             // Use Currency
-            AlterClothierCurrency(-cost);
+            AlterPelts(-cost);
 
             // Reforge
             selectedEquipment.Reforge();
@@ -2456,7 +2650,7 @@ public class GameManager : MonoBehaviour
                 }
 
                 // Use Currency
-                AlterClothierCurrency(-cost);
+                AlterPelts(-cost);
 
                 // Reforge
                 selectedEquipment.Strengthen(selectedStat, 1);

@@ -23,9 +23,9 @@ MonoBehaviour:
   startingClothierCurrency: 1
   defaultActiveSpell: 22
   defaultPassiveSpell: 0
-  maxHP: 150
-  startingHP: 150
-  basicAttackDamage: 2
+  maxHP: 70
+  startingHP: 70
+  basicAttackDamage: 0
   startingActiveSpellSlots: 3
   startingPassiveSpellSlots: 2
   maxMana: 5

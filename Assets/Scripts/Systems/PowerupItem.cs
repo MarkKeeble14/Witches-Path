@@ -6,6 +6,7 @@ public abstract class PowerupItem : ToolTippable
     public abstract string Name { get; }
     protected abstract string SpritePath { get; }
     protected abstract string toolTipText { get; }
+    public abstract Rarity Rarity { get; }
 
     protected List<ToolTipKeyword> GeneralKeywords = new List<ToolTipKeyword>();
     protected List<AfflictionType> AfflictionKeywords = new List<AfflictionType>();

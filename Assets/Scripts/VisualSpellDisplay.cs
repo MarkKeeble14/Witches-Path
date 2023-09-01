@@ -153,4 +153,9 @@ public class VisualSpellDisplay : SpellDisplay, IPointerClickHandler, IPointerEn
                 throw new UnhandledSwitchCaseException();
         }
     }
+
+    public CanvasGroup GetCanvasGroup()
+    {
+        return mainCV;
+    }
 }

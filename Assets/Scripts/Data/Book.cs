@@ -197,6 +197,7 @@ public class WitchesTravelGuide : Book
 {
     public override string Name => "Witches Travel Guide";
     protected override BookLabel Label => BookLabel.WitchesTravelGuide;
+    public override Rarity Rarity => Rarity.Basic;
 
     protected override string toolTipText => "Gain " + currencyAmount + " Gold";
 
@@ -217,7 +218,7 @@ public class WitchesTravelGuide : Book
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterCurrency(currencyAmount);
+        GameManager._Instance.AlterGold(currencyAmount);
     }
 
     protected override void LevelUp()
@@ -231,6 +232,7 @@ public class MedicalNovella : Book
 {
     public override string Name => "Medical Novella";
     protected override BookLabel Label => BookLabel.MedicalNovella;
+    public override Rarity Rarity => Rarity.Common;
 
     protected override string toolTipText => "Heal " + healAmount + " HP";
 
@@ -251,7 +253,7 @@ public class MedicalNovella : Book
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterPlayerHP(healAmount, DamageType.Heal);
+        GameManager._Instance.AlterPlayerCurrentHP(healAmount, DamageType.Heal);
     }
 
     protected override void LevelUp()
@@ -265,6 +267,7 @@ public class MerchantsManual : Book
 {
     public override string Name => "Merchants Manual";
     protected override BookLabel Label => BookLabel.MerchantsManual;
+    public override Rarity Rarity => Rarity.Uncommon;
 
     protected override string toolTipText => "Shop Prices become " + costReduction + "% Cheaper";
 
@@ -295,6 +298,7 @@ public class BusinessTextbook : Book
 {
     public override string Name => "Business Textbook";
     protected override BookLabel Label => BookLabel.BusinessTextbook;
+    public override Rarity Rarity => Rarity.Common;
 
     protected override string toolTipText => "Lose " + useCost + " Gold, Deal " + damageAmount + " Damage to the Enemy";
 
@@ -319,7 +323,7 @@ public class BusinessTextbook : Book
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterCurrency(-useCost);
+        GameManager._Instance.AlterGold(-useCost);
         CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.Book);
     }
 

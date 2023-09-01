@@ -6,32 +6,36 @@ using UnityEngine;
 
 public enum SpellLabel
 {
-    PoisonTips,
-    StaticField,
-    Inferno,
-    BattleTrance,
-    Fireball,
-    Shock,
-    Singe,
-    Plague,
-    Toxify,
-    Jarkai,
-    Flurry,
-    Electrifry,
-    ExposeFlesh,
-    Cripple,
-    TradeBlood,
-    Excite,
-    Overexcite,
-    Forethought,
-    Reverberate,
-    ImpartialAid,
-    MagicRain,
-    CrushJoints,
-    WitchesWill,
-    WitchesWard,
-    TeslaCoil,
-    Hurt
+    PoisonTips, // Passive
+    StaticField, // Passive
+    Inferno, // Passive
+    BattleTrance, // Passive
+    Fireball, // Active
+    Shock, // Active
+    Singe, // Active
+    Plague, // Active
+    Toxify, // Active
+    Jarkai, // Active
+    Flurry, // Active
+    Electrifry, // Active
+    ExposeFlesh, // Active
+    Cripple, // Active
+    TradeBlood, // Active
+    Excite, // Active
+    Overexcite, // Active
+    Forethought, // Active
+    Reverberate, // Active
+    ImpartialAid, // Active
+    MagicRain, // Active
+    CrushJoints, // Active
+    WitchesWill, // Active - Basic
+    WitchesWard, // Active - Basic
+    TeslaCoil, // Passuve
+    Hurt, // Passive - Curse
+    Greed, // Active - Curse
+    Anger, // Active - Curse
+    Worry, // Passive - Curse
+    Frusteration, // Active - Curse
 }
 
 public enum SpellColor
@@ -44,12 +48,18 @@ public enum SpellColor
     Grey
 }
 
+public enum SpellType
+{
+    Active,
+    Passive
+}
+
 [System.Serializable]
 public abstract class Spell : ToolTippable
 {
     public abstract string Name { get; }
     public abstract SpellLabel Label { get; }
-    protected abstract SpellType Type { get; }
+    public abstract SpellType Type { get; }
     public abstract SpellColor Color { get; }
     public abstract Rarity Rarity { get; }
     public int OutOfCombatCooldown { get; private set; }
@@ -89,9 +99,19 @@ public abstract class Spell : ToolTippable
     public abstract void CallEffect();
 
     // Will activate on equipping the Spell
-    public abstract void OnEquip();
+    public virtual void OnEquip()
+    {
+        CombatManager._Instance.OnResetCombat += ResetOnCombatReset;
+    }
     // Will activate on unequipping the Spell
-    public abstract void OnUnequip();
+    public virtual void OnUnequip()
+    {
+        CombatManager._Instance.OnResetCombat -= ResetOnCombatReset;
+    }
+    protected virtual void ResetOnCombatReset()
+    {
+        // 
+    }
 
     // Balence Manager Getters
     protected int GetSpellSpec(string specIdentifier)
@@ -205,6 +225,14 @@ public abstract class Spell : ToolTippable
                 return new TeslaCoil();
             case SpellLabel.Hurt:
                 return new Hurt();
+            case SpellLabel.Greed:
+                return new Greed();
+            case SpellLabel.Anger:
+                return new Anger();
+            case SpellLabel.Worry:
+                return new Worry();
+            case SpellLabel.Frusteration:
+                return new Frusteration();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -216,27 +244,10 @@ public abstract class Spell : ToolTippable
 
 public abstract class PassiveSpell : Spell
 {
-    protected override SpellType Type => SpellType.Passive;
+    public override SpellType Type => SpellType.Passive;
 
     // A Global variable determining whether or not a passive spell being activated should duplicate itself
     public static int NumDuplicateProcs { get; set; }
-
-    // Called when the spell is Equipped
-    public override void OnEquip()
-    {
-        CombatManager._Instance.OnResetCombat += ResetOnCombatReset;
-    }
-
-    // Called when the spell is Unequipped
-    public override void OnUnequip()
-    {
-        CombatManager._Instance.OnResetCombat -= ResetOnCombatReset;
-    }
-
-    protected virtual void ResetOnCombatReset()
-    {
-        // 
-    }
 
     // Unless overriden will return an empty string. If returning a non-empty string, the passive spell display will include this information
     public virtual string GetSecondaryText()
@@ -356,6 +367,7 @@ public class PoisonTips : PassiveSpell
 
     protected override void ResetOnCombatReset()
     {
+        base.ResetOnCombatReset();
         tracker = 0;
     }
 }
@@ -426,6 +438,7 @@ public class StaticField : PassiveSpell
 
     protected override void ResetOnCombatReset()
     {
+        base.ResetOnCombatReset();
         tracker = 0;
     }
 }
@@ -496,6 +509,7 @@ public class Inferno : PassiveSpell
 
     protected override void ResetOnCombatReset()
     {
+        base.ResetOnCombatReset();
         tracker = 0;
     }
 }
@@ -566,6 +580,7 @@ public class BattleTrance : PassiveSpell
 
     protected override void ResetOnCombatReset()
     {
+        base.ResetOnCombatReset();
         tracker = 0;
     }
 }
@@ -630,6 +645,7 @@ public class MagicRain : PassiveSpell
 
     protected override void ResetOnCombatReset()
     {
+        base.ResetOnCombatReset();
         tracker = 0;
     }
 }
@@ -716,6 +732,71 @@ public class Hurt : PassiveSpell
     }
 }
 
+public class Worry : PassiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Worry;
+    public override SpellColor Color => SpellColor.Curse;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Worry";
+
+    protected override string toolTipText => "Every " + procAfter + " Attack" + (procAfter > 1 ? "s" : "") + ", Gain " + weakAmount + " Weak";
+
+    private int weakAmount;
+    private int procAfter;
+    private int tracker;
+
+    protected override void SetParameters()
+    {
+        base.SetParameters();
+        weakAmount = GetSpellSpec("WeakAmount");
+        procAfter = GetSpellSpec("ProcAfter");
+    }
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        CombatManager._Instance.OnPlayerAttack += CallEffect;
+    }
+
+    public override void OnUnequip()
+    {
+        base.OnUnequip();
+        CombatManager._Instance.OnPlayerAttack -= CallEffect;
+    }
+
+    protected override void Effect()
+    {
+        tracker += 1;
+        if (tracker > procAfter)
+        {
+            tracker = 0;
+            Proc(true);
+        }
+    }
+
+    public override void Proc(bool canDupe)
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Weak, weakAmount, Target.Character);
+        base.Proc(canDupe);
+    }
+
+    public override string GetSecondaryText()
+    {
+        return tracker + "/" + procAfter;
+    }
+
+    public override float GetPercentProgress()
+    {
+        return (float)tracker / procAfter;
+    }
+
+    protected override void ResetOnCombatReset()
+    {
+        base.ResetOnCombatReset();
+        tracker = 0;
+    }
+}
+
 public class CrushJoints : PassiveSpell
 {
     public override SpellColor Color => SpellColor.Red;
@@ -788,6 +869,7 @@ public class CrushJoints : PassiveSpell
 
     protected override void ResetOnCombatReset()
     {
+        base.ResetOnCombatReset();
         tracker = 0;
     }
 }
@@ -848,7 +930,7 @@ public class SpellNoteBatch
 
 public abstract class ActiveSpell : Spell
 {
-    protected override SpellType Type => SpellType.Active;
+    public override SpellType Type => SpellType.Active;
 
     // Data
     private int manaCost;
@@ -1379,7 +1461,7 @@ public class TradeBlood : ActiveSpell
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterPlayerHP(-selfDamageAmount, mainDamageType);
+        GameManager._Instance.AlterPlayerCurrentHP(-selfDamageAmount, mainDamageType);
         CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(otherDamageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
     }
 }
@@ -1608,6 +1690,122 @@ public class WitchesWard : ActiveSpell
     protected override void Effect()
     {
         CombatManager._Instance.GiveCombatentWard(PassValueThroughEffectivenessMultiplier(wardAmount), Target.Character);
+    }
+}
+
+public class Greed : ActiveSpell
+{
+    public override SpellColor Color => SpellColor.Curse;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellLabel Label => SpellLabel.Greed;
+    public override string Name => "Greed";
+
+    private int currencyAmount => GameManager._Instance.GetPlayerCurrency();
+    private int damageAmount => Mathf.CeilToInt((float)currencyAmount / divideGoldBy);
+
+    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage to All Combatents. (Base Damage is equal to Gold / " + divideGoldBy + ")";
+
+    protected override DamageType mainDamageType => DamageType.Evil;
+
+    private int divideGoldBy;
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        GeneralKeywords.Add(ToolTipKeyword.Gold);
+    }
+
+    protected override void SetParameters()
+    {
+        base.SetParameters();
+        divideGoldBy = GetSpellSpec("DivideGoldBy");
+    }
+
+    protected override void SetBatches()
+    {
+        Batches.Add(new SpellNoteBatch(3, 0.4f, 0.25f));
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Character, Target.Enemy, mainDamageType, DamageSource.ActiveSpell);
+    }
+}
+
+public class Anger : ActiveSpell
+{
+    public override SpellColor Color => SpellColor.Curse;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellLabel Label => SpellLabel.Anger;
+    public override string Name => "Anger";
+
+    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage, Gain " + vulnerableAmount + " Vulnerable";
+
+    protected override DamageType mainDamageType => DamageType.Evil;
+
+    private int vulnerableAmount;
+    private int damageAmount;
+
+    protected override void SetParameters()
+    {
+        base.SetParameters();
+        vulnerableAmount = GetSpellSpec("VulnerableAmount");
+        damageAmount = GetSpellSpec("DamageAmount");
+    }
+
+    protected override void SetBatches()
+    {
+        Batches.Add(new SpellNoteBatch(3, 0.4f, 0.25f));
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
+        CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, PassValueThroughEffectivenessMultiplier(vulnerableAmount), Target.Enemy);
+    }
+}
+
+public class Frusteration : ActiveSpell
+{
+    public override SpellColor Color => SpellColor.Curse;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellLabel Label => SpellLabel.Frusteration;
+    public override string Name => "Frusteration";
+
+    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(selfDamageAmount) + " Damage to Yourself, Deal " + GetCalculatedDamageEnemy(otherDamageAmount)
+        + " Damage to the Enemy. On use, increase the Damage dealt to Yourself by " + selfDamageAmountIncrease;
+
+    protected override DamageType mainDamageType => DamageType.Evil;
+
+    private int selfDamageAmount;
+    private int otherDamageAmount;
+    private int selfDamageAmountIncrease;
+
+    protected override void SetParameters()
+    {
+        base.SetParameters();
+        selfDamageAmount = GetSpellSpec("SelfDamageAmount");
+        selfDamageAmountIncrease = GetSpellSpec("SelfDamageAmountIncrease");
+        otherDamageAmount = GetSpellSpec("OtherDamageAmount");
+    }
+
+    protected override void SetBatches()
+    {
+        Batches.Add(new SpellNoteBatch(3, 0.4f, 0.25f));
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(selfDamageAmount), Target.Character, Target.Character, mainDamageType, DamageSource.ActiveSpell);
+        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(otherDamageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
+        selfDamageAmount += selfDamageAmountIncrease;
+    }
+
+    protected override void ResetOnCombatReset()
+    {
+        base.ResetOnCombatReset();
+        selfDamageAmount = GetSpellSpec("SelfDamageAmount");
     }
 }
 

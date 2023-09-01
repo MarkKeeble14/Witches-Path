@@ -128,6 +128,26 @@ public class Spellbook
         return count;
     }
 
+    public int NumSpells(SpellColor ofColor)
+    {
+        int count = 0;
+        foreach (SpellbookEntry entry in spellBookEntries)
+        {
+            if (entry.Spell.Color == ofColor) count++;
+        }
+        return count;
+    }
+
+    public int NumSpells(SpellLabel ofLabel)
+    {
+        int count = 0;
+        foreach (SpellbookEntry entry in spellBookEntries)
+        {
+            if (entry.Spell.Label == ofLabel) count++;
+        }
+        return count;
+    }
+
     public void TickOutOfCombatCooldowns()
     {
         foreach (SpellbookEntry entry in spellBookEntries)

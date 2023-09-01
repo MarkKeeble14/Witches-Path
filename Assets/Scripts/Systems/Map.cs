@@ -39,20 +39,20 @@ public struct MapSectionInfo
 }
 
 [System.Serializable]
-public class OptionEventWithCondition
+public class EventLabelWithCondition
 {
-    [SerializeField] private OptionEventGameOccurance optionEvent;
+    [SerializeField] private EventLabel eventLabel;
+    public string Name => eventLabel.ToString();
     [SerializeField] private string conditionString;
-    public string Name => optionEvent.EventLabel.ToString();
 
     public string GetConditionString()
     {
         return conditionString;
     }
 
-    public OptionEventGameOccurance GetOptionEvent()
+    public EventLabel GetEventLabel()
     {
-        return optionEvent;
+        return eventLabel;
     }
 }
 
@@ -65,7 +65,7 @@ public class Map
 
     [Header("Map Settings")]
     [SerializeField] private SerializableDictionary<MapNodeType, List<GameOccurance>> mapNodes = new SerializableDictionary<MapNodeType, List<GameOccurance>>();
-    [SerializeField] private List<OptionEventWithCondition> optionEventMapNodes = new List<OptionEventWithCondition>();
+    [SerializeField] private List<EventLabelWithCondition> optionEvents = new List<EventLabelWithCondition>();
 
     [Header("General Settings")]
     [SerializeField] private List<MapNodeType> lazySetters = new List<MapNodeType>();
@@ -79,6 +79,9 @@ public class Map
     [Header("Prefabs")]
     [SerializeField] private MapNodeUI mapNodePrefab;
     [SerializeField] private GridLayoutGroup mapLayout;
+
+    [Header("References")]
+    [SerializeField] private OptionEventGameOccurance optionEventGameOccurance;
 
     // Map Data
     private List<MapNodeUI[,]> spawnedGridNodes = new List<MapNodeUI[,]>();
@@ -445,34 +448,41 @@ public class Map
         if (nodeType == MapNodeType.Event)
         {
             // Determine which Option Events can Occur
-            List<OptionEventWithCondition> possibleEvents = new List<OptionEventWithCondition>();
-            foreach (OptionEventWithCondition optionEvent in optionEventMapNodes)
+            List<EventLabelWithCondition> viableEvents = new List<EventLabelWithCondition>();
+            foreach (EventLabelWithCondition optionEvent in optionEvents)
             {
-                OptionEventGameOccurance e = optionEvent.GetOptionEvent();
+                EventLabel e = optionEvent.GetEventLabel();
 
                 if (optionEvent.GetConditionString().ToLower() == "force")
                 {
-                    possibleEvents.Clear();
-                    possibleEvents.Add(optionEvent);
+                    // Debug.Log(e + ", Forced");
+                    viableEvents.Clear();
+                    viableEvents.Add(optionEvent);
                     break;
                 }
 
                 if (GameManager._Instance.ParseEventCondition(e, optionEvent.GetConditionString()))
                 {
-                    possibleEvents.Add(optionEvent);
+                    // Debug.Log(e + ", Viable");
+                    viableEvents.Add(optionEvent);
+                }
+                else
+                {
+                    // Debug.Log(e + ", NOT Viable");
                 }
             }
 
             // Get a possible Option Event from the Option Events we've determined may Occur
-            OptionEventWithCondition r = RandomHelper.GetRandomFromList(possibleEvents);
+            EventLabelWithCondition chosenEvent = RandomHelper.GetRandomFromList(viableEvents);
 
             // Remove it from the list of possibilities if thats not going to break things to eliminate duplicates
-            if (possibleEvents.Count > 1)
+            if (viableEvents.Count > 1)
             {
-                optionEventMapNodes.Remove(r);
+                optionEvents.Remove(chosenEvent);
             }
 
-            return r.GetOptionEvent();
+            optionEventGameOccurance.SetEvent(chosenEvent.GetEventLabel());
+            return optionEventGameOccurance;
         }
         else if (nodeType == MapNodeType.MinorFight || nodeType == MapNodeType.MiniBoss || nodeType == MapNodeType.Boss)
         {

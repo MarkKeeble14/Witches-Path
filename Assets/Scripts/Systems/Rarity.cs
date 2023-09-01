@@ -4,5 +4,7 @@
     Basic,
     Uncommon,
     Rare,
-    Event
+    Event,
+    NonUnique,
+    Boss
 }

@@ -157,9 +157,9 @@ public class Utils
         return max;
     }
 
-    public static IEnumerator ChangeScale(Transform t, Vector3 target, float changeRate)
+    public static IEnumerator ChangeScale(Transform t, Vector3 target, float changeRate, float graceRange)
     {
-        while (t.localScale != target)
+        while (Mathf.Abs((t.localScale - target).magnitude) > graceRange)
         {
             t.localScale = Vector3.MoveTowards(t.localScale, target, Time.deltaTime * changeRate);
             yield return null;

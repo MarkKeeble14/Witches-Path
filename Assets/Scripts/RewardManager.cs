@@ -39,6 +39,7 @@ public class RewardManager : MonoBehaviour
     }
 
     [SerializeField] private RewardDisplay simpleRewardDisplay;
+    [SerializeField] private SpellChoiceRewardDisplay spellChoiceRewardDisplay;
     [SerializeField] private Transform rewardList;
     [SerializeField] private GameObject rewardScreen;
     private List<RewardDisplay> spawnedRewards = new List<RewardDisplay>();
@@ -53,8 +54,6 @@ public class RewardManager : MonoBehaviour
     [SerializeField] private GameObject selectSpellScreen;
     [SerializeField] private Transform parentSpellChoicesTo;
     [SerializeField] private VisualSpellDisplay visualSpellDisplayPrefab;
-
-    private ChooseSpellRewardData activeChooseSpellReward;
 
     public int NumSpellsPerChoice { get; private set; }
     [SerializeField] private int defaultNumSpellsPerChoice = 3;
@@ -87,37 +86,18 @@ public class RewardManager : MonoBehaviour
         cancelSpellRewardDecision = true;
     }
 
-    public IEnumerator ShowSpellRewardDecision(int numOptions, bool forceRarity = false, Rarity rarity = Rarity.Common)
+    public IEnumerator ShowSpellRewardDecision(SpellChoiceRewardDisplay spawningFor)
     {
-        Debug.Log("Showing Spell Reward Screen");
+        // Debug.Log("Showing Spell Reward Screen");
         selectSpellScreen.SetActive(true);
 
         List<VisualSpellDisplay> spawnedOptions = new List<VisualSpellDisplay>();
 
-        if (activeChooseSpellReward.Choices.Count == 0)
+        bool selectedSpellReward = false;
+        List<Spell> choices = spawningFor.GetSpellChoices();
+        for (int i = 0; i < choices.Count; i++)
         {
-            for (int i = 0; i < numOptions; i++)
-            {
-                // Get new Options
-                Spell spell;
-                if (forceRarity)
-                {
-                    spell = GameManager._Instance.GetRandomSpellConsideringRarity(rarity);
-                }
-                else
-                {
-                    spell = GameManager._Instance.GetRandomSpell();
-                }
-
-                // Add Spell to Class to Track
-                activeChooseSpellReward.Choices.Add(spell);
-            }
-        }
-
-        bool hasChosen = false;
-        for (int i = 0; i < activeChooseSpellReward.Choices.Count; i++)
-        {
-            Spell spell = activeChooseSpellReward.Choices[i];
+            Spell spell = choices[i];
 
             VisualSpellDisplay spawned = Instantiate(visualSpellDisplayPrefab, parentSpellChoicesTo);
             spawnedOptions.Add(spawned);
@@ -129,7 +109,7 @@ public class RewardManager : MonoBehaviour
             spawned.AddOnClick(delegate
             {
                 GameManager._Instance.AddSpellToSpellBook(spell);
-                hasChosen = true;
+                selectedSpellReward = true;
             });
             GameObject spawnedToolTip = null;
             spawned.AddOnEnter(delegate
@@ -143,7 +123,7 @@ public class RewardManager : MonoBehaviour
         }
 
         // Wait until we either cancel the decision, or we HAD started the sequence and are no longer in the sequence
-        yield return new WaitUntil(() => cancelSpellRewardDecision || hasChosen);
+        yield return new WaitUntil(() => cancelSpellRewardDecision || selectedSpellReward);
         cancelSpellRewardDecision = false;
 
         // Reset
@@ -155,36 +135,30 @@ public class RewardManager : MonoBehaviour
             Destroy(current.gameObject);
         }
 
-        // if we have chosen a spell
-        if (hasChosen)
+        if (selectedSpellReward)
         {
-            spawnedRewards.Remove(activeChooseSpellReward.Listing);
-            if (activeChooseSpellReward.Listing != null)
-            {
-                Destroy(activeChooseSpellReward.Listing.gameObject);
-            }
-
-            // Reset
-            activeChooseSpellReward = null;
+            spawnedRewards.Remove(spawningFor);
+            Destroy(spawningFor.gameObject);
         }
 
         // Disable Screen
         selectSpellScreen.SetActive(false);
     }
 
-    public void AddChooseSpellReward(bool forceRarity = false, Rarity rarity = Rarity.Common)
+    public void AddChooseSpellReward(Func<Spell, bool> viableRewardFunc)
     {
-        Debug.Log("Adding Choose Spell Reward: ");
-        RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
-        spawned.Set("Choose a Spell to Learn", rewardTypeSpriteDict[RewardType.Spell],
+        // Debug.Log("Adding Choose Spell Reward: ");
+        SpellChoiceRewardDisplay spawned = Instantiate(spellChoiceRewardDisplay, rewardList);
+
+        for (int i = 0; i < NumSpellsPerChoice; i++)
+        {
+            spawned.AddSpellChoice(GameManager._Instance.GetRandomSpellWithConditions(viableRewardFunc));
+        }
+
+        spawned.Set("Choose a Spell Tome", rewardTypeSpriteDict[RewardType.Spell],
             delegate
             {
-                if (activeChooseSpellReward == null)
-                {
-                    activeChooseSpellReward = new ChooseSpellRewardData();
-                    activeChooseSpellReward.Listing = spawned;
-                }
-                StartCoroutine(ShowSpellRewardDecision(NumSpellsPerChoice, forceRarity, rarity));
+                StartCoroutine(ShowSpellRewardDecision(spawned));
             }, delegate
             {
                 //
@@ -265,34 +239,34 @@ public class RewardManager : MonoBehaviour
         spawnedRewards.Add(spawned);
     }
 
-    public void AddCurrencyReward(int currencyAmount)
+    public void AddGoldReward(int goldAmount)
     {
-        if (currencyAmount <= 0)
+        if (goldAmount <= 0)
         {
             return;
         }
 
-        Debug.Log("Adding Currency Reward: " + currencyAmount);
+        Debug.Log("Adding Currency Reward: " + goldAmount);
 
         // Lucky Coin Effect
         if (GameManager._Instance.HasArtifact(ArtifactLabel.LuckyCoin))
         {
-            currencyAmount = Mathf.CeilToInt(currencyAmount * (LuckyCoin.CurrencyMultiplier / 100));
+            goldAmount = Mathf.CeilToInt(goldAmount * (LuckyCoin.CurrencyMultiplier / 100));
             GameManager._Instance.AnimateArtifact(ArtifactLabel.LuckyCoin);
         }
 
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
-        spawned.Set(currencyAmount.ToString() + " Gold", rewardTypeSpriteDict[RewardType.Currency],
+        spawned.Set(goldAmount.ToString() + " Gold", rewardTypeSpriteDict[RewardType.Currency],
             delegate
             {
-                GameManager._Instance.AlterCurrency(currencyAmount);
+                GameManager._Instance.AlterGold(goldAmount);
                 spawnedRewards.Remove(spawned);
                 Destroy(spawned.gameObject);
             }, null, null);
         spawnedRewards.Add(spawned);
     }
 
-    public void AddClothierCurrencyReward(int currencyAmount)
+    public void AddPeltsReward(int currencyAmount)
     {
         if (currencyAmount <= 0)
         {
@@ -305,7 +279,7 @@ public class RewardManager : MonoBehaviour
         spawned.Set(currencyAmount.ToString() + " Pelt" + (currencyAmount > 1 ? "s" : ""), rewardTypeSpriteDict[RewardType.Pelts],
             delegate
             {
-                GameManager._Instance.AlterClothierCurrency(currencyAmount);
+                GameManager._Instance.AlterPelts(currencyAmount);
                 spawnedRewards.Remove(spawned);
                 Destroy(spawned.gameObject);
             }, null, null);

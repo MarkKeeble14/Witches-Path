@@ -263,7 +263,10 @@ public partial class CombatManager : MonoBehaviour
 
             yield return new WaitForSeconds(delayAfterPlayerDeath);
 
-            yield return GameManager._Instance.GameOverSequence();
+            GameManager._Instance.GameOverSequence();
+
+            // Permanantly Stall out Here Until Player Restarts
+            yield return new WaitUntil(() => false);
         }
         else
         {
@@ -279,7 +282,7 @@ public partial class CombatManager : MonoBehaviour
             if (TargetHasAffliction(AfflictionType.Bandages, Target.Character))
             {
                 int numBandagedStacks = characterAfflictionMap[AfflictionType.Bandages].GetStacks();
-                GameManager._Instance.AlterPlayerHP(numBandagedStacks, DamageType.Heal);
+                GameManager._Instance.AlterPlayerCurrentHP(numBandagedStacks, DamageType.Heal);
                 ConsumeAfflictionStack(AfflictionType.Bandages, Target.Character, numBandagedStacks);
                 ShowAfflictionProc(AfflictionType.Bandages, Target.Character);
                 yield return new WaitForSeconds(delayAfterBandagesEffect);
@@ -355,7 +358,7 @@ public partial class CombatManager : MonoBehaviour
             yield return new WaitForSeconds(delayAfterEnemyTurn);
 
             // Reset for Turn
-            GameManager._Instance.AlterPlayerMana(GameManager._Instance.GetManaPerTurn());
+            GameManager._Instance.AlterPlayerCurrentMana(GameManager._Instance.GetManaPerTurn());
         }
 
         // Call On Combat End
@@ -461,7 +464,7 @@ public partial class CombatManager : MonoBehaviour
             spell.SetOnCooldown();
 
             // Consume Mana
-            GameManager._Instance.AlterPlayerMana(-spell.GetManaCost());
+            GameManager._Instance.AlterPlayerCurrentMana(-spell.GetManaCost());
         }
 
         // Activate Callback
@@ -675,7 +678,7 @@ public partial class CombatManager : MonoBehaviour
         GameManager._Instance.ResetActiveSpellCooldowns();
 
         // Reset Player Mana
-        GameManager._Instance.SetPlayerMana(GameManager._Instance.GetMaxPlayerMana());
+        GameManager._Instance.SetCurrentPlayerMana(GameManager._Instance.GetMaxPlayerMana());
 
         // Reset HP Bars
         characterHPBar.Clear();
@@ -1101,7 +1104,7 @@ public partial class CombatManager : MonoBehaviour
                 }
 
                 // Finalize player HP damage
-                GameManager._Instance.AlterPlayerHP(amount, damageType, false);
+                GameManager._Instance.AlterPlayerCurrentHP(amount, damageType, false);
                 characterHPBar.SetCurrentHP(GameManager._Instance.GetCurrentCharacterHP());
 
                 break;
@@ -1677,8 +1680,10 @@ public partial class CombatManager : MonoBehaviour
         if (map.ContainsKey(AfflictionType.Poison))
         {
             AlterCombatentHP(-map[AfflictionType.Poison].GetStacks(), target, DamageType.Poison);
+
             int v = BalenceManager._Instance.GetValue(AfflictionType.Poison, "PercentToReduceBy");
             float percentToMultiplyBy = (float)v / 100;
+
             ConsumeAfflictionStack(AfflictionType.Poison, target, Mathf.RoundToInt(GetAffliction(AfflictionType.Poison, target).GetStacks() * percentToMultiplyBy));
             ShowAfflictionProc(AfflictionType.Poison, target);
         }
@@ -1688,8 +1693,13 @@ public partial class CombatManager : MonoBehaviour
     {
         if (map.ContainsKey(AfflictionType.Blight))
         {
-            AlterCombatentHP(-map[AfflictionType.Blight].GetStacks(), target, DamageType.Poison);
-            AddAffliction(AfflictionType.Blight, 1, target);
+            int numStacks = map[AfflictionType.Blight].GetStacks();
+            AlterCombatentHP(-numStacks, target, DamageType.Poison);
+
+            int v = BalenceManager._Instance.GetValue(AfflictionType.Blight, "PercentToIncreaseBy");
+            float percentToIncreaseBy = (float)v / 100;
+
+            AddAffliction(AfflictionType.Blight, Mathf.CeilToInt(numStacks * percentToIncreaseBy), target);
             ShowAfflictionProc(AfflictionType.Blight, target);
         }
     }

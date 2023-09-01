@@ -1,6 +1,40 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+public enum ArtifactLabel
+{
+    GreedyHands,
+    SpecialSpinich,
+    CanyonChunk,
+    Plaguebringer,
+    MedicineKit,
+    BoldInvestments,
+    SmokeShroud,
+    HolyShield,
+    VIPCard,
+    LooseTrigger,
+    MolatovCocktail,
+    BlueMantis,
+    HealthInsurance,
+    InvertedPolaroid,
+    ZedsScalpel,
+    Barricade,
+    DoctorsReport,
+    RustyCannon,
+    VoodooDoll,
+    CaveMural,
+    BarbariansBlade,
+    LizardSkinSilk,
+    LuckyCoin,
+    HiredHand,
+    BlackPrism,
+    Telescope,
+    CheapStopwatch,
+    Boulder,
+    Crown,
+    DeadCockroach
+}
+
 public abstract class Artifact : PowerupItem
 {
     protected abstract ArtifactLabel Label { get; }
@@ -103,6 +137,8 @@ public abstract class Artifact : PowerupItem
                 return new Telescope();
             case ArtifactLabel.Crown:
                 return new Crown();
+            case ArtifactLabel.DeadCockroach:
+                return new DeadCockroach();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -113,6 +149,7 @@ public class GreedyHands : Artifact
 {
     public override string Name => "Greedy Hands";
     protected override ArtifactLabel Label => ArtifactLabel.GreedyHands;
+    public override Rarity Rarity => Rarity.Common;
 
     private int tracker;
     private int procAfter;
@@ -148,7 +185,7 @@ public class GreedyHands : Artifact
         {
             ShowArtifactProc();
             tracker = 0;
-            GameManager._Instance.AlterCurrency(currencyAmount);
+            GameManager._Instance.AlterGold(currencyAmount);
         }
     }
 
@@ -162,6 +199,7 @@ public class CanyonChunk : Artifact
 {
     public override string Name => "Canyon Chunk";
     protected override ArtifactLabel Label => ArtifactLabel.CanyonChunk;
+    public override Rarity Rarity => Rarity.Rare;
     protected override string toolTipText => "On Combat Start, gain " + stackAmount + " Echo";
 
     private int stackAmount;
@@ -197,6 +235,7 @@ public class Plaguebringer : Artifact
 {
     public override string Name => "Plaguebringer";
     protected override ArtifactLabel Label => ArtifactLabel.Plaguebringer;
+    public override Rarity Rarity => Rarity.Common;
 
     protected override string toolTipText => "On Combat Start, Apply " + stackAmount + " Blight to the Enemy";
 
@@ -233,6 +272,7 @@ public class MedicineKit : Artifact
 {
     public override string Name => "Medicine Kit";
     protected override ArtifactLabel Label => ArtifactLabel.MedicineKit;
+    public override Rarity Rarity => Rarity.Common;
 
     protected override string toolTipText => "Upon Entering a new room, Heal " + healAmount + " HP";
 
@@ -260,7 +300,7 @@ public class MedicineKit : Artifact
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterPlayerHP(healAmount, DamageType.Heal);
+        GameManager._Instance.AlterPlayerCurrentHP(healAmount, DamageType.Heal);
         ShowArtifactProc();
     }
 }
@@ -269,6 +309,7 @@ public class BoldInvestments : Artifact
 {
     public override string Name => "Bold Investments";
     protected override ArtifactLabel Label => ArtifactLabel.BoldInvestments;
+    public override Rarity Rarity => Rarity.Common;
 
     protected override string toolTipText => "Upon Entering a Combat, Gain " + currencyAmount + " Gold";
 
@@ -296,7 +337,7 @@ public class BoldInvestments : Artifact
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterCurrency(currencyAmount);
+        GameManager._Instance.AlterGold(currencyAmount);
         ShowArtifactProc();
     }
 }
@@ -305,6 +346,7 @@ public class SmokeShroud : Artifact
 {
     public override string Name => "Smoke Shroud";
     protected override ArtifactLabel Label => ArtifactLabel.SmokeShroud;
+    public override Rarity Rarity => Rarity.Common;
 
     protected override string toolTipText => "On Combat Start, Apply " + stackAmount + " Weak to the Enemy";
 
@@ -342,6 +384,7 @@ public class VIPCard : Artifact
     public override string Name => "VIP Card";
 
     protected override ArtifactLabel Label => ArtifactLabel.VIPCard;
+    public override Rarity Rarity => Rarity.Event;
 
     protected override string toolTipText => "Upon Entering a Tavern, Gain " + currencyAmount + " Gold";
 
@@ -369,7 +412,7 @@ public class VIPCard : Artifact
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterCurrency(currencyAmount);
+        GameManager._Instance.AlterGold(currencyAmount);
         ShowArtifactProc();
     }
 }
@@ -379,6 +422,7 @@ public class LooseTrigger : Artifact
     public override string Name => "Loose Trigger";
 
     protected override ArtifactLabel Label => ArtifactLabel.LooseTrigger;
+    public override Rarity Rarity => Rarity.Uncommon;
 
     protected override string toolTipText => "Upon Losing HP, trigger one of your passive spells at random";
 
@@ -411,6 +455,7 @@ public class MolatovCocktail : Artifact
 {
     public override string Name => "Molatov Cocktail";
     protected override ArtifactLabel Label => ArtifactLabel.MolatovCocktail;
+    public override Rarity Rarity => Rarity.Common;
 
     protected override string toolTipText => "For " + repetitions + " Turns after combat starts, Apply " + stackAmount + " Burn to the Enemy at the beginning of your turn";
 
@@ -468,6 +513,7 @@ public class BlueMantis : Artifact
     public override string Name => "Blue Mantis";
 
     protected override ArtifactLabel Label => ArtifactLabel.BlueMantis;
+    public override Rarity Rarity => Rarity.Common;
 
     protected override string toolTipText => "Upon Recieving Damage, Apply " + stackAmount + " Paralyze to the Enemy";
 
@@ -505,6 +551,7 @@ public class HealthInsurance : Artifact
 {
     public override string Name => "Health Insurance";
     protected override ArtifactLabel Label => ArtifactLabel.HealthInsurance;
+    public override Rarity Rarity => Rarity.Common;
 
     protected override string toolTipText => "Upon Entering a New Room, Heal " + healAmount + " HP. Entering a combat will permanantly disable this effect";
 
@@ -535,7 +582,7 @@ public class HealthInsurance : Artifact
     {
         if (!active) return;
 
-        GameManager._Instance.AlterPlayerHP(healAmount, DamageType.Heal);
+        GameManager._Instance.AlterPlayerCurrentHP(healAmount, DamageType.Heal);
         ShowArtifactProc();
         MapNodeType type = GameManager._Instance.GetCurrentGameOccurance().Type;
         if (type == MapNodeType.MinorFight || type == MapNodeType.Boss)
@@ -554,6 +601,7 @@ public class InvertedPolaroid : Artifact
 {
     public override string Name => "Inverted Polaroid";
     protected override ArtifactLabel Label => ArtifactLabel.InvertedPolaroid;
+    public override Rarity Rarity => Rarity.Common;
 
     protected override void SetKeywords()
     {
@@ -593,6 +641,7 @@ public class ZedsScalpel : Artifact
 {
     public override string Name => "Zed's Scalpel";
     protected override ArtifactLabel Label => ArtifactLabel.ZedsScalpel;
+    public override Rarity Rarity => Rarity.Uncommon;
 
     protected override string toolTipText => "Upon Recieving Damage, Heal " + healAmount + " HP";
 
@@ -620,7 +669,7 @@ public class ZedsScalpel : Artifact
 
     protected override void Effect()
     {
-        GameManager._Instance.AlterPlayerHP(healAmount, DamageType.Heal);
+        GameManager._Instance.AlterPlayerCurrentHP(healAmount, DamageType.Heal);
         ShowArtifactProc();
     }
 
@@ -630,6 +679,7 @@ public class Barricade : Artifact
 {
     public override string Name => "Barricade";
     protected override ArtifactLabel Label => ArtifactLabel.Barricade;
+    public override Rarity Rarity => Rarity.Rare;
 
     protected override string toolTipText => "Upon Recieving Damage, Reduce that Damage by " + reductionAmount;
 
@@ -662,6 +712,7 @@ public class DoctorsReport : Artifact
 {
     public override string Name => "Doctors Report";
     protected override ArtifactLabel Label => ArtifactLabel.DoctorsReport;
+    public override Rarity Rarity => Rarity.Uncommon;
 
     protected override string toolTipText => "Upon Damaging the Enemy, if the amount of Damage Dealt was Above " + mustBeOver + ", Gain " + stackAmount + " Bandages";
 
@@ -708,6 +759,7 @@ public class RustyCannon : Artifact
 {
     public override string Name => "Rusty Cannon";
     protected override ArtifactLabel Label => ArtifactLabel.RustyCannon;
+    public override Rarity Rarity => Rarity.Uncommon;
 
     protected override string toolTipText => numTurns + " Turns after Combat Begins, Deal " + damageAmount + " Damage to the Enemy";
 
@@ -761,6 +813,7 @@ public class VoodooDoll : Artifact
     protected override ArtifactLabel Label => ArtifactLabel.VoodooDoll;
 
     protected override string toolTipText => "Upon Gaining a New Affliction, Deal " + damageAmount + " Damage to the Enemy";
+    public override Rarity Rarity => Rarity.Uncommon;
 
     protected override void SetKeywords()
     {
@@ -795,6 +848,7 @@ public class SpecialSpinach : Artifact
 {
     public override string Name => "Special Spinach";
     protected override ArtifactLabel Label => ArtifactLabel.SpecialSpinich;
+    public override Rarity Rarity => Rarity.Uncommon;
 
     protected override void SetKeywords()
     {
@@ -824,6 +878,7 @@ public class HolyShield : Artifact
 {
     public override string Name => "Holy Shield";
     protected override ArtifactLabel Label => ArtifactLabel.HolyShield;
+    public override Rarity Rarity => Rarity.Uncommon;
 
     protected override void SetKeywords()
     {
@@ -853,6 +908,7 @@ public class CaveMural : Artifact
 {
     public override string Name => "Cave Mural";
     protected override ArtifactLabel Label => ArtifactLabel.CaveMural;
+    public override Rarity Rarity => Rarity.Rare;
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Passive Spell Activated will Duplicate it's Effect";
 
@@ -899,6 +955,7 @@ public class BarbariansBlade : Artifact
 {
     public override string Name => "Barbarians Blade";
     protected override ArtifactLabel Label => ArtifactLabel.BarbariansBlade;
+    public override Rarity Rarity => Rarity.Boss;
 
     protected override string toolTipText => "All instances of In-Combat Damage are Increased by " + DamageIncrease;
 
@@ -930,6 +987,7 @@ public class LizardSkinSilk : Artifact
 {
     public override string Name => "Lizard Skin Silk";
     protected override ArtifactLabel Label => ArtifactLabel.LizardSkinSilk;
+    public override Rarity Rarity => Rarity.Uncommon;
 
     protected override string toolTipText => "Losing HP has a " + Mathf.RoundToInt((chanceToActivate.x / chanceToActivate.y) * 100) + "% Chance of Removing a Random Negative Affliction";
 
@@ -970,6 +1028,7 @@ public class LuckyCoin : Artifact
     public override string Name => "Lucky Coin";
 
     protected override ArtifactLabel Label => ArtifactLabel.LuckyCoin;
+    public override Rarity Rarity => Rarity.Rare;
 
     protected override string toolTipText => "All Gold Rewards are Increased by " + CurrencyMultiplier + "%";
 
@@ -1003,6 +1062,7 @@ public class HiredHand : Artifact
 {
     public override string Name => "Hired Hand";
     protected override ArtifactLabel Label => ArtifactLabel.HiredHand;
+    public override Rarity Rarity => Rarity.Uncommon;
 
     protected override string toolTipText => "Enemies Begin Combat with " + PercentHP + "% HP";
 
@@ -1035,6 +1095,7 @@ public class BlackPrism : Artifact
 {
     public override string Name => "Black Prism";
     protected override ArtifactLabel Label => ArtifactLabel.BlackPrism;
+    public override Rarity Rarity => Rarity.Rare;
 
     protected override string toolTipText => "Active Spells do " + DamageMultiplier + "% Damage";
 
@@ -1066,6 +1127,7 @@ public class Telescope : Artifact
 {
     public override string Name => "Telescope";
     protected override ArtifactLabel Label => ArtifactLabel.Telescope;
+    public override Rarity Rarity => Rarity.Rare;
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Turn, Gain " + stackAmount + " Intangible";
 
@@ -1115,6 +1177,7 @@ public class CheapStopwatch : Artifact
 {
     public override string Name => "Cheap Stopwatch";
     protected override ArtifactLabel Label => ArtifactLabel.CheapStopwatch;
+    public override Rarity Rarity => Rarity.Rare;
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Active Spell Queued makes the next Active Spell Free";
 
@@ -1161,6 +1224,7 @@ public class Boulder : Artifact
 {
     public override string Name => "Boulder";
     protected override ArtifactLabel Label => ArtifactLabel.Boulder;
+    public override Rarity Rarity => Rarity.Rare;
 
     protected override string toolTipText => "Basic Attacking " + procAfter + " times will Deal " + damageAmount
          + " Additional Damage to the Enemy. Every time this effect is activated, the Damage Increases by " + damageIncrease;
@@ -1224,6 +1288,7 @@ public class Crown : Artifact
 {
     public override string Name => "Crown";
     protected override ArtifactLabel Label => ArtifactLabel.Crown;
+    public override Rarity Rarity => Rarity.Basic;
 
     protected override string toolTipText => "Polished and pretty, but quite impractical";
 
@@ -1245,5 +1310,43 @@ public class Crown : Artifact
 
     protected override void Effect()
     {
+    }
+}
+
+public class DeadCockroach : Artifact
+{
+    public override string Name => "Dead Cockroach";
+    protected override ArtifactLabel Label => ArtifactLabel.DeadCockroach;
+    public override Rarity Rarity => Rarity.Event;
+
+    private int numCurses => GameManager._Instance.GetSpellbook().NumSpells(SpellColor.Curse);
+    protected override string toolTipText => "Upon Entering Combat, Apply Blight equal to the number of Curses in your Spellbook " +
+        "to the Enemy (" + numCurses + ")";
+
+    private Vector2 chanceToActivate;
+
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Blight);
+    }
+
+    protected override void SetParameters()
+    {
+        //
+    }
+
+    public override void OnEquip()
+    {
+        CombatManager._Instance.OnCombatStart += Effect;
+    }
+
+    public override void OnUnequip()
+    {
+        CombatManager._Instance.OnCombatStart -= Effect;
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Blight, numCurses, Target.Enemy);
     }
 }

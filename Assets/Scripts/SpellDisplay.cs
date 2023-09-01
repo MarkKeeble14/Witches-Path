@@ -23,6 +23,16 @@ public abstract class SpellDisplay : MonoBehaviour
     private GameObject spawnedToolTip;
 
     private float targetScale;
+    protected bool scaleLocked;
+    public void SetTargetScale(float v)
+    {
+        targetScale = v;
+    }
+
+    public void SetScaleLocked(bool b)
+    {
+        scaleLocked = b;
+    }
 
     [SerializeField] private float changeScaleSpeed = 1f;
 
@@ -41,7 +51,7 @@ public abstract class SpellDisplay : MonoBehaviour
 
     protected void Update()
     {
-        if (displayState == SpellDisplayState.Normal)
+        if (displayState == SpellDisplayState.Normal && !scaleLocked)
         {
             // Allow target scale to fall back to regular scale
             if (targetScale != regularScale)

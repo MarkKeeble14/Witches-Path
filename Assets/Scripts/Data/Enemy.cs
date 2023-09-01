@@ -333,7 +333,7 @@ public class EnchantedMace : Enemy
 
         // Apply Behaviour
         AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 2 == 1, turn1sMap);
-        AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 2 == 2, turn2sMap);
+        AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 2 == 0, turn2sMap);
     }
 }
 

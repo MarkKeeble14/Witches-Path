@@ -5,9 +5,9 @@ public class ArtifactShopOffer : ShopOffer
 {
     [SerializeField] private Artifact artifact;
 
-    public void Set(ArtifactLabel setTo, int cost)
+    public void Set(Artifact setTo, int cost)
     {
-        artifact = Artifact.GetArtifactOfType(setTo);
+        artifact = setTo;
         itemText.text = artifact.Name;
         this.cost = cost;
 

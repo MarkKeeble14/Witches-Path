@@ -821,7 +821,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -390.00052}
+  m_AnchoredPosition: {x: 0, y: -390.0005}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &3239115800174809029
@@ -3941,7 +3941,7 @@ MonoBehaviour:
         textColor: {r: 0, g: 0, b: 0, a: 1}
     - key: 3
       value:
-        color: {r: 0.76862746, g: 0.1254902, b: 0, a: 1}
+        color: {r: 0.6431373, g: 0.1254902, b: 0, a: 1}
         textColor: {r: 0, g: 0, b: 0, a: 1}
     - key: 4
       value:
@@ -8800,7 +8800,9 @@ MonoBehaviour:
         dictionary: []
     - key: Blight
       value:
-        dictionary: []
+        dictionary:
+        - key: PercentToIncreaseBy
+          value: 10
     - key: Poison
       value:
         dictionary:
@@ -8902,6 +8904,15 @@ MonoBehaviour:
           dictionary:
           - key: DamageAmount
             value: 2
+    - key: Worry
+      value:
+        outOfCombatCooldown: 1
+        additionalParameters:
+          dictionary:
+          - key: WeakAmount
+            value: 2
+          - key: ProcAfter
+            value: 9
   activeSpellSpecDict:
     dictionary:
     - key: Fireball
@@ -9084,6 +9095,39 @@ MonoBehaviour:
           dictionary:
           - key: WardAmount
             value: 4
+    - key: Greed
+      value:
+        cooldown: 1
+        manaCost: 1
+        outOfCombatCooldown: 2
+        additionalParameters:
+          dictionary:
+          - key: DivideGoldBy
+            value: 75
+    - key: Anger
+      value:
+        cooldown: 1
+        manaCost: 2
+        outOfCombatCooldown: 2
+        additionalParameters:
+          dictionary:
+          - key: DamageAmount
+            value: 10
+          - key: VulnerableAmount
+            value: 3
+    - key: Frusteration
+      value:
+        cooldown: 1
+        manaCost: 3
+        outOfCombatCooldown: 2
+        additionalParameters:
+          dictionary:
+          - key: SelfDamageAmount
+            value: 3
+          - key: SelfDamageAmountIncrease
+            value: 5
+          - key: OtherDamageAmount
+            value: 15
   mapNodeSpecDict:
     dictionary:
     - key: Campfire
@@ -9093,22 +9137,28 @@ MonoBehaviour:
           value: 25
   eventSpecDict:
     dictionary:
-    - key: Treasure
+    - key: 0
       value:
         dictionary:
         - key: GoldAmount
           value: 250
-    - key: HomeFree
+    - key: 1
       value:
         dictionary:
         - key: GainGoldAmount
           value: 100
-    - key: WitchesHut
+    - key: 2
       value:
         dictionary:
         - key: LoseHPAmount
           value: 3
-    - key: TravellersDelivery
+        - key: NumIngredients1
+          value: 2
+        - key: NumIngredients2
+          value: 3
+        - key: NumIngredients3
+          value: 6
+    - key: 3
       value:
         dictionary:
         - key: AcceptCost
@@ -9117,21 +9167,21 @@ MonoBehaviour:
           value: 7
         - key: RobGoldGain
           value: 100
-    - key: PitOfTreasures
+    - key: 4
       value:
         dictionary:
         - key: SuccessOdds
           value: 10
         - key: LoseHPAmount
           value: 3
-    - key: TheCuriousChild
+    - key: 5
       value:
         dictionary:
         - key: MinGoldCost
           value: 75
         - key: MaxGoldCost
           value: 125
-    - key: SealedChamber
+    - key: 6
       value:
         dictionary:
         - key: GoldAmount
@@ -9140,6 +9190,58 @@ MonoBehaviour:
           value: 15
         - key: MaxHPAmount
           value: 10
+    - key: 7
+      value:
+        dictionary:
+        - key: DamagePerTome
+          value: 5
+    - key: 8
+      value:
+        dictionary:
+        - key: GoldAmount
+          value: 75
+        - key: DamageAmount
+          value: 8
+    - key: 9
+      value:
+        dictionary:
+        - key: LoseMaxHP
+          value: 4
+    - key: 10
+      value:
+        dictionary: []
+    - key: 11
+      value:
+        dictionary:
+        - key: GainMoreGoldAmountMin
+          value: 150
+        - key: GainMoreGoldAmountMax
+          value: 175
+        - key: GainLessGoldAmountMin
+          value: 25
+        - key: GainLessGoldAmountMax
+          value: 35
+    - key: 12
+      value:
+        dictionary:
+        - key: NumCurses
+          value: 2
+        - key: MinCost
+          value: 50
+        - key: MaxCost
+          value: 100
+    - key: 13
+      value:
+        dictionary:
+        - key: InterveneDamageAmount
+          value: 21
+        - key: DistractDamageAmount
+          value: 10
+        - key: DistractGoldAmount
+          value: 75
+    - key: 14
+      value:
+        dictionary: []
   ingredientSpecDict:
     dictionary:
     - key: HammerHandle
@@ -13151,66 +13253,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerCharacter: {fileID: 11400000, guid: 9e08d35e00a2f9741a3bdbe563a704de, type: 2}
   artifactBar: {fileID: 4051814926895347577}
-  artifactRarityMap:
-    dictionary:
-    - key: 0
-      value: 0
-    - key: 1
-      value: 2
-    - key: 2
-      value: 0
-    - key: 3
-      value: 0
-    - key: 4
-      value: 0
-    - key: 5
-      value: 0
-    - key: 6
-      value: 0
-    - key: 7
-      value: 2
-    - key: 8
-      value: 0
-    - key: 9
-      value: 2
-    - key: 10
-      value: 0
-    - key: 11
-      value: 2
-    - key: 12
-      value: 0
-    - key: 13
-      value: 2
-    - key: 14
-      value: 0
-    - key: 15
-      value: 3
-    - key: 16
-      value: 1
-    - key: 17
-      value: 2
-    - key: 18
-      value: 2
-    - key: 19
-      value: 2
-    - key: 20
-      value: 3
-    - key: 21
-      value: 3
-    - key: 22
-      value: 3
-    - key: 23
-      value: 3
-    - key: 24
-      value: 3
-    - key: 25
-      value: 3
-    - key: 26
-      value: 3
-    - key: 27
-      value: 3
-    - key: 28
-      value: 1
   artifactRarityOdds:
     percentageMap:
     - key: 0
@@ -13219,17 +13261,8 @@ MonoBehaviour:
       value: 30
     - key: 3
       value: 20
+  unawardableArtifacts: 080000001d000000
   bookBar: {fileID: 5221745815667209846}
-  bookRarityMap:
-    dictionary:
-    - key: 0
-      value: 0
-    - key: 1
-      value: 0
-    - key: 2
-      value: 0
-    - key: 3
-      value: 0
   bookRarityOdds:
     percentageMap:
     - key: 0
@@ -13238,16 +13271,8 @@ MonoBehaviour:
       value: 0
     - key: 3
       value: 0
-  spellRarityOdds:
-    percentageMap:
-    - key: 0
-      value: 100
-    - key: 2
-      value: 0
-    - key: 3
-      value: 0
-  playerEquippableActiveSpells: 0400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f00000010000000110000001200000013000000
-  playerEquippablePassiveSpells: 00000000010000000200000003000000140000001500000018000000
+  unawardableBooks: 00000000
+  unviableSpellRewards: 1600000017000000
   activeSpellBindings: 7100000077000000650000007200000061000000730000006400000066000000
   activeSpellDisplayPrefab: {fileID: 4776701720326847360, guid: 43c097c94ca78df4e9fa18e6c7ac7c72, type: 3}
   activeSpellDisplaysList: {fileID: 6060006483511500854}
@@ -13280,6 +13305,7 @@ MonoBehaviour:
   popupTextPrefab: {fileID: 418672499888249726, guid: aadbf8430d60c914e956d62e25f319d2, type: 3}
   currentlyTesting: 0
   numRandomIngredientsOnStart: 0
+  numRandomCursesOnStart: 0
   hpText: {fileID: 1817865862606539329}
   manaText: {fileID: 6236520070283003658}
   currencyText: {fileID: 8778094111878917716}
@@ -13304,6 +13330,11 @@ MonoBehaviour:
   changeGameOverCVAlphaRate: 100
   changeGameWonCVAlphaRate: 100
   upgradeBookButtonCV: {fileID: 7669915771532683820}
+  spellbookChangeFadeOutRate: 1
+  spellbookChangeFadeInRate: 2.5
+  spellbookChangeScaleRate: 2.5
+  spellbookChangeDelayBeforeFadingOut: 1
+  addSpellDisplaySizeDelta: {x: 300, y: 400}
   potionIngredientListEntryPrefab: {fileID: 106863698724852358, guid: 2aaad722b1b50d84798c07a593759d8e, type: 3}
   potionIngredientListParent: {fileID: 2746122894306709102}
   potionIngredientListScreen: {fileID: 379822431854464777}
@@ -13360,25 +13391,25 @@ MonoBehaviour:
     dictionary:
     - key: 0
       value: {x: 50, y: 100}
-    - key: 1
-      value: {x: 100, y: 150}
     - key: 2
+      value: {x: 100, y: 150}
+    - key: 3
       value: {x: 150, y: 200}
   minMaxEquipmentCostDict:
     dictionary:
     - key: 0
       value: {x: 125, y: 150}
-    - key: 1
-      value: {x: 150, y: 200}
     - key: 2
+      value: {x: 150, y: 200}
+    - key: 3
       value: {x: 250, y: 300}
   minMaxBookCostDict:
     dictionary:
     - key: 0
       value: {x: 100, y: 125}
-    - key: 1
-      value: {x: 150, y: 175}
     - key: 2
+      value: {x: 150, y: 175}
+    - key: 3
       value: {x: 200, y: 250}
   minMaxIngredientCost: {x: 20, y: 35}
   selectEquipmentScreen: {fileID: 4879774298942352962}
@@ -20529,7 +20560,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9674d2f017416ff499c0ca380eee8e4a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  simpleRewardDisplay: {fileID: 7430061077276882406, guid: e2a33f0dbeb6d2e4996edf1af7df98c0, type: 3}
+  simpleRewardDisplay: {fileID: 6661110610772715274, guid: 6353570d52a1a904c8091176511a3823, type: 3}
+  spellChoiceRewardDisplay: {fileID: 4223758054722247403, guid: e2a33f0dbeb6d2e4996edf1af7df98c0, type: 3}
   rewardList: {fileID: 3620916676930855616}
   rewardScreen: {fileID: 1232089420242445223}
   toolTipOffset: {x: 0, y: 0}
@@ -22035,7 +22067,7 @@ MonoBehaviour:
   m_Elasticity: 0.1
   m_Inertia: 1
   m_DecelerationRate: 0.135
-  m_ScrollSensitivity: 1
+  m_ScrollSensitivity: 10
   m_Viewport: {fileID: 2976859784108717906}
   m_HorizontalScrollbar: {fileID: 0}
   m_VerticalScrollbar: {fileID: 0}

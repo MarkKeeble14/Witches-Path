@@ -312,9 +312,11 @@ public class Echo : Affliction
 
 public class Blight : Affliction
 {
-    protected override string specificToolTipText => "At the Start of the Turn, Take " + GetStacks() + " Damage. Blight is then increased by 1";
+    protected override string specificToolTipText => "At the Start of the Turn, Take " + GetStacks() + " Damage. " +
+        "Blight is then increased by " + GetAfflictionSpec("PercentToIncreaseBy") + "%";
 
-    protected override string genericToolTipText => "At the Start of the Turn, Take Damage equal to the number of Blight Stacks. Blight is then increased by 1";
+    protected override string genericToolTipText => "At the Start of the Turn, Take Damage equal to the number of Blight Stacks. " +
+        "Blight is then increased by " + GetAfflictionSpec("PercentToIncreaseBy") + "%";
     public override AfflictionType Type => AfflictionType.Blight;
 
     public override AfflictionSign Sign => AfflictionSign.Negative;
@@ -327,8 +329,10 @@ public class Blight : Affliction
 
 public class Poison : Affliction
 {
-    protected override string specificToolTipText => "At the Start of the Turn, Take " + GetStacks() + " Damage. Poison is then decreased by " + GetAfflictionSpec("PercentToReduceBy") + "%";
-    protected override string genericToolTipText => "At the Start of the Turn, Take Damage equal to the number of Poison Stacks. Poison is then decreased by " + GetAfflictionSpec("PercentToReduceBy") + "%";
+    protected override string specificToolTipText => "At the Start of the Turn, Take " + GetStacks() + " Damage. " +
+        "Poison is then decreased by " + GetAfflictionSpec("PercentToReduceBy") + "%";
+    protected override string genericToolTipText => "At the Start of the Turn, Take Damage equal to the number of Poison Stacks. " +
+        "Poison is then decreased by " + GetAfflictionSpec("PercentToReduceBy") + "%";
 
     public override AfflictionType Type => AfflictionType.Poison;
 

@@ -9,9 +9,9 @@ public class BookShopOffer : ShopOffer
         GameManager._Instance.AddBook(book.GetLabel());
     }
 
-    public void Set(BookLabel setTo, int cost)
+    public void Set(Book setTo, int cost)
     {
-        book = Book.GetBookOfType(setTo);
+        book = setTo;
         itemText.text = book.Name;
         this.cost = cost;
 

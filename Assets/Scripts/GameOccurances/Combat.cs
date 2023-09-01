@@ -104,11 +104,12 @@ public abstract class Combat : GameOccurance
                     {
                         if (info.ForceRarity)
                         {
-                            RewardManager._Instance.AddChooseSpellReward(info.ForceRarity, info.Rarity);
+                            RewardManager._Instance.AddChooseSpellReward(spell =>
+                                GameManager._Instance.AcceptSpellRewardFunc(spell) && spell.Rarity == info.Rarity);
                         }
                         else
                         {
-                            RewardManager._Instance.AddChooseSpellReward();
+                            RewardManager._Instance.AddChooseSpellReward(GameManager._Instance.AcceptSpellRewardFunc);
                         }
                     });
                     break;
@@ -131,10 +132,10 @@ public abstract class Combat : GameOccurance
             switch (type)
             {
                 case RewardType.Pelts:
-                    RewardManager._Instance.AddClothierCurrencyReward(num);
+                    RewardManager._Instance.AddPeltsReward(num);
                     break;
                 case RewardType.Currency:
-                    RewardManager._Instance.AddCurrencyReward(num);
+                    RewardManager._Instance.AddGoldReward(num);
                     break;
                 case RewardType.ActiveSpellSlot:
                     RewardManager._Instance.AddActiveSpellSlotReward(num);
