@@ -61,7 +61,7 @@ public abstract class Artifact : PowerupItem
 
     protected void ShowArtifactProc()
     {
-        GameManager._Instance.AnimateArtifact(Label);
+        GameManager._Instance.AnimateArtifact(this);
         CombatManager._Instance.SpawnEffectIcon(EffectIconStyle.FadeAndGrow, GetSprite(), Target.Character);
     }
 
@@ -735,7 +735,7 @@ public class DoctorsReport : Artifact
         if (amount > mustBeOver)
         {
             CombatManager._Instance.AddAffliction(AfflictionType.Bandages, stackAmount, Target.Character);
-            GameManager._Instance.AnimateArtifact(ArtifactLabel.DoctorsReport);
+            GameManager._Instance.AnimateArtifact(this);
         }
     }
 
@@ -1319,11 +1319,9 @@ public class DeadCockroach : Artifact
     protected override ArtifactLabel Label => ArtifactLabel.DeadCockroach;
     public override Rarity Rarity => Rarity.Event;
 
-    private int numCurses => GameManager._Instance.GetSpellbook().NumSpells(SpellColor.Curse);
+    private int numCurses => GameManager._Instance.GetSpellbook().GetNumSpellsMatchingCondition(spell => spell.Color == SpellColor.Curse);
     protected override string toolTipText => "Upon Entering Combat, Apply Blight equal to the number of Curses in your Spellbook " +
         "to the Enemy (" + numCurses + ")";
-
-    private Vector2 chanceToActivate;
 
     protected override void SetKeywords()
     {

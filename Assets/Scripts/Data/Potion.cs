@@ -338,6 +338,18 @@ public class Potion : ToolTippable
     {
         return UIManager._Instance.HighlightKeywords(potionMakeup.GetPotionEffectString());
     }
+
+    public static Potion GetRandomPotion(bool includeAugmenter)
+    {
+        Potion p = new Potion();
+        p.AddIngredient(PotionIngredient.GetPotionIngredientOfCategory(PotionIngredientCategory.Base));
+        p.AddIngredient(PotionIngredient.GetPotionIngredientOfCategory(PotionIngredientCategory.Potency));
+        p.AddIngredient(PotionIngredient.GetPotionIngredientOfCategory(PotionIngredientCategory.Targeter));
+        if (includeAugmenter)
+            p.AddIngredient(PotionIngredient.GetPotionIngredientOfCategory(PotionIngredientCategory.Augmenter));
+        p.Brew();
+        return p;
+    }
 }
 
 [System.Serializable]
@@ -391,6 +403,20 @@ public abstract class PotionIngredient : ToolTippable
     public string GetToolTipText()
     {
         return UIManager._Instance.HighlightKeywords(toolTipText);
+    }
+
+    public static PotionIngredient GetPotionIngredientOfCategory(PotionIngredientCategory category)
+    {
+        List<PotionIngredient> possibleIngredients = new List<PotionIngredient>();
+        foreach (PotionIngredientType type in Enum.GetValues(typeof(PotionIngredientType)))
+        {
+            PotionIngredient ingredient = GetPotionIngredientOfType(type);
+            if (ingredient.Category == category)
+            {
+                possibleIngredients.Add(ingredient);
+            }
+        }
+        return RandomHelper.GetRandomFromList(possibleIngredients);
     }
 
     public static PotionIngredient GetPotionIngredientOfType(PotionIngredientType type)

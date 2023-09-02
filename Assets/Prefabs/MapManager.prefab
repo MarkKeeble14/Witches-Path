@@ -47,7 +47,7 @@ MonoBehaviour:
   beginningAnimationScrollRate: 0.75
   beforeScrollDelay: 0.5
   useLerp: 0
-  lerpGraceRange: 0.1
+  graceRange: 0.01
   buildConnectorDelay: 0.05
   nextStage: 
   map:
@@ -94,7 +94,7 @@ MonoBehaviour:
       - key: 4
         value:
         - {fileID: 11400000, guid: b65ce5b92625d60479642ecbd5a823f1, type: 2}
-    optionEventMapNodes: []
+    optionEvents: []
     lazySetters: 0000000005000000
     delayBetweenShowingCells: 0.025
     mapNodeIconDict:
@@ -117,3 +117,4 @@ MonoBehaviour:
     connectorOffsetFromNode: 0.25
     mapNodePrefab: {fileID: 5932683331434114181, guid: 07ed74b0a56adf64583b8214596c03bb, type: 3}
     mapLayout: {fileID: 2457742011578673596, guid: 8b9be5afbcf2502489c8b33a7cabaa85, type: 3}
+    optionEventGameOccurance: {fileID: 0}

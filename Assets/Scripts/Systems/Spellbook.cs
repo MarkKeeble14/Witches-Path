@@ -102,48 +102,28 @@ public class Spellbook
         return spellBookEntries;
     }
 
-    public int NumSpells(SpellType spellsOfType, SpellOutOfCombatState outOfCombatState)
+    public int GetNumSpellsMatchingCondition(Func<Spell, bool> matchesFunc)
     {
         int count = 0;
         foreach (SpellbookEntry entry in spellBookEntries)
         {
-            switch (entry.Spell)
+            if (matchesFunc(entry.Spell))
             {
-                case ActiveSpell activeSpell:
-                    if (spellsOfType == SpellType.Active && entry.OutOfCombatState == outOfCombatState)
-                    {
-                        count++;
-                    }
-                    break;
-                case PassiveSpell passiveSpell:
-                    if (spellsOfType == SpellType.Passive && entry.OutOfCombatState == outOfCombatState)
-                    {
-                        count++;
-                    }
-                    break;
-                default:
-                    throw new UnhandledSwitchCaseException();
+                count++;
             }
         }
         return count;
     }
 
-    public int NumSpells(SpellColor ofColor)
+    public int GetNumSpellbookEntriesMatchingCondition(Func<SpellbookEntry, bool> matchesFunc)
     {
         int count = 0;
         foreach (SpellbookEntry entry in spellBookEntries)
         {
-            if (entry.Spell.Color == ofColor) count++;
-        }
-        return count;
-    }
-
-    public int NumSpells(SpellLabel ofLabel)
-    {
-        int count = 0;
-        foreach (SpellbookEntry entry in spellBookEntries)
-        {
-            if (entry.Spell.Label == ofLabel) count++;
+            if (matchesFunc(entry))
+            {
+                count++;
+            }
         }
         return count;
     }

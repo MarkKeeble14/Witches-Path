@@ -23,7 +23,8 @@ public enum UISection
     CampfireRest,
     CampfireBrewPotions,
     ApproachChest,
-    ApproachLecturn
+    ApproachLecturn,
+    CampfireUpgradeSpell
 }
 
 public class SetTextAndImageColors : MonoBehaviour

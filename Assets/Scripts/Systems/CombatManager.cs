@@ -73,6 +73,11 @@ public partial class CombatManager : MonoBehaviour
 
     [Header("Combat Settings")]
     [SerializeField] private List<DamageType> wardableDamageTypes = new List<DamageType>();
+    private int handSize;
+    private Pile<Spell> drawPile;
+    private Pile<Spell> discardPile;
+    private Pile<Spell> hand;
+    private int maximumAllowedPassivesPerActive => 2;
 
     [Header("Spell Queue")]
     [SerializeField] private Transform spellQueueDisplayList;
@@ -198,6 +203,69 @@ public partial class CombatManager : MonoBehaviour
 
     private EnemyAction currentEnemyAction;
 
+    public void SetSpellPiles(Pile<Spell> drawPile)
+    {
+        this.drawPile = drawPile;
+        this.drawPile.Shuffle();
+        discardPile = new Pile<Spell>();
+        hand = new Pile<Spell>();
+    }
+
+    public void SetHandSize(int handSize)
+    {
+        this.handSize = handSize;
+    }
+
+    public IEnumerator DrawHand(float delay)
+    {
+        for (int i = 0; i < handSize; i++)
+        {
+            DrawSpell();
+
+            yield return new WaitForSeconds(delay);
+        }
+    }
+
+    public void DrawSpell()
+    {
+        // Someone made an oopsie
+        if (drawPile.Count == 0 && discardPile.Count == 0) return;
+
+        // Reshuffle discard pile into draw pile if needed
+        if (drawPile.Count == 0)
+        {
+            discardPile.TransferEntries(drawPile, true);
+        }
+
+        Spell spell = drawPile.DrawTop();
+        hand.Add(spell);
+        GameManager._Instance.EquipSpell(spell);
+    }
+
+    public IEnumerator DiscardHand(float delay)
+    {
+        // Discard all Spells that are not Passives
+        List<Spell> toDiscard = hand.GetEntriesMatching(spell => spell.Type != SpellType.Passive);
+
+        while (toDiscard.Count > 0)
+        {
+            // Remove Spell from Hand
+            Spell spell = toDiscard[0];
+            hand.Remove(spell);
+
+            // Add Spell to Discard Pile
+            discardPile.Add(spell);
+
+            // Remove Spell from to Remove
+            toDiscard.RemoveAt(0);
+
+            // Unequip Spell
+            GameManager._Instance.UnequipSpell(spell);
+
+            yield return new WaitForSeconds(delay);
+        }
+    }
+
     private void Awake()
     {
         _Instance = this;
@@ -263,7 +331,7 @@ public partial class CombatManager : MonoBehaviour
 
             yield return new WaitForSeconds(delayAfterPlayerDeath);
 
-            GameManager._Instance.GameOverSequence();
+            StartCoroutine(GameManager._Instance.GameOverSequence());
 
             // Permanantly Stall out Here Until Player Restarts
             yield return new WaitUntil(() => false);
@@ -338,6 +406,8 @@ public partial class CombatManager : MonoBehaviour
             currentEnemyAction = currentEnemy.GetEnemyIntent();
             enemyIntentDisplay.SetEnemyAction(currentEnemyAction);
 
+            yield return StartCoroutine(DrawHand(.1f));
+
             // Player Turn
             yield return StartCoroutine(PlayerTurn());
 
@@ -356,6 +426,8 @@ public partial class CombatManager : MonoBehaviour
 
             // End of Turn
             yield return new WaitForSeconds(delayAfterEnemyTurn);
+
+            yield return StartCoroutine(DiscardHand(.1f));
 
             // Reset for Turn
             GameManager._Instance.AlterPlayerCurrentMana(GameManager._Instance.GetManaPerTurn());
@@ -596,6 +668,12 @@ public partial class CombatManager : MonoBehaviour
         {
             AlterCombatentHP(GetTargetAfflictionStacks(AfflictionType.Regeneration, Target.Enemy), Target.Enemy, DamageType.Heal);
             ConsumeAfflictionStack(AfflictionType.Regeneration, Target.Enemy);
+        }
+
+        // Allow Enemy to Act on OnTurnEnd Actions
+        foreach (EnemyAction action in currentEnemy.GetOnTurnEndActions())
+        {
+            yield return StartCoroutine(EnemyActOnAction(action));
         }
 
         OnEnemyTurnEnd?.Invoke();
@@ -1513,8 +1591,22 @@ public partial class CombatManager : MonoBehaviour
         else
         {
             Affliction aff = Affliction.GetAfflictionOfType(type);
-            aff.SetStacks(numStacks);
             aff.SetOwner(target);
+
+            // Spawn Effect Text
+            SpawnEffectText(EffectTextStyle.Fade, aff.GetToolTipLabel(), UIManager._Instance.GetEffectTextColor(aff.Sign + "Affliction"), target);
+
+            // Animate
+            if (aff.Sign == AfflictionSign.Negative)
+            {
+                ShakeCombatent(target);
+            }
+
+            // The affliction we tried to apply didn't stick, we do not need to do any of the following
+            if (!aff.SetStacks(numStacks))
+            {
+                return false;
+            }
             map.Add(type, aff);
 
             AfflictionIcon spawned = Instantiate(afflictionIconPrefab, parentTo);
@@ -1525,15 +1617,6 @@ public partial class CombatManager : MonoBehaviour
 
             // Apply
             aff.Apply();
-
-            // Spawn Effect Text
-            SpawnEffectText(EffectTextStyle.Fade, aff.GetToolTipLabel(), UIManager._Instance.GetEffectTextColor(aff.Sign + "Affliction"), target);
-
-            // Animate
-            if (aff.Sign == AfflictionSign.Negative)
-            {
-                ShakeCombatent(target);
-            }
         }
 
         // Update hp bar
@@ -1624,6 +1707,8 @@ public partial class CombatManager : MonoBehaviour
 
     public void RemoveAffliction(Target target, AfflictionType type)
     {
+        Debug.Log("Removing: " + type + " From " + target);
+
         // Get the Affliction we're Removing
         Affliction removingAff = GetTargetAfflictionMap(target)[type];
 

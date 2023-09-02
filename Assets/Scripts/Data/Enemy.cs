@@ -35,6 +35,7 @@ public abstract class Enemy
 
     private List<EnemyAction> onCombatStartActions = new List<EnemyAction>();
     private List<EnemyAction> onTurnStartActions = new List<EnemyAction>();
+    private List<EnemyAction> onTurnEndActions = new List<EnemyAction>();
     private Dictionary<string, EnemyAction> enemyActionDict = new Dictionary<string, EnemyAction>();
     private Dictionary<Func<bool>, PercentageMap<string>> enemyBehaviourDict = new Dictionary<Func<bool>, PercentageMap<string>>();
 
@@ -53,6 +54,11 @@ public abstract class Enemy
         onTurnStartActions.Add(action);
     }
 
+    protected void AddOnTurnEndAction(EnemyAction action)
+    {
+        onTurnEndActions.Add(action);
+    }
+
     public List<EnemyAction> GetOnCombatStartActions()
     {
         return onCombatStartActions;
@@ -61,6 +67,11 @@ public abstract class Enemy
     public List<EnemyAction> GetOnTurnStartActions()
     {
         return onTurnStartActions;
+    }
+
+    public List<EnemyAction> GetOnTurnEndActions()
+    {
+        return onTurnEndActions;
     }
 
     public virtual void OnDeath()
@@ -398,8 +409,9 @@ public class TheScienceExperiment : Enemy
         AddEnemyAction("MoreWard", MakeEnemyAction(null, new EnemyWardIntent(12)));
 
         // Add On Combat Start Actions
-        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Thorns, 1)));
+        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Thorns, 3)));
         AddOnTurnStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Thorns, -1)));
+        AddOnTurnEndAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Power, 1)));
 
         // Turn 1s
         PercentageMap<string> turn1Map = new PercentageMap<string>();

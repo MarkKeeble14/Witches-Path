@@ -126,23 +126,6 @@ public class BalenceManager : MonoBehaviour
         return artifactSpecDict[artifactLabel.ToString()][identifier];
     }
 
-    public int GetValue(ContentType type, string label, string identifier)
-    {
-        switch (type)
-        {
-            case ContentType.Artifact:
-                return artifactSpecDict[label][identifier];
-            case ContentType.Book:
-                return bookSpecDict[label][identifier];
-            case ContentType.ActiveSpell:
-                return activeSpellSpecDict[label].GetSpec(identifier);
-            case ContentType.PassiveSpell:
-                return passiveSpellSpecDict[label].GetSpec(identifier);
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
-    }
-
     public int UpdateValue(BookLabel bookLabel, string identifier, int changeBy)
     {
         if (bookSpecDict[bookLabel.ToString()].ContainsKey(identifier))

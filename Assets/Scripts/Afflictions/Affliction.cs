@@ -76,25 +76,39 @@ public abstract class Affliction : ToolTippable
     }
 
     // Setter
-    public void SetStacks(int v)
+    /// <summary>
+    /// Returns true if the Affliction isn't cleared immediately,
+    /// Returns false if the Affliction is cleared immediately (i.e., it didn't stick)
+    /// </summary>
+    /// <param name="v">v is the number of stacks being applied</param>
+    public bool SetStacks(int v)
     {
         stacks = v;
-        CheckForRemoval();
+        // Debug.Log("Setting Stacks of: " + Name + ", To - " + stacks);
+        return !CheckForRemoval();
     }
 
     // Setter
     public void AlterStacks(int v)
     {
         stacks += v;
+        // Debug.Log("Altered Stacks of: " + Name + ", To - " + stacks);
         CheckForRemoval();
     }
 
-    private void CheckForRemoval()
+    private bool CheckForRemoval()
     {
         if (CanBeCleared)
         {
-            CombatManager._Instance.RemoveAffliction(GetOwner(), Type);
+            // Debug.Log(Name + ", Can Be Cleared");
+            if (CombatManager._Instance.TargetHasAffliction(Type, GetOwner()))
+            {
+                // Debug.Log(Name + ", Affliction Previously Exists, Can be Removed");
+                CombatManager._Instance.RemoveAffliction(GetOwner(), Type);
+                return true;
+            }
         }
+        return false;
     }
 
     // Setter

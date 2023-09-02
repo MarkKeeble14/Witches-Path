@@ -18,7 +18,11 @@ public enum EventLabel
     TheCostOfGreed,
     RemoveCurseForGold,
     TavernkeepRescue,
-    TraumaRecall
+    TraumaRecall,
+    BookOfTheAmnesiac,
+    BookOfTheRepurposed,
+    BookOfTheStudious,
+    AngerForUpgrade
 }
 
 public abstract class OptionEvent
@@ -139,6 +143,14 @@ public abstract class OptionEvent
                 return new TavernkeeperRescue();
             case EventLabel.TraumaRecall:
                 return new TraumaRecall();
+            case EventLabel.BookOfTheAmnesiac:
+                return new BookOfTheAmnesiac();
+            case EventLabel.BookOfTheRepurposed:
+                return new BookOfTheRepurposed();
+            case EventLabel.BookOfTheStudious:
+                return new BookOfTheStudious();
+            case EventLabel.AngerForUpgrade:
+                return new AngerForUpgrade();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -344,17 +356,17 @@ public class HomeFree : OptionEvent
 
         // Get all Variables
         int gainGoldAmount = GetEventSpec("GainGoldAmount");
-        ArtifactLabel removeArtifact = ArtifactLabel.Crown;
-        if (GameManager._Instance.NumArtifacts > 0)
+        Artifact removeArtifact = GameManager._Instance.GetRandomOwnedArtifact();
+        if (GameManager._Instance.NumArtifacts <= 0)
         {
-            removeArtifact = GameManager._Instance.GetRandomOwnedArtifact();
+            throw new Exception();
         }
 
         // 1: Approach
         ConditionalOption approach = new ConditionalOption(() => true,
-            MakeEventOption("Approach", "Gain " + gainGoldAmount + " Gold, Lose " + (GameManager._Instance.NumArtifacts > 0 ? removeArtifact : "a Random Artifact"),
+            MakeEventOption("Approach", "Gain " + gainGoldAmount + " Gold, Lose " + removeArtifact.Name,
             () => GameManager._Instance.NumArtifacts <= 0,
-                MakeEventOptionOutcomeWithChance(100, "As you approach the portal, your " + removeArtifact + " is " +
+                MakeEventOptionOutcomeWithChance(100, "As you approach the portal, your " + removeArtifact.Name + " is " +
                     "sucked from your bag straight into the portal's waiting ripples. " +
                     "A moment later, a sack of money flies out, nearing taking off your head before landing by your feet.", delegate
                     {
@@ -546,7 +558,7 @@ public class TheCuriousChild : OptionEvent
 
         // Get all Variables
         // Artifact to Gain
-        ArtifactLabel gainArtifact = GameManager._Instance.GetRandomArtifact();
+        Artifact gainArtifact = Artifact.GetArtifactOfType(GameManager._Instance.GetRandomArtifact());
 
         // Determine gold Cost
         int minGoldCost = GetEventSpec("MinGoldCost");
@@ -570,7 +582,7 @@ public class TheCuriousChild : OptionEvent
 
         // 1: Give Spell
         ConditionalOption giveSpell = new ConditionalOption(() => true,
-            MakeEventOption("Give Spell", "Gain " + gainArtifact + ", Lose " + (loseSpell != null ? loseSpell.Name : "Random Spell"),
+            MakeEventOption("Give Spell", "Gain " + gainArtifact.Name + ", Lose " + (loseSpell != null ? loseSpell.Name : "Random Spell"),
             () => GameManager._Instance.NumSpells <= 1,
                 MakeEventOptionOutcomeWithChance(100, "\"Woah! Mom's gonna hate this!\", the child exclaims.", delegate
                 {
@@ -580,7 +592,7 @@ public class TheCuriousChild : OptionEvent
 
         // 2. Give Potion
         ConditionalOption givePotion = new ConditionalOption(() => true,
-            MakeEventOption("Give Potion", "Gain " + gainArtifact + ", Lose " + (losePotion != null ? losePotion.GetToolTipLabel() : "Random Potion"),
+            MakeEventOption("Give Potion", "Gain " + gainArtifact.Name + ", Lose " + (losePotion != null ? losePotion.GetToolTipLabel() : "Random Potion"),
             () => GameManager._Instance.NumPotions <= 1,
                 MakeEventOptionOutcomeWithChance(100, "The child excitedly accepts, \"That's got a funky color to it doesn't it! Say, you wouldn't know if this is safe to drink, would you?\" " +
                 "Nodding sheepishly, you step away.", delegate
@@ -591,7 +603,7 @@ public class TheCuriousChild : OptionEvent
 
         // 3: Give Gold
         ConditionalOption giveGold = new ConditionalOption(() => true,
-            MakeEventOption("Give Gold", "Gain " + gainArtifact + ", Lose " + finalGoldCost + " Gold",
+            MakeEventOption("Give Gold", "Gain " + gainArtifact.Name + ", Lose " + finalGoldCost + " Gold",
             () => currentPlayerGold < finalGoldCost,
                 MakeEventOptionOutcomeWithChance(100, "After giving the child the gold, while stepping away, you overhear him comment, \"I can buy so many things with this! " +
                 "I wonder what I'll splurge for first...\".", delegate
@@ -907,11 +919,11 @@ public class TheCostOfGreed : OptionEvent
 
         // 2: Gain Less Gold, but no Greed
         ConditionalOption noGreed = new ConditionalOption(() => true,
-            MakeEventOption("Barter", "Gain " + gainLessGoldAmount + " Gold, Choose a Spell to Remove",
+            MakeEventOption("Barter", "Pay " + gainLessGoldAmount + " Gold, Choose a Spell to Remove",
             () => false,
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
-                    GameManager._Instance.AlterGold(gainLessGoldAmount);
+                    GameManager._Instance.AlterGold(-gainLessGoldAmount);
                     EventManager._Instance.StartCoroutine(GameManager._Instance.RemoveSpellSequence(spell => true));
                 })));
 
@@ -936,7 +948,7 @@ public class RemoveCurseForGold : OptionEvent
         int removalCost = RandomHelper.RandomIntExclusive(minCost, maxCost);
 
         int numCurses = GetEventSpec("NumCurses");
-        bool hasSufficientCurses = GameManager._Instance.GetSpellbook().NumSpells(SpellColor.Curse) > numCurses;
+        bool hasSufficientCurses = GameManager._Instance.GetSpellbook().GetNumSpellsMatchingCondition(spell => spell.Color == SpellColor.Curse) > numCurses;
 
         // 1:
         ConditionalOption standard = new ConditionalOption(() => true,
@@ -1061,7 +1073,7 @@ public class TraumaRecall : OptionEvent
 
         ConditionalOption wardOff = new ConditionalOption(() => true,
             MakeEventOption("Ward Off", "Lose Witches Ward",
-            () => GameManager._Instance.GetSpellbook().NumSpells(SpellLabel.WitchesWard) <= 0,
+            () => GameManager._Instance.GetSpellbook().GetNumSpellsMatchingCondition(spell => spell.Label == SpellLabel.WitchesWard) <= 0,
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
                     EventManager._Instance.StartCoroutine(GameManager._Instance.RemoveSpellSequence(spell => spell.Label == SpellLabel.WitchesWard, 1));
@@ -1069,6 +1081,130 @@ public class TraumaRecall : OptionEvent
 
         // Add Options
         AddOptions(acknowledge, ignore, wardOff);
+    }
+}
+
+public class BookOfTheAmnesiac : OptionEvent
+{
+    public override EventLabel EventLabel => EventLabel.BookOfTheAmnesiac;
+
+    public override Sprite EventArt => null;
+
+    public override string EventName => "Book of the Amnesiac";
+    public override string EventText => "Text";
+
+    protected override void InitializeEventData()
+    {
+        // 1:
+        ConditionalOption read = new ConditionalOption(() => true,
+            MakeEventOption("Read", "Choose a Spell to Remove from your Spellbook",
+            () => false,
+                MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
+                {
+                    EventManager._Instance.StartCoroutine(GameManager._Instance.RemoveSpellSequence(spell => true));
+                })));
+
+        ConditionalOption leave = new ConditionalOption(() => true,
+            MakeEventOption("Leave", "", () => false,
+                MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
+                {
+                })));
+
+        // Add Options
+        AddOptions(read, leave);
+    }
+}
+
+public class BookOfTheRepurposed : OptionEvent
+{
+    public override EventLabel EventLabel => EventLabel.BookOfTheRepurposed;
+
+    public override Sprite EventArt => null;
+
+    public override string EventName => "Book of the Repurposed";
+    public override string EventText => "Text";
+
+    protected override void InitializeEventData()
+    {
+        // 1:
+        ConditionalOption read = new ConditionalOption(() => true,
+            MakeEventOption("Read", "Choose a Spell to Transform",
+            () => false,
+                MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
+                {
+                    EventManager._Instance.StartCoroutine(GameManager._Instance.TransformSpellSequence(spell => true));
+                })));
+
+        ConditionalOption leave = new ConditionalOption(() => true,
+            MakeEventOption("Leave", "", () => false,
+                MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
+                {
+                })));
+
+        // Add Options
+        AddOptions(read, leave);
+    }
+}
+
+public class BookOfTheStudious : OptionEvent
+{
+    public override EventLabel EventLabel => EventLabel.BookOfTheStudious;
+
+    public override Sprite EventArt => null;
+
+    public override string EventName => "Book of the Studious";
+    public override string EventText => "Text";
+
+    protected override void InitializeEventData()
+    {
+        // 1:
+        ConditionalOption read = new ConditionalOption(() => true,
+            MakeEventOption("Read", "Choose a Spell to Upgrade",
+            () => false,
+                MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
+                {
+                    EventManager._Instance.StartCoroutine(GameManager._Instance.UpgradeSpellSequence(spell => true));
+                })));
+
+        ConditionalOption leave = new ConditionalOption(() => true,
+            MakeEventOption("Leave", "", () => false,
+                MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
+                {
+                })));
+
+        // Add Options
+        AddOptions(read, leave);
+    }
+}
+
+public class AngerForUpgrade : OptionEvent
+{
+    public override EventLabel EventLabel => EventLabel.AngerForUpgrade;
+
+    public override Sprite EventArt => null;
+
+    public override string EventName => "Name";
+    public override string EventText => "Text";
+
+    protected override void InitializeEventData()
+    {
+        // 1:
+        ConditionalOption option = new ConditionalOption(() => true,
+            MakeEventOption("Upgrade", "Choose a Spell to Upgrade, Become Cursed - Anger",
+            () => false,
+                MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
+                {
+                    EventManager._Instance.StartCoroutine(GameManager._Instance.UpgradeSpellSequence(spell => true, 1,
+                        () => GameManager._Instance.AddSpellToSpellBook(SpellLabel.Anger)));
+                })));
+
+        // 2: Leave
+        ConditionalOption leave = new ConditionalOption(() => true,
+            MakeEventOption("Leave", "", () => false,
+                MakeEventOptionOutcomeWithChance(100, "Outcome Text", null)));
+
+        // Add Options
+        AddOptions(option, leave);
     }
 }
 

@@ -140,7 +140,20 @@ public class MapNodeUI : MonoBehaviour
     public void Set(GameOccurance setTo, Sprite sprite, MapNodeType type)
     {
         nodeType = type;
-        changeColorOf.sprite = sprite;
+
+        switch (setTo)
+        {
+            case MiniBossCombat miniBossCombat:
+                changeColorOf.sprite = miniBossCombat.MapSprite;
+                break;
+            case BossCombat bossCombat:
+                changeColorOf.sprite = bossCombat.MapSprite;
+                break;
+            default:
+                changeColorOf.sprite = sprite;
+                break;
+        }
+
         HasBeenSet = true;
         if (setTo == null)
         {

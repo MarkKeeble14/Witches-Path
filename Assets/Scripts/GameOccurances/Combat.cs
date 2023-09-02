@@ -65,7 +65,7 @@ public abstract class Combat : GameOccurance
         Debug.Log(name + ": OnResolve");
 
         // Add 1 Charge to all Books
-        GameManager._Instance.AlterAllBookCharge(1);
+        AdditionalOnResolveActions();
 
         // Item rewards
         foreach (RewardType type in itemRewards.Keys())
@@ -97,6 +97,12 @@ public abstract class Combat : GameOccurance
                         {
                             RewardManager._Instance.AddReward(GameManager._Instance.GetRandomBook());
                         }
+                    });
+                    break;
+                case RewardType.Potion:
+                    ParseItemRewardInfo(info, delegate
+                    {
+                        RewardManager._Instance.AddReward(Potion.GetRandomPotion(false));
                     });
                     break;
                 case RewardType.Spell:
@@ -134,14 +140,8 @@ public abstract class Combat : GameOccurance
                 case RewardType.Pelts:
                     RewardManager._Instance.AddPeltsReward(num);
                     break;
-                case RewardType.Currency:
+                case RewardType.Gold:
                     RewardManager._Instance.AddGoldReward(num);
-                    break;
-                case RewardType.ActiveSpellSlot:
-                    RewardManager._Instance.AddActiveSpellSlotReward(num);
-                    break;
-                case RewardType.PassiveSpellSlot:
-                    RewardManager._Instance.AddPassiveSpellSlotReward(num);
                     break;
                 default:
                     throw new UnhandledSwitchCaseException();
@@ -155,5 +155,11 @@ public abstract class Combat : GameOccurance
     {
         Debug.Log(name + ": OnStart");
         yield return GameManager._Instance.StartCoroutine(CombatManager._Instance.StartCombat(this));
+    }
+
+    protected virtual void AdditionalOnResolveActions()
+    {
+        //
+        GameManager._Instance.AlterAllBookCharge(1);
     }
 }

@@ -29,8 +29,8 @@ public class Character : ScriptableObject
 
     [Header("Combat")]
     [SerializeField] private int basicAttackDamage;
-    [SerializeField] private int startingActiveSpellSlots;
-    [SerializeField] private int startingPassiveSpellSlots;
+    [SerializeField] private int startingCombatPileSize;
+    [SerializeField] private int startingHandSize;
 
     [Header("Mana")]
     [SerializeField] private int maxMana;
@@ -61,14 +61,14 @@ public class Character : ScriptableObject
         return basicAttackDamage;
     }
 
-    public int GetStartingActiveSpellSlots()
+    public int GetStartingCombatPileSize()
     {
-        return startingActiveSpellSlots;
+        return startingCombatPileSize;
     }
 
-    public int GetStartingPassiveSpellSlots()
+    public int GetStartingHandSize()
     {
-        return startingPassiveSpellSlots;
+        return startingHandSize;
     }
 
     public int GetStartingCurrency()

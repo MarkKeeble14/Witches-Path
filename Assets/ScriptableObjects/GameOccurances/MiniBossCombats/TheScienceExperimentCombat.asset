@@ -9,18 +9,36 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4c66d2c9f0d014844bd55af72da36e53, type: 3}
+  m_Script: {fileID: 11500000, guid: a2d99bcf4013af2468069684297c7200, type: 3}
   m_Name: TheScienceExperimentCombat
   m_EditorClassIdentifier: 
   mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
   enemyType: 11
   itemRewards:
     dictionary:
-    - key: 4
+    - key: 0
+      value:
+        percentageMap:
+        - key:
+            NumericalType: 1
+            ForceRarity: 0
+            Rarity: 0
+            Numbers: {x: 1, y: 1}
+          value: 100
+    - key: 1
       value:
         percentageMap:
         - key:
             NumericalType: 0
+            ForceRarity: 0
+            Rarity: 0
+            Numbers: {x: 1, y: 3}
+          value: 100
+    - key: 4
+      value:
+        percentageMap:
+        - key:
+            NumericalType: 1
             ForceRarity: 0
             Rarity: 0
             Numbers: {x: 1, y: 1}
@@ -30,12 +48,11 @@ MonoBehaviour:
     - key: 2
       value:
         percentageMap:
-        - key: {x: 20, y: 40}
+        - key: {x: 75, y: 100}
           value: 100
     - key: 3
       value:
         percentageMap:
-        - key: {x: 0, y: 0}
-          value: 50
-        - key: {x: 1, y: 1}
-          value: 50
+        - key: {x: 1, y: 3}
+          value: 100
+  mapSprite: {fileID: 21300000, guid: 313f1b24ff320f34ba3fb34f0a654345, type: 3}

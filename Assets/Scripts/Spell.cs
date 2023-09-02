@@ -65,6 +65,29 @@ public abstract class Spell : ToolTippable
     public int OutOfCombatCooldown { get; private set; }
     public string SpritePath => "Spells/" + Label.ToString().ToLower();
 
+    // Determines if the Spell can be Upgraded
+    // The spell can be Upgraded if it's not already at it's max number of Upgrades
+    // OR, if the maximum number of upgrades has been set to -1 to indicate no limit on upgrade
+    public bool CanUpgrade => upgradeStatus.x < upgradeStatus.y || upgradeStatus.y == Utils.StandardSentinalValue;
+    public bool HasBeenUpgraded => upgradeStatus.x > 1;
+    protected Vector2Int upgradeStatus;
+
+    public void Upgrade()
+    {
+        if (CanUpgrade)
+        {
+            OnUpgrade();
+            upgradeStatus.x += 1;
+        }
+    }
+
+    protected abstract void OnUpgrade();
+
+    protected virtual void SetUpgradeStatus()
+    {
+        upgradeStatus = new Vector2Int(1, 2);
+    }
+
     protected abstract string toolTipText { get; }
 
     protected List<ToolTipKeyword> GeneralKeywords = new List<ToolTipKeyword>();
@@ -75,6 +98,7 @@ public abstract class Spell : ToolTippable
     {
         SetParameters();
         SetKeywords();
+        SetUpgradeStatus();
     }
 
     // Sets the Keywords of the Spell
@@ -118,6 +142,13 @@ public abstract class Spell : ToolTippable
     {
         // Debug.Log("GetSpellSpec Called for: " + Label + " - " + specIdentifier);
         return BalenceManager._Instance.GetValue(Label, Type, specIdentifier);
+    }
+
+    // Balence Manager Getters
+    protected int GetOnUpgradeSpellSpec(string specIdentifier)
+    {
+        // Debug.Log("GetSpellSpec Called for: " + Label + " - " + specIdentifier);
+        return BalenceManager._Instance.GetValue(Label, Type, "OnUpgrade" + specIdentifier);
     }
 
     // Getters
@@ -317,8 +348,8 @@ public class PoisonTips : PassiveSpell
     protected override void SetParameters()
     {
         base.SetParameters();
-        procAfter = (int)GetSpellSpec("ProcAfter");
-        stackAmount = (int)GetSpellSpec("StackAmount");
+        procAfter = GetSpellSpec("ProcAfter");
+        stackAmount = GetSpellSpec("StackAmount");
     }
 
     public override void OnEquip()
@@ -369,6 +400,11 @@ public class PoisonTips : PassiveSpell
     {
         base.ResetOnCombatReset();
         tracker = 0;
+    }
+
+    protected override void OnUpgrade()
+    {
+        procAfter += GetOnUpgradeSpellSpec("ProcAfter");
     }
 }
 
@@ -441,6 +477,11 @@ public class StaticField : PassiveSpell
         base.ResetOnCombatReset();
         tracker = 0;
     }
+
+    protected override void OnUpgrade()
+    {
+        stackAmount += GetOnUpgradeSpellSpec("StackAmount");
+    }
 }
 
 public class Inferno : PassiveSpell
@@ -511,6 +552,11 @@ public class Inferno : PassiveSpell
     {
         base.ResetOnCombatReset();
         tracker = 0;
+    }
+
+    protected override void OnUpgrade()
+    {
+        procAfter += GetOnUpgradeSpellSpec("ProcAfter");
     }
 }
 
@@ -583,6 +629,11 @@ public class BattleTrance : PassiveSpell
         base.ResetOnCombatReset();
         tracker = 0;
     }
+
+    protected override void OnUpgrade()
+    {
+        procAfter += GetOnUpgradeSpellSpec("ProcAfter");
+    }
 }
 
 public class MagicRain : PassiveSpell
@@ -648,152 +699,10 @@ public class MagicRain : PassiveSpell
         base.ResetOnCombatReset();
         tracker = 0;
     }
-}
 
-public class TeslaCoil : PassiveSpell
-{
-    public override SpellLabel Label => SpellLabel.TeslaCoil;
-    public override SpellColor Color => SpellColor.Blue;
-    public override Rarity Rarity => Rarity.Basic;
-    public override string Name => "Tesla Coil";
-
-    protected override string toolTipText => "At the Beginning of Every turn, Deal " + damageAmount + " Damage to the Enemy";
-
-    private int damageAmount;
-
-    protected override void SetParameters()
+    protected override void OnUpgrade()
     {
-        base.SetParameters();
-        damageAmount = (int)GetSpellSpec("DamageAmount");
-    }
-
-    public override void OnEquip()
-    {
-        base.OnEquip();
-        CombatManager._Instance.OnPlayerTurnStart += CallEffect;
-    }
-
-    public override void OnUnequip()
-    {
-        base.OnUnequip();
-        CombatManager._Instance.OnPlayerTurnStart -= CallEffect;
-    }
-
-    protected override void Effect()
-    {
-        Proc(true);
-    }
-
-    public override void Proc(bool canDupe)
-    {
-        CombatManager._Instance.AlterCombatentHP(-damageAmount, Target.Enemy, DamageType.Default);
-        base.Proc(canDupe);
-    }
-}
-
-public class Hurt : PassiveSpell
-{
-    public override SpellLabel Label => SpellLabel.Hurt;
-    public override SpellColor Color => SpellColor.Curse;
-    public override Rarity Rarity => Rarity.Common;
-    public override string Name => "Hurt";
-
-    protected override string toolTipText => "At the End of Every turn, Take " + damageAmount + " Damage";
-
-    private int damageAmount;
-
-    protected override void SetParameters()
-    {
-        base.SetParameters();
-        damageAmount = (int)GetSpellSpec("DamageAmount");
-    }
-
-    public override void OnEquip()
-    {
-        base.OnEquip();
-        CombatManager._Instance.OnPlayerTurnEnd += CallEffect;
-    }
-
-    public override void OnUnequip()
-    {
-        base.OnUnequip();
-        CombatManager._Instance.OnPlayerTurnEnd -= CallEffect;
-    }
-
-    protected override void Effect()
-    {
-        Proc(true);
-    }
-
-    public override void Proc(bool canDupe)
-    {
-        CombatManager._Instance.AlterCombatentHP(-damageAmount, Target.Character, DamageType.Evil);
-        base.Proc(canDupe);
-    }
-}
-
-public class Worry : PassiveSpell
-{
-    public override SpellLabel Label => SpellLabel.Worry;
-    public override SpellColor Color => SpellColor.Curse;
-    public override Rarity Rarity => Rarity.Common;
-    public override string Name => "Worry";
-
-    protected override string toolTipText => "Every " + procAfter + " Attack" + (procAfter > 1 ? "s" : "") + ", Gain " + weakAmount + " Weak";
-
-    private int weakAmount;
-    private int procAfter;
-    private int tracker;
-
-    protected override void SetParameters()
-    {
-        base.SetParameters();
-        weakAmount = GetSpellSpec("WeakAmount");
-        procAfter = GetSpellSpec("ProcAfter");
-    }
-
-    public override void OnEquip()
-    {
-        base.OnEquip();
-        CombatManager._Instance.OnPlayerAttack += CallEffect;
-    }
-
-    public override void OnUnequip()
-    {
-        base.OnUnequip();
-        CombatManager._Instance.OnPlayerAttack -= CallEffect;
-    }
-
-    protected override void Effect()
-    {
-        tracker += 1;
-        if (tracker > procAfter)
-        {
-            tracker = 0;
-            Proc(true);
-        }
-    }
-
-    public override void Proc(bool canDupe)
-    {
-        CombatManager._Instance.AddAffliction(AfflictionType.Weak, weakAmount, Target.Character);
-        base.Proc(canDupe);
-    }
-
-    public override string GetSecondaryText()
-    {
-        return tracker + "/" + procAfter;
-    }
-
-    public override float GetPercentProgress()
-    {
-        return (float)tracker / procAfter;
-    }
-
-    protected override void ResetOnCombatReset()
-    {
-        base.ResetOnCombatReset();
-        tracker = 0;
+        damageAmount += GetOnUpgradeSpellSpec("DamageAmount");
     }
 }
 
@@ -871,6 +780,183 @@ public class CrushJoints : PassiveSpell
     {
         base.ResetOnCombatReset();
         tracker = 0;
+    }
+
+    protected override void OnUpgrade()
+    {
+        stackAmount += GetOnUpgradeSpellSpec("StackAmount");
+    }
+}
+
+public class TeslaCoil : PassiveSpell
+{
+    public override SpellLabel Label => SpellLabel.TeslaCoil;
+    public override SpellColor Color => SpellColor.Blue;
+    public override Rarity Rarity => Rarity.Basic;
+    public override string Name => "Tesla Coil";
+
+    protected override string toolTipText => "At the Beginning of Every turn, Deal " + damageAmount + " Damage to the Enemy";
+
+    private int damageAmount;
+
+    protected override void SetParameters()
+    {
+        base.SetParameters();
+        damageAmount = (int)GetSpellSpec("DamageAmount");
+    }
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        CombatManager._Instance.OnPlayerTurnStart += CallEffect;
+    }
+
+    public override void OnUnequip()
+    {
+        base.OnUnequip();
+        CombatManager._Instance.OnPlayerTurnStart -= CallEffect;
+    }
+
+    protected override void Effect()
+    {
+        Proc(true);
+    }
+
+    public override void Proc(bool canDupe)
+    {
+        CombatManager._Instance.AlterCombatentHP(-damageAmount, Target.Enemy, DamageType.Default);
+        base.Proc(canDupe);
+    }
+
+    protected override void OnUpgrade()
+    {
+        damageAmount += GetOnUpgradeSpellSpec("DamageAmount");
+    }
+}
+
+public class Hurt : PassiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Hurt;
+    public override SpellColor Color => SpellColor.Curse;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Hurt";
+
+    protected override string toolTipText => "At the End of Every turn, Take " + damageAmount + " Damage";
+
+    private int damageAmount;
+
+    protected override void SetParameters()
+    {
+        base.SetParameters();
+        damageAmount = (int)GetSpellSpec("DamageAmount");
+    }
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        CombatManager._Instance.OnPlayerTurnEnd += CallEffect;
+    }
+
+    public override void OnUnequip()
+    {
+        base.OnUnequip();
+        CombatManager._Instance.OnPlayerTurnEnd -= CallEffect;
+    }
+
+    protected override void Effect()
+    {
+        Proc(true);
+    }
+
+    public override void Proc(bool canDupe)
+    {
+        CombatManager._Instance.AlterCombatentHP(-damageAmount, Target.Character, DamageType.Evil);
+        base.Proc(canDupe);
+    }
+
+    protected override void SetUpgradeStatus()
+    {
+        upgradeStatus = new Vector2Int(1, 1);
+    }
+
+    protected override void OnUpgrade()
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class Worry : PassiveSpell
+{
+    public override SpellLabel Label => SpellLabel.Worry;
+    public override SpellColor Color => SpellColor.Curse;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Worry";
+
+    protected override string toolTipText => "Every " + procAfter + " Attack" + (procAfter > 1 ? "s" : "") + ", Gain " + weakAmount + " Weak";
+
+    private int weakAmount;
+    private int procAfter;
+    private int tracker;
+
+    protected override void SetParameters()
+    {
+        base.SetParameters();
+        weakAmount = GetSpellSpec("WeakAmount");
+        procAfter = GetSpellSpec("ProcAfter");
+    }
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        CombatManager._Instance.OnPlayerAttack += CallEffect;
+    }
+
+    public override void OnUnequip()
+    {
+        base.OnUnequip();
+        CombatManager._Instance.OnPlayerAttack -= CallEffect;
+    }
+
+    protected override void Effect()
+    {
+        tracker += 1;
+        if (tracker > procAfter)
+        {
+            tracker = 0;
+            Proc(true);
+        }
+    }
+
+    public override void Proc(bool canDupe)
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Weak, weakAmount, Target.Character);
+        base.Proc(canDupe);
+    }
+
+    public override string GetSecondaryText()
+    {
+        return tracker + "/" + procAfter;
+    }
+
+    public override float GetPercentProgress()
+    {
+        return (float)tracker / procAfter;
+    }
+
+    protected override void ResetOnCombatReset()
+    {
+        base.ResetOnCombatReset();
+        tracker = 0;
+    }
+
+    protected override void SetUpgradeStatus()
+    {
+        upgradeStatus = new Vector2Int(1, 1);
+    }
+
+    protected override void OnUpgrade()
+    {
+        throw new NotImplementedException();
     }
 }
 
@@ -1010,9 +1096,25 @@ public abstract class ActiveSpell : Spell
     protected override void SetParameters()
     {
         base.SetParameters();
-        cooldown = (int)GetSpellSpec("Cooldown");
+        cooldown = GetSpellSpec("Cooldown");
         manaCost = GetSpellSpec("ManaCost");
         SetBatches();
+    }
+
+    protected void AlterMaxCooldown(int changeBy)
+    {
+        // Throw an exception if trying to reduce the cooldown to 0 or below
+        if (cooldown + changeBy <= 0)
+            throw new Exception();
+        cooldown += changeBy;
+    }
+
+    protected void AlterManaCost(int changeBy)
+    {
+        // Throw an exception if trying to reduce the mana cost to below 0
+        if (manaCost + changeBy < 0)
+            throw new Exception();
+        cooldown += changeBy;
     }
 
     protected virtual void SetBatches()
@@ -1140,6 +1242,11 @@ public class Fireball : ActiveSpell
         CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, DamageType.Fire, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Burn, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
+
+    protected override void OnUpgrade()
+    {
+        damageAmount += GetOnUpgradeSpellSpec("DamageAmount");
+    }
 }
 
 public class Shock : ActiveSpell
@@ -1174,6 +1281,11 @@ public class Shock : ActiveSpell
         CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, DamageType.Electricity, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
+
+    protected override void OnUpgrade()
+    {
+        damageAmount += GetOnUpgradeSpellSpec("DamageAmount");
+    }
 }
 
 public class Singe : ActiveSpell
@@ -1205,6 +1317,11 @@ public class Singe : ActiveSpell
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Burn, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
+
+    protected override void OnUpgrade()
+    {
+        stackAmount += GetOnUpgradeSpellSpec("StackAmount");
+    }
 }
 
 public class Plague : ActiveSpell
@@ -1234,6 +1351,11 @@ public class Plague : ActiveSpell
     protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Poison, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
+    }
+
+    protected override void OnUpgrade()
+    {
+        AlterMaxCooldown(GetOnUpgradeSpellSpec("Cooldown"));
     }
 }
 
@@ -1269,6 +1391,11 @@ public class Toxify : ActiveSpell
         CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Poison, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
+
+    protected override void OnUpgrade()
+    {
+        damageAmount += GetOnUpgradeSpellSpec("DamageAmount");
+    }
 }
 
 public class Jarkai : ActiveSpell
@@ -1296,6 +1423,11 @@ public class Jarkai : ActiveSpell
         {
             CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
         }
+    }
+
+    protected override void OnUpgrade()
+    {
+        damageAmount += GetOnUpgradeSpellSpec("DamageAmount");
     }
 }
 
@@ -1326,6 +1458,11 @@ public class Flurry : ActiveSpell
         {
             CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
         }
+    }
+
+    protected override void OnUpgrade()
+    {
+        hitAmount += GetOnUpgradeSpellSpec("HitAmount");
     }
 }
 
@@ -1361,6 +1498,12 @@ public class Electrifry : ActiveSpell
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, PassValueThroughEffectivenessMultiplier(paralyzeAmount), Target.Enemy);
         CombatManager._Instance.AddAffliction(AfflictionType.Burn, PassValueThroughEffectivenessMultiplier(burnAmount), Target.Enemy);
+    }
+
+    protected override void OnUpgrade()
+    {
+        paralyzeAmount += GetOnUpgradeSpellSpec("ParalyzeAmount");
+        burnAmount += GetOnUpgradeSpellSpec("BurnAmount");
     }
 }
 
@@ -1401,6 +1544,11 @@ public class ExposeFlesh : ActiveSpell
         CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
+
+    protected override void OnUpgrade()
+    {
+        stackAmount += GetOnUpgradeSpellSpec("StackAmount");
+    }
 }
 
 public class Cripple : ActiveSpell
@@ -1435,6 +1583,11 @@ public class Cripple : ActiveSpell
         CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Weak, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
     }
+
+    protected override void OnUpgrade()
+    {
+        stackAmount += GetOnUpgradeSpellSpec("StackAmount");
+    }
 }
 
 public class TradeBlood : ActiveSpell
@@ -1463,6 +1616,11 @@ public class TradeBlood : ActiveSpell
     {
         GameManager._Instance.AlterPlayerCurrentHP(-selfDamageAmount, mainDamageType);
         CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(otherDamageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
+    }
+
+    protected override void OnUpgrade()
+    {
+        otherDamageAmount += GetOnUpgradeSpellSpec("OtherDamageAmount");
     }
 }
 
@@ -1494,6 +1652,11 @@ public class Excite : ActiveSpell
     protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Embolden, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Character);
+    }
+
+    protected override void OnUpgrade()
+    {
+        stackAmount += GetOnUpgradeSpellSpec("StackAmount");
     }
 }
 
@@ -1530,6 +1693,11 @@ public class Overexcite : ActiveSpell
         CombatManager._Instance.AddAffliction(AfflictionType.Embolden, PassValueThroughEffectivenessMultiplier(emboldenedAmount), Target.Character);
         CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, PassValueThroughEffectivenessMultiplier(vulnerableAmount), Target.Character);
     }
+
+    protected override void OnUpgrade()
+    {
+        vulnerableAmount += GetOnUpgradeSpellSpec("VulnerableAmount");
+    }
 }
 
 public class Forethought : ActiveSpell
@@ -1561,6 +1729,11 @@ public class Forethought : ActiveSpell
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Intangible, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Character);
     }
+
+    protected override void OnUpgrade()
+    {
+        AlterManaCost(GetOnUpgradeSpellSpec("ManaCost"));
+    }
 }
 
 public class Reverberate : ActiveSpell
@@ -1591,6 +1764,11 @@ public class Reverberate : ActiveSpell
     protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Echo, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Character);
+    }
+
+    protected override void OnUpgrade()
+    {
+        AlterManaCost(GetOnUpgradeSpellSpec("ManaCost"));
     }
 }
 
@@ -1624,6 +1802,11 @@ public class ImpartialAid : ActiveSpell
         CombatManager._Instance.AlterCombatentHP(PassValueThroughEffectivenessMultiplier(healAmount), Target.Character, DamageType.Heal);
         CombatManager._Instance.AlterCombatentHP(PassValueThroughEffectivenessMultiplier(healAmount), Target.Enemy, DamageType.Heal);
     }
+
+    protected override void OnUpgrade()
+    {
+        AlterManaCost(GetOnUpgradeSpellSpec("ManaCost"));
+    }
 }
 
 public class WitchesWill : ActiveSpell
@@ -1654,6 +1837,11 @@ public class WitchesWill : ActiveSpell
     protected override void Effect()
     {
         CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
+    }
+
+    protected override void OnUpgrade()
+    {
+        damageAmount += GetOnUpgradeSpellSpec("DamageAmount");
     }
 }
 
@@ -1690,6 +1878,11 @@ public class WitchesWard : ActiveSpell
     protected override void Effect()
     {
         CombatManager._Instance.GiveCombatentWard(PassValueThroughEffectivenessMultiplier(wardAmount), Target.Character);
+    }
+
+    protected override void OnUpgrade()
+    {
+        wardAmount += GetOnUpgradeSpellSpec("WardAmount");
     }
 }
 
@@ -1731,6 +1924,16 @@ public class Greed : ActiveSpell
         CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
         CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Character, Target.Enemy, mainDamageType, DamageSource.ActiveSpell);
     }
+
+    protected override void SetUpgradeStatus()
+    {
+        upgradeStatus = new Vector2Int(1, 1);
+    }
+
+    protected override void OnUpgrade()
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public class Anger : ActiveSpell
@@ -1763,6 +1966,16 @@ public class Anger : ActiveSpell
     {
         CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, mainDamageType, DamageSource.ActiveSpell);
         CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, PassValueThroughEffectivenessMultiplier(vulnerableAmount), Target.Enemy);
+    }
+
+    protected override void SetUpgradeStatus()
+    {
+        upgradeStatus = new Vector2Int(1, 1);
+    }
+
+    protected override void OnUpgrade()
+    {
+        throw new NotImplementedException();
     }
 }
 
@@ -1806,6 +2019,16 @@ public class Frusteration : ActiveSpell
     {
         base.ResetOnCombatReset();
         selfDamageAmount = GetSpellSpec("SelfDamageAmount");
+    }
+
+    protected override void SetUpgradeStatus()
+    {
+        upgradeStatus = new Vector2Int(1, 1);
+    }
+
+    protected override void OnUpgrade()
+    {
+        throw new NotImplementedException();
     }
 }
 

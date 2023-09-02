@@ -5,7 +5,7 @@ using TMPro;
 using System.Collections;
 using UnityEngine.UI;
 
-public class VisualSpellDisplay : SpellDisplay, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
+public class VisualSpellDisplay : SpellDisplay
 {
     [Header("Visual Spell Display")]
     [SerializeField] private float delayBeforeSpawningToolTips = 0.5f;
@@ -21,43 +21,7 @@ public class VisualSpellDisplay : SpellDisplay, IPointerClickHandler, IPointerEn
     [SerializeField] private Image rarityImage;
     [SerializeField] private Image setColorOf;
     [SerializeField] private TextMeshProUGUI[] coloredTexts;
-    private bool isMouseOver;
-
-    private Action onClick;
-    private Action onEnter;
-    private Action onExit;
-
-    public void AddOnClick(Action a)
-    {
-        onClick += a;
-    }
-
-    public void AddOnEnter(Action a)
-    {
-        onEnter += a;
-    }
-
-    public void AddOnExit(Action a)
-    {
-        onExit += a;
-    }
-
-    public void OnPointerClick(PointerEventData eventData)
-    {
-        onClick?.Invoke();
-    }
-
-    public void OnPointerEnter(PointerEventData eventData)
-    {
-        isMouseOver = true;
-        onEnter?.Invoke();
-    }
-
-    public void OnPointerExit(PointerEventData eventData)
-    {
-        isMouseOver = false;
-        onExit?.Invoke();
-    }
+    private bool isForUpgrade;
 
     private IEnumerator SpawnToolTipsAfterDelay()
     {
@@ -73,19 +37,40 @@ public class VisualSpellDisplay : SpellDisplay, IPointerClickHandler, IPointerEn
             yield return null;
         }
 
-        base.SpawnToolTip();
+        SpawnToolTipFunc();
     }
 
-    public override void SpawnToolTip()
+    protected override void SpawnToolTipFunc()
+    {
+        if (isForUpgrade)
+        {
+            Spell upgradedSpell = Spell.GetSpellOfType(Spell.Label);
+
+            if (upgradedSpell.CanUpgrade)
+            {
+                upgradedSpell.Upgrade();
+                spawnedToolTip = UIManager._Instance.SpawnComparisonToolTips(
+                    new ToolTippableComparisonData[]
+                        {
+                        new ToolTippableComparisonData("Current: ", Spell),
+                        new ToolTippableComparisonData("Upgraded: ", upgradedSpell)
+                        },
+                    transform);
+            }
+            else
+            {
+                base.SpawnToolTipFunc();
+            }
+        }
+        else
+        {
+            base.SpawnToolTipFunc();
+        }
+    }
+
+    public override void CallSpawnToolTip()
     {
         StartCoroutine(SpawnToolTipsAfterDelay());
-    }
-
-    public override void Unset()
-    {
-        base.Unset();
-        onEnter -= SpawnToolTip;
-        onExit -= DestroyToolTip;
     }
 
     public void SetAvailableState(int currentOOCCD)
@@ -106,15 +91,17 @@ public class VisualSpellDisplay : SpellDisplay, IPointerClickHandler, IPointerEn
         }
     }
 
+    public void SetIsForUpgrade(bool b)
+    {
+        isForUpgrade = b;
+    }
+
     public override void SetSpell(Spell spell)
     {
         base.SetSpell(spell);
 
         SetAvailableState(0);
         outOfCombatCooldownText.text = UIManager._Instance.HighlightKeywords("Out of Combat Cooldown: " + spell.OutOfCombatCooldown + " Room" + (spell.OutOfCombatCooldown > 1 ? "s" : ""));
-
-        onEnter += SpawnToolTip;
-        onExit += DestroyToolTip;
 
         // Set Rarity Image Color
         rarityImage.color = UIManager._Instance.GetRarityColor(spell.Rarity);
@@ -124,6 +111,13 @@ public class VisualSpellDisplay : SpellDisplay, IPointerClickHandler, IPointerEn
         foreach (TextMeshProUGUI text in coloredTexts)
         {
             text.color = colorInfo.TextColor;
+        }
+
+        // This must be done after Setting the Color of the rest of the Text
+        // Debug.Log(spell.Name + " - Has Been Upgraded: " + spell.HasBeenUpgraded);
+        if (spell.HasBeenUpgraded)
+        {
+            nameText.color = UIManager._Instance.GetEffectTextColor("UpgradedSpell");
         }
 
         switch (spell)

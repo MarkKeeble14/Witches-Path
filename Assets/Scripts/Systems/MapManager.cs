@@ -9,7 +9,7 @@ public class MapManager : MonoBehaviour
     [SerializeField] private float beginningAnimationScrollRate = 5;
     [SerializeField] private float beforeScrollDelay = 1;
     [SerializeField] private bool useLerp;
-    [SerializeField] private float lerpGraceRange = 0.1f;
+    [SerializeField] private float graceRange = 0.1f;
     [SerializeField] private float buildConnectorDelay;
     [SerializeField] private string nextStage;
 
@@ -109,7 +109,7 @@ public class MapManager : MonoBehaviour
         // Debug.Log("After Delay");
 
         // Animate down
-        while (scrollRect.verticalNormalizedPosition > 0 || (useLerp && scrollRect.verticalNormalizedPosition <= lerpGraceRange))
+        while (scrollRect.verticalNormalizedPosition > graceRange || (useLerp && scrollRect.verticalNormalizedPosition <= graceRange))
         {
             // Debug.Log("Scrolling: " + scrollRect.verticalNormalizedPosition);
 

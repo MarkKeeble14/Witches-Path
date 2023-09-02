@@ -226,7 +226,7 @@ public class EnemyGainAfflictionIntent : EnemyAfflictionIntent
 {
     public override IntentType Type => IntentType.GainAffliction;
     protected override string name => "Gaining Affliction";
-    protected override string toolTipText => "Gain " + NumStacks + " " + Affliction.GetAfflictionOfType(AfflictionType).GetToolTipLabel();
+    protected override string toolTipText => (NumStacks > 0 ? "Gain " + NumStacks : "Lose " + (-1 * NumStacks)) + " " + Affliction.GetAfflictionOfType(AfflictionType).GetToolTipLabel();
 
     public EnemyGainAfflictionIntent(AfflictionType affType, Func<int> numStacks) : base(affType, numStacks)
     {

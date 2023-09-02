@@ -13,12 +13,11 @@ public enum RewardType
 {
     Artifact,
     Book,
-    Currency,
+    Gold,
     Pelts,
     Spell,
     PotionIngredient,
-    ActiveSpellSlot,
-    PassiveSpellSlot
+    Potion
 }
 
 public enum RewardNumericalType
@@ -218,10 +217,10 @@ public class RewardManager : MonoBehaviour
 
     public void AddReward(PotionIngredientType label)
     {
-        Debug.Log("Adding Potion Ingredient Reward: " + label);
+        PotionIngredient ingredient = PotionIngredient.GetPotionIngredientOfType(label);
+        Debug.Log("Adding Potion Ingredient Reward: " + ingredient.GetToolTipLabel());
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
         GameObject spawnedToolTip = null;
-        PotionIngredient ingredient = PotionIngredient.GetPotionIngredientOfType(label);
         spawned.Set(ingredient.Name, UIManager._Instance.GetPotionIngredientCategorySprite(ingredient.Category),
             delegate
             {
@@ -231,6 +230,28 @@ public class RewardManager : MonoBehaviour
             }, delegate
             {
                 spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(ingredient, spawned.transform);
+            }, delegate
+            {
+                Destroy(spawnedToolTip);
+            }
+        );
+        spawnedRewards.Add(spawned);
+    }
+
+    public void AddReward(Potion potion)
+    {
+        Debug.Log("Adding Potion Reward: " + potion.GetToolTipLabel());
+        RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
+        GameObject spawnedToolTip = null;
+        spawned.Set(potion.GetToolTipLabel(), rewardTypeSpriteDict[RewardType.Book],
+            delegate
+            {
+                GameManager._Instance.AddPotion(potion);
+                spawnedRewards.Remove(spawned);
+                Destroy(spawned.gameObject);
+            }, delegate
+            {
+                spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(potion, spawned.transform);
             }, delegate
             {
                 Destroy(spawnedToolTip);
@@ -256,7 +277,7 @@ public class RewardManager : MonoBehaviour
         }
 
         RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
-        spawned.Set(goldAmount.ToString() + " Gold", rewardTypeSpriteDict[RewardType.Currency],
+        spawned.Set(goldAmount.ToString() + " Gold", rewardTypeSpriteDict[RewardType.Gold],
             delegate
             {
                 GameManager._Instance.AlterGold(goldAmount);
@@ -280,39 +301,6 @@ public class RewardManager : MonoBehaviour
             delegate
             {
                 GameManager._Instance.AlterPelts(currencyAmount);
-                spawnedRewards.Remove(spawned);
-                Destroy(spawned.gameObject);
-            }, null, null);
-
-        spawnedRewards.Add(spawned);
-    }
-
-
-    public void AddActiveSpellSlotReward(int numSlots)
-    {
-        Debug.Log("Adding Active Spell Slot Reward: " + numSlots);
-
-        RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
-        spawned.Set(numSlots.ToString() + " Active Spell Slot" + (numSlots > 1 ? "s" : ""), rewardTypeSpriteDict[RewardType.ActiveSpellSlot],
-            delegate
-            {
-                GameManager._Instance.AddActiveSpellSlots(numSlots);
-                spawnedRewards.Remove(spawned);
-                Destroy(spawned.gameObject);
-            }, null, null);
-
-        spawnedRewards.Add(spawned);
-    }
-
-    public void AddPassiveSpellSlotReward(int numSlots)
-    {
-        Debug.Log("Adding Passive Spell Slot Reward: " + numSlots);
-
-        RewardDisplay spawned = Instantiate(simpleRewardDisplay, rewardList);
-        spawned.Set(numSlots.ToString() + " Passive Spell Slot" + (numSlots > 1 ? "s" : ""), rewardTypeSpriteDict[RewardType.PassiveSpellSlot],
-            delegate
-            {
-                GameManager._Instance.AddPassiveSpellSlots(numSlots);
                 spawnedRewards.Remove(spawned);
                 Destroy(spawned.gameObject);
             }, null, null);

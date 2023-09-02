@@ -5,8 +5,9 @@ using UnityEngine.UI;
 using TMPro;
 using System;
 using DG.Tweening;
+using UnityEngine.EventSystems;
 
-public abstract class SpellDisplay : MonoBehaviour
+public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     protected Spell Spell { get; private set; }
 
@@ -20,19 +21,10 @@ public abstract class SpellDisplay : MonoBehaviour
     [SerializeField] private float maxScale;
 
     [SerializeField] private Vector2 toolTipOffset;
-    private GameObject spawnedToolTip;
+    protected GameObject spawnedToolTip;
 
     private float targetScale;
     protected bool scaleLocked;
-    public void SetTargetScale(float v)
-    {
-        targetScale = v;
-    }
-
-    public void SetScaleLocked(bool b)
-    {
-        scaleLocked = b;
-    }
 
     [SerializeField] private float changeScaleSpeed = 1f;
 
@@ -43,6 +35,43 @@ public abstract class SpellDisplay : MonoBehaviour
     public bool IsEmpty { get; private set; }
 
     [SerializeField] private Sprite defaultSprite;
+
+    private Action onClick;
+    private Action onEnter;
+    private Action onExit;
+    protected bool isMouseOver;
+
+    public void AddOnClick(Action a)
+    {
+        onClick += a;
+    }
+
+    public void AddOnEnter(Action a)
+    {
+        onEnter += a;
+    }
+
+    public void AddOnExit(Action a)
+    {
+        onExit += a;
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        onClick?.Invoke();
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        isMouseOver = true;
+        onEnter?.Invoke();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        isMouseOver = false;
+        onExit?.Invoke();
+    }
 
     private void Start()
     {
@@ -89,6 +118,9 @@ public abstract class SpellDisplay : MonoBehaviour
         nameText.text = spell.Name;
         spell.SetEquippedTo(this);
         SetEmpty(false);
+
+        onEnter += CallSpawnToolTip;
+        onExit += DestroyToolTip;
     }
 
     public virtual void Unset()
@@ -99,6 +131,9 @@ public abstract class SpellDisplay : MonoBehaviour
         progressBar.fillAmount = 1;
         SetEmpty(true);
         Spell = null;
+
+        onEnter -= CallSpawnToolTip;
+        onExit -= DestroyToolTip;
     }
 
     public void SetEmpty(bool isEmpty)
@@ -110,11 +145,28 @@ public abstract class SpellDisplay : MonoBehaviour
         }
     }
 
-    public virtual void SpawnToolTip()
+    public void SetTargetScale(float v)
+    {
+        targetScale = v;
+    }
+
+    public void SetScaleLocked(bool b)
+    {
+        scaleLocked = b;
+    }
+
+    public virtual void CallSpawnToolTip()
     {
         // Only spawn ToolTip if spell is set
         if (!IsEmpty)
-            spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(Spell, transform);
+        {
+            SpawnToolTipFunc();
+        }
+    }
+
+    protected virtual void SpawnToolTipFunc()
+    {
+        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(Spell, transform);
     }
 
     public void DestroyToolTip()
