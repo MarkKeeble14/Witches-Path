@@ -5,6 +5,8 @@
     Treasure,
     Campfire,
     Tavern,
-    Event,
-    MiniBoss
+    Options,
+    MiniBoss,
+    Random,
+    EliteFight
 }

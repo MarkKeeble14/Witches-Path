@@ -8,7 +8,7 @@ public class OptionEventGameOccurance : GameOccurance
 {
     [SerializeField] private EventLabel eventLabel;
     public EventLabel EventLabel => eventLabel;
-    public override MapNodeType Type => MapNodeType.Event;
+    public override MapNodeType Type => MapNodeType.Options;
 
     public void SetEvent(EventLabel eventLabel)
     {

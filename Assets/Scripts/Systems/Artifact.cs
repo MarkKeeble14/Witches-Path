@@ -32,7 +32,8 @@ public enum ArtifactLabel
     CheapStopwatch,
     Boulder,
     Crown,
-    DeadCockroach
+    DeadCockroach,
+    EnchantedAura
 }
 
 public abstract class Artifact : PowerupItem
@@ -139,6 +140,8 @@ public abstract class Artifact : PowerupItem
                 return new Crown();
             case ArtifactLabel.DeadCockroach:
                 return new DeadCockroach();
+            case ArtifactLabel.EnchantedAura:
+                return new EnchantedAura();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -515,13 +518,13 @@ public class BlueMantis : Artifact
     protected override ArtifactLabel Label => ArtifactLabel.BlueMantis;
     public override Rarity Rarity => Rarity.Common;
 
-    protected override string toolTipText => "Upon Recieving Damage, Apply " + stackAmount + " Paralyze to the Enemy";
+    protected override string toolTipText => "Upon Recieving Damage, Apply " + stackAmount + " Electrocuted to the Enemy";
 
     private int stackAmount;
 
     protected override void SetKeywords()
     {
-        AfflictionKeywords.Add(AfflictionType.Paralyze);
+        AfflictionKeywords.Add(AfflictionType.Electrocuted);
     }
 
     protected override void SetParameters()
@@ -541,7 +544,7 @@ public class BlueMantis : Artifact
 
     protected override void Effect()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, stackAmount, Target.Enemy);
+        CombatManager._Instance.AddAffliction(AfflictionType.Electrocuted, stackAmount, Target.Enemy);
         ShowArtifactProc();
     }
 
@@ -1017,7 +1020,7 @@ public class LizardSkinSilk : Artifact
     {
         if (RandomHelper.EvaluateChanceTo(chanceToActivate))
         {
-            CombatManager._Instance.ClearRandomAffliction(Target.Character, AfflictionSign.Negative);
+            CombatManager._Instance.ClearRandomAffliction(Target.Character, Sign.Negative);
             ShowArtifactProc();
         }
     }
@@ -1346,5 +1349,41 @@ public class DeadCockroach : Artifact
     protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Blight, numCurses, Target.Enemy);
+    }
+}
+
+public class EnchantedAura : Artifact
+{
+    public override string Name => "Enchanted Aura";
+    protected override ArtifactLabel Label => ArtifactLabel.EnchantedAura;
+    public override Rarity Rarity => Rarity.Uncommon;
+
+    private int stackAmount;
+    protected override string toolTipText => "Upon Entering Combat, Gain " + stackAmount + " Nullify";
+
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Nullify);
+    }
+
+    protected override void SetParameters()
+    {
+        //
+        stackAmount = (int)GetArtifactSpec("StackAmount");
+    }
+
+    public override void OnEquip()
+    {
+        CombatManager._Instance.OnCombatStart += Effect;
+    }
+
+    public override void OnUnequip()
+    {
+        CombatManager._Instance.OnCombatStart -= Effect;
+    }
+
+    protected override void Effect()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Nullify, stackAmount, Target.Character);
     }
 }

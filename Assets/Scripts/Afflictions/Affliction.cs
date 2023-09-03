@@ -22,9 +22,11 @@ public enum AfflictionType
     BattleFrenzied,
     PoisonCoated,
     Ghostly,
+    Electrocuted,
+    Nullify
 }
 
-public enum AfflictionSign
+public enum Sign
 {
     Positive,
     Negative
@@ -33,7 +35,7 @@ public enum AfflictionSign
 public abstract class Affliction : ToolTippable
 {
     public abstract AfflictionType Type { get; }
-    public abstract AfflictionSign Sign { get; }
+    public abstract Sign Sign { get; }
     public string Name => Utils.SplitOnCapitalLetters(Type.ToString());
     protected abstract string specificToolTipText { get; }
     protected abstract string genericToolTipText { get; }
@@ -76,23 +78,23 @@ public abstract class Affliction : ToolTippable
     }
 
     // Setter
-    /// <summary>
-    /// Returns true if the Affliction isn't cleared immediately,
-    /// Returns false if the Affliction is cleared immediately (i.e., it didn't stick)
-    /// </summary>
-    /// <param name="v">v is the number of stacks being applied</param>
-    public bool SetStacks(int v)
+    public void SetStacks(int v)
     {
         stacks = v;
-        // Debug.Log("Setting Stacks of: " + Name + ", To - " + stacks);
-        return !CheckForRemoval();
+
+        OnAlteredStacks();
     }
 
     // Setter
     public void AlterStacks(int v)
     {
         stacks += v;
-        // Debug.Log("Altered Stacks of: " + Name + ", To - " + stacks);
+
+        OnAlteredStacks();
+    }
+
+    protected virtual void OnAlteredStacks()
+    {
         CheckForRemoval();
     }
 
@@ -215,6 +217,10 @@ public abstract class Affliction : ToolTippable
                 return new PoisonCoated();
             case AfflictionType.Ghostly:
                 return new Ghostly();
+            case AfflictionType.Electrocuted:
+                return new Electrocuted();
+            case AfflictionType.Nullify:
+                return new Nullify();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -228,7 +234,7 @@ public class Embolden : Affliction
 
     public override AfflictionType Type => AfflictionType.Embolden;
 
-    public override AfflictionSign Sign => AfflictionSign.Positive;
+    public override Sign Sign => Sign.Positive;
 
     protected override void SetKeywords()
     {
@@ -243,7 +249,7 @@ public class Weak : Affliction
 
     public override AfflictionType Type => AfflictionType.Weak;
 
-    public override AfflictionSign Sign => AfflictionSign.Negative;
+    public override Sign Sign => Sign.Negative;
 
     protected override void SetKeywords()
     {
@@ -257,7 +263,7 @@ public class Vulnerable : Affliction
 
     public override AfflictionType Type => AfflictionType.Vulnerable;
 
-    public override AfflictionSign Sign => AfflictionSign.Negative;
+    public override Sign Sign => Sign.Negative;
 
     protected override void SetKeywords()
     {
@@ -271,7 +277,7 @@ public class OnGuard : Affliction
 
     public override AfflictionType Type => AfflictionType.OnGuard;
 
-    public override AfflictionSign Sign => AfflictionSign.Positive;
+    public override Sign Sign => Sign.Positive;
 
     protected override void SetKeywords()
     {
@@ -285,7 +291,7 @@ public class Bandages : Affliction
 
     public override AfflictionType Type => AfflictionType.Bandages;
 
-    public override AfflictionSign Sign => AfflictionSign.Positive;
+    public override Sign Sign => Sign.Positive;
 
     protected override void SetKeywords()
     {
@@ -301,7 +307,7 @@ public class Intangible : Affliction
 
     public override AfflictionType Type => AfflictionType.Intangible;
 
-    public override AfflictionSign Sign => AfflictionSign.Positive;
+    public override Sign Sign => Sign.Positive;
 
     protected override void SetKeywords()
     {
@@ -316,7 +322,7 @@ public class Echo : Affliction
 
     public override AfflictionType Type => AfflictionType.Echo;
 
-    public override AfflictionSign Sign => AfflictionSign.Positive;
+    public override Sign Sign => Sign.Positive;
 
     protected override void SetKeywords()
     {
@@ -333,7 +339,7 @@ public class Blight : Affliction
         "Blight is then increased by " + GetAfflictionSpec("PercentToIncreaseBy") + "%";
     public override AfflictionType Type => AfflictionType.Blight;
 
-    public override AfflictionSign Sign => AfflictionSign.Negative;
+    public override Sign Sign => Sign.Negative;
 
     protected override void SetKeywords()
     {
@@ -350,7 +356,7 @@ public class Poison : Affliction
 
     public override AfflictionType Type => AfflictionType.Poison;
 
-    public override AfflictionSign Sign => AfflictionSign.Negative;
+    public override Sign Sign => Sign.Negative;
 
     protected override void SetKeywords()
     {
@@ -364,7 +370,7 @@ public class Burn : Affliction
 
     public override AfflictionType Type => AfflictionType.Burn;
 
-    public override AfflictionSign Sign => AfflictionSign.Negative;
+    public override Sign Sign => Sign.Negative;
 
     protected override void SetKeywords()
     {
@@ -378,7 +384,7 @@ public class Paralyze : Affliction
 
     public override AfflictionType Type => AfflictionType.Paralyze;
 
-    public override AfflictionSign Sign => AfflictionSign.Negative;
+    public override Sign Sign => Sign.Negative;
 
     protected override void SetKeywords()
     {
@@ -392,7 +398,7 @@ public class Thorns : Affliction
 
     public override AfflictionType Type => AfflictionType.Thorns;
 
-    public override AfflictionSign Sign => AfflictionSign.Positive;
+    public override Sign Sign => Sign.Positive;
 
     protected override void SetKeywords()
     {
@@ -406,7 +412,7 @@ public class Power : Affliction
 
     public override AfflictionType Type => AfflictionType.Power;
 
-    public override AfflictionSign Sign => AfflictionSign.Positive;
+    public override Sign Sign => Sign.Positive;
     public override bool CanBeCleared => GetStacks() == 0;
 
     protected override void SetKeywords()
@@ -421,7 +427,7 @@ public class Protection : Affliction
 
     public override AfflictionType Type => AfflictionType.Protection;
 
-    public override AfflictionSign Sign => AfflictionSign.Positive;
+    public override Sign Sign => Sign.Positive;
     public override bool CanBeCleared => GetStacks() == 0;
 
     protected override void SetKeywords()
@@ -436,7 +442,7 @@ public class Regeneration : Affliction
 
     public override AfflictionType Type => AfflictionType.Regeneration;
 
-    public override AfflictionSign Sign => AfflictionSign.Positive;
+    public override Sign Sign => Sign.Positive;
 
     protected override void SetKeywords()
     {
@@ -451,7 +457,7 @@ public class Levitating : Affliction
 
     public override AfflictionType Type => AfflictionType.Levitating;
 
-    public override AfflictionSign Sign => AfflictionSign.Positive;
+    public override Sign Sign => Sign.Positive;
 
     private int damageThisTurn;
     private int damageNeededToTake;
@@ -525,7 +531,7 @@ public class BattleFrenzied : Affliction
 
     public override AfflictionType Type => AfflictionType.BattleFrenzied;
 
-    public override AfflictionSign Sign => AfflictionSign.Positive;
+    public override Sign Sign => Sign.Positive;
 
     private int damageToActivate;
 
@@ -581,47 +587,16 @@ public class BattleFrenzied : Affliction
 
 public class PoisonCoated : Affliction
 {
-    protected override string specificToolTipText => "Upon Attacking, Apply " + GetStacks() + " Posion to the Reciever";
-    protected override string genericToolTipText => "Upon Attacking, Apply Poison equal to the number of Poison Coated Stacks to the Reciever";
+    protected override string specificToolTipText => "Upon Dealing Unwarded Damage, Apply " + GetStacks() + " Posion to the Reciever";
+    protected override string genericToolTipText => "Upon Dealing Unwarded Damage, Apply Poison equal to the number of Poison Coated Stacks to the Reciever";
 
     public override AfflictionType Type => AfflictionType.PoisonCoated;
 
-    public override AfflictionSign Sign => AfflictionSign.Positive;
-
-    private void ApplyPoison()
-    {
-        CombatManager._Instance.AddAffliction(AfflictionType.Poison, GetStacks(), GetNonOwner());
-    }
+    public override Sign Sign => Sign.Positive;
 
     protected override void SetKeywords()
     {
         afflictionKeywords.Add(AfflictionType.Poison);
-    }
-
-    public override void Apply()
-    {
-        switch (GetOwner())
-        {
-            case Target.Character:
-                CombatManager._Instance.OnPlayerAttack += ApplyPoison;
-                return;
-            case Target.Enemy:
-                CombatManager._Instance.OnEnemyAttack += ApplyPoison;
-                return;
-        }
-    }
-
-    public override void Unapply()
-    {
-        switch (GetOwner())
-        {
-            case Target.Character:
-                CombatManager._Instance.OnPlayerAttack -= ApplyPoison;
-                return;
-            case Target.Enemy:
-                CombatManager._Instance.OnEnemyAttack -= ApplyPoison;
-                return;
-        }
     }
 }
 
@@ -632,7 +607,7 @@ public class Ghostly : Affliction
 
     public override AfflictionType Type => AfflictionType.Ghostly;
 
-    public override AfflictionSign Sign => AfflictionSign.Positive;
+    public override Sign Sign => Sign.Positive;
 
     private void ApplyIntangible()
     {
@@ -668,5 +643,56 @@ public class Ghostly : Affliction
                 CombatManager._Instance.OnEnemyTurnStart -= ApplyIntangible;
                 return;
         }
+    }
+}
+
+public class Electrocuted : Affliction
+{
+    protected override string specificToolTipText => "Upon aquiring " + (stacksToApplyParalyzed - GetStacks()) + " More Stacks of Electrocuted, Consume " + stacksToApplyParalyzed +
+        " Stacks to Apply 1 Paralyze";
+    protected override string genericToolTipText => "Upon reaching " + stacksToApplyParalyzed + " Stacks of Electrocuted, Consume " + stacksToApplyParalyzed +
+        " Stacks to Apply 1 Paralyze";
+
+    public override AfflictionType Type => AfflictionType.Electrocuted;
+
+    public override Sign Sign => Sign.Negative;
+
+    private int stacksToApplyParalyzed;
+
+    protected override void SetParameters()
+    {
+        base.SetParameters();
+        stacksToApplyParalyzed = GetAfflictionSpec("StacksToApply");
+    }
+
+    protected override void SetKeywords()
+    {
+        afflictionKeywords.Add(AfflictionType.Paralyze);
+    }
+
+    protected override void OnAlteredStacks()
+    {
+        if (GetStacks() >= stacksToApplyParalyzed)
+        {
+            CombatManager._Instance.ConsumeAfflictionStack(Type, GetOwner(), stacksToApplyParalyzed);
+            CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, 1, GetOwner());
+            OnAlteredStacks();
+        }
+        base.OnAlteredStacks();
+    }
+}
+
+public class Nullify : Affliction
+{
+    protected override string specificToolTipText => "Negate the next " + GetStacks() + " Negative Afflictions";
+    protected override string genericToolTipText => "Negate Negative Afflictions";
+
+    public override AfflictionType Type => AfflictionType.Nullify;
+
+    public override Sign Sign => Sign.Positive;
+
+    protected override void SetKeywords()
+    {
+        generalKeywords.Add(ToolTipKeyword.Affliction);
     }
 }

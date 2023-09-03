@@ -3,16 +3,11 @@ using UnityEngine;
 using TMPro;
 using DG.Tweening;
 
-public enum SpellDisplayState
-{
-    Normal,
-    Selected
-}
-
 public class ActiveSpellDisplay : SpellDisplay
 {
     private ActiveSpell ActiveSpell => (ActiveSpell)Spell;
 
+    [SerializeField] private TextMeshProUGUI typeText;
     [SerializeField] private TextMeshProUGUI keyBindingText;
     [SerializeField] private TextMeshProUGUI spellCDText;
     [SerializeField] private TextMeshProUGUI spellManaCostText;
@@ -27,25 +22,33 @@ public class ActiveSpellDisplay : SpellDisplay
             return;
         }
 
-        // Only allow for spell casts while in combat
-        if (CombatManager._Instance.CanCastSpells)
+        if (CombatManager._Instance.InCombat &&
+            (currentSpellDisplayState == SpellDisplayState.ChoosingExhaust || currentSpellDisplayState == SpellDisplayState.ChoosingDiscard || currentSpellDisplayState == SpellDisplayState.Selected))
         {
-            // Debug.Log("Attempting to Cast: " + spellToCast);
-            if (ActiveSpell.CanCast)
+            CombatManager._Instance.ClickedSpellForAlterHandSequence(Spell);
+        }
+        else if (currentSpellDisplayState == SpellDisplayState.Normal)
+        {
+            // Only allow for spell casts while in combat
+            if (CombatManager._Instance.CanCastSpells)
             {
-                // Debug.Log("Adding: " + spellToCast + " to Queue");
-                CombatManager._Instance.AddSpellToCastQueue(ActiveSpell);
-            }
-            else
-            {
-                Debug.Log("Can't Cast: " + ActiveSpell);
-                if (ActiveSpell.OnCooldown)
+                // Debug.Log("Attempting to Cast: " + spellToCast);
+                if (ActiveSpell.CanCast)
                 {
-                    Debug.Log("Spell: " + ActiveSpell + " Cooling Down: " + ActiveSpell.CooldownTracker);
+                    // Debug.Log("Adding: " + spellToCast + " to Queue");
+                    CombatManager._Instance.AddSpellToCastQueue(ActiveSpell);
                 }
-                if (!ActiveSpell.HasMana)
+                else
                 {
-                    Debug.Log("Not Enough Mana to Cast Spell: " + ActiveSpell);
+                    Debug.Log("Can't Cast: " + ActiveSpell);
+                    if (ActiveSpell.OnCooldown)
+                    {
+                        Debug.Log("Spell: " + ActiveSpell + " Cooling Down: " + ActiveSpell.CooldownTracker);
+                    }
+                    if (!ActiveSpell.HasMana)
+                    {
+                        Debug.Log("Not Enough Mana to Cast Spell: " + ActiveSpell);
+                    }
                 }
             }
         }
@@ -56,6 +59,7 @@ public class ActiveSpellDisplay : SpellDisplay
         base.SetSpell(spell);
 
         spellCD = ActiveSpell.CooldownTracker.y;
+        typeText.text = ActiveSpell.ActiveSpellType.ToString();
     }
 
     public override void Unset()

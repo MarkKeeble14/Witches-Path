@@ -1,76 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public enum SpellOutOfCombatState
-{
-    Available,
-    Unavailable
-}
-
-[System.Serializable]
-public class SpellbookEntry
-{
-    public Spell Spell { get; private set; }
-    public SpellOutOfCombatState OutOfCombatState { get; private set; }
-    public int OutOfCombatCooldown { get; private set; }
-
-    public SpellbookEntry(Spell spell, SpellOutOfCombatState outOfCombatState)
-    {
-        Spell = spell;
-        OutOfCombatState = outOfCombatState;
-        OutOfCombatCooldown = 0;
-    }
-
-    public void TickOutOfCombatCooldown()
-    {
-        if (OutOfCombatCooldown > 0)
-        {
-            OutOfCombatCooldown -= 1;
-            if (OutOfCombatCooldown <= 0)
-            {
-                OutOfCombatState = SpellOutOfCombatState.Available;
-            }
-        }
-    }
-
-    public void SetUnavailable(int cooldown)
-    {
-        OutOfCombatCooldown = cooldown;
-        OutOfCombatState = SpellOutOfCombatState.Unavailable;
-    }
-}
-
 [System.Serializable]
 public class Spellbook
 {
-    private List<SpellbookEntry> spellBookEntries;
-
-    public int NumAvailable
-    {
-        get
-        {
-            int count = 0;
-            foreach (SpellbookEntry entry in spellBookEntries)
-            {
-                if (entry.OutOfCombatState == SpellOutOfCombatState.Available)
-                {
-                    count++;
-                }
-            }
-            return count;
-        }
-    }
+    private List<Spell> spellBookEntries;
 
     public void AddSpell(Spell spell)
     {
-        spellBookEntries.Add(new SpellbookEntry(spell, SpellOutOfCombatState.Available));
+        spellBookEntries.Add(spell);
     }
 
-    private void SearchForEntry(Spell searchingFor, Action<SpellbookEntry> doToSpell)
+    private void SearchForEntry(Spell searchingFor, Action<Spell> doToSpell)
     {
-        foreach (SpellbookEntry entry in spellBookEntries)
+        foreach (Spell entry in spellBookEntries)
         {
-            if (entry.Spell == searchingFor)
+            if (entry == searchingFor)
             {
                 doToSpell(entry);
                 break;
@@ -83,21 +28,16 @@ public class Spellbook
         SearchForEntry(spell, entry => spellBookEntries.Remove(entry));
     }
 
-    public void SetSpellUnavailable(Spell spell)
-    {
-        SearchForEntry(spell, entry => entry.SetUnavailable(spell.OutOfCombatCooldown));
-    }
-
     public Spellbook(IEnumerable<SpellLabel> spellLabels)
     {
-        spellBookEntries = new List<SpellbookEntry>();
+        spellBookEntries = new List<Spell>();
         foreach (SpellLabel spellLabel in spellLabels)
         {
-            spellBookEntries.Add(new SpellbookEntry(Spell.GetSpellOfType(spellLabel), SpellOutOfCombatState.Available));
+            spellBookEntries.Add(Spell.GetSpellOfType(spellLabel));
         }
     }
 
-    public List<SpellbookEntry> GetSpellBookEntries()
+    public List<Spell> GetSpellBookEntries()
     {
         return spellBookEntries;
     }
@@ -105,20 +45,7 @@ public class Spellbook
     public int GetNumSpellsMatchingCondition(Func<Spell, bool> matchesFunc)
     {
         int count = 0;
-        foreach (SpellbookEntry entry in spellBookEntries)
-        {
-            if (matchesFunc(entry.Spell))
-            {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    public int GetNumSpellbookEntriesMatchingCondition(Func<SpellbookEntry, bool> matchesFunc)
-    {
-        int count = 0;
-        foreach (SpellbookEntry entry in spellBookEntries)
+        foreach (Spell entry in spellBookEntries)
         {
             if (matchesFunc(entry))
             {
@@ -126,13 +53,5 @@ public class Spellbook
             }
         }
         return count;
-    }
-
-    public void TickOutOfCombatCooldowns()
-    {
-        foreach (SpellbookEntry entry in spellBookEntries)
-        {
-            entry.TickOutOfCombatCooldown();
-        }
     }
 }

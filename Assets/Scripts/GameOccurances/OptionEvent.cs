@@ -728,7 +728,7 @@ public class GainColoredCards : OptionEvent
                 MakeEventOptionOutcomeWithChance(100, "...", delegate
                 {
                     RewardManager._Instance.AddChooseSpellReward(viableFunc);
-                    GameManager._Instance.AlterPlayerCurrentHP(-damagePerTome, DamageType.Electricity);
+                    GameManager._Instance.AlterPlayerCurrentHP(-damagePerTome, DamageType.Electric);
                     EventManager._Instance.StartCoroutine(RewardManager._Instance.ShowRewardScreen());
                 })));
 
@@ -740,7 +740,7 @@ public class GainColoredCards : OptionEvent
                 {
                     RewardManager._Instance.AddChooseSpellReward(viableFunc);
                     RewardManager._Instance.AddChooseSpellReward(viableFunc);
-                    GameManager._Instance.AlterPlayerCurrentHP(-damagePerTome * 2, DamageType.Electricity);
+                    GameManager._Instance.AlterPlayerCurrentHP(-damagePerTome * 2, DamageType.Electric);
                     EventManager._Instance.StartCoroutine(RewardManager._Instance.ShowRewardScreen());
                 })));
 
@@ -753,7 +753,7 @@ public class GainColoredCards : OptionEvent
                     RewardManager._Instance.AddChooseSpellReward(viableFunc);
                     RewardManager._Instance.AddChooseSpellReward(viableFunc);
                     RewardManager._Instance.AddChooseSpellReward(viableFunc);
-                    GameManager._Instance.AlterPlayerCurrentHP(-damagePerTome * 3, DamageType.Electricity);
+                    GameManager._Instance.AlterPlayerCurrentHP(-damagePerTome * 3, DamageType.Electric);
                     EventManager._Instance.StartCoroutine(RewardManager._Instance.ShowRewardScreen());
                 })));
 

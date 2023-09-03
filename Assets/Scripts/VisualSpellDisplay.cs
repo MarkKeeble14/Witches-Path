@@ -12,10 +12,7 @@ public class VisualSpellDisplay : SpellDisplay
 
     [Header("References")]
     [SerializeField] private TextMeshProUGUI typeText;
-    [SerializeField] private CanvasGroup mainCV;
-    [SerializeField] private GameObject currentOutOfCombatCooldown;
-    [SerializeField] private TextMeshProUGUI currentOutOfCombatCooldownText;
-    [SerializeField] private TextMeshProUGUI outOfCombatCooldownText;
+    [SerializeField] private TextMeshProUGUI activeTypeText;
 
     [Header("Spell Dependant")]
     [SerializeField] private Image rarityImage;
@@ -37,6 +34,11 @@ public class VisualSpellDisplay : SpellDisplay
             yield return null;
         }
 
+        if (!isMouseOver)
+        {
+            yield break;
+        }
+
         SpawnToolTipFunc();
     }
 
@@ -48,7 +50,7 @@ public class VisualSpellDisplay : SpellDisplay
 
             if (upgradedSpell.CanUpgrade)
             {
-                upgradedSpell.Upgrade();
+                upgradedSpell.Upgrade(Sign.Positive);
                 spawnedToolTip = UIManager._Instance.SpawnComparisonToolTips(
                     new ToolTippableComparisonData[]
                         {
@@ -73,24 +75,6 @@ public class VisualSpellDisplay : SpellDisplay
         StartCoroutine(SpawnToolTipsAfterDelay());
     }
 
-    public void SetAvailableState(int currentOOCCD)
-    {
-        // 
-        if (currentOOCCD > 0)
-        {
-            currentOutOfCombatCooldownText.text = "Unavailable\nComplete " + currentOOCCD.ToString() + " Room" + (currentOOCCD > 1 ? "s" : "");
-            currentOutOfCombatCooldown.SetActive(true);
-            mainCV.interactable = false;
-            mainCV.blocksRaycasts = false;
-        }
-        else
-        {
-            currentOutOfCombatCooldown.SetActive(false);
-            mainCV.interactable = true;
-            mainCV.blocksRaycasts = true;
-        }
-    }
-
     public void SetIsForUpgrade(bool b)
     {
         isForUpgrade = b;
@@ -99,9 +83,6 @@ public class VisualSpellDisplay : SpellDisplay
     public override void SetSpell(Spell spell)
     {
         base.SetSpell(spell);
-
-        SetAvailableState(0);
-        outOfCombatCooldownText.text = UIManager._Instance.HighlightKeywords("Out of Combat Cooldown: " + spell.OutOfCombatCooldown + " Room" + (spell.OutOfCombatCooldown > 1 ? "s" : ""));
 
         // Set Rarity Image Color
         rarityImage.color = UIManager._Instance.GetRarityColor(spell.Rarity);
@@ -124,6 +105,8 @@ public class VisualSpellDisplay : SpellDisplay
         {
             case ActiveSpell activeSpell:
                 typeText.text = "Active";
+                activeTypeText.gameObject.SetActive(true);
+                activeTypeText.text = activeSpell.ActiveSpellType.ToString();
 
                 // Show Detail of Spells
                 string[] tokens = spell.GetToolTipText().Split(',');
@@ -140,6 +123,7 @@ public class VisualSpellDisplay : SpellDisplay
 
                 break;
             case PassiveSpell passiveSpell:
+                activeTypeText.gameObject.SetActive(false);
                 typeText.text = "Passive";
                 text.text = spell.GetToolTipText();
                 break;

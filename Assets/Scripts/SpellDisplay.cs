@@ -7,6 +7,15 @@ using System;
 using DG.Tweening;
 using UnityEngine.EventSystems;
 
+public enum SpellDisplayState
+{
+    Normal,
+    Selected,
+    Locked,
+    ChoosingExhaust,
+    ChoosingDiscard
+}
+
 public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     protected Spell Spell { get; private set; }
@@ -26,15 +35,17 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
     private float targetScale;
     protected bool scaleLocked;
 
+    [SerializeField] protected CanvasGroup mainCV;
     [SerializeField] private float changeScaleSpeed = 1f;
 
     [SerializeField] private GameObject[] disableWhenEmpty;
 
-    protected SpellDisplayState displayState = SpellDisplayState.Normal;
+    protected SpellDisplayState currentSpellDisplayState = SpellDisplayState.Normal;
     private Tweener shakeTweener;
     public bool IsEmpty { get; private set; }
 
     [SerializeField] private Sprite defaultSprite;
+    [SerializeField] private GameObject lockedContainer;
 
     private Action onClick;
     private Action onEnter;
@@ -78,9 +89,9 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
         targetScale = regularScale;
     }
 
-    protected void Update()
+    protected virtual void Update()
     {
-        if (displayState == SpellDisplayState.Normal && !scaleLocked)
+        if ((currentSpellDisplayState == SpellDisplayState.Normal || currentSpellDisplayState == SpellDisplayState.Normal) && !scaleLocked)
         {
             // Allow target scale to fall back to regular scale
             if (targetScale != regularScale)
@@ -95,13 +106,21 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
 
     public void SetSpellDisplayState(SpellDisplayState displayState)
     {
-        this.displayState = displayState;
+        currentSpellDisplayState = displayState;
+
+        mainCV.blocksRaycasts = displayState != SpellDisplayState.Locked;
+        lockedContainer.SetActive(currentSpellDisplayState == SpellDisplayState.Locked);
+
         if (displayState == SpellDisplayState.Selected)
         {
             shakeTweener = transform.DOShakePosition(1, 3, 10, 90, false, false).SetLoops(-1);
         }
-        else if (displayState == SpellDisplayState.Normal)
+        else
         {
+            if (displayState == SpellDisplayState.ChoosingDiscard || displayState == SpellDisplayState.ChoosingExhaust)
+            {
+                // 
+            }
             shakeTweener.Kill();
         }
     }
@@ -131,6 +150,8 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
         progressBar.fillAmount = 1;
         SetEmpty(true);
         Spell = null;
+
+        shakeTweener.Kill();
 
         onEnter -= CallSpawnToolTip;
         onExit -= DestroyToolTip;

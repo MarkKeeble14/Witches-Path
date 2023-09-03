@@ -61,14 +61,15 @@ public class Map
 {
     [Header("Map Config")]
     [SerializeField] private List<MapSectionInfo> mapSections = new List<MapSectionInfo>();
-    [SerializeField] private SerializableDictionary<MapSection, PercentageMap<MapNodeType>> randomNodeTypeOdds;
+    [SerializeField] private SerializableDictionary<MapSection, PercentageMap<MapNodeType>> sectionNodeTypeOdds;
+    [SerializeField] private PercentageMap<MapNodeType> randomNodeTypeOdds;
 
     [Header("Map Settings")]
     [SerializeField] private SerializableDictionary<MapNodeType, List<GameOccurance>> mapNodes = new SerializableDictionary<MapNodeType, List<GameOccurance>>();
     [SerializeField] private List<EventLabelWithCondition> optionEvents = new List<EventLabelWithCondition>();
 
     [Header("General Settings")]
-    [SerializeField] private List<MapNodeType> lazySetters = new List<MapNodeType>();
+    [SerializeField] private List<MapNodeType> earlySetters = new List<MapNodeType>();
 
     [Header("Visual Settings")]
     [SerializeField] private float delayBetweenShowingCells = .1f;
@@ -410,9 +411,28 @@ public class Map
         {
             foreach (MapNodeUI node in mapNodes)
             {
-                SetNodeGameOccurance(node, randomNodeTypeOdds[sectionInfo.Content].GetOption());
+                SetNode(node, sectionInfo, 0);
             }
         }
+    }
+
+    private void DisableUnset(MapNodeUI[,] mapNodes)
+    {
+        foreach (MapNodeUI node in mapNodes)
+        {
+            if (!node.HasBeenSet)
+            {
+                node.Lockout();
+            }
+        }
+    }
+
+    public IEnumerator ShowGrid()
+    {
+        yield return MapManager._Instance.StartCoroutine(ActOnEachGridCellWithDelay(cell =>
+        {
+            cell.SetShow(true);
+        }, delayBetweenShowingCells));
     }
 
     private void SetNode(MapNodeUI node, MapSectionInfo sectionInfo, int rowIndex)
@@ -424,28 +444,35 @@ public class Map
         }
         else
         {
-            nodeType = randomNodeTypeOdds[sectionInfo.Content].GetOption();
+            nodeType = sectionNodeTypeOdds[sectionInfo.Content].GetOption();
         }
 
-        // Defer from setting the Game Occurance for now; instead, we'll be setting it upon entering the node itself
-        if (lazySetters.Contains(nodeType))
-        {
-            node.Set(null, mapNodeIconDict[nodeType], nodeType);
-        }
-        else  // Otherwise, if we are to set nodes of this type right away, then do so
+        // Only pre-emptively set the game occurance if it is defined to do so in the inspector
+        if (earlySetters.Contains(nodeType))
         {
             SetNodeGameOccurance(node, nodeType);
         }
+        else
+        {
+            node.Set(null, mapNodeIconDict[nodeType], nodeType);
+        }
     }
 
+    // Sets the node to a random game occurance of the given type
     public void SetNodeGameOccurance(MapNodeUI node, MapNodeType nodeType)
     {
+        if (nodeType == MapNodeType.EliteFight)
+        {
+            nodeType = MapNodeType.MiniBoss;
+        }
         node.Set(GetGameOccuranceOfType(nodeType), mapNodeIconDict[nodeType], nodeType);
     }
 
+    // Gets a random Game Occurance of a MapNodeType, and does any of the additional management needed
+    // as well such as perhaps removing whatever option was selected
     public GameOccurance GetGameOccuranceOfType(MapNodeType nodeType)
     {
-        if (nodeType == MapNodeType.Event)
+        if (nodeType == MapNodeType.Options)
         {
             // Determine which Option Events can Occur
             List<EventLabelWithCondition> viableEvents = new List<EventLabelWithCondition>();
@@ -487,38 +514,24 @@ public class Map
         else if (nodeType == MapNodeType.MinorFight || nodeType == MapNodeType.MiniBoss || nodeType == MapNodeType.Boss)
         {
             // Get a Game Occurance of the type we want
-            GameOccurance r = RandomHelper.GetRandomFromList(mapNodes[nodeType]);
+            GameOccurance gameOccurance = RandomHelper.GetRandomFromList(mapNodes[nodeType]);
 
             // Provided removing the Occurance won't leave us with no more Game Occurances to take, remove it so we don't have repeats
             if (mapNodes[nodeType].Count > 1)
             {
-                mapNodes[nodeType].Remove(r);
+                mapNodes[nodeType].Remove(gameOccurance);
             }
 
-            return r;
+            return gameOccurance;
+        }
+        else if (nodeType == MapNodeType.Random)
+        {
+            nodeType = randomNodeTypeOdds.GetOption();
+            return GetGameOccuranceOfType(nodeType);
         }
         else
         {
             return RandomHelper.GetRandomFromList(mapNodes[nodeType]);
         }
-    }
-
-    private void DisableUnset(MapNodeUI[,] mapNodes)
-    {
-        foreach (MapNodeUI node in mapNodes)
-        {
-            if (!node.HasBeenSet)
-            {
-                node.Lockout();
-            }
-        }
-    }
-
-    public IEnumerator ShowGrid()
-    {
-        yield return MapManager._Instance.StartCoroutine(ActOnEachGridCellWithDelay(cell =>
-        {
-            cell.SetShow(true);
-        }, delayBetweenShowingCells));
     }
 }

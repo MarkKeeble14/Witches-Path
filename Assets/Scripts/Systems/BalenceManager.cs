@@ -7,15 +7,12 @@ public class ActiveSpellSpecDictionary
 {
     [SerializeField] private int cooldown = 1;
     [SerializeField] private int manaCost = 1;
-    [SerializeField] private int outOfCombatCooldown = 1;
     [SerializeField] private SerializableDictionary<string, int> additionalParameters = new SerializableDictionary<string, int>();
 
     public int GetSpec(string identifier)
     {
         switch (identifier)
         {
-            case "OutOfCombatCooldown":
-                return outOfCombatCooldown;
             case "Cooldown":
                 return cooldown;
             case "ManaCost":
@@ -30,15 +27,12 @@ public class ActiveSpellSpecDictionary
 [System.Serializable]
 public class PassiveSpellSpecDictionary
 {
-    [SerializeField] private int outOfCombatCooldown;
     [SerializeField] private SerializableDictionary<string, int> additionalParameters = new SerializableDictionary<string, int>();
 
     public int GetSpec(string identifier)
     {
         switch (identifier)
         {
-            case "OutOfCombatCooldown":
-                return outOfCombatCooldown;
             default:
                 return additionalParameters[identifier];
         }
@@ -149,13 +143,13 @@ public class BalenceManager : MonoBehaviour
         return afflictionSpecDict[afflictionType.ToString()][identifier];
     }
 
-    public int GetValue(SpellLabel spellLabel, SpellType spellType, string identifier)
+    public int GetValue(SpellLabel spellLabel, SpellCastType spellType, string identifier)
     {
         switch (spellType)
         {
-            case SpellType.Active:
+            case SpellCastType.Active:
                 return activeSpellSpecDict[spellLabel.ToString()].GetSpec(identifier);
-            case SpellType.Passive:
+            case SpellCastType.Passive:
                 return passiveSpellSpecDict[spellLabel.ToString()].GetSpec(identifier);
             default:
                 throw new Exception();

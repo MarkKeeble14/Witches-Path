@@ -11,6 +11,16 @@ public class Pile<T>
         entries.Add(entry);
     }
 
+    public void Add(IEnumerable<T> entries)
+    {
+        this.entries.AddRange(entries);
+    }
+
+    public void AddAt(T entry, int index)
+    {
+        entries.Insert(index, entry);
+    }
+
     public void Remove(T entry)
     {
         entries.Remove(entry);

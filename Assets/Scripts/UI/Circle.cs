@@ -16,6 +16,7 @@ public class Circle : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     [SerializeField] private float minApproachScale = 0.9f;
     [SerializeField] private float maxAcceptedApproachScale = 1.05f;
     [SerializeField] private Vector3 approachScaleRate;
+    private float approachScaleRateMultiplier;
     [SerializeField] private float approachAlphaChangeRate;
 
     [SerializeField] private Vector3 approachStartingScale;
@@ -86,11 +87,12 @@ public class Circle : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         transform.position = position;
     }
 
-    public void Set(ScreenQuadrant setToQuadrant, Color c)
+    public void Set(SpellNote noteInfo, Color c)
     {
-        RandomizeScreenPosition(setToQuadrant);
+        RandomizeScreenPosition(noteInfo.ScreenQuadrant);
         active = true;
         main.color = c;
+        approachScaleRateMultiplier = noteInfo.ApproachRateMultiplier;
     }
 
     // Main Update
@@ -102,7 +104,7 @@ public class Circle : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         if (approach.transform.localScale.x >= minApproachScale)
         {
             approachCV.alpha = Mathf.MoveTowards(approachCV.alpha, 1, Time.deltaTime * approachAlphaChangeRate);
-            approach.transform.localScale -= approachScaleRate * Time.deltaTime;
+            approach.transform.localScale -= approachScaleRate * approachScaleRateMultiplier * Time.deltaTime;
 
             // Check if mouse is over the circle within a range of it being at it's smallest, if so we consider it a pass
             if (approach.transform.localScale.x <= maxAcceptedApproachScale && isMousedOver)

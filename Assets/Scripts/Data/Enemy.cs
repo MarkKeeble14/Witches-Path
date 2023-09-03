@@ -195,7 +195,7 @@ public class PossessedTome : Enemy
 {
     public override string Name => "Possessed Tome";
     public override EnemyType EnemyType => EnemyType.PossessedTome;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(100, 110);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(200, 210);
     protected override int basicAttackDamage => 4;
 
     private bool levitating => CombatManager._Instance.TargetHasAffliction(AfflictionType.Levitating, Target.Enemy);
@@ -230,7 +230,7 @@ public class HauntedClock : Enemy
 {
     public override string Name => "Haunted Clock";
     public override EnemyType EnemyType => EnemyType.HauntedClock;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(90, 100);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(190, 200);
     protected override int basicAttackDamage => 3;
 
     private int numAttacks = 2;
@@ -264,7 +264,7 @@ public class LivingCandle : Enemy
 {
     public override string Name => "Living Candle";
     public override EnemyType EnemyType => EnemyType.LivingCandle;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(70, 75);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(150, 165);
     protected override int basicAttackDamage => 4;
 
     protected override void SetUpBehaviour()
@@ -291,7 +291,7 @@ public class HolyGrail : Enemy
 {
     public override string Name => "Holy Grail";
     public override EnemyType EnemyType => EnemyType.HolyGrail;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(100, 105);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(200, 225);
     protected override int basicAttackDamage => 3;
 
     protected override void SetUpBehaviour()
@@ -320,7 +320,7 @@ public class EnchantedMace : Enemy
 {
     public override string Name => "Enchanted Mace";
     public override EnemyType EnemyType => EnemyType.EnchantedMace;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(100, 105);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(135, 140);
     protected override int basicAttackDamage => 4;
 
     protected override void SetUpBehaviour()
@@ -352,7 +352,7 @@ public class AncientDaggerSet : Enemy
 {
     public override string Name => "Ancient Dagger Set";
     public override EnemyType EnemyType => EnemyType.AncientDaggerSet;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(65, 75);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(160, 175);
     protected override int basicAttackDamage => 4;
 
     private int numAttacksLessAttack = 2;
@@ -393,47 +393,11 @@ public class AncientDaggerSet : Enemy
     }
 }
 
-public class TheScienceExperiment : Enemy
-{
-    public override string Name => "The Science Experiment";
-    public override EnemyType EnemyType => EnemyType.TheScienceExperiment;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(60, 70);
-    protected override int basicAttackDamage => 2;
-
-    protected override void SetUpBehaviour()
-    {
-        // Make Enemy Actions
-        AddEnemyAction("Ward", MakeEnemyAction(null, new EnemyWardIntent(10)));
-        AddEnemyAction("WardAndAttack", MakeEnemyAction(null, new EnemyWardIntent(6), new EnemySingleAttackIntent(4, DamageType.Default)));
-        AddEnemyAction("Thorns", MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Thorns, 1)));
-        AddEnemyAction("MoreWard", MakeEnemyAction(null, new EnemyWardIntent(12)));
-
-        // Add On Combat Start Actions
-        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Thorns, 3)));
-        AddOnTurnStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Thorns, -1)));
-        AddOnTurnEndAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Power, 1)));
-
-        // Turn 1s
-        PercentageMap<string> turn1Map = new PercentageMap<string>();
-        turn1Map.AddOption(MakeOption(50, "Ward"));
-        turn1Map.AddOption(MakeOption(50, "WardAndAttack"));
-
-        // Turn 2s
-        PercentageMap<string> turn2Map = new PercentageMap<string>();
-        turn2Map.AddOption(MakeOption(30, "Thorns"));
-        turn1Map.AddOption(MakeOption(70, "MoreWard"));
-
-        // Apply Behaviour
-        AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 2 == 1, turn1Map);
-        AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 2 == 0, turn2Map);
-    }
-}
-
 public class SpiritOfContempt : Enemy
 {
     public override string Name => "Spirit of Contempt";
     public override EnemyType EnemyType => EnemyType.SpiritOfContempt;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(60, 70);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(150, 175);
     protected override int basicAttackDamage => 4;
 
     private bool canBigAttack;
@@ -465,14 +429,14 @@ public class SpiritsTombGolem : Enemy
 {
     public override string Name => "Spirits Tomb Golem";
     public override EnemyType EnemyType => EnemyType.SpiritsTombGolem;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(110, 120);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(250, 275);
     protected override int basicAttackDamage => 4;
 
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
         AddEnemyAction("WeakVulnerableAndWard", MakeEnemyAction(null, new EnemyApplyAfflictionIntent(AfflictionType.Weak, 5), new EnemyApplyAfflictionIntent(AfflictionType.Vulnerable, 1), new EnemyWardIntent(8)));
-        AddEnemyAction("ParalyzeAndWard", MakeEnemyAction(null, new EnemyApplyAfflictionIntent(AfflictionType.Paralyze, 3), new EnemyWardIntent(8)));
+        AddEnemyAction("ParalyzeAndWard", MakeEnemyAction(null, new EnemyApplyAfflictionIntent(AfflictionType.Paralyze, 2), new EnemyWardIntent(8)));
         AddEnemyAction("FireAttack", MakeEnemyAction(null, new EnemySingleAttackIntent(10, DamageType.Fire), new EnemyApplyAfflictionIntent(AfflictionType.Burn, 3)));
         AddEnemyAction("EvilAttack", MakeEnemyAction(null, new EnemySingleAttackIntent(17, DamageType.Evil), new EnemyApplyAfflictionIntent(AfflictionType.Weak, 3)));
         AddEnemyAction("ProtectionPowerAndWard", MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Protection, 3), new EnemyGainAfflictionIntent(AfflictionType.Power, 3), new EnemyWardIntent(8)));
@@ -507,7 +471,7 @@ public class SpiritOfPride : Enemy
 {
     public override string Name => "Spirit of Contempt";
     public override EnemyType EnemyType => EnemyType.SpiritOfPride;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(50, 60);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(150, 175);
     protected override int basicAttackDamage => 4;
 
     private bool canBuff;
@@ -542,7 +506,7 @@ public class SpiritOfWar : Enemy
 {
     public override string Name => "Spirit of Contempt";
     public override EnemyType EnemyType => EnemyType.SpiritOfWar;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(60, 70);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(150, 175);
     protected override int basicAttackDamage => 4;
 
     private int turnsSinceBuff;
@@ -578,7 +542,7 @@ public class SpiritOfDebilitation : Enemy
 {
     public override string Name => "Spirit of Debilitation";
     public override EnemyType EnemyType => EnemyType.SpritOfDebilitation;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(75, 85);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(150, 175);
     protected override int basicAttackDamage => 4;
 
     private int turnsSinceDebuff;
@@ -628,11 +592,47 @@ public class MimicChest : Enemy
     }
 }
 
+public class TheScienceExperiment : Enemy
+{
+    public override string Name => "The Science Experiment";
+    public override EnemyType EnemyType => EnemyType.TheScienceExperiment;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(350, 400);
+    protected override int basicAttackDamage => 2;
+
+    protected override void SetUpBehaviour()
+    {
+        // Make Enemy Actions
+        AddEnemyAction("Ward", MakeEnemyAction(null, new EnemyWardIntent(10)));
+        AddEnemyAction("WardAndAttack", MakeEnemyAction(null, new EnemyWardIntent(6), new EnemySingleAttackIntent(4, DamageType.Default)));
+        AddEnemyAction("Thorns", MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Thorns, 1)));
+        AddEnemyAction("MoreWard", MakeEnemyAction(null, new EnemyWardIntent(12)));
+
+        // Add On Combat Start Actions
+        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Thorns, 3)));
+        AddOnTurnStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Thorns, -1)));
+        AddOnTurnEndAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Power, 1)));
+
+        // Turn 1s
+        PercentageMap<string> turn1Map = new PercentageMap<string>();
+        turn1Map.AddOption(MakeOption(50, "Ward"));
+        turn1Map.AddOption(MakeOption(50, "WardAndAttack"));
+
+        // Turn 2s
+        PercentageMap<string> turn2Map = new PercentageMap<string>();
+        turn2Map.AddOption(MakeOption(30, "Thorns"));
+        turn1Map.AddOption(MakeOption(70, "MoreWard"));
+
+        // Apply Behaviour
+        AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 2 == 1, turn1Map);
+        AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 2 == 0, turn2Map);
+    }
+}
+
 public class PanickedWizard : Enemy
 {
     public override string Name => "Panicked Wizard";
     public override EnemyType EnemyType => EnemyType.PanickedWizard;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(175, 185);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(300, 350);
     protected override int basicAttackDamage => 5;
 
     protected override void SetUpBehaviour()
@@ -645,7 +645,7 @@ public class EnthralledServant : Enemy
 {
     public override string Name => "Enthralled Servant";
     public override EnemyType EnemyType => EnemyType.EnthralledServant;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(200, 210);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(340, 350);
     protected override int basicAttackDamage => 5;
 
     private bool canBuff = true;
@@ -678,7 +678,7 @@ public class InfestedRatPack : Enemy
 {
     public override string Name => "Infested Rat Pack";
     public override EnemyType EnemyType => EnemyType.InfestedRatPack;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(200, 210);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(300, 325);
     protected override int basicAttackDamage => 3;
 
     private int numAttacks = 4;

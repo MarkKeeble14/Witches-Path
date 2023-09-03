@@ -55,4 +55,4 @@ MonoBehaviour:
         percentageMap:
         - key: {x: 1, y: 3}
           value: 100
-  mapSprite: {fileID: 21300000, guid: 2089720b7bc0fdf45a8d5fe4352f4fab, type: 3}
+  mapSprite: {fileID: 21300000, guid: 88b6bf02de1322249a61937eba3de1e9, type: 3}

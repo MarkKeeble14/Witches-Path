@@ -159,6 +159,7 @@ public class MapNodeUI : MonoBehaviour
         {
             return;
         }
+
         this.representedGameOccurance = setTo;
         nodeTypeText.text = setTo.Label;
     }

@@ -7,7 +7,6 @@ public class PassiveSpellDisplay : SpellDisplay
     private PassiveSpell PassiveSpell => (PassiveSpell)Spell;
 
     [SerializeField] private GameObject infoBlock;
-    [SerializeField] private Button button;
 
     private new void Update()
     {
@@ -19,9 +18,6 @@ public class PassiveSpellDisplay : SpellDisplay
             return;
         }
 
-        // Only enable button if swapping is happening
-        button.enabled = displayState == SpellDisplayState.Selected;
-
         // Set progress bar Fill
         progressBar.fillAmount = 1 - PassiveSpell.GetPercentProgress();
 
@@ -31,7 +27,12 @@ public class PassiveSpellDisplay : SpellDisplay
         infoBlock.SetActive(hasSecondaryText);
         if (hasSecondaryText)
         {
-            text.text = PassiveSpell.GetSecondaryText();
+            nameText.text = spellSecondaryText;
+            text.text = Spell.Name;
+        }
+        else
+        {
+            nameText.text = Spell.Name;
         }
     }
 
@@ -45,5 +46,14 @@ public class PassiveSpellDisplay : SpellDisplay
         // Deal with Secondary Text
         infoBlock.SetActive(false);
         text.text = "";
+    }
+
+    public void OnClick()
+    {
+        if (CombatManager._Instance.InCombat &&
+            (currentSpellDisplayState == SpellDisplayState.ChoosingExhaust || currentSpellDisplayState == SpellDisplayState.ChoosingDiscard || currentSpellDisplayState == SpellDisplayState.Selected))
+        {
+            CombatManager._Instance.ClickedSpellForAlterHandSequence(Spell);
+        }
     }
 }

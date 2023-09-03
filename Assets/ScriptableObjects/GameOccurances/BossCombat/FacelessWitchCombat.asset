@@ -56,5 +56,5 @@ MonoBehaviour:
         percentageMap:
         - key: {x: 0, y: 1}
           value: 100
-  mapSprite: {fileID: -2413806693520163455, guid: e074a9b4b276847b0b578d2c96d2c1db, type: 3}
+  mapSprite: {fileID: 21300000, guid: 7a56d107a8e14624d95d8fa5660e7c6d, type: 3}
   alterCombatPileSizeBy: 3

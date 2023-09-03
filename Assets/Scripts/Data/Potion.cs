@@ -342,11 +342,11 @@ public class Potion : ToolTippable
     public static Potion GetRandomPotion(bool includeAugmenter)
     {
         Potion p = new Potion();
-        p.AddIngredient(PotionIngredient.GetPotionIngredientOfCategory(PotionIngredientCategory.Base));
-        p.AddIngredient(PotionIngredient.GetPotionIngredientOfCategory(PotionIngredientCategory.Potency));
-        p.AddIngredient(PotionIngredient.GetPotionIngredientOfCategory(PotionIngredientCategory.Targeter));
+        p.AddIngredient(PotionIngredient.GetRandomPotionIngredientOfCategory(PotionIngredientCategory.Base));
+        p.AddIngredient(PotionIngredient.GetRandomPotionIngredientOfCategory(PotionIngredientCategory.Potency));
+        p.AddIngredient(PotionIngredient.GetRandomPotionIngredientOfCategory(PotionIngredientCategory.Targeter));
         if (includeAugmenter)
-            p.AddIngredient(PotionIngredient.GetPotionIngredientOfCategory(PotionIngredientCategory.Augmenter));
+            p.AddIngredient(PotionIngredient.GetRandomPotionIngredientOfCategory(PotionIngredientCategory.Augmenter));
         p.Brew();
         return p;
     }
@@ -405,18 +405,29 @@ public abstract class PotionIngredient : ToolTippable
         return UIManager._Instance.HighlightKeywords(toolTipText);
     }
 
-    public static PotionIngredient GetPotionIngredientOfCategory(PotionIngredientCategory category)
+    public static List<PotionIngredient> GetPotionIngredientsMatchingFunc(Func<PotionIngredient, bool> matchingFunc)
     {
-        List<PotionIngredient> possibleIngredients = new List<PotionIngredient>();
+        List<PotionIngredient> matchingIngredients = new List<PotionIngredient>();
         foreach (PotionIngredientType type in Enum.GetValues(typeof(PotionIngredientType)))
         {
             PotionIngredient ingredient = GetPotionIngredientOfType(type);
-            if (ingredient.Category == category)
+
+            if (matchingFunc(ingredient))
             {
-                possibleIngredients.Add(ingredient);
+                matchingIngredients.Add(ingredient);
             }
         }
-        return RandomHelper.GetRandomFromList(possibleIngredients);
+        return matchingIngredients;
+    }
+
+    public static PotionIngredient GetRandomPotionIngredientOfCategory(PotionIngredientCategory category)
+    {
+        return GetRandomPotionIngredientMatchingFunc(ingredient => ingredient.Category == category);
+    }
+
+    public static PotionIngredient GetRandomPotionIngredientMatchingFunc(Func<PotionIngredient, bool> matchingFunc)
+    {
+        return RandomHelper.GetRandomFromList(GetPotionIngredientsMatchingFunc(matchingFunc));
     }
 
     public static PotionIngredient GetPotionIngredientOfType(PotionIngredientType type)
@@ -817,19 +828,19 @@ public class HolyWater : PotionBase
 public class ElectricalWire : PotionBase
 {
     public override string Name => "Electrical Wire";
-    public override string TemplateEffectString => "Apply {StackAmount} Paralyze to the {Target}";
-    protected override string toolTipText => "Apply Paralyze";
+    public override string TemplateEffectString => "Apply {StackAmount} Electrocuted to the {Target}";
+    protected override string toolTipText => "Apply Electrocuted";
     public override string EffectOnPotionName => "Electricity";
     public override Color PotionColor => Color.blue;
     public override PotionIngredientType Type => PotionIngredientType.ElectricalWire;
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, GetPotionSpec("StackAmount", potionPotency.Potency), potionTargeting.Target);
+        CombatManager._Instance.AddAffliction(AfflictionType.Electrocuted, GetPotionSpec("StackAmount", potionPotency.Potency), potionTargeting.Target);
     }
 
     protected override void SetKeywords()
     {
-        afflictionKeywords.Add(AfflictionType.Paralyze);
+        afflictionKeywords.Add(AfflictionType.Electrocuted);
         base.SetKeywords();
     }
 }

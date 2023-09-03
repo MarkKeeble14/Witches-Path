@@ -18,14 +18,15 @@ public enum IntentType
 
 public class IntentDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
-    [SerializeField] private GameObject[] attackIntentObjs;
-    [SerializeField] private GameObject[] wardIntentObjs;
+    [SerializeField] private SerializableDictionary<IntentType, List<GameObject>> intentTypeObjs = new SerializableDictionary<IntentType, List<GameObject>>();
     [SerializeField] private TextMeshProUGUI attackIntentText;
     [SerializeField] private TextMeshProUGUI wardIntentText;
     [SerializeField] private CanvasGroup intentDisplayCV;
 
     private List<EnemyIntent> addedIntents = new List<EnemyIntent>();
     private GameObject spawnedToolTip;
+
+
 
     private EnemyAction currentEnemyAction;
 
@@ -39,37 +40,21 @@ public class IntentDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
             // Set intent Attack text
             if (currentEnemyAction.HasIntentType(IntentType.SingleAttack))
             {
-                SetActiveState(attackIntentObjs, true);
-
                 EnemySingleAttackIntent enemyAttackIntent = (EnemySingleAttackIntent)currentEnemyAction.GetIntentOfType(IntentType.SingleAttack);
-
                 attackIntentText.text = CombatManager._Instance.CalculateDamage(enemyAttackIntent.DamageAmount,
                     Target.Enemy, Target.Character, DamageType.Default, DamageSource.EnemyAttack, false).ToString();
             }
             else if (currentEnemyAction.HasIntentType(IntentType.MultiAttack))
             {
-                SetActiveState(attackIntentObjs, true);
-
                 EnemyMultiAttackIntent enemyAttackIntent = (EnemyMultiAttackIntent)currentEnemyAction.GetIntentOfType(IntentType.MultiAttack);
-
                 attackIntentText.text = CombatManager._Instance.CalculateDamage(enemyAttackIntent.DamageAmount,
                     Target.Enemy, Target.Character, DamageType.Default, DamageSource.EnemyAttack, false) + "x" + enemyAttackIntent.NumAttacks;
-            }
-            else
-            {
-                SetActiveState(attackIntentObjs, false);
             }
 
             // Set intent Ward Text
             if (currentEnemyAction.HasIntentType(IntentType.Ward))
             {
-                SetActiveState(wardIntentObjs, true);
-
                 wardIntentText.text = CombatManager._Instance.CalculateWard(((EnemyWardIntent)currentEnemyAction.GetIntentOfType(IntentType.Ward)).WardAmount, Target.Enemy).ToString();
-            }
-            else
-            {
-                SetActiveState(wardIntentObjs, false);
             }
         }
         else
@@ -78,7 +63,7 @@ public class IntentDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         }
     }
 
-    private void SetActiveState(GameObject[] objects, bool active)
+    private void SetActiveState(IEnumerable objects, bool active)
     {
         foreach (GameObject obj in objects)
         {
@@ -93,12 +78,19 @@ public class IntentDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         foreach (EnemyIntent intent in currentEnemyAction.GetEnemyIntents())
         {
             addedIntents.Add(intent);
+
+            SetActiveState(intentTypeObjs[intent.Type], true);
         }
     }
 
     public void ClearIntents()
     {
-        addedIntents.Clear();
+        while (addedIntents.Count > 0)
+        {
+            EnemyIntent cur = addedIntents[0];
+            SetActiveState(intentTypeObjs[cur.Type], false);
+            addedIntents.RemoveAt(0);
+        }
     }
 
     public void OnPointerEnter(PointerEventData eventData)
