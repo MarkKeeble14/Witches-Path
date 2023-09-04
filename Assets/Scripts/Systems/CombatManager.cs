@@ -241,6 +241,37 @@ public partial class CombatManager : MonoBehaviour
 
     private EnemyAction currentEnemyAction;
 
+    [SerializeField] private TextMeshProUGUI dialogueText;
+    [SerializeField] private CanvasGroup dialogueBubbleCV;
+    [SerializeField] private float dialogueBubbleFadeInRate = 1;
+    [SerializeField] private float dialogueBubbleFadeOutRate = 1;
+    [SerializeField] private float defaultDialogueDuration = 2.5f;
+
+    private Coroutine currentDialogueCoroutine;
+
+    public void CallPlayDialogue(string s)
+    {
+        if (currentDialogueCoroutine != null) StopCoroutine(currentDialogueCoroutine);
+        currentDialogueCoroutine = StartCoroutine(PlayDialogue(s, defaultDialogueDuration));
+    }
+
+    public void CallPlayDialogue(string s, float duration)
+    {
+        if (currentDialogueCoroutine != null) StopCoroutine(currentDialogueCoroutine);
+        currentDialogueCoroutine = StartCoroutine(PlayDialogue(s, duration));
+    }
+
+    private IEnumerator PlayDialogue(string s, float duration)
+    {
+        dialogueText.text = s;
+
+        yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(dialogueBubbleCV, 1, dialogueBubbleFadeInRate));
+
+        yield return new WaitForSeconds(duration);
+
+        yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(dialogueBubbleCV, 0, dialogueBubbleFadeOutRate));
+    }
+
     public void CloseCurrentlyDisplayedSpellPile()
     {
         closeCurrentlyDisplayedSpellPile = true;
@@ -624,6 +655,9 @@ public partial class CombatManager : MonoBehaviour
             // Play Enemy Death Animation
             StartCoroutine(Utils.ChangeCanvasGroupAlpha(enemyCombatSpriteCV, 0, Time.deltaTime * combatSpriteAlphaChangeRate));
 
+            // Wait until Enemy HP bar is Empty
+            yield return new WaitUntil(() => enemyHPBar.Empty);
+
             yield return new WaitForSeconds(delayAfterEnemyDeath);
 
             // Bandaged Effect
@@ -720,7 +754,20 @@ public partial class CombatManager : MonoBehaviour
     public void ReplaceCurrentEnemyAction(EnemyAction newAction)
     {
         currentEnemyAction = newAction;
+        enemyIntentDisplay.ClearIntents();
         enemyIntentDisplay.SetEnemyAction(currentEnemyAction);
+    }
+
+    public void ReplaceCurrentEnemyAction()
+    {
+        currentEnemyAction = currentEnemy.GetEnemyIntent(new List<EnemyAction>() { currentEnemyAction });
+        enemyIntentDisplay.ClearIntents();
+        enemyIntentDisplay.SetEnemyAction(currentEnemyAction);
+    }
+
+    public EnemyAction GetCurrentEnemyAction()
+    {
+        return currentEnemyAction;
     }
 
     private IEnumerator PlayerTurn()
@@ -1061,6 +1108,7 @@ public partial class CombatManager : MonoBehaviour
 
         // Reset
         effectivenessMultiplier = defaultEffectivenessMultiplier;
+        effectivenessMultiplierText.text = "x" + Utils.RoundTo(effectivenessMultiplier, 2).ToString();
 
         // Put all Spells back into draw Pile so that GameManager can know which Spells were previously used in Combat
         hand.TransferEntries(drawPile, false);
@@ -1536,14 +1584,20 @@ public partial class CombatManager : MonoBehaviour
 
                     currentEnemyHP = 0;
                 }
-                else
+                else if (amount < 0)
                 {
-                    // Callback
+                    // is Damage
+                    // Apply amount
+                    currentEnemyHP += amount;
+
+                    // Callbacks
                     OnEnemyTakeDamage?.Invoke(amount * -1);
 
                     ShakeCombatent(Target.Enemy);
-
-                    // Apply amount
+                }
+                else
+                {
+                    // is Either Heal or Zero
                     currentEnemyHP += amount;
                 }
                 // Update HP Bar
@@ -1962,8 +2016,8 @@ public partial class CombatManager : MonoBehaviour
             isNewInstance = false;
 
             // Spawn Effect Text
-            SpawnEffectText(EffectTextStyle.Fade, (numStacks > 0 ? "+" : "") + numStacks + " " + aff.GetToolTipLabel(),
-                UIManager._Instance.GetEffectTextColor(aff.Sign + "Affliction"), target);
+            SpawnEffectText(EffectTextStyle.UpAndFade, (numStacks > 0 ? "+" : "") + numStacks + " " + aff.GetToolTipLabel(),
+                UIManager._Instance.GetEffectTextColor(aff.Sign + "Affliction"), target, UIManager._Instance.GetAfflictionIcon(type));
 
             // Animate
             if (aff.Sign == Sign.Negative)
@@ -1992,7 +2046,8 @@ public partial class CombatManager : MonoBehaviour
             aff.SetOwner(target);
 
             // Spawn Effect Text
-            SpawnEffectText(EffectTextStyle.Fade, aff.GetToolTipLabel(), UIManager._Instance.GetEffectTextColor(aff.Sign + "Affliction"), target);
+            SpawnEffectText(EffectTextStyle.UpAndFade, aff.GetToolTipLabel(), UIManager._Instance.GetEffectTextColor(aff.Sign + "Affliction"), target,
+                UIManager._Instance.GetAfflictionIcon(type));
 
             // Animate
             if (aff.Sign == Sign.Negative)
@@ -2010,8 +2065,12 @@ public partial class CombatManager : MonoBehaviour
             map.Add(type, aff);
 
             AfflictionIcon spawned = Instantiate(afflictionIconPrefab, parentTo);
+            aff.SetAttachedTo(spawned);
+
             spawned.SetAffliction(aff);
             GetTargetAfflictionDisplays(target).Add(type, spawned);
+            aff.UpdateAfflictionDisplay();
+
             ShowAfflictionProc(type, target);
             isNewInstance = true;
 
@@ -2134,7 +2193,8 @@ public partial class CombatManager : MonoBehaviour
         UpdateHPBarAfflictions(type, target);
 
         // Spawn Effect Text
-        SpawnEffectText(EffectTextStyle.Fade, removingAff.GetToolTipLabel() + " Wears Off", UIManager._Instance.GetEffectTextColor("AfflictionRemoved"), target);
+        SpawnEffectText(EffectTextStyle.Fade, removingAff.GetToolTipLabel() + " Wears Off", UIManager._Instance.GetEffectTextColor("AfflictionRemoved"), target,
+            UIManager._Instance.GetAfflictionIcon(removingAff.Type));
 
         // Callbacks
         switch (target)
@@ -2235,16 +2295,16 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void SpawnEffectText(EffectTextStyle style, string text, Color c, Target owner)
+    public void SpawnEffectText(EffectTextStyle style, string text, Color c, Target owner, Sprite withIcon = null)
     {
         if (!combatScreenOpen) return;
         switch (owner)
         {
             case Target.Character:
-                characterEffectTextDisplay.SpawnEffectText(style, text, c);
+                characterEffectTextDisplay.SpawnEffectText(style, text, c, withIcon);
                 return;
             case Target.Enemy:
-                enemyEffectTextDisplay.SpawnEffectText(style, text, c);
+                enemyEffectTextDisplay.SpawnEffectText(style, text, c, withIcon);
                 return;
         }
     }

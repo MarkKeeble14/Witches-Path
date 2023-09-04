@@ -419,6 +419,9 @@ MonoBehaviour:
   wardDisplay:
   - {fileID: 267924241412733283}
   - {fileID: 1022941644882461363}
+  betweenSegmentDelay: 0
+  delay: 0.5
+  changingColor: {r: 1, g: 0.76862746, b: 0, a: 1}
 --- !u!114 &2971921456439418013
 MonoBehaviour:
   m_ObjectHideFlags: 0

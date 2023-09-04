@@ -23,7 +23,8 @@ public enum AfflictionType
     PoisonCoated,
     Ghostly,
     Electrocuted,
-    Nullify
+    Nullify,
+    Jumpy
 }
 
 public enum Sign
@@ -52,6 +53,13 @@ public abstract class Affliction : ToolTippable
 
     // A list of affliction keywords
     protected List<AfflictionType> afflictionKeywords = new List<AfflictionType>();
+
+    protected AfflictionIcon attachedTo;
+
+    public void SetAttachedTo(AfflictionIcon icon)
+    {
+        attachedTo = icon;
+    }
 
     public Affliction()
     {
@@ -93,8 +101,17 @@ public abstract class Affliction : ToolTippable
         OnAlteredStacks();
     }
 
+    public void UpdateAfflictionDisplay()
+    {
+        if (attachedTo != null)
+        {
+            attachedTo.UpdateAfflictionStacks();
+        }
+    }
+
     protected virtual void OnAlteredStacks()
     {
+        UpdateAfflictionDisplay();
         CheckForRemoval();
     }
 
@@ -221,6 +238,8 @@ public abstract class Affliction : ToolTippable
                 return new Electrocuted();
             case AfflictionType.Nullify:
                 return new Nullify();
+            case AfflictionType.Jumpy:
+                return new Jumpy();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -229,7 +248,8 @@ public abstract class Affliction : ToolTippable
 
 public class Embolden : Affliction
 {
-    protected override string specificToolTipText => "Damage Dealt is multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
+    protected override string specificToolTipText => "The Damage of the next " + (GetStacks() > 1 ? GetStacks() + " Attacks are" : " Attack is") +
+        " multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
     protected override string genericToolTipText => "Damage Dealt is multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
 
     public override AfflictionType Type => AfflictionType.Embolden;
@@ -244,7 +264,8 @@ public class Embolden : Affliction
 
 public class Weak : Affliction
 {
-    protected override string specificToolTipText => "Damage Dealt is multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
+    protected override string specificToolTipText => "The Damage of the next " + (GetStacks() > 1 ? GetStacks() + " Attacks are" : " Attack is") +
+        " multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
     protected override string genericToolTipText => "Damage Dealt is multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
 
     public override AfflictionType Type => AfflictionType.Weak;
@@ -258,7 +279,8 @@ public class Weak : Affliction
 
 public class Vulnerable : Affliction
 {
-    protected override string specificToolTipText => "Damage Recieved is multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
+    protected override string specificToolTipText => "The Damage of the next " + (GetStacks() > 1 ? GetStacks() + " Attacks are" : " Attack is") +
+        " multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
     protected override string genericToolTipText => "Damage Recieved is multiplied by " + GetAfflictionSpec("MultiplyBy") + "%";
 
     public override AfflictionType Type => AfflictionType.Vulnerable;
@@ -272,7 +294,7 @@ public class Vulnerable : Affliction
 
 public class OnGuard : Affliction
 {
-    protected override string specificToolTipText => "Damage Taken is Reduced by " + GetAfflictionSpec("ReduceBy");
+    protected override string specificToolTipText => "The next " + (GetStacks() > 1 ? GetStacks() + " Instances" : "Instance") + " of Damage Recieved is Reduced by " + GetAfflictionSpec("ReduceBy");
     protected override string genericToolTipText => "Damage Taken is Reduced by " + GetAfflictionSpec("ReduceBy");
 
     public override AfflictionType Type => AfflictionType.OnGuard;
@@ -302,7 +324,7 @@ public class Bandages : Affliction
 
 public class Intangible : Affliction
 {
-    protected override string specificToolTipText => "Reduce the next " + GetStacks() + " Instances of Damage Taken to 1";
+    protected override string specificToolTipText => "Set the next " + (GetStacks() > 1 ? GetStacks() + " Instances" : "Instance") + " of Damage Taken to 1";
     protected override string genericToolTipText => "Reduces any Damage Taken to 1";
 
     public override AfflictionType Type => AfflictionType.Intangible;
@@ -317,7 +339,7 @@ public class Intangible : Affliction
 
 public class Echo : Affliction
 {
-    protected override string specificToolTipText => "Repeat the next " + GetStacks() + " Active Spell Casts";
+    protected override string specificToolTipText => "Repeat the next " + (GetStacks() > 1 ? GetStacks() + " Active Spell Casts" : "Active Spell Cast");
     protected override string genericToolTipText => "Repeats the next Active Spell Cast";
 
     public override AfflictionType Type => AfflictionType.Echo;
@@ -365,7 +387,8 @@ public class Poison : Affliction
 
 public class Burn : Affliction
 {
-    protected override string specificToolTipText => "Upon Basic Attacking, Take " + GetAfflictionSpec("DamageAmount") + " Damage. Burn is then decreased by 1";
+    protected override string specificToolTipText => "For the next " + GetStacks() + " Basic Attacks, Upon Basic Attacking, take " + GetAfflictionSpec("DamageAmount") + " Damage. " +
+        "Burn is then decreased by 1";
     protected override string genericToolTipText => "Upon Basic Attacking, Take " + GetAfflictionSpec("DamageAmount") + " Damage. Burn is then decreased by 1";
 
     public override AfflictionType Type => AfflictionType.Burn;
@@ -379,8 +402,8 @@ public class Burn : Affliction
 
 public class Paralyze : Affliction
 {
-    protected override string specificToolTipText => "The next " + GetStacks() + " Actions Taken will Fizzle Out";
-    protected override string genericToolTipText => "The next Action Taken will Fizzle Out";
+    protected override string specificToolTipText => "The next " + (GetStacks() > 1 ? GetStacks() + " Actions" : "Action") + " taken will Fizzle Out";
+    protected override string genericToolTipText => "The next Action taken will Fizzle Out";
 
     public override AfflictionType Type => AfflictionType.Paralyze;
 
@@ -684,7 +707,7 @@ public class Electrocuted : Affliction
 
 public class Nullify : Affliction
 {
-    protected override string specificToolTipText => "Negate the next " + GetStacks() + " Negative Afflictions";
+    protected override string specificToolTipText => "Negate the next " + (GetStacks() > 1 ? GetStacks() + " Negative Afflictions" : "Negative Affliction");
     protected override string genericToolTipText => "Negate Negative Afflictions";
 
     public override AfflictionType Type => AfflictionType.Nullify;
@@ -695,4 +718,54 @@ public class Nullify : Affliction
     {
         generalKeywords.Add(ToolTipKeyword.Affliction);
     }
+}
+
+public class Jumpy : Affliction
+{
+    protected override string specificToolTipText => "The next " + (numTimesCanRandomize > 1 ? numTimesCanRandomize + " times an" : "time") + " Active Spell is Queued this Turn, Randomize the Enemies Intent." +
+        " The number of Times this Effect can Occur is Reset each Turn";
+    protected override string genericToolTipText => "Upon Queueing an Active Spell, Randomize the Enemies Intent";
+
+    public override AfflictionType Type => AfflictionType.Jumpy;
+
+    public override Sign Sign => Sign.Negative;
+
+    private int numTimesHasRandomized;
+    private int numTimesCanRandomize => GetStacks() - numTimesHasRandomized;
+
+    protected override void SetKeywords()
+    {
+        generalKeywords.Add(ToolTipKeyword.Affliction);
+    }
+
+    private void TryRandomizeIntent()
+    {
+        if (numTimesCanRandomize <= 0) return;
+
+        // Get a new Enemy Action that is not the current one
+        CombatManager._Instance.ReplaceCurrentEnemyAction();
+        numTimesHasRandomized++;
+        attachedTo.AnimateScale();
+
+    }
+
+    private void ResetNumTimesHasRandomized()
+    {
+        numTimesHasRandomized = 0;
+    }
+
+    public override void Apply()
+    {
+        base.Apply();
+        CombatManager._Instance.OnActiveSpellQueued += TryRandomizeIntent;
+        CombatManager._Instance.OnPlayerTurnStart += ResetNumTimesHasRandomized;
+    }
+
+    public override void Unapply()
+    {
+        base.Unapply();
+        CombatManager._Instance.OnActiveSpellQueued -= TryRandomizeIntent;
+        CombatManager._Instance.OnPlayerTurnStart -= ResetNumTimesHasRandomized;
+    }
+
 }

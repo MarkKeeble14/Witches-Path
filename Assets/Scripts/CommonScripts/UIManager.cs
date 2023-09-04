@@ -92,7 +92,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private ToolTipList toolTipList;
     [SerializeField] private ToolTip toolTipPrefab;
     [SerializeField] private ConfirmPotionToolTip confirmPotionToolTipPrefab;
-
+    [SerializeField] private VisualSpellDisplay spellToolTipPrefab;
 
     [Header("Tool Tips")]
     [SerializeField] private int toolTipWidth;
@@ -103,6 +103,9 @@ public class UIManager : MonoBehaviour
 
     [SerializeField] private float confirmPotionUseToolTipWidth = 250;
     [SerializeField] private float confirmPotionUseToolTipHeight = 100;
+
+    [SerializeField] private float spellToolTipWidth = 250;
+    [SerializeField] private float spellToolTipHeight = 300;
 
     [SerializeField] SerializableDictionary<TextDecorationLabel, Color> textDecorationColorMap = new SerializableDictionary<TextDecorationLabel, Color>();
 
@@ -120,6 +123,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private SerializableDictionary<Rarity, Color> rarityColorMap = new SerializableDictionary<Rarity, Color>();
 
     [SerializeField] private SerializableDictionary<SpellColor, SpellColorInfo> spellColorMap = new SerializableDictionary<SpellColor, SpellColorInfo>();
+
+    [SerializeField] private SerializableDictionary<AfflictionType, Sprite> afflictionIconDict = new SerializableDictionary<AfflictionType, Sprite>();
 
     [SerializeField] private Transform canvas;
     public Transform Canvas => canvas;
@@ -266,7 +271,7 @@ public class UIManager : MonoBehaviour
             }
 
             // Token has a comma at the end which might interfere with determining if it's a keyword or not
-            if (token[token.Length - 1].Equals(','))
+            if (token.Length > 1 && token[token.Length - 1].Equals(','))
             {
                 string sub = token.Substring(0, token.Length - 1);
 
@@ -422,6 +427,19 @@ public class UIManager : MonoBehaviour
         {
             TogglePauseState();
         }
+    }
+
+    public GameObject SpawnSpellToolTip(Spell spell, Transform spawningOn)
+    {
+        // Spawn the ToolTipList object that will house all of our other tooltips
+        ToolTipList list = SpawnToolTipList(spawningOn, 1, 1, true, spellToolTipWidth);
+        Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
+        GameObject spawned = SpawnToolTip(spellToolTipPrefab.gameObject, vLayout, true, spellToolTipHeight);
+        VisualSpellDisplay display = spawned.GetComponent<VisualSpellDisplay>();
+        display.SetSpell(spell);
+        display.SetScaleLocked(true);
+        display.SetSpellDisplayState(SpellDisplayState.ToolTip);
+        return list.gameObject;
     }
 
     public GameObject SpawnConfirmPotionToolTip(Potion potion, Transform spawningOn)
@@ -785,5 +803,10 @@ public class UIManager : MonoBehaviour
     public UISectionInformation GetUISectionInformation(UISection uiSection)
     {
         return UISectionMap[uiSection];
+    }
+
+    public Sprite GetAfflictionIcon(AfflictionType type)
+    {
+        return afflictionIconDict[type];
     }
 }

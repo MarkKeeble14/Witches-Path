@@ -1215,13 +1215,13 @@ public abstract class ActiveSpell : Spell
 
     public override string GetToolTipLabel()
     {
-        return base.GetToolTipLabel() + " (" + ActiveSpellType + ")";
+        return base.GetToolTipLabel();
     }
 
     protected override string GetDetailText()
     {
         // Order: Mana -> Cooldown -> Attacks
-        return "\nMana Cost: " + manaCost + ", Cooldown: " + CooldownTracker.y + ", Attacks: " + GetNumNotes();
+        return "\nMana Cost: " + manaCost + ", Cooldown: " + CooldownTracker.y + ", Attacks: " + GetNumNotes() + " - " + ActiveSpellType;
     }
 
     protected int GetCalculatedDamageEnemy(int damage)
@@ -1902,7 +1902,7 @@ public class Greed : ActiveSpell
     public override SpellLabel Label => SpellLabel.Greed;
     protected override Vector2Int setUpgradeStatusTo => new Vector2Int(1, 1);
     public override string Name => "Greed";
-    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage to All Combatents. (Base Damage is equal to Gold / " + divideGoldBy + ")";
+    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage to All Combatents";
 
     private int currencyAmount => GameManager._Instance.GetPlayerCurrency();
     private int damageAmount => Mathf.CeilToInt((float)currencyAmount / divideGoldBy);

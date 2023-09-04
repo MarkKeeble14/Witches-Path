@@ -2,8 +2,9 @@
 using TMPro;
 using System;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-public class OptionEventOptionDisplay : MonoBehaviour
+public class OptionEventOptionDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [SerializeField] private TextMeshProUGUI hintText;
     [SerializeField] private TextMeshProUGUI effectText;
@@ -32,5 +33,15 @@ public class OptionEventOptionDisplay : MonoBehaviour
     internal void AddOnClickAction(Action a)
     {
         onClick += a;
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        setTo.OnPointerEnter?.Invoke(transform);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        setTo.OnPointerExit?.Invoke();
     }
 }

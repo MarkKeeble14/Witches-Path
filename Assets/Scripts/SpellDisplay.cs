@@ -13,7 +13,8 @@ public enum SpellDisplayState
     Selected,
     Locked,
     ChoosingExhaust,
-    ChoosingDiscard
+    ChoosingDiscard,
+    ToolTip
 }
 
 public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
@@ -178,6 +179,8 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
 
     public virtual void CallSpawnToolTip()
     {
+        if (currentSpellDisplayState == SpellDisplayState.ToolTip) return;
+
         // Only spawn ToolTip if spell is set
         if (!IsEmpty)
         {

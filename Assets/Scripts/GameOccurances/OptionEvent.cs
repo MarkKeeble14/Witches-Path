@@ -74,7 +74,19 @@ public abstract class OptionEvent
         params KeyValuePair<int, EventOptionOutcome>[] outcomes
         )
     {
-        return new EventOption(hintText, effectText, MakeOutcomeMap(outcomes), lockCondition);
+        return new EventOption(hintText, effectText, null, null, MakeOutcomeMap(outcomes), lockCondition);
+    }
+
+    protected EventOption MakeEventOption(
+        string hintText,
+        string effectText,
+        Func<bool> lockCondition,
+        Action<Transform> onPointerEnter,
+        Action onPointerExit,
+        params KeyValuePair<int, EventOptionOutcome>[] outcomes
+        )
+    {
+        return new EventOption(hintText, effectText, onPointerEnter, onPointerExit, MakeOutcomeMap(outcomes), lockCondition);
     }
 
     private PercentageMap<EventOptionOutcome> MakeOutcomeMap(params KeyValuePair<int, EventOptionOutcome>[] outcomes)
@@ -187,6 +199,9 @@ public class EventOption
     private Func<bool> lockCondition;
     public bool Locked => lockCondition();
 
+    public Action<Transform> OnPointerEnter { get; private set; }
+    public Action OnPointerExit { get; private set; }
+
     // A list of possible outcomes
     private PercentageMap<EventOptionOutcome> possibleOutcomes;
 
@@ -195,12 +210,14 @@ public class EventOption
         effectText = newText;
     }
 
-    public EventOption(string hintText, string effectText, PercentageMap<EventOptionOutcome> possibleOutcomes, Func<bool> lockCondition)
+    public EventOption(string hintText, string effectText, Action<Transform> onPointerEnter, Action onPointerExit, PercentageMap<EventOptionOutcome> possibleOutcomes, Func<bool> lockCondition)
     {
         this.hintText = hintText;
         this.effectText = effectText;
         this.possibleOutcomes = possibleOutcomes;
         this.lockCondition = lockCondition;
+        this.OnPointerEnter = onPointerEnter;
+        this.OnPointerExit = onPointerExit;
     }
 
     public EventOptionOutcome GetOutcome()
@@ -350,6 +367,8 @@ public class HomeFree : OptionEvent
 
     public override string EventText => "In the distance, you notice a magical portal gurgling in the wind...";
 
+    private GameObject spawnedToolTip;
+
     protected override void InitializeEventData()
     {
         // 2 Options
@@ -366,6 +385,7 @@ public class HomeFree : OptionEvent
         ConditionalOption approach = new ConditionalOption(() => true,
             MakeEventOption("Approach", "Gain " + gainGoldAmount + " Gold, Lose " + removeArtifact.Name,
             () => GameManager._Instance.NumArtifacts <= 0,
+            t => spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(removeArtifact, t), () => GameObject.Destroy(spawnedToolTip),
                 MakeEventOptionOutcomeWithChance(100, "As you approach the portal, your " + removeArtifact.Name + " is " +
                     "sucked from your bag straight into the portal's waiting ripples. " +
                     "A moment later, a sack of money flies out, nearing taking off your head before landing by your feet.", delegate
@@ -552,6 +572,8 @@ public class TheCuriousChild : OptionEvent
     public override string EventText => "A young child notices and approaches you.. \"Oh! A visitor... " +
         "Say, I found this thingy in the den, I'd be happy to give it to you in exchange for something?\"";
 
+    private GameObject spawnedToolTip;
+
     protected override void InitializeEventData()
     {
         // 2 Options
@@ -584,6 +606,7 @@ public class TheCuriousChild : OptionEvent
         ConditionalOption giveSpell = new ConditionalOption(() => true,
             MakeEventOption("Give Spell", "Gain " + gainArtifact.Name + ", Lose " + (loseSpell != null ? loseSpell.Name : "Random Spell"),
             () => GameManager._Instance.NumSpells <= 1,
+            t => spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(gainArtifact, t), () => GameObject.Destroy(spawnedToolTip),
                 MakeEventOptionOutcomeWithChance(100, "\"Woah! Mom's gonna hate this!\", the child exclaims.", delegate
                 {
                     GameManager._Instance.AddArtifact(gainArtifact);
@@ -594,6 +617,7 @@ public class TheCuriousChild : OptionEvent
         ConditionalOption givePotion = new ConditionalOption(() => true,
             MakeEventOption("Give Potion", "Gain " + gainArtifact.Name + ", Lose " + (losePotion != null ? losePotion.GetToolTipLabel() : "Random Potion"),
             () => GameManager._Instance.NumPotions <= 1,
+            t => spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(gainArtifact, t), () => GameObject.Destroy(spawnedToolTip),
                 MakeEventOptionOutcomeWithChance(100, "The child excitedly accepts, \"That's got a funky color to it doesn't it! Say, you wouldn't know if this is safe to drink, would you?\" " +
                 "Nodding sheepishly, you step away.", delegate
                 {
@@ -605,6 +629,7 @@ public class TheCuriousChild : OptionEvent
         ConditionalOption giveGold = new ConditionalOption(() => true,
             MakeEventOption("Give Gold", "Gain " + gainArtifact.Name + ", Lose " + finalGoldCost + " Gold",
             () => currentPlayerGold < finalGoldCost,
+            t => spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(gainArtifact, t), () => GameObject.Destroy(spawnedToolTip),
                 MakeEventOptionOutcomeWithChance(100, "After giving the child the gold, while stepping away, you overhear him comment, \"I can buy so many things with this! " +
                 "I wonder what I'll splurge for first...\".", delegate
                 {
@@ -645,7 +670,7 @@ public class SealedChamber : OptionEvent
 
         // 1: Offer
         ConditionalOption place = new ConditionalOption(() => preOffer,
-            MakeEventOption("Place Spell Tome", "Select a Spell to Lose and Gain some Reward based on it's Rarity",
+            MakeEventOption("Place Spell Tome", "Select a Spell to Remove and Gain some Reward based on it's Rarity",
             () => false,
                 MakeEventOptionOutcomeWithChance(100, "", delegate
                 {
@@ -654,9 +679,8 @@ public class SealedChamber : OptionEvent
                     EventManager._Instance.StartCoroutine(GameManager._Instance.SelectSpellSequence(spell =>
                     {
                         offerredSpell = spell;
-                        EventManager._Instance.SetWait(false);
                         GameManager._Instance.RemoveSpellFromSpellBook(offerredSpell);
-                    }, 1, spell => true));
+                    }, 1, spell => true, () => EventManager._Instance.SetWait(false)));
                     EventManager._Instance.ChainEvent(this);
                 })));
 
@@ -773,15 +797,20 @@ public class GoldAtACost : OptionEvent
     public override string EventName => "Name";
     public override string EventText => "Text";
 
+    private GameObject spawnedToolTip;
+
     protected override void InitializeEventData()
     {
         int gainGoldAmount = GetEventSpec("GoldAmount");
         int loseHPAmount = Mathf.RoundToInt(((float)GetEventSpec("DamageAmount") / 100) * GameManager._Instance.GetMaxPlayerHP());
 
+        Spell pain = Spell.GetSpellOfType(SpellLabel.Hurt);
+
         // 1: Offer
         ConditionalOption determined = new ConditionalOption(() => true,
             MakeEventOption("Be Determined", "Gain " + gainGoldAmount + " Gold, Become Cursed - Hurt",
             () => false,
+            t => spawnedToolTip = UIManager._Instance.SpawnSpellToolTip(pain, t), () => GameObject.Destroy(spawnedToolTip),
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
                     GameManager._Instance.AlterGold(gainGoldAmount);
@@ -902,20 +931,25 @@ public class TheCostOfGreed : OptionEvent
     public override string EventName => "The Cost of Greed";
     public override string EventText => "Text";
 
+    private GameObject spawnedToolTip;
+
     protected override void InitializeEventData()
     {
         int gainMoreGoldAmount = RandomHelper.RandomIntExclusive(GetEventSpec("GainMoreGoldAmountMin"), GetEventSpec("GainMoreGoldAmountMax"));
         int gainLessGoldAmount = RandomHelper.RandomIntExclusive(GetEventSpec("GainLessGoldAmountMin"), GetEventSpec("GainLessGoldAmountMax"));
 
+        Spell greed = Spell.GetSpellOfType(SpellLabel.Greed);
+
         // 1: Gain Gold & Greed
-        ConditionalOption greed = new ConditionalOption(() => true,
+        ConditionalOption steal = new ConditionalOption(() => true,
             MakeEventOption("Steal", "Gain " + gainMoreGoldAmount + " Gold, Become Cursed - Greed",
             () => false,
+            t => spawnedToolTip = UIManager._Instance.SpawnSpellToolTip(greed, t), () => GameObject.Destroy(spawnedToolTip),
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
                     GameManager._Instance.AlterGold(gainMoreGoldAmount);
                     GameManager._Instance.AddSpellToSpellBook(SpellLabel.Greed);
-                })));
+                }))); ;
 
         // 2: Gain Less Gold, but no Greed
         ConditionalOption noGreed = new ConditionalOption(() => true,
@@ -928,7 +962,7 @@ public class TheCostOfGreed : OptionEvent
                 })));
 
         // Add Options
-        AddOptions(greed, noGreed);
+        AddOptions(steal, noGreed);
     }
 }
 
@@ -941,6 +975,8 @@ public class RemoveCurseForGold : OptionEvent
     public override string EventName => "Name";
     public override string EventText => "Text";
 
+    private GameObject spawnedToolTip;
+
     protected override void InitializeEventData()
     {
         int minCost = GetEventSpec("MinCost");
@@ -949,6 +985,8 @@ public class RemoveCurseForGold : OptionEvent
 
         int numCurses = GetEventSpec("NumCurses");
         bool hasSufficientCurses = GameManager._Instance.GetSpellbook().GetNumSpellsMatchingCondition(spell => spell.Color == SpellColor.Curse) > numCurses;
+
+        Artifact deadCockroach = Artifact.GetArtifactOfType(ArtifactLabel.DeadCockroach);
 
         // 1:
         ConditionalOption standard = new ConditionalOption(() => true,
@@ -977,9 +1015,10 @@ public class RemoveCurseForGold : OptionEvent
         ConditionalOption vip = new ConditionalOption(() => true,
              MakeEventOption("Backroom Service", "Gain a Unique Artifact",
              () => !hasSufficientCurses,
+             t => spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(deadCockroach, t), () => GameObject.Destroy(spawnedToolTip),
                  MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                  {
-                     GameManager._Instance.AddArtifact(ArtifactLabel.DeadCockroach);
+                     GameManager._Instance.AddArtifact(deadCockroach);
                  })));
 
         // 2: Leave
@@ -1001,20 +1040,24 @@ public class TavernkeeperRescue : OptionEvent
     public override string EventName => "Tavernkeep Rescue";
     public override string EventText => "Text";
 
+    private GameObject spawnedToolTip;
+
     protected override void InitializeEventData()
     {
         int interveneDamageAmount = Mathf.RoundToInt(((float)GetEventSpec("InterveneDamageAmount") / 100) * GameManager._Instance.GetMaxPlayerHP());
         int distractDamageAmount = Mathf.RoundToInt(((float)GetEventSpec("DistractDamageAmount") / 100) * GameManager._Instance.GetMaxPlayerHP());
         int distractGoldAmount = GetEventSpec("DistractGoldAmount");
 
+        Artifact vipCard = Artifact.GetArtifactOfType(ArtifactLabel.VIPCard);
+
         // 1:
         ConditionalOption intervene = new ConditionalOption(() => true,
             MakeEventOption("Intervene", "Take " + interveneDamageAmount + " Damage, Recieve VIP Card",
-            () => false,
+            () => false, t => spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(vipCard, t), () => GameObject.Destroy(spawnedToolTip),
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
                     GameManager._Instance.AlterPlayerCurrentHP(-interveneDamageAmount, DamageType.Default);
-                    GameManager._Instance.AddArtifact(ArtifactLabel.VIPCard);
+                    GameManager._Instance.AddArtifact(vipCard);
                 })));
 
         ConditionalOption distract = new ConditionalOption(() => true,
@@ -1049,14 +1092,18 @@ public class TraumaRecall : OptionEvent
     public override string EventName => "Trauma Recall";
     public override string EventText => "Text";
 
+    private GameObject spawnedCurseToolTip;
+    private GameObject spawnedWitchesWardToolTip;
+
     protected override void InitializeEventData()
     {
         Spell specifiedCurse = GameManager._Instance.GetRandomSpellWithConditions(spell => spell.Color == SpellColor.Curse);
 
+
         // 1:
         ConditionalOption acknowledge = new ConditionalOption(() => true,
             MakeEventOption("Acknowledge", "Become Cursed - " + specifiedCurse.Name,
-            () => false,
+            () => false, t => spawnedCurseToolTip = UIManager._Instance.SpawnSpellToolTip(specifiedCurse, t), () => GameObject.Destroy(spawnedCurseToolTip),
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
                     GameManager._Instance.AddSpellToSpellBook(specifiedCurse);
@@ -1074,6 +1121,7 @@ public class TraumaRecall : OptionEvent
         ConditionalOption wardOff = new ConditionalOption(() => true,
             MakeEventOption("Ward Off", "Lose Witches Ward",
             () => GameManager._Instance.GetSpellbook().GetNumSpellsMatchingCondition(spell => spell.Label == SpellLabel.WitchesWard) <= 0,
+            t => spawnedWitchesWardToolTip = UIManager._Instance.SpawnSpellToolTip(Spell.GetSpellOfType(SpellLabel.WitchesWard), t), () => GameObject.Destroy(spawnedWitchesWardToolTip),
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
                     EventManager._Instance.StartCoroutine(GameManager._Instance.RemoveSpellSequence(spell => spell.Label == SpellLabel.WitchesWard, 1));
@@ -1186,16 +1234,20 @@ public class AngerForUpgrade : OptionEvent
     public override string EventName => "Name";
     public override string EventText => "Text";
 
+    private GameObject spawnedToolTip;
+
     protected override void InitializeEventData()
     {
+        Spell anger = Spell.GetSpellOfType(SpellLabel.Anger);
+
         // 1:
         ConditionalOption option = new ConditionalOption(() => true,
             MakeEventOption("Upgrade", "Choose a Spell to Upgrade, Become Cursed - Anger",
-            () => false,
+            () => false, t => spawnedToolTip = UIManager._Instance.SpawnSpellToolTip(anger, t), () => GameObject.Destroy(spawnedToolTip),
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
                     EventManager._Instance.StartCoroutine(GameManager._Instance.UpgradeSpellSequence(spell => true, 1,
-                        () => GameManager._Instance.AddSpellToSpellBook(SpellLabel.Anger)));
+                        () => GameManager._Instance.AddSpellToSpellBook(anger)));
                 })));
 
         // 2: Leave

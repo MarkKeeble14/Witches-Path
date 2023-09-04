@@ -40,7 +40,7 @@ public enum MapNodeConnectorState
 
 public class MapNodeUI : MonoBehaviour
 {
-    [SerializeField] private GameOccurance representedGameOccurance;
+    [SerializeField] private GameOccurance setTo;
     public Vector2Int Coords { get; set; }
 
     private float alphaTarget = 0f;
@@ -58,6 +58,14 @@ public class MapNodeUI : MonoBehaviour
 
     private List<MapNodeUI> incomingNodes = new List<MapNodeUI>();
     private List<MapNodeUI> outgoingNodes = new List<MapNodeUI>();
+
+    [SerializeField] private Image swirl;
+    [SerializeField] private float swirlLerpAnimationSpeed = 1;
+    [SerializeField] private float swirlMoveTowardsAnimationSpeed = 1;
+    [SerializeField] private float delayAfterFullSwirl = .25f;
+    [SerializeField] private float switchToMoveTowardsAt = .85f;
+
+    private bool showConnections = true;
 
     public List<MapNodeUI> OutgoingNodes => outgoingNodes;
 
@@ -90,7 +98,17 @@ public class MapNodeUI : MonoBehaviour
         }
         lineRenderer.Points = list.ToArray();
 
+        if (!showConnections)
+        {
+            lineRenderer.enabled = false;
+        }
+
         nodeConnections.Add(new NodeConnection(from, to, lineRenderer));
+    }
+
+    public void SetShowConnections(bool b)
+    {
+        showConnections = b;
     }
 
     public MapNodeState GetMapNodeState()
@@ -98,9 +116,9 @@ public class MapNodeUI : MonoBehaviour
         return currentState;
     }
 
-    public GameOccurance GetRepresentedGameOccurance()
+    public GameOccurance GetSetTo()
     {
-        return representedGameOccurance;
+        return setTo;
     }
 
     public void SetMapNodeState(MapNodeState setTo)
@@ -129,12 +147,40 @@ public class MapNodeUI : MonoBehaviour
         }
         else if (GameManager._Instance.CanSetCurrentGameOccurance)
         {
-            // Lazy Setting
-            MapManager._Instance.SetNode(this, nodeType);
+            // Ensure player can't click multiple nodes
+            GameManager._Instance.CanSetCurrentGameOccurance = false;
 
-            SetMapNodeState(MapNodeState.ONGOING);
-            StartCoroutine(GameManager._Instance.SetCurrentGameOccurance(this));
+            // Lazy Setting
+            if (setTo == null)
+            {
+                MapManager._Instance.SetNode(this, nodeType);
+            }
+
+            StartCoroutine(SwirlAnimation(delegate
+            {
+                SetMapNodeState(MapNodeState.ONGOING);
+                StartCoroutine(GameManager._Instance.SetCurrentGameOccurance(this));
+            }));
         }
+    }
+
+    private IEnumerator SwirlAnimation(Action onEnd)
+    {
+        while (swirl.fillAmount < 1)
+        {
+            if (swirl.fillAmount < switchToMoveTowardsAt)
+            {
+                swirl.fillAmount = Mathf.Lerp(swirl.fillAmount, 1, Time.deltaTime * swirlLerpAnimationSpeed);
+            }
+            else
+            {
+                swirl.fillAmount = Mathf.MoveTowards(swirl.fillAmount, 1, Time.deltaTime * swirlMoveTowardsAnimationSpeed);
+            }
+            yield return null;
+        }
+        yield return new WaitForSeconds(delayAfterFullSwirl);
+
+        onEnd?.Invoke();
     }
 
     public void Set(GameOccurance setTo, Sprite sprite, MapNodeType type)
@@ -160,7 +206,7 @@ public class MapNodeUI : MonoBehaviour
             return;
         }
 
-        this.representedGameOccurance = setTo;
+        this.setTo = setTo;
         nodeTypeText.text = setTo.Label;
     }
 

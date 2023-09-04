@@ -1,40 +1,36 @@
 ﻿using UnityEngine;
 using TMPro;
+using System.Collections;
+using System.Collections.Generic;
+using System;
+using System.Linq;
 
 public class CombatentHPBar : MonoBehaviour
 {
     [SerializeField] private CombatentHPBarSegment segmentPrefab;
 
+    [Header("References")]
     [SerializeField] private Transform parentSegmentsTo;
-
     [SerializeField] private TextMeshProUGUI hpText;
-
-    private CombatentHPBarSegment[] hPBarSegments;
-
     [SerializeField] private TextMeshProUGUI wardText;
     [SerializeField] private GameObject[] wardDisplay;
+    private CombatentHPBarSegment[] hPBarSegments;
     private int currentWard;
     private int maxHealth;
     private int currentHealth;
 
+    [Header("Animations")]
+    [SerializeField] private float betweenSegmentDelay = .02f;
+    [SerializeField] private float delay = .5f;
+    [SerializeField] private Color changingColor;
+    private List<CombatentHPBarSegment> changingSegments = new List<CombatentHPBarSegment>();
+    private float canAnimateDownDelayTimer;
+    private float betweenSegmentDelayTimer;
+    private int shownCurrentHealth;
+
     private int damageFromPoison;
     private int damageFromBurn;
     private int damageFromBlight;
-
-    public void SetDamageFromPoison(int stacks)
-    {
-        damageFromPoison = stacks;
-    }
-
-    public void SetDamageFromBurn(int stacks)
-    {
-        damageFromBurn = stacks;
-    }
-
-    public void SetDamageFromBlight(int stacks)
-    {
-        damageFromBlight = stacks;
-    }
 
     public void Set(int currentHealth, int maxHealth)
     {
@@ -43,6 +39,8 @@ public class CombatentHPBar : MonoBehaviour
         {
             CombatentHPBarSegment spawned = Instantiate(segmentPrefab, parentSegmentsTo);
             hPBarSegments[i] = spawned;
+            spawned.SetPosition(i);
+            spawned.name += "<" + i + ">";
             spawned.SetColor(Color.red);
 
             // Hide segments that are indexed higher than the current HP Value
@@ -57,27 +55,93 @@ public class CombatentHPBar : MonoBehaviour
         }
         this.maxHealth = maxHealth;
         this.currentHealth = currentHealth;
+        shownCurrentHealth = currentHealth;
         hpText.text = currentHealth + " / " + maxHealth;
     }
 
     public void SetCurrentHP(int newCurrentHealth)
     {
-        for (int i = 0; i < hPBarSegments.Length; i++)
+        // Any Segments that need to be changed will have these characteristics
+        for (int i = shownCurrentHealth; i != newCurrentHealth;)
         {
-            CombatentHPBarSegment segment = hPBarSegments[i];
-            // Hide segments that are indexed higher than the current HP Value
-            if (i >= newCurrentHealth)
+            CombatentHPBarSegment segment = hPBarSegments[i - 1];
+            if (!changingSegments.Contains(segment))
             {
-                segment.SetAlpha(0);
+                changingSegments.Add(segment);
+                segment.SetColor(changingColor);
+                segment.SetAlpha(1);
+            }
+
+            if (i < newCurrentHealth)
+            {
+                i++;
             }
             else
             {
-                segment.SetAlpha(1);
+                i--;
             }
         }
+
+        // Set Timers
+        canAnimateDownDelayTimer = delay;
+        betweenSegmentDelayTimer = 0;
+
+        // Set
         currentHealth = newCurrentHealth;
         hpText.text = currentHealth + " / " + maxHealth;
     }
+
+    private void Update()
+    {
+        if (canAnimateDownDelayTimer > 0)
+        {
+            // Reduce Timer
+            canAnimateDownDelayTimer -= Time.deltaTime;
+        }
+        else
+        {
+            // First Check if there are segments to change
+            if (changingSegments.Count > 0)
+            {
+                // Sort by Position
+                changingSegments.Sort((x, y) => x.Position.CompareTo(y.Position));
+
+                if (betweenSegmentDelayTimer > 0)
+                {
+                    // Reduce Timer
+                    betweenSegmentDelayTimer -= Time.deltaTime;
+                }
+                else
+                {
+                    // Changing Segment
+                    CombatentHPBarSegment segment;
+
+                    // Set Characteristics
+                    if (shownCurrentHealth < currentHealth)
+                    {
+                        segment = changingSegments[0];
+                        segment.SetAlpha(1);
+                    }
+                    else
+                    {
+                        segment = changingSegments[changingSegments.Count - 1];
+                        shownCurrentHealth--;
+                        segment.SetAlpha(0);
+                    }
+                    segment.SetColor(Color.red);
+
+                    // Reset Timer
+                    betweenSegmentDelayTimer = betweenSegmentDelay;
+
+                    changingSegments.Remove(segment);
+                }
+            }
+        }
+
+        ShowAfflictionStacks();
+    }
+
+    public bool Empty => shownCurrentHealth == 0;
 
     public void SetWard(int wardAmount)
     {
@@ -117,11 +181,6 @@ public class CombatentHPBar : MonoBehaviour
         this.hpText.text = text;
     }
 
-    private void Update()
-    {
-        ShowAfflictionStacks();
-    }
-
     private void ShowAfflictionStacks()
     {
         int poisonThreshold = currentHealth - damageFromPoison;
@@ -146,5 +205,20 @@ public class CombatentHPBar : MonoBehaviour
             CombatentHPBarSegment segment = hPBarSegments[i - 1];
             segment.SetColor(Color.yellow);
         }
+    }
+
+    public void SetDamageFromPoison(int stacks)
+    {
+        damageFromPoison = stacks;
+    }
+
+    public void SetDamageFromBurn(int stacks)
+    {
+        damageFromBurn = stacks;
+    }
+
+    public void SetDamageFromBlight(int stacks)
+    {
+        damageFromBlight = stacks;
     }
 }

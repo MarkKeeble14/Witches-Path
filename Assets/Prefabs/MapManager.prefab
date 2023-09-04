@@ -47,7 +47,7 @@ MonoBehaviour:
   beginningAnimationScrollRate: 0.75
   beforeScrollDelay: 0.5
   useLerp: 0
-  graceRange: 0.01
+  graceRange: 0.0025
   buildConnectorDelay: 0.05
   nextStage: 
   map:
@@ -130,9 +130,10 @@ MonoBehaviour:
       - key: 7
         value: {fileID: 21300000, guid: d54b620160a40034496a6005b052ecc2, type: 3}
       - key: 8
-        value: {fileID: 21300000, guid: 3fb8635491c699b429679c443aa6ab0d, type: 3}
+        value: {fileID: 21300000, guid: ca98aa70f80ca3c46989e4a2c13ab780, type: 3}
     numLinesPerConnector: 10
     connectorOffsetFromNode: 0.25
+    showSectionConnections: 0
     mapNodePrefab: {fileID: 5932683331434114181, guid: 07ed74b0a56adf64583b8214596c03bb, type: 3}
     mapLayout: {fileID: 2457742011578673596, guid: 8b9be5afbcf2502489c8b33a7cabaa85, type: 3}
     optionEventGameOccurance: {fileID: 0}

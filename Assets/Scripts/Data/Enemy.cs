@@ -37,6 +37,7 @@ public abstract class Enemy
     private List<EnemyAction> onTurnStartActions = new List<EnemyAction>();
     private List<EnemyAction> onTurnEndActions = new List<EnemyAction>();
     private Dictionary<string, EnemyAction> enemyActionDict = new Dictionary<string, EnemyAction>();
+    public virtual string AdditionalInfoText => "";
     private Dictionary<Func<bool>, PercentageMap<string>> enemyBehaviourDict = new Dictionary<Func<bool>, PercentageMap<string>>();
 
     public List<EnemyAction> GetEnemyActions()
@@ -135,6 +136,21 @@ public abstract class Enemy
         }
     }
 
+    public EnemyAction GetEnemyIntent(List<EnemyAction> exclude)
+    {
+        EnemyAction action = GetEnemyIntent();
+        if (exclude.Contains(action))
+        {
+            return GetEnemyIntent(exclude);
+        }
+        return action;
+    }
+
+    protected EnemyAction GetEnemyIntent(string key)
+    {
+        return enemyActionDict[key];
+    }
+
     protected SerializableKeyValuePair<string, int> MakeOption(int optionOdds, string enemyActionKey)
     {
         return new SerializableKeyValuePair<string, int>(enemyActionKey, optionOdds);
@@ -142,9 +158,13 @@ public abstract class Enemy
 
     protected EnemyAction MakeEnemyAction(Action onActivate, params EnemyIntent[] intents)
     {
-        return new EnemyAction(intents.ToList(), onActivate);
+        return new EnemyAction(intents.ToList(), onActivate, false);
     }
 
+    protected EnemyAction MakeEnemyAction(Action onActivate, bool textHidden, params EnemyIntent[] intents)
+    {
+        return new EnemyAction(intents.ToList(), onActivate, textHidden);
+    }
 
     // Static Method
     public static Enemy GetEnemyOfType(EnemyType enemyType)
@@ -635,8 +655,33 @@ public class PanickedWizard : Enemy
     protected override Vector2Int minMaxHPAmount => new Vector2Int(300, 350);
     protected override int basicAttackDamage => 5;
 
+    private PercentageMap<string> actionMap;
+
     protected override void SetUpBehaviour()
     {
+        // Make Enemy Actions
+        AddEnemyAction("SingleAttackAndWard", MakeEnemyAction(null, new EnemySingleAttackIntent(RandomHelper.RandomIntExclusive(5, 10), DamageType.Electric), new EnemyWardIntent(RandomHelper.RandomIntExclusive(1, 15))));
+        AddEnemyAction("SingleAttackBurnAndWard", MakeEnemyAction(null, new EnemySingleAttackIntent(RandomHelper.RandomIntExclusive(10, 20), DamageType.Fire),
+            new EnemyApplyAfflictionIntent(AfflictionType.Burn, RandomHelper.RandomIntExclusive(1, 3)), new EnemyWardIntent(RandomHelper.RandomIntExclusive(1, 15))));
+        AddEnemyAction("MultiAttack", MakeEnemyAction(null, new EnemyMultiAttackIntent(2, RandomHelper.RandomIntExclusive(1, 4), DamageType.Poison), new EnemyWardIntent(RandomHelper.RandomIntExclusive(1, 5))));
+        AddEnemyAction("Buff", MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Power, RandomHelper.RandomIntExclusive(1, 3)),
+            new EnemyGainAfflictionIntent(AfflictionType.Protection, RandomHelper.RandomIntExclusive(1, 3))));
+        AddEnemyAction("Random", MakeEnemyAction(null, true, new EnemyGainAfflictionIntent(RandomHelper.GetRandomEnumValue<AfflictionType>(), RandomHelper.RandomIntExclusive(1, 4)),
+            new EnemyApplyAfflictionIntent(RandomHelper.GetRandomEnumValue<AfflictionType>(), RandomHelper.RandomIntExclusive(1, 4))));
+
+        // Make Maps
+        actionMap = new PercentageMap<string>();
+        actionMap.AddOption(MakeOption(20, "SingleAttackAndWard"));
+        actionMap.AddOption(MakeOption(20, "SingleAttackBurnAndWard"));
+        actionMap.AddOption(MakeOption(20, "MultiAttack"));
+        actionMap.AddOption(MakeOption(20, "Buff"));
+        actionMap.AddOption(MakeOption(20, "Random"));
+
+        // Add Callback
+        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Jumpy, 3)));
+
+        // Apply Behaviours
+        AddEnemyBehaviour(() => true, actionMap);
     }
 }
 

@@ -152,7 +152,7 @@ public class GameManager : MonoBehaviour
     private int manaFromEquipment;
 
     public bool GameOvered => GetCurrentCharacterHP() <= 0;
-    public bool CanSetCurrentGameOccurance { get; private set; }
+    public bool CanSetCurrentGameOccurance { get; set; }
 
     // Spell Reward Offers
     public Func<Spell, bool> AcceptSpellRewardFunc => spell => !spellRewardsMustMatchCharacterColor || (spellRewardsMustMatchCharacterColor && spell.Color == GetCharacterColor());
@@ -803,7 +803,9 @@ public class GameManager : MonoBehaviour
         return Spell.GetSpellOfType(chosenSpellLabel);
     }
 
+    [Header("Before Combat Information")]
     [SerializeField] private TextMeshProUGUI enemyNameText;
+    [SerializeField] private TextMeshProUGUI enemyAdditionalInfoText;
     [SerializeField] private EnemyInfoBlock onCombatStart;
     [SerializeField] private EnemyInfoBlock onTurnStart;
     [SerializeField] private EnemyInfoBlock onTurnEnd;
@@ -829,9 +831,16 @@ public class GameManager : MonoBehaviour
 
         foreach (EnemyAction action in enemyActions)
         {
-            List<EnemyIntent> currentIntents = action.GetEnemyIntents();
             EnemyInfoBlockIntentDisplay spawned = Instantiate(enemyIntentDisplayPrefab, infoBlock.List);
-            spawned.Set(currentIntents);
+            if (action.TextHidden)
+            {
+                spawned.SetTextDirectly("?");
+            }
+            else
+            {
+                List<EnemyIntent> currentIntents = action.GetEnemyIntents();
+                spawned.Set(currentIntents);
+            }
             spawnedInfoBlockIntentDisplays.Add(spawned);
         }
     }
@@ -857,6 +866,15 @@ public class GameManager : MonoBehaviour
 
         // Set things according to the enemy so the player knows what they're fighting
         enemyNameText.text = combatEnemy.Name;
+        if (combatEnemy.AdditionalInfoText.Length > 0)
+        {
+            enemyAdditionalInfoText.gameObject.SetActive(true);
+            enemyAdditionalInfoText.text = combatEnemy.AdditionalInfoText;
+        }
+        else
+        {
+            enemyAdditionalInfoText.gameObject.SetActive(false);
+        }
         SetEnemyInformationText(onCombatStart, combatEnemy.GetOnCombatStartActions());
         SetEnemyInformationText(onTurnStart, combatEnemy.GetOnTurnStartActions());
         SetEnemyInformationText(onTurnEnd, combatEnemy.GetOnTurnEndActions());
@@ -920,6 +938,7 @@ public class GameManager : MonoBehaviour
         // The player must equip at least one spell (provided they have any)
         bool prevAllowed = false;
         bool allowed = false;
+        confirmSelectSpellsForCombatButton.interactable = false;
         List<Tween> confirmButtonTweens = new List<Tween>();
         selectSpellsForCombatTitleText.text = unallowedToFightTitleText;
         while (!spellSelectionForCombatConfirmed)
@@ -1460,7 +1479,6 @@ public class GameManager : MonoBehaviour
 
     public IEnumerator SetCurrentGameOccurance(MapNodeUI setNodeTo)
     {
-        CanSetCurrentGameOccurance = false;
         if (currentNode != null)
         {
             // Set the current Connection to be Traversed
@@ -1478,7 +1496,7 @@ public class GameManager : MonoBehaviour
         }
 
         currentNode = setNodeTo;
-        currentOccurance = currentNode.GetRepresentedGameOccurance();
+        currentOccurance = currentNode.GetSetTo();
 
         // Set the new Connections to be Accessable
         setNodeTo.SetAllConnectorsState(MapNodeConnectorState.ACCESSABLE, false);
@@ -1581,59 +1599,70 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private bool interruptSpellSequence;
+    [SerializeField] private GameObject interruptSpellSequenceButton;
+    public void InterrupSpellSequence()
+    {
+        interruptSpellSequence = true;
+    }
+
     public IEnumerator UpgradeSpellSequence(Func<Spell, bool> viableSpellFunc, int numSpells = 1, Action onCompleteAction = null)
     {
         for (int i = 0; i < numSpells; i++)
         {
-            yield return StartCoroutine(SelectSpellToUpgradeSequence(spell => UpgradeSpellFromSpellBook(spell), 1, spell => viableSpellFunc(spell) && spell.CanUpgrade));
+            yield return StartCoroutine(SelectSpellToUpgradeSequence(spell => UpgradeSpellFromSpellBook(spell), 1,
+                spell => viableSpellFunc(spell) && spell.CanUpgrade, onCompleteAction, numSpells <= 1));
         }
-
-        onCompleteAction?.Invoke();
     }
 
-    public IEnumerator RemoveSpellSequence(Func<Spell, bool> viableSpellFunc, int numSpells = 1)
+    public IEnumerator RemoveSpellSequence(Func<Spell, bool> viableSpellFunc, int numSpells = 1, Action onCompleteAction = null)
     {
-        yield return StartCoroutine(SelectSpellSequence(spell => RemoveSpellFromSpellBook(spell), numSpells, viableSpellFunc));
+        yield return StartCoroutine(SelectSpellSequence(spell => RemoveSpellFromSpellBook(spell), numSpells, viableSpellFunc, onCompleteAction));
     }
 
-    public IEnumerator TransformSpellSequence(Func<Spell, bool> viableSpellFunc, int numSpells = 1)
+    public IEnumerator TransformSpellSequence(Func<Spell, bool> viableSpellFunc, int numSpells = 1, Action onCompleteAction = null)
     {
         yield return StartCoroutine(SelectSpellSequence(spell =>
         {
             RemoveSpellFromSpellBook(spell);
             AddSpellToSpellBook(GetRandomSpellWithConditions(newSpell => AcceptSpellRewardFunc(newSpell) && newSpell.Type == spell.Type && newSpell.Rarity == spell.Rarity));
-        }, numSpells, viableSpellFunc));
+        }, numSpells, viableSpellFunc, onCompleteAction));
     }
 
-    public IEnumerator DuplicateSpellSequence(Func<Spell, bool> viableSpellFunc, int numSpells = 1)
+    public IEnumerator DuplicateSpellSequence(Func<Spell, bool> viableSpellFunc, int numSpells = 1, Action onCompleteAction = null)
     {
         yield return StartCoroutine(SelectSpellSequence(spell =>
         {
             AddSpellToSpellBook(spell);
-        }, numSpells, viableSpellFunc));
+        }, numSpells, viableSpellFunc, onCompleteAction));
     }
 
-    public IEnumerator TradeSpellSequence(Spell newSpell, Func<Spell, bool> viableSpellFunc)
+    public IEnumerator TradeSpellSequence(Spell newSpell, Func<Spell, bool> viableSpellFunc, Action onCompleteAction = null)
     {
         yield return StartCoroutine(SelectSpellSequence(spell =>
         {
             RemoveSpellFromSpellBook(spell);
             AddSpellToSpellBook(newSpell);
-        }, 1, viableSpellFunc));
+        }, 1, viableSpellFunc, onCompleteAction));
     }
 
-    public IEnumerator SelectSpellToUpgradeSequence(Action<Spell> doWithSelected, int numToSelect, Func<Spell, bool> viableSpell)
+    public IEnumerator SelectSpellToUpgradeSequence(Action<Spell> doWithSelected, int numToSelect, Func<Spell, bool> viableSpell, Action onComplete, bool allowInterrupt)
     {
-        yield return StartCoroutine(SelectSpellSequence(doWithSelected, numToSelect, viableSpell, true));
+        yield return StartCoroutine(SelectSpellSequence(doWithSelected, numToSelect, viableSpell, onComplete, true, allowInterrupt));
     }
 
-    public IEnumerator SelectSpellSequence(Action<Spell> doWithSelected, int numToSelect, Func<Spell, bool> viableSpell)
+    public IEnumerator SelectSpellSequence(Action<Spell> doWithSelected, int numToSelect, Func<Spell, bool> viableSpell, Action onComplete)
     {
-        yield return StartCoroutine(SelectSpellSequence(doWithSelected, numToSelect, viableSpell, false));
+        yield return StartCoroutine(SelectSpellSequence(doWithSelected, numToSelect, viableSpell, onComplete, false, false));
     }
 
-    private IEnumerator SelectSpellSequence(Action<Spell> doWithSelected, int numToSelect, Func<Spell, bool> viableSpell, bool isForUpgrade)
+    private IEnumerator SelectSpellSequence(Action<Spell> doWithSelected, int numToSelect, Func<Spell, bool> viableSpell, Action onComplete, bool isForUpgrade, bool allowInterrupt)
     {
+        if (allowInterrupt)
+        {
+            interruptSpellSequenceButton.SetActive(true);
+        }
+
         selectSpellScreen.SetActive(true);
 
         List<VisualSpellDisplay> spawnedDisplays = new List<VisualSpellDisplay>();
@@ -1676,7 +1705,7 @@ public class GameManager : MonoBehaviour
             });
         }
 
-        yield return new WaitUntil(() => selectedSpells.Count >= numToSelect);
+        yield return new WaitUntil(() => selectedSpells.Count >= numToSelect || interruptSpellSequence);
 
         selectSpellScreen.SetActive(false);
 
@@ -1689,10 +1718,18 @@ public class GameManager : MonoBehaviour
             Destroy(cur.gameObject);
         }
 
+        if (interruptSpellSequence)
+        {
+            interruptSpellSequence = false;
+            interruptSpellSequenceButton.SetActive(false);
+            yield break;
+        }
+
         foreach (Spell spell in selectedSpells)
         {
             doWithSelected(spell);
         }
+        onComplete?.Invoke();
     }
 
     public void IncreaseStat(BaseStat stat, int incBy)
@@ -1773,8 +1810,20 @@ public class GameManager : MonoBehaviour
 
     public void AlterPlayerMaxHP(int changeBy)
     {
+        // Change max HP
         maxPlayerHP += changeBy;
-        AlterPlayerCurrentHP(changeBy, DamageType.Heal);
+
+        // if gaining max hp, gain that same amount of current hp
+        if (changeBy > 0)
+        {
+            AlterPlayerCurrentHP(changeBy, DamageType.Heal);
+        }
+        else if (changeBy < 0 && currentPlayerHP > maxPlayerHP)
+        {
+            // if losing max hp AND the player has lost enough max hp to the point where their current hp is no higher than their max hp, even that out
+            currentPlayerHP = maxPlayerHP;
+        }
+
     }
 
     public int GetCurrentCharacterHP()
@@ -2076,8 +2125,7 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator CampfireUpgradeSpellSequence()
     {
-        yield return StartCoroutine(UpgradeSpellSequence(spell => true));
-        ResolveCurrentEvent();
+        yield return StartCoroutine(UpgradeSpellSequence(spell => true, 1, () => ResolveCurrentEvent()));
     }
 
     public void ReSpawnPotionIngredientToBrewList(PotionIngredientType type)
@@ -2492,7 +2540,7 @@ public class GameManager : MonoBehaviour
             string conditionPart = conditionParts[0];
             string argument = conditionParts[1];
 
-            Debug.Log("Argument Condition: " + conditionPart + ", Argument = " + argument);
+            // Debug.Log("Argument Condition: " + conditionPart + ", Argument = " + argument);
             switch (conditionPart)
             {
                 case "MinGoldAmount":

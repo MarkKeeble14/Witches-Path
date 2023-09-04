@@ -61,7 +61,7 @@ public class MapManager : MonoBehaviour
             // Reached the end of the section, increment current section index and set row index back to 0
             // Debug.Log("Row Passed; Section Passed");
             currentRowIndex = 0;
-            map.SetFirstRowAccessable(++currentSectionIndex);
+            map.SetNextAccessable(++currentSectionIndex, currentRowIndex, fromNode.OutgoingNodes);
         }
         else
         {
@@ -90,7 +90,7 @@ public class MapManager : MonoBehaviour
         StartCoroutine(ShowLevel(mapScrollRect, beginningAnimationScrollRate));
 
         // Set the first row to be Accessable
-        map.SetFirstRowAccessable(0);
+        map.SetFirstRowAccessable();
 
         // Start the Stage
         StartCoroutine(GameManager._Instance.StageLoop());

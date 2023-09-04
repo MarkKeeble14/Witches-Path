@@ -24,11 +24,17 @@ public class EffectTextDisplay : MonoBehaviour
 
     [SerializeField] private Transform spawnOn;
 
-    public void SpawnEffectText(EffectTextStyle style, string text, Color c)
+    public void SpawnEffectText(EffectTextStyle style, string text, Color c, Sprite withIcon)
     {
         EffectText spawned = Instantiate(effectTextPrefab, spawnOn);
         spawned.SetColor(c);
         spawned.SetText(text);
+
+        if (withIcon != null)
+        {
+            spawned.SetIcon(withIcon);
+        }
+
         spawned.SetAnimation(effectTextTriggerStringDict[style]);
     }
 

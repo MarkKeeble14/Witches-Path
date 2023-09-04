@@ -5,12 +5,15 @@ public class EnemyAction
 {
     private List<EnemyIntent> enemyIntents = new List<EnemyIntent>();
     private Action onActivate;
+    private bool textHidden;
+    public bool TextHidden => textHidden;
 
     // Constructor
-    public EnemyAction(List<EnemyIntent> intents, Action onActivate)
+    public EnemyAction(List<EnemyIntent> intents, Action onActivate, bool textHidden)
     {
         AddEnemyIntents(intents);
         this.onActivate += onActivate;
+        this.textHidden = textHidden;
     }
 
     // Call the Callback

@@ -12,6 +12,11 @@ public class EnemyInfoBlockIntentDisplay : MonoBehaviour, IPointerEnterHandler, 
 
     private GameObject spawnedToolTip;
 
+    public void SetTextDirectly(string text)
+    {
+        this.text.text = text;
+    }
+
     public void Set(List<EnemyIntent> enemyIntents)
     {
         setIntents = enemyIntents;
@@ -47,8 +52,10 @@ public class EnemyInfoBlockIntentDisplay : MonoBehaviour, IPointerEnterHandler, 
         }
         text.text = result;
     }
+
     public void OnPointerEnter(PointerEventData eventData)
     {
+        if (setIntents == null) return;
         if (setIntents.Count <= 0) return;
 
         if (CombatManager._Instance.AllowGameSpaceToolTips)

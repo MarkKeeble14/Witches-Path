@@ -7,10 +7,11 @@ using UnityEngine.UI;
 public class AfflictionIcon : MonoBehaviour
 {
     [SerializeField] private Image image;
-    [SerializeField] private TextMeshProUGUI typeText;
-    [SerializeField] private TextMeshProUGUI stacksRemaining;
-
+    [SerializeField] private TextMeshProUGUI nameText;
+    [SerializeField] private TextMeshProUGUI stacksRemainingText;
     private Affliction setTo;
+
+    [SerializeField] private bool useNameText;
 
     [Header("Animations")]
     [SerializeField] private float regularScale;
@@ -24,6 +25,8 @@ public class AfflictionIcon : MonoBehaviour
     {
         // Set Target Scale Initially
         targetScale = regularScale;
+
+        nameText.gameObject.SetActive(useNameText);
     }
 
     private void Update()
@@ -36,8 +39,6 @@ public class AfflictionIcon : MonoBehaviour
 
         // Set Transforms Actual Scale Scale
         image.transform.localScale = targetScale * Vector3.one;
-
-        SetStacksRemaining(Utils.RoundTo(setTo.GetStacks(), 0).ToString());
     }
 
     public void AnimateScale()
@@ -48,22 +49,15 @@ public class AfflictionIcon : MonoBehaviour
     public void SetAffliction(Affliction aff)
     {
         setTo = aff;
-        SetTypeText(aff.Name);
+        nameText.text = aff.Name;
+        image.sprite = UIManager._Instance.GetAfflictionIcon(aff.Type);
     }
 
-    public void SetSprite(Sprite s)
+    public void UpdateAfflictionStacks()
     {
-        image.sprite = s;
-    }
-
-    public void SetTypeText(string s)
-    {
-        typeText.text = s;
-    }
-
-    public void SetStacksRemaining(string s)
-    {
-        stacksRemaining.text = s;
+        int num = setTo.GetStacks();
+        stacksRemainingText.text = num.ToString();
+        stacksRemainingText.color = num > 0 ? Color.green : Color.red;
     }
 
     public void SpawnToolTip()
