@@ -14,6 +14,13 @@ public class GameOccuranceUIManager : MonoBehaviour
         _Instance = this;
     }
 
+    public void ForceChangeGameOccurance(MapNodeType type, bool active)
+    {
+        foreach (GameObject obj in gameOccuranceScreens[type])
+        {
+            obj.SetActive(active);
+        }
+    }
 
     public void StartGameOccurance(MapNodeType type)
     {

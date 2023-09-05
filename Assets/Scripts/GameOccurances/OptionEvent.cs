@@ -22,7 +22,8 @@ public enum EventLabel
     BookOfTheAmnesiac,
     BookOfTheRepurposed,
     BookOfTheStudious,
-    AngerForUpgrade
+    AngerForUpgrade,
+    ASuspiciousTome
 }
 
 public abstract class OptionEvent
@@ -30,7 +31,14 @@ public abstract class OptionEvent
     public abstract EventLabel EventLabel { get; }
     public abstract Sprite EventArt { get; }
     public abstract string EventName { get; }
-    public abstract string EventText { get; }
+    public string EventText => eventText;
+    protected abstract string defaultEventText { get; }
+    private string eventText;
+
+    protected void UpdateEventText(string newText)
+    {
+        eventText = newText;
+    }
 
     private List<ConditionalOption> options = new List<ConditionalOption>();
 
@@ -42,6 +50,7 @@ public abstract class OptionEvent
     public OptionEvent()
     {
         InitializeEventData();
+        UpdateEventText(defaultEventText);
     }
 
     protected abstract void InitializeEventData();
@@ -120,6 +129,46 @@ public abstract class OptionEvent
         return viableOptions;
     }
 
+    /// <summary>
+    /// Note, on End Action must include one of the following: EventManager._Instance.SetWait(false) or EventManager._instance.Resolve(); 
+    /// if Chaining, Will need to Call SetWait(false)
+    /// if not, Call Resolve
+    /// </summary>
+    /// <param name="combat"></param>
+    /// <param name="isChain"></param>
+    /// <param name="onWin"></param>
+    protected void StartFight(Combat combat, bool isChain, Action onWin)
+    {
+        if (isChain)
+        {
+            EventManager._Instance.ChainEvent(this);
+            EventManager._Instance.SetWait(true);
+        }
+
+        // Swap around UI
+        GameOccuranceUIManager._Instance.ForceChangeGameOccurance(MapNodeType.MinorFight, true);
+        GameOccuranceUIManager._Instance.ForceChangeGameOccurance(MapNodeType.Options, false);
+
+        CombatManager._Instance.StartCoroutine(CombatManager._Instance.StartCombat(combat, delegate
+        {
+            if (GameManager._Instance.GetCurrentCharacterHP() > 0)
+            {
+                onWin?.Invoke();
+
+                // Change UI
+                GameOccuranceUIManager._Instance.ForceChangeGameOccurance(MapNodeType.MinorFight, false);
+                if (isChain)
+                {
+                    GameOccuranceUIManager._Instance.ForceChangeGameOccurance(MapNodeType.Options, true);
+                }
+            }
+            else
+            {
+                GameManager._Instance.StartCoroutine(GameManager._Instance.GameOverSequence());
+            }
+        }));
+    }
+
     public static OptionEvent GetOptionEventOfType(EventLabel eventLabel)
     {
         switch (eventLabel)
@@ -163,6 +212,8 @@ public abstract class OptionEvent
                 return new BookOfTheStudious();
             case EventLabel.AngerForUpgrade:
                 return new AngerForUpgrade();
+            case EventLabel.ASuspiciousTome:
+                return new ASuspiciousTome();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -261,7 +312,7 @@ public class Treasure : OptionEvent
 
     public override string EventName => "Treasure";
 
-    public override string EventText => "In front of you stands a Lecturn, a Chest, and a heaping bag of Gold. A faint voice can be heard whispering, " +
+    protected override string defaultEventText => "In front of you stands a Lecturn, a Chest, and a heaping bag of Gold. A faint voice can be heard whispering, " +
         "<shake> Whichever you do not choose shall be lost.</> Which do you approach?";
 
     protected override void InitializeEventData()
@@ -312,7 +363,7 @@ public class TravellersDelivery : OptionEvent
 
     public override string EventName => "Travellers Delivery";
 
-    public override string EventText => "A wayward traveller approaches you waving a knitted knapsack over his head. He claims to have a gift for you, but requires payment for his services...";
+    protected override string defaultEventText => "A wayward traveller approaches you waving a knitted knapsack over his head. He claims to have a gift for you, but requires payment for his services...";
 
     protected override void InitializeEventData()
     {
@@ -365,7 +416,7 @@ public class HomeFree : OptionEvent
 
     public override string EventName => "Home Free";
 
-    public override string EventText => "In the distance, you notice a magical portal gurgling in the wind...";
+    protected override string defaultEventText => "In the distance, you notice a magical portal gurgling in the wind...";
 
     private GameObject spawnedToolTip;
 
@@ -412,7 +463,7 @@ public class WitchesHut : OptionEvent
 
     public override string EventName => "Witches Hut";
 
-    public override string EventText => "You come across a hut with a cauldron smoking up the nearby area. " +
+    protected override string defaultEventText => "You come across a hut with a cauldron smoking up the nearby area. " +
         "Surrounding the cauldron are several ingredients you know can be used to brew potions. There appears to be no one in sight.";
 
     protected override void InitializeEventData()
@@ -491,10 +542,8 @@ public class ArmShapedHole : OptionEvent
     public override Sprite EventArt => null;
 
     public override string EventName => "Pit of Treasures?";
-
-    private string eventText = "A deep and dark hole stands in front of you. There could be any number of <shake>dangers</shake> " +
+    protected override string defaultEventText => "A deep and dark hole stands in front of you. There could be any number of <shake>dangers</shake> " +
         "within, but possibly treasure as well?. If you just stick your arm in, who knows what may come out?";
-    public override string EventText => eventText;
 
     private EventOption reach;
     private int loseHPAmount;
@@ -527,7 +576,7 @@ public class ArmShapedHole : OptionEvent
             }),
             MakeEventOptionOutcomeWithChance(failureOdds, "N/A", delegate
             {
-                eventText = "<shake>" + GetHurtPhrase() + "...</shake> Try Again?";
+                UpdateEventText("<shake>" + GetHurtPhrase() + "...</shake> Try Again?");
                 GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Default);
                 loseHPAmount += 1;
                 successOdds += 5;
@@ -569,7 +618,7 @@ public class TheCuriousChild : OptionEvent
 
     public override string EventName => "The Curious Child";
 
-    public override string EventText => "A young child notices and approaches you.. \"Oh! A visitor... " +
+    protected override string defaultEventText => "A young child notices and approaches you.. \"Oh! A visitor... " +
         "Say, I found this thingy in the den, I'd be happy to give it to you in exchange for something?\"";
 
     private GameObject spawnedToolTip;
@@ -655,10 +704,8 @@ public class SealedChamber : OptionEvent
 
     public override string EventName => "Sealed Chamber";
 
-    private string eventText = "Stepping through the halls of the mansion, you take notice of a peculiar looking slot in the wall. " +
+    protected override string defaultEventText => "Stepping through the halls of the mansion, you take notice of a peculiar looking slot in the wall. " +
         "It appears to be the same size as one of your spell tomes, perhaps placing one into the slot may prove fruitful?";
-
-    public override string EventText => eventText;
 
     private bool preOffer;
     private Spell offerredSpell;
@@ -704,24 +751,24 @@ public class SealedChamber : OptionEvent
         switch (offerredSpell.Rarity)
         {
             case Rarity.Basic:
-                eventText = "The slot glows moderately brightly.\nThe wall behind it slowly rumbles aside, leaving an newly opened chamber, unfortunately with nothing inside.";
+                UpdateEventText("The slot glows moderately brightly.\nThe wall behind it slowly rumbles aside, leaving an newly opened chamber, unfortunately with nothing inside.");
                 return;
             case Rarity.Common:
-                eventText = "The slot glows <shake>extremely</> faintly...\nThe wall behind it slowly rumbles aside, leaving an newly opened chamber with some money inside.";
+                UpdateEventText("The slot glows <shake>extremely</> faintly...\nThe wall behind it slowly rumbles aside, leaving an newly opened chamber with some money inside.");
                 RewardManager._Instance.AddGoldReward(GetEventSpec("GoldAmount"));
                 EventManager._Instance.StartCoroutine(RewardManager._Instance.ShowRewardScreen());
                 return;
             case Rarity.Uncommon:
-                eventText = "The slot glows noticibly bright...\nThe wall behind it slowly rumbles aside, leaving an newly opened chamber with some medicine inside.";
+                UpdateEventText("The slot glows noticibly bright...\nThe wall behind it slowly rumbles aside, leaving an newly opened chamber with some medicine inside.");
                 GameManager._Instance.AlterPlayerCurrentHP(GetEventSpec("HealAmount"), DamageType.Heal);
                 return;
             case Rarity.Rare:
-                eventText = "The slot glows <shake>bright</>!\nThe wall behind it slowly rumbles aside. Despite the shimmering lights, you don't notice anything in the room. However as you " +
-                    "take a step forward to investigate further, you're overcome by a powerful warmth. You feel as though you've become stronger somehow...";
+                UpdateEventText("The slot glows <shake>bright</>!\nThe wall behind it slowly rumbles aside. Despite the shimmering lights, you don't notice anything in the room. However as you " +
+                    "take a step forward to investigate further, you're overcome by a powerful warmth. You feel as though you've become stronger somehow...");
                 GameManager._Instance.AlterPlayerMaxHP(GetEventSpec("MaxHPAmount"));
                 return;
             case Rarity.Event:
-                eventText = "The slot glows quite bright...\nThe wall behind it slowly rumbles aside, leaving an newly opened chamber with an Artifact inside.";
+                UpdateEventText("The slot glows quite bright...\nThe wall behind it slowly rumbles aside, leaving an newly opened chamber with an Artifact inside.");
                 RewardManager._Instance.AddRandomArtifactReward();
                 EventManager._Instance.StartCoroutine(RewardManager._Instance.ShowRewardScreen());
                 return;
@@ -736,7 +783,7 @@ public class GainColoredCards : OptionEvent
     public override Sprite EventArt => null;
 
     public override string EventName => "Name";
-    public override string EventText => "Text";
+    protected override string defaultEventText => "Text";
 
     protected override void InitializeEventData()
     {
@@ -795,7 +842,7 @@ public class GoldAtACost : OptionEvent
     public override Sprite EventArt => null;
 
     public override string EventName => "Name";
-    public override string EventText => "Text";
+    protected override string defaultEventText => "Text";
 
     private GameObject spawnedToolTip;
 
@@ -848,7 +895,7 @@ public class LifeForReward : OptionEvent
     public override Sprite EventArt => null;
 
     public override string EventName => "Name";
-    public override string EventText => "Text";
+    protected override string defaultEventText => "Text";
 
     protected override void InitializeEventData()
     {
@@ -881,7 +928,7 @@ public class SpellbookManagement : OptionEvent
     public override Sprite EventArt => null;
 
     public override string EventName => "Name";
-    public override string EventText => "Text";
+    protected override string defaultEventText => "Text";
 
     protected override void InitializeEventData()
     {
@@ -929,7 +976,7 @@ public class TheCostOfGreed : OptionEvent
     public override Sprite EventArt => null;
 
     public override string EventName => "The Cost of Greed";
-    public override string EventText => "Text";
+    protected override string defaultEventText => "Text";
 
     private GameObject spawnedToolTip;
 
@@ -973,7 +1020,7 @@ public class RemoveCurseForGold : OptionEvent
     public override Sprite EventArt => null;
 
     public override string EventName => "Name";
-    public override string EventText => "Text";
+    protected override string defaultEventText => "Text";
 
     private GameObject spawnedToolTip;
 
@@ -986,7 +1033,7 @@ public class RemoveCurseForGold : OptionEvent
         int numCurses = GetEventSpec("NumCurses");
         bool hasSufficientCurses = GameManager._Instance.GetSpellbook().GetNumSpellsMatchingCondition(spell => spell.Color == SpellColor.Curse) > numCurses;
 
-        Artifact deadCockroach = Artifact.GetArtifactOfType(ArtifactLabel.DeadCockroach);
+        Artifact deadCockroach = Artifact.GetArtifactOfType(ArtifactLabel.CockroachCarcass);
 
         // 1:
         ConditionalOption standard = new ConditionalOption(() => true,
@@ -1038,7 +1085,7 @@ public class TavernkeeperRescue : OptionEvent
     public override Sprite EventArt => null;
 
     public override string EventName => "Tavernkeep Rescue";
-    public override string EventText => "Text";
+    protected override string defaultEventText => "Text";
 
     private GameObject spawnedToolTip;
 
@@ -1090,7 +1137,7 @@ public class TraumaRecall : OptionEvent
     public override Sprite EventArt => null;
 
     public override string EventName => "Trauma Recall";
-    public override string EventText => "Text";
+    protected override string defaultEventText => "Text";
 
     private GameObject spawnedCurseToolTip;
     private GameObject spawnedWitchesWardToolTip;
@@ -1139,7 +1186,7 @@ public class BookOfTheAmnesiac : OptionEvent
     public override Sprite EventArt => null;
 
     public override string EventName => "Book of the Amnesiac";
-    public override string EventText => "Text";
+    protected override string defaultEventText => "Text";
 
     protected override void InitializeEventData()
     {
@@ -1170,7 +1217,7 @@ public class BookOfTheRepurposed : OptionEvent
     public override Sprite EventArt => null;
 
     public override string EventName => "Book of the Repurposed";
-    public override string EventText => "Text";
+    protected override string defaultEventText => "Text";
 
     protected override void InitializeEventData()
     {
@@ -1201,7 +1248,7 @@ public class BookOfTheStudious : OptionEvent
     public override Sprite EventArt => null;
 
     public override string EventName => "Book of the Studious";
-    public override string EventText => "Text";
+    protected override string defaultEventText => "Text";
 
     protected override void InitializeEventData()
     {
@@ -1232,7 +1279,7 @@ public class AngerForUpgrade : OptionEvent
     public override Sprite EventArt => null;
 
     public override string EventName => "Name";
-    public override string EventText => "Text";
+    protected override string defaultEventText => "Text";
 
     private GameObject spawnedToolTip;
 
@@ -1259,6 +1306,69 @@ public class AngerForUpgrade : OptionEvent
         AddOptions(option, leave);
     }
 }
+
+public class ASuspiciousTome : OptionEvent
+{
+    public override EventLabel EventLabel => EventLabel.ASuspiciousTome;
+
+    public override Sprite EventArt => null;
+
+    public override string EventName => "A Suspicious Tome";
+    protected override string defaultEventText => "As you walk through the halls, a strange sound comes from one of the bookshelves. Investigating further, you notice a specific book which sits apart from all the rest." +
+        " Of note, this particularly book seems to have one <shake>eye</>...";
+
+    protected override void InitializeEventData()
+    {
+        Combat testCombat = (Combat)MapManager._Instance.GetUniqueGameOccurance("PossessedTomeCombat");
+
+        int stage = 0;
+
+        // 1: Choice Between Reaching and Leaving
+        // Choosing Reach will Chain into another Option where the only option is to fight
+        ConditionalOption wonFight = new ConditionalOption(() => stage == 0,
+            MakeEventOption("Reach", "?",
+            () => false,
+                MakeEventOptionOutcomeWithChance(100, "", delegate
+                {
+                    UpdateEventText("The tome <shake>shakes</> violently before lifting up off of the bookcase. It whirls it's face around. You note it actually has two eyes before it charges...");
+                    EventManager._Instance.ChainEvent(this);
+                    stage = 1;
+                })));
+
+        // 2: Only Given the Optoin to Fight
+        ConditionalOption fight = new ConditionalOption(() => stage == 1,
+            MakeEventOption("Fight", "Fight the now floating Book, Recieve the Option to View a new Book",
+            () => false,
+                MakeEventOptionOutcomeWithChance(100, "", delegate
+                {
+                    UpdateEventText("The book now lays on the ground, now lifeless as it should've been.");
+                    StartFight(testCombat, true, delegate
+                    {
+                        stage = 2;
+                        EventManager._Instance.SetWait(false);
+                    });
+                })));
+
+        // 3: View Reward
+        ConditionalOption viewBook = new ConditionalOption(() => stage == 2,
+            MakeEventOption("Read", "View the now Deceased Book",
+            () => false,
+                MakeEventOptionOutcomeWithChance(100, "A frightening ordeal, hopefully one not to be repeated.", delegate
+                {
+                    RewardManager._Instance.AddRandomBookReward();
+                    RewardManager._Instance.StartCoroutine(RewardManager._Instance.ShowRewardScreen());
+                })));
+
+        // 4: Leave
+        ConditionalOption leave = new ConditionalOption(() => stage == 0,
+            MakeEventOption("Leave", "", () => false,
+                MakeEventOptionOutcomeWithChance(100, "A bookcase may be the least of your worries...", null)));
+
+        // Add Options
+        AddOptions(fight, wonFight, viewBook, leave);
+    }
+}
+
 
 /*
 public class OptionEvent : OptionEvent

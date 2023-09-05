@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public abstract class EnemyIntent : ToolTippable
@@ -211,7 +212,22 @@ public class EnemyApplyAfflictionIntent : EnemyAfflictionIntent
 {
     public override IntentType Type => IntentType.ApplyAffliction;
     protected override string name => "Applying Affliction";
-    protected override string toolTipText => "Apply " + NumStacks + " " + Affliction.GetAfflictionOfType(AfflictionType).GetToolTipLabel();
+    protected override string toolTipText
+    {
+        get
+        {
+            string res = "";
+            if (NumStacks == 0)
+            {
+                res += "Apply ? ";
+            }
+            else
+            {
+                res += "Apply " + NumStacks;
+            }
+            return res + " " + Affliction.GetAfflictionOfType(AfflictionType).GetToolTipLabel();
+        }
+    }
 
     public EnemyApplyAfflictionIntent(AfflictionType affType, Func<int> numStacks) : base(affType, numStacks)
     {
@@ -226,7 +242,26 @@ public class EnemyGainAfflictionIntent : EnemyAfflictionIntent
 {
     public override IntentType Type => IntentType.GainAffliction;
     protected override string name => "Gaining Affliction";
-    protected override string toolTipText => (NumStacks > 0 ? "Gain " + NumStacks : "Lose " + (-1 * NumStacks)) + " " + Affliction.GetAfflictionOfType(AfflictionType).GetToolTipLabel();
+    protected override string toolTipText
+    {
+        get
+        {
+            string res = "";
+            if (NumStacks > 0)
+            {
+                res += "Gain " + NumStacks;
+            }
+            else if (NumStacks < 0)
+            {
+                res += "Lose " + NumStacks * -1;
+            }
+            else
+            {
+                return "Alter " + Affliction.GetAfflictionOfType(AfflictionType).GetToolTipLabel() + " by ?";
+            }
+            return res + " " + Affliction.GetAfflictionOfType(AfflictionType).GetToolTipLabel();
+        }
+    }
 
     public EnemyGainAfflictionIntent(AfflictionType affType, Func<int> numStacks) : base(affType, numStacks)
     {
@@ -234,5 +269,53 @@ public class EnemyGainAfflictionIntent : EnemyAfflictionIntent
 
     public EnemyGainAfflictionIntent(AfflictionType affType, int numStacks) : base(affType, () => numStacks)
     {
+    }
+}
+
+public class EnemyCleanseAfflictionsIntent : EnemyIntent
+{
+    public override IntentType Type => IntentType.CleanseAfflictions;
+    public List<Sign> toCleanse { get; private set; }
+
+    protected override string name => "Cleansing Afflictions";
+
+    protected override string toolTipText => "Remove all " + GetToCleanseText() + " Afflictions";
+
+    public EnemyCleanseAfflictionsIntent(params Sign[] affOfSignsToCleanse)
+    {
+        toCleanse = affOfSignsToCleanse.ToList();
+    }
+
+    private string GetToCleanseText()
+    {
+        if (toCleanse.Count == 0)
+        {
+            throw new Exception();
+        }
+        else if (toCleanse.Count == 1)
+        {
+            return toCleanse[0].ToString();
+        }
+        else if (toCleanse.Count == 2)
+        {
+            return toCleanse[0].ToString() + " and " + toCleanse[1].ToString();
+        }
+        else
+        {
+            string result = "";
+            for (int i = 0; i < toCleanse.Count; i++)
+            {
+                result += toCleanse.ToString();
+                if (i < toCleanse.Count - 2)
+                {
+                    result += ", ";
+                }
+                else if (i == toCleanse.Count - 1)
+                {
+                    result += " and ";
+                }
+            }
+            return result;
+        }
     }
 }

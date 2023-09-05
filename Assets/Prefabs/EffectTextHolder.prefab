@@ -165,3 +165,4 @@ MonoBehaviour:
     - key: 1
       value: FadeAndGrow
   spawnOn: {fileID: 7235383764166314148}
+  timeBetweenSpawns: 0.25

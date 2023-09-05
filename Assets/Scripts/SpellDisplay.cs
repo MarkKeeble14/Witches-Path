@@ -45,8 +45,12 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
     private Tweener shakeTweener;
     public bool IsEmpty { get; private set; }
 
-    [SerializeField] private Sprite defaultSprite;
     [SerializeField] private GameObject lockedContainer;
+    [SerializeField] private Sprite defaultSprite;
+
+    [Header("Color Info")]
+    [SerializeField] private Image[] setColorOf;
+    [SerializeField] private TextMeshProUGUI[] coloredTexts;
 
     private Action onClick;
     private Action onEnter;
@@ -138,6 +142,24 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
         nameText.text = spell.Name;
         spell.SetEquippedTo(this);
         SetEmpty(false);
+
+        // Set Card Color
+        SpellColorInfo colorInfo = UIManager._Instance.GetSpellColor(spell.Color);
+        foreach (Image i in setColorOf)
+        {
+            i.color = colorInfo.Color;
+        }
+        foreach (TextMeshProUGUI text in coloredTexts)
+        {
+            text.color = colorInfo.TextColor;
+        }
+
+        // This must be done after Setting the Color of the rest of the Text
+        // Debug.Log(spell.Name + " - Has Been Upgraded: " + spell.HasBeenUpgraded);
+        if (spell.HasBeenUpgraded)
+        {
+            nameText.color = UIManager._Instance.GetEffectTextColor("UpgradedSpell");
+        }
 
         onEnter += CallSpawnToolTip;
         onExit += DestroyToolTip;

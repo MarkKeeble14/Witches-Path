@@ -13,6 +13,13 @@ public class MapManager : MonoBehaviour
     [SerializeField] private float buildConnectorDelay;
     [SerializeField] private string nextStage;
 
+    [SerializeField] private SerializableDictionary<string, GameOccurance> uniqueGameOccurances = new SerializableDictionary<string, GameOccurance>();
+
+    public GameOccurance GetUniqueGameOccurance(string key)
+    {
+        return uniqueGameOccurances[key];
+    }
+
     [SerializeField] private Map map;
     private CanvasGroup mapCV;
 

@@ -206,6 +206,8 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float delayBetweenAlterHandCalls = 0.05f;
 
     // Callbacks
+    public Action OnTurnStart;
+
     public Action OnPlayerBasicAttack;
     public Action OnPlayerTurnStart;
     public Action OnPlayerTurnEnd;
@@ -586,7 +588,7 @@ public partial class CombatManager : MonoBehaviour
 
     #region Combat Loop
 
-    public IEnumerator StartCombat(Combat combat)
+    public IEnumerator StartCombat(Combat combat, Action onEndAction)
     {
         Debug.Log("Combat Started: " + combat);
 
@@ -683,6 +685,8 @@ public partial class CombatManager : MonoBehaviour
         combatScreenOpen = false;
 
         GameManager._Instance.ResolveCurrentEvent();
+
+        onEndAction?.Invoke();
     }
 
     private IEnumerator CombatLoop()
@@ -715,6 +719,9 @@ public partial class CombatManager : MonoBehaviour
 
             // Increment Turn Count
             turnNumber++;
+
+            // Call OnTurnStart
+            OnTurnStart?.Invoke();
 
             // Decide Enemy Intent
             currentEnemyAction = currentEnemy.GetEnemyIntent();
@@ -1106,6 +1113,8 @@ public partial class CombatManager : MonoBehaviour
         characterHPBar.Clear();
         enemyHPBar.Clear();
 
+        enemyIntentDisplay.ClearIntents();
+
         // Reset
         effectivenessMultiplier = defaultEffectivenessMultiplier;
         effectivenessMultiplierText.text = "x" + Utils.RoundTo(effectivenessMultiplier, 2).ToString();
@@ -1480,6 +1489,27 @@ public partial class CombatManager : MonoBehaviour
 
                     AlterCombatentHP(heal.HealAmount, Target.Enemy, DamageType.Heal);
 
+                    break;
+                case EnemyCleanseAfflictionsIntent cleanse:
+
+                    List<Affliction> toRemove = new List<Affliction>();
+                    Debug.Log("Cleanse");
+                    foreach (Affliction affliction in GetTargetAfflictionMap(Target.Enemy).Values)
+                    {
+                        Debug.Log("On Aff: " + affliction);
+                        if (cleanse.toCleanse.Contains(affliction.Sign))
+                        {
+                            toRemove.Add(affliction);
+                        }
+                    }
+
+                    while (toRemove.Count > 0)
+                    {
+                        Affliction removingAff = toRemove[0];
+                        toRemove.RemoveAt(0);
+                        Debug.Log("Removing Aff: " + removingAff);
+                        RemoveAffliction(Target.Enemy, removingAff.Type);
+                    }
                     break;
                 default:
                     throw new UnhandledSwitchCaseException();
@@ -2301,10 +2331,10 @@ public partial class CombatManager : MonoBehaviour
         switch (owner)
         {
             case Target.Character:
-                characterEffectTextDisplay.SpawnEffectText(style, text, c, withIcon);
+                characterEffectTextDisplay.CallSpawnEffectText(style, text, c, withIcon);
                 return;
             case Target.Enemy:
-                enemyEffectTextDisplay.SpawnEffectText(style, text, c, withIcon);
+                enemyEffectTextDisplay.CallSpawnEffectText(style, text, c, withIcon);
                 return;
         }
     }
@@ -2315,10 +2345,10 @@ public partial class CombatManager : MonoBehaviour
         switch (owner)
         {
             case Target.Character:
-                characterEffectTextDisplay.SpawnEffectIcon(style, sprite);
+                characterEffectTextDisplay.CallSpawnEffectIcon(style, sprite);
                 return;
             case Target.Enemy:
-                enemyEffectTextDisplay.SpawnEffectIcon(style, sprite);
+                enemyEffectTextDisplay.CallSpawnEffectIcon(style, sprite);
                 return;
         }
     }

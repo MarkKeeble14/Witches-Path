@@ -64,8 +64,22 @@ public abstract class Combat : GameOccurance
     {
         Debug.Log(name + ": OnResolve");
 
-        // Add 1 Charge to all Books
         AdditionalOnResolveActions();
+
+        switch (this)
+        {
+            case MinorCombat minor:
+                ScoreManager._Instance.AddScore(ScoreReason.MinorCombatCleared);
+                break;
+            case MiniBossCombat miniBoss:
+                ScoreManager._Instance.AddScore(ScoreReason.MiniBossCombatCleared);
+                break;
+            case BossCombat boss:
+                ScoreManager._Instance.AddScore(ScoreReason.BossCombatCleared);
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
 
         // Item rewards
         foreach (RewardType type in itemRewards.Keys())
@@ -154,7 +168,8 @@ public abstract class Combat : GameOccurance
     protected override IEnumerator OnStart()
     {
         Debug.Log(name + ": OnStart");
-        yield return GameManager._Instance.StartCoroutine(CombatManager._Instance.StartCombat(this));
+        yield return GameManager._Instance.StartCoroutine(CombatManager._Instance.StartCombat(this, null));
+        GameManager._Instance.ResolveCurrentEvent();
     }
 
     protected virtual void AdditionalOnResolveActions()

@@ -13,7 +13,8 @@ public enum IntentType
     GainAffliction,
     ApplyAffliction,
     MultiAttack,
-    Heal
+    Heal,
+    CleanseAfflictions
 }
 
 public class IntentDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler

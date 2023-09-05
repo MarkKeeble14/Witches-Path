@@ -158,6 +158,10 @@ public class GameManager : MonoBehaviour
     public Func<Spell, bool> AcceptSpellRewardFunc => spell => !spellRewardsMustMatchCharacterColor || (spellRewardsMustMatchCharacterColor && spell.Color == GetCharacterColor());
     private bool spellRewardsMustMatchCharacterColor = true;
 
+
+    private List<PotionIngredientListEntry> spawnedPotionIngredientListEntries = new List<PotionIngredientListEntry>();
+    [SerializeField] private CanvasGroup upgradeBookButtonCV;
+
     internal void AlterCombatPileSize(int changeBy)
     {
         if (combatPileSize + changeBy < 1)
@@ -1437,6 +1441,8 @@ public class GameManager : MonoBehaviour
             currentOccurance = null;
             CanSetCurrentGameOccurance = true;
 
+            ScoreManager._Instance.AddScore(ScoreReason.RoomCleared);
+
             if (!shouldBreak)
             {
                 // move to next room
@@ -1926,21 +1932,50 @@ public class GameManager : MonoBehaviour
     [Header("Game Over")]
     [SerializeField] private CanvasGroup gameOverCV;
     [SerializeField] private CanvasGroup gameWonCV;
+    [SerializeField] private CanvasGroup endGameScoreCV;
+    [SerializeField] private float changeEndGameScoreCVAlphaRate;
     [SerializeField] private float changeGameOverCVAlphaRate;
     [SerializeField] private float changeGameWonCVAlphaRate;
-    private List<PotionIngredientListEntry> spawnedPotionIngredientListEntries = new List<PotionIngredientListEntry>();
-    [SerializeField] private CanvasGroup upgradeBookButtonCV;
+
+    [SerializeField] private EndGameScoreDisplay endGameScoreDisplay;
+    [SerializeField] private TextMeshProUGUI endGameFinalScoreText;
+    [SerializeField] private Transform endGameSpawnScoreDisplaysOn;
+    [SerializeField] private float betweenScoresDelay;
 
     public IEnumerator GameOverSequence()
     {
         gameOverCV.blocksRaycasts = true;
 
+        StartCoroutine(ShowScoreSequence());
+
         yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(gameOverCV, 1, Time.deltaTime * changeGameOverCVAlphaRate));
     }
+
+    private IEnumerator ShowScoreSequence()
+    {
+        yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(endGameScoreCV, 1, Time.deltaTime * changeEndGameScoreCVAlphaRate));
+
+        endGameScoreCV.blocksRaycasts = true;
+
+        int finalScore = 0;
+        foreach (EndGameScoreData data in ScoreManager._Instance.GetFinalScoreData())
+        {
+            if (data.Num == 0) continue;
+            EndGameScoreDisplay spawned = Instantiate(endGameScoreDisplay, endGameSpawnScoreDisplaysOn);
+            spawned.Set(data);
+            finalScore += data.Score;
+            endGameFinalScoreText.text = "Score: " + finalScore.ToString();
+
+            yield return new WaitForSeconds(betweenScoresDelay);
+        }
+    }
+
 
     public IEnumerator GameWonSequence()
     {
         gameWonCV.blocksRaycasts = true;
+
+        StartCoroutine(ShowScoreSequence());
 
         yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(gameWonCV, 1, Time.deltaTime * changeGameWonCVAlphaRate));
     }

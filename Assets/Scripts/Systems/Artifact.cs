@@ -32,7 +32,7 @@ public enum ArtifactLabel
     CheapStopwatch,
     Boulder,
     Crown,
-    DeadCockroach,
+    CockroachCarcass,
     EnchantedAura
 }
 
@@ -138,8 +138,8 @@ public abstract class Artifact : PowerupItem
                 return new Telescope();
             case ArtifactLabel.Crown:
                 return new Crown();
-            case ArtifactLabel.DeadCockroach:
-                return new DeadCockroach();
+            case ArtifactLabel.CockroachCarcass:
+                return new CockroachCarcass();
             case ArtifactLabel.EnchantedAura:
                 return new EnchantedAura();
             default:
@@ -1316,10 +1316,10 @@ public class Crown : Artifact
     }
 }
 
-public class DeadCockroach : Artifact
+public class CockroachCarcass : Artifact
 {
-    public override string Name => "Dead Cockroach";
-    protected override ArtifactLabel Label => ArtifactLabel.DeadCockroach;
+    public override string Name => "Cockroach Carcass";
+    protected override ArtifactLabel Label => ArtifactLabel.CockroachCarcass;
     public override Rarity Rarity => Rarity.Event;
 
     private int numCurses => GameManager._Instance.GetSpellbook().GetNumSpellsMatchingCondition(spell => spell.Color == SpellColor.Curse);

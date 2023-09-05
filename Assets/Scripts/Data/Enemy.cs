@@ -6,7 +6,7 @@ using UnityEngine;
 public enum EnemyType
 {
     PanickedWizard,
-    FacelessWitch,
+    PrisonerOfTheMansion,
     PossessedTome,
     MimicChest,
     HauntedClock,
@@ -171,8 +171,8 @@ public abstract class Enemy
     {
         switch (enemyType)
         {
-            case EnemyType.FacelessWitch:
-                return new FacelessWitch();
+            case EnemyType.PrisonerOfTheMansion:
+                return new PrisonerOfTheMansion();
             case EnemyType.PanickedWizard:
                 return new PanickedWizard();
             case EnemyType.PossessedTome:
@@ -284,7 +284,7 @@ public class LivingCandle : Enemy
 {
     public override string Name => "Living Candle";
     public override EnemyType EnemyType => EnemyType.LivingCandle;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(150, 165);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(150, 175);
     protected override int basicAttackDamage => 4;
 
     protected override void SetUpBehaviour()
@@ -765,14 +765,122 @@ public class InfestedRatPack : Enemy
     }
 }
 
-public class FacelessWitch : Enemy
+public class PrisonerOfTheMansion : Enemy
 {
-    public override string Name => "Faceless Witch";
-    public override EnemyType EnemyType => EnemyType.FacelessWitch;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(250, 250);
+    public override string Name => "Prisoner of the Mansion";
+    public override EnemyType EnemyType => EnemyType.PrisonerOfTheMansion;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(475, 499);
     protected override int basicAttackDamage => 6;
+
+    private bool bufferTurn = true;
+    private bool cleansing;
+    private bool canAttack;
+    private bool canMultiAttack;
+    private bool isShackled = true;
+
+    private int numShackledToRemove;
+    private int defaultMaxCanRemove = 3;
+    private int finalMaxCanRemove;
+
+    private void SetShackledCanRemove()
+    {
+        // Allow for removing either the default set number or alternatively simply the number of stacks the Enemy still has
+        Shackled currentShackled = (Shackled)CombatManager._Instance.GetTargetAffliction(AfflictionType.Shackled, Target.Enemy);
+
+        Debug.Log("Called Shackle Can Remove");
+
+        // Technically we could remove the Callback here, but it's cleaner to allow the OnDeath Call to handle that imo
+        if (currentShackled == null)
+        {
+            return;
+        }
+
+        int maxCanRemove = currentShackled.GetStacks();
+        if (maxCanRemove > defaultMaxCanRemove)
+        {
+            finalMaxCanRemove = defaultMaxCanRemove;
+        }
+        else
+        {
+            finalMaxCanRemove = maxCanRemove;
+        }
+
+        numShackledToRemove = RandomHelper.RandomIntInclusive(1, finalMaxCanRemove);
+        Debug.Log("Set Shackle Can Remove: " + maxCanRemove + ", " + finalMaxCanRemove + ", " + numShackledToRemove);
+    }
+
+    public override void OnDeath()
+    {
+        base.OnDeath();
+        CombatManager._Instance.OnTurnStart -= SetShackledCanRemove;
+    }
 
     protected override void SetUpBehaviour()
     {
+        CombatManager._Instance.OnTurnStart += SetShackledCanRemove;
+
+        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Shackled, 8),
+            new EnemyGainAfflictionIntent(AfflictionType.Weak, 5), new EnemyGainAfflictionIntent(AfflictionType.Vulnerable, 5)));
+
+        // Make Enemy Actions
+        AddEnemyAction("BufferTurn", MakeEnemyAction(() => bufferTurn = false, new EnemyGainAfflictionIntent(AfflictionType.Embolden, 5), new EnemyWardIntent(RandomHelper.RandomIntExclusive(5, 15))));
+
+        AddEnemyAction("Struggle", MakeEnemyAction(delegate
+        {
+            // Check if this enemy is no longer afflicted by Shackled
+            // if so, move on to next phase of fight
+            if (!CombatManager._Instance.TargetHasAffliction(AfflictionType.Shackled, Target.Enemy))
+            {
+                cleansing = true;
+                isShackled = false;
+            }
+
+        }, new EnemySingleAttackIntent(RandomHelper.RandomIntExclusive(10, 15), DamageType.Evil), new EnemyWardIntent(RandomHelper.RandomIntExclusive(12, 20)),
+        new EnemyGainAfflictionIntent(AfflictionType.Protection, -3), new EnemyGainAfflictionIntent(AfflictionType.Shackled, () => -numShackledToRemove)));
+
+        AddEnemyAction("Cleanse", MakeEnemyAction(() => cleansing = false, new EnemyCleanseAfflictionsIntent(Sign.Negative)));
+
+        AddEnemyAction("MultiAttack", MakeEnemyAction(delegate
+        {
+            canAttack = false;
+            canMultiAttack = false;
+        }, new EnemyMultiAttackIntent(2, 2, DamageType.Evil)));
+        AddEnemyAction("SingleAttack", MakeEnemyAction(delegate
+        {
+            canAttack = false;
+            canMultiAttack = true;
+        }, new EnemySingleAttackIntent(10, DamageType.Evil)));
+
+        AddEnemyAction("Debuff", MakeEnemyAction(() => canAttack = true,
+            new EnemyApplyAfflictionIntent(AfflictionType.Vulnerable, 3), new EnemyApplyAfflictionIntent(AfflictionType.Weak, 3)));
+        AddEnemyAction("BuffAndWard", MakeEnemyAction(() => canAttack = true, new EnemyGainAfflictionIntent(AfflictionType.Nullify, 5), new EnemyWardIntent(RandomHelper.RandomIntExclusive(20, 25))));
+
+        // Make Maps
+        PercentageMap<string> bufferTurnMap = new PercentageMap<string>();
+        bufferTurnMap.AddOption(MakeOption(100, "BufferTurn"));
+
+        PercentageMap<string> isShackledMap = new PercentageMap<string>();
+        isShackledMap.AddOption(MakeOption(100, "Struggle"));
+
+        PercentageMap<string> cleanseMap = new PercentageMap<string>();
+        cleanseMap.AddOption(MakeOption(100, "Cleanse"));
+
+        PercentageMap<string> postBuffMultiAttackMap = new PercentageMap<string>();
+        postBuffMultiAttackMap.AddOption(MakeOption(100, "MultiAttack"));
+
+        PercentageMap<string> postBuffSingleAttackMap = new PercentageMap<string>();
+        postBuffSingleAttackMap.AddOption(MakeOption(100, "SingleAttack"));
+
+        PercentageMap<string> postBuffNonAttackMap = new PercentageMap<string>();
+        postBuffNonAttackMap.AddOption(MakeOption(50, "Debuff"));
+        postBuffNonAttackMap.AddOption(MakeOption(50, "BuffAndWard"));
+
+        // Apply Behaviours
+        AddEnemyBehaviour(() => bufferTurn, bufferTurnMap);
+        AddEnemyBehaviour(() => !bufferTurn && isShackled, isShackledMap);
+        AddEnemyBehaviour(() => !bufferTurn && cleansing, cleanseMap);
+        AddEnemyBehaviour(() => !bufferTurn && !isShackled && !cleansing && !canAttack, postBuffNonAttackMap);
+        AddEnemyBehaviour(() => !bufferTurn && !isShackled && !cleansing && canAttack && canMultiAttack, postBuffMultiAttackMap);
+        AddEnemyBehaviour(() => !bufferTurn && !isShackled && !cleansing && canAttack && !canMultiAttack, postBuffSingleAttackMap);
     }
 }

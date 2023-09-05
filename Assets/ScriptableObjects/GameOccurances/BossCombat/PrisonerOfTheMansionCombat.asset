@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e02c33385eb9aa54caf185fc2f315c60, type: 3}
-  m_Name: FacelessWitchCombat
+  m_Name: PrisonerOfTheMansionCombat
   m_EditorClassIdentifier: 
   mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
   enemyType: 1
@@ -56,5 +56,5 @@ MonoBehaviour:
         percentageMap:
         - key: {x: 0, y: 1}
           value: 100
-  mapSprite: {fileID: 21300000, guid: 7a56d107a8e14624d95d8fa5660e7c6d, type: 3}
+  mapSprite: {fileID: 21300000, guid: 869ad85ac10d0174b9ab99d81f8d260f, type: 3}
   alterCombatPileSizeBy: 3

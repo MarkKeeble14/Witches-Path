@@ -582,19 +582,36 @@ public class Map
         }
     }
 
+    private MiniBossCombat previousEliteCombat;
+
     // Sets the node to a random game occurance of the given type
     public void SetNodeGameOccurance(MapNodeUI node, MapNodeType nodeType)
     {
         if (nodeType == MapNodeType.EliteFight)
         {
-            nodeType = MapNodeType.MiniBoss;
+            GameOccurance newCombat;
+            // Get a new combat that is not the same as the previous
+            do
+            {
+                newCombat = GetGameOccuranceOfType(MapNodeType.MiniBoss, false);
+            } while (newCombat == previousEliteCombat);
+
+            // Update the previous Combat
+            previousEliteCombat = (MiniBossCombat)newCombat;
+
+            // Set the Node
+            node.Set(newCombat, mapNodeIconDict[nodeType], nodeType);
         }
-        node.Set(GetGameOccuranceOfType(nodeType), mapNodeIconDict[nodeType], nodeType);
+        else
+        {
+            // Set the Node
+            node.Set(GetGameOccuranceOfType(nodeType), mapNodeIconDict[nodeType], nodeType);
+        }
     }
 
     // Gets a random Game Occurance of a MapNodeType, and does any of the additional management needed
     // as well such as perhaps removing whatever option was selected
-    public GameOccurance GetGameOccuranceOfType(MapNodeType nodeType)
+    public GameOccurance GetGameOccuranceOfType(MapNodeType nodeType, bool allowRemoveFromPool = true)
     {
         if (nodeType == MapNodeType.Options)
         {
@@ -617,17 +634,13 @@ public class Map
                     // Debug.Log(e + ", Viable");
                     viableEvents.Add(optionEvent);
                 }
-                else
-                {
-                    // Debug.Log(e + ", NOT Viable");
-                }
             }
 
             // Get a possible Option Event from the Option Events we've determined may Occur
             EventLabelWithCondition chosenEvent = RandomHelper.GetRandomFromList(viableEvents);
 
-            // Remove it from the list of possibilities if thats not going to break things to eliminate duplicates
-            if (viableEvents.Count > 1)
+            // Remove it from the list of possibilities if thats not going to break things AND we want to in order to eliminate duplicates
+            if (viableEvents.Count > 1 && allowRemoveFromPool)
             {
                 optionEvents.Remove(chosenEvent);
             }
@@ -640,8 +653,8 @@ public class Map
             // Get a Game Occurance of the type we want
             GameOccurance gameOccurance = RandomHelper.GetRandomFromList(mapNodes[nodeType]);
 
-            // Provided removing the Occurance won't leave us with no more Game Occurances to take, remove it so we don't have repeats
-            if (mapNodes[nodeType].Count > 1)
+            // Provided removing the Occurance won't leave us with no more Game Occurances to take AND that we want to, remove it so we don't have repeats
+            if (mapNodes[nodeType].Count > 1 && allowRemoveFromPool)
             {
                 mapNodes[nodeType].Remove(gameOccurance);
             }

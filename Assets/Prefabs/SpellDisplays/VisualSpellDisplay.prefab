@@ -494,18 +494,19 @@ MonoBehaviour:
   mainCV: {fileID: 5990510238731423548}
   changeScaleSpeed: 2.5
   disableWhenEmpty: []
-  defaultSprite: {fileID: 0}
   lockedContainer: {fileID: 7602640196235964854}
-  delayBeforeSpawningToolTips: 0.5
-  typeText: {fileID: 8344746918344750730}
-  activeTypeText: {fileID: 3077129962302106593}
-  rarityImage: {fileID: 9098088219400576944}
-  setColorOf: {fileID: 3387163862461033900}
+  defaultSprite: {fileID: 0}
+  setColorOf:
+  - {fileID: 3387163862461033900}
   coloredTexts:
   - {fileID: 347211925214977055}
   - {fileID: 8344746918344750730}
   - {fileID: 1496312441980065768}
   - {fileID: 3077129962302106593}
+  delayBeforeSpawningToolTips: 0.5
+  typeText: {fileID: 8344746918344750730}
+  activeTypeText: {fileID: 3077129962302106593}
+  rarityImage: {fileID: 9098088219400576944}
 --- !u!225 &5990510238731423548
 CanvasGroup:
   m_ObjectHideFlags: 0

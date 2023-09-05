@@ -24,7 +24,8 @@ public enum AfflictionType
     Ghostly,
     Electrocuted,
     Nullify,
-    Jumpy
+    Jumpy,
+    Shackled
 }
 
 public enum Sign
@@ -55,6 +56,7 @@ public abstract class Affliction : ToolTippable
     protected List<AfflictionType> afflictionKeywords = new List<AfflictionType>();
 
     protected AfflictionIcon attachedTo;
+    private bool unapplying;
 
     public void SetAttachedTo(AfflictionIcon icon)
     {
@@ -83,14 +85,20 @@ public abstract class Affliction : ToolTippable
     public virtual void Unapply()
     {
         //
+
+        // Tick Flag noting that this Affliction has been Marked for Removal
+        unapplying = true;
+
+        OnAlteredStacks(-GetStacks());
     }
+
 
     // Setter
     public void SetStacks(int v)
     {
         stacks = v;
 
-        OnAlteredStacks();
+        OnAlteredStacks(v);
     }
 
     // Setter
@@ -98,7 +106,7 @@ public abstract class Affliction : ToolTippable
     {
         stacks += v;
 
-        OnAlteredStacks();
+        OnAlteredStacks(v);
     }
 
     public void UpdateAfflictionDisplay()
@@ -109,8 +117,10 @@ public abstract class Affliction : ToolTippable
         }
     }
 
-    protected virtual void OnAlteredStacks()
+    protected virtual void OnAlteredStacks(int changedBy)
     {
+        // if this Affliction has already been marked for removal, there is no need to update the display nor check for it's removal
+        if (unapplying) return;
         UpdateAfflictionDisplay();
         CheckForRemoval();
     }
@@ -240,6 +250,8 @@ public abstract class Affliction : ToolTippable
                 return new Nullify();
             case AfflictionType.Jumpy:
                 return new Jumpy();
+            case AfflictionType.Shackled:
+                return new Shackled();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -435,7 +447,7 @@ public class Power : Affliction
 
     public override AfflictionType Type => AfflictionType.Power;
 
-    public override Sign Sign => Sign.Positive;
+    public override Sign Sign => GetStacks() > 0 ? Sign.Positive : Sign.Negative;
     public override bool CanBeCleared => GetStacks() == 0;
 
     protected override void SetKeywords()
@@ -449,8 +461,7 @@ public class Protection : Affliction
     protected override string genericToolTipText => "Ward Gained is Changed by the Number of Protection Stacks";
 
     public override AfflictionType Type => AfflictionType.Protection;
-
-    public override Sign Sign => Sign.Positive;
+    public override Sign Sign => GetStacks() > 0 ? Sign.Positive : Sign.Negative;
     public override bool CanBeCleared => GetStacks() == 0;
 
     protected override void SetKeywords()
@@ -693,15 +704,15 @@ public class Electrocuted : Affliction
         afflictionKeywords.Add(AfflictionType.Paralyze);
     }
 
-    protected override void OnAlteredStacks()
+    protected override void OnAlteredStacks(int changeBy)
     {
         if (GetStacks() >= stacksToApplyParalyzed)
         {
             CombatManager._Instance.ConsumeAfflictionStack(Type, GetOwner(), stacksToApplyParalyzed);
             CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, 1, GetOwner());
-            OnAlteredStacks();
+            OnAlteredStacks(changeBy);
         }
-        base.OnAlteredStacks();
+        base.OnAlteredStacks(changeBy);
     }
 }
 
@@ -735,7 +746,6 @@ public class Jumpy : Affliction
 
     protected override void SetKeywords()
     {
-        generalKeywords.Add(ToolTipKeyword.Affliction);
     }
 
     private void TryRandomizeIntent()
@@ -767,5 +777,31 @@ public class Jumpy : Affliction
         CombatManager._Instance.OnActiveSpellQueued -= TryRandomizeIntent;
         CombatManager._Instance.OnPlayerTurnStart -= ResetNumTimesHasRandomized;
     }
+}
 
+public class Shackled : Affliction
+{
+    protected override string specificToolTipText => "Lose 1 Stack of Power for each Stack of Shackled Gained. The next " + (GetStacks() > 1 ? GetStacks() + " times" : "time") + " this Affliction is Removed, Gain 2 Stacks of Power";
+    protected override string genericToolTipText => "Lose 1 Stack of Power for each Stack of Shackled Gained. Gain 2 Stacks of Power for each Stack of " + Name + " Removed";
+    public override AfflictionType Type => AfflictionType.Shackled;
+    public override Sign Sign => Sign.Negative;
+
+    protected override void SetKeywords()
+    {
+        afflictionKeywords.Add(AfflictionType.Power);
+    }
+
+    protected override void OnAlteredStacks(int changeBy)
+    {
+        if (changeBy > 0)
+        {
+            CombatManager._Instance.AddAffliction(AfflictionType.Power, changeBy * -1, GetOwner());
+        }
+        else if (changeBy < 0)
+        {
+            CombatManager._Instance.AddAffliction(AfflictionType.Power, changeBy * 2 * -1, GetOwner());
+        }
+
+        base.OnAlteredStacks(changeBy);
+    }
 }

@@ -50,6 +50,10 @@ MonoBehaviour:
   graceRange: 0.0025
   buildConnectorDelay: 0.05
   nextStage: 
+  uniqueGameOccurances:
+    dictionary:
+    - key: Test
+      value: {fileID: 11400000, guid: fadea124b2acf1641b227a31ce9e754e, type: 2}
   map:
     mapSections: []
     sectionNodeTypeOdds:

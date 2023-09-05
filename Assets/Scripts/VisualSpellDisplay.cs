@@ -16,8 +16,6 @@ public class VisualSpellDisplay : SpellDisplay
 
     [Header("Spell Dependant")]
     [SerializeField] private Image rarityImage;
-    [SerializeField] private Image setColorOf;
-    [SerializeField] private TextMeshProUGUI[] coloredTexts;
     private bool isForUpgrade;
 
     private IEnumerator SpawnToolTipsAfterDelay()
@@ -86,20 +84,7 @@ public class VisualSpellDisplay : SpellDisplay
 
         // Set Rarity Image Color
         rarityImage.color = UIManager._Instance.GetRarityColor(spell.Rarity);
-        // Set Card Color
-        SpellColorInfo colorInfo = UIManager._Instance.GetSpellColor(spell.Color);
-        setColorOf.color = colorInfo.Color;
-        foreach (TextMeshProUGUI text in coloredTexts)
-        {
-            text.color = colorInfo.TextColor;
-        }
 
-        // This must be done after Setting the Color of the rest of the Text
-        // Debug.Log(spell.Name + " - Has Been Upgraded: " + spell.HasBeenUpgraded);
-        if (spell.HasBeenUpgraded)
-        {
-            nameText.color = UIManager._Instance.GetEffectTextColor("UpgradedSpell");
-        }
 
         switch (spell)
         {
