@@ -671,4 +671,27 @@ public class Map
             return RandomHelper.GetRandomFromList(mapNodes[nodeType]);
         }
     }
+
+    private void TestMinorCombatDistribution()
+    {
+        Dictionary<GameOccurance, int> testMap = new Dictionary<GameOccurance, int>();
+        List<GameOccurance> randomOptions = mapNodes[MapNodeType.MinorFight];
+        for (int i = 0; i < 1000; i++)
+        {
+            GameOccurance randomOccurance = RandomHelper.GetRandomFromList(randomOptions);
+            if (testMap.ContainsKey(randomOccurance))
+            {
+                testMap[randomOccurance] = testMap[randomOccurance] + 1;
+            }
+            else
+            {
+                testMap.Add(randomOccurance, 1);
+            }
+        }
+
+        foreach (KeyValuePair<GameOccurance, int> kvp in testMap)
+        {
+            Debug.Log(kvp.Key + ": " + kvp.Value + " - " + ((float)kvp.Value / randomOptions.Count) + "% of Total");
+        }
+    }
 }

@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: -8537665983445232207}
   - component: {fileID: 1066416173362555348}
   - component: {fileID: 7612464485257865292}
+  - component: {fileID: 5949433577576928592}
+  - component: {fileID: 1319801700452064813}
   m_Layer: 0
   m_Name: PassiveSpellDisplay
   m_TagString: Untagged
@@ -93,27 +95,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28f2db8ab527c524fb22f36139fdbed8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  text: {fileID: 5287676079695049420}
-  nameText: {fileID: 8835613769686614093}
-  progressBar: {fileID: 4997572235486677794}
-  spellIcon: {fileID: 5641794139333294055}
-  main: {fileID: 4997572235486677794}
-  regularScale: 1
-  maxScale: 1.75
-  toolTipOffset: {x: 0, y: 25}
-  mainCV: {fileID: 1066416173362555348}
-  changeScaleSpeed: 2.5
   disableWhenEmpty:
   - {fileID: 6472576427333266472}
   - {fileID: 9197949876086430732}
+  mainCV: {fileID: 1066416173362555348}
+  spellIcon: {fileID: 5641794139333294055}
+  toScale: {fileID: 3444597640094879708}
+  text: {fileID: 5287676079695049420}
+  nameText: {fileID: 8835613769686614093}
+  progressBar: {fileID: 4997572235486677794}
   lockedContainer: {fileID: 7083725887524797359}
   defaultSprite: {fileID: 0}
+  canvas: {fileID: 5949433577576928592}
   setColorOf:
   - {fileID: 5641794139333294055}
   - {fileID: 8453841698517219125}
   coloredTexts:
   - {fileID: 8835613769686614093}
   - {fileID: 5287676079695049420}
+  regularScale: 1
+  maxScale: 1.75
+  changeScaleSpeed: 2.5
+  mouseOverTargetScale: 1.25
+  lerpScaleRate: 25
+  nonMousedOverSortingOrder: 3
+  mousedOverSortingOrder: 5
   infoBlock: {fileID: 9197949876086430732}
 --- !u!225 &1066416173362555348
 CanvasGroup:
@@ -183,6 +189,44 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!223 &5949433577576928592
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2925688069693570909}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 1
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_AdditionalShaderChannelsFlag: 25
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+  m_TargetDisplay: 0
+--- !u!114 &1319801700452064813
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2925688069693570909}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IgnoreReversedGraphics: 1
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &3217921126706788808
 GameObject:
   m_ObjectHideFlags: 0

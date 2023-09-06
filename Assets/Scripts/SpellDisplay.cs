@@ -14,6 +14,7 @@ public enum SpellDisplayState
     Locked,
     ChoosingExhaust,
     ChoosingDiscard,
+    InHand,
     ToolTip
 }
 
@@ -21,37 +22,37 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
 {
     protected Spell Spell { get; private set; }
 
+    [Header("References")]
+    [SerializeField] private GameObject[] disableWhenEmpty;
+    [SerializeField] protected CanvasGroup mainCV;
+    [SerializeField] protected Image spellIcon;
+    [SerializeField] private Transform toScale;
     [SerializeField] protected TextMeshProUGUI text;
     [SerializeField] protected TextMeshProUGUI nameText;
     [SerializeField] protected Image progressBar;
-    [SerializeField] protected Image spellIcon;
-    [SerializeField] private Image main;
-
-    [SerializeField] private float regularScale;
-    [SerializeField] private float maxScale;
-
-    [SerializeField] private Vector2 toolTipOffset;
-    protected GameObject spawnedToolTip;
-
-    private float targetScale;
-    protected bool scaleLocked;
-
-    [SerializeField] protected CanvasGroup mainCV;
-    [SerializeField] private float changeScaleSpeed = 1f;
-
-    [SerializeField] private GameObject[] disableWhenEmpty;
-
-    protected SpellDisplayState currentSpellDisplayState = SpellDisplayState.Normal;
-    private Tweener shakeTweener;
-    public bool IsEmpty { get; private set; }
-
     [SerializeField] private GameObject lockedContainer;
     [SerializeField] private Sprite defaultSprite;
+    [SerializeField] private Canvas canvas;
 
     [Header("Color Info")]
     [SerializeField] private Image[] setColorOf;
     [SerializeField] private TextMeshProUGUI[] coloredTexts;
+    private float targetScale;
+    protected bool scaleLocked;
+    protected SpellDisplayState currentSpellDisplayState = SpellDisplayState.Normal;
 
+    [Header("Scale")]
+    [SerializeField] private float regularScale;
+    [SerializeField] private float maxScale;
+    [SerializeField] private float changeScaleSpeed = 1f;
+    [SerializeField] private float mouseOverTargetScale = 1.25f;
+    [SerializeField] private float lerpScaleRate = 25;
+
+    [SerializeField] private SerializableDictionary<SpellDisplayState, Vector2Int> sortingOrderDict = new SerializableDictionary<SpellDisplayState, Vector2Int>();
+
+    protected GameObject spawnedToolTip;
+
+    private Tweener shakeTweener;
     private Action onClick;
     private Action onEnter;
     private Action onExit;
@@ -60,6 +61,11 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
     public void AddOnClick(Action a)
     {
         onClick += a;
+    }
+
+    protected void RemoveOnClick(Action a)
+    {
+        onClick -= a;
     }
 
     public void AddOnEnter(Action a)
@@ -94,26 +100,49 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
         targetScale = regularScale;
     }
 
+    private void OnDestroy()
+    {
+        if (shakeTweener == null) return;
+        shakeTweener.Kill();
+    }
+
+    bool isInHand => currentSpellDisplayState == SpellDisplayState.ChoosingDiscard || currentSpellDisplayState == SpellDisplayState.ChoosingExhaust || currentSpellDisplayState == SpellDisplayState.InHand;
+
     protected virtual void Update()
     {
-        if ((currentSpellDisplayState == SpellDisplayState.Normal || currentSpellDisplayState == SpellDisplayState.Normal) && !scaleLocked)
+        bool hide = (MapManager._Instance.MapOpen && isInHand) || (MapManager._Instance.MapOpen && currentSpellDisplayState == SpellDisplayState.Locked);
+        mainCV.blocksRaycasts = !hide;
+        mainCV.alpha = hide ? 0 : 1;
+
+        if (!scaleLocked)
         {
-            // Allow target scale to fall back to regular scale
-            if (targetScale != regularScale)
+            // Animate Scale
+            if (isMouseOver)
             {
-                targetScale = Mathf.MoveTowards(targetScale, regularScale, changeScaleSpeed * Time.deltaTime);
+                canvas.sortingOrder = sortingOrderDict[currentSpellDisplayState].y;
+
+                targetScale = Mathf.Lerp(targetScale, mouseOverTargetScale, Time.deltaTime * lerpScaleRate);
+            }
+            else
+            {
+                canvas.sortingOrder = sortingOrderDict[currentSpellDisplayState].x;
+
+                if (targetScale != regularScale)
+                {
+                    // Allow target scale to fall back to regular scale
+                    targetScale = Mathf.MoveTowards(targetScale, regularScale, changeScaleSpeed * Time.deltaTime);
+                }
             }
 
             // Set Scale
-            main.transform.localScale = targetScale * Vector3.one;
+            toScale.transform.localScale = targetScale * Vector3.one;
         }
     }
 
-    public void SetSpellDisplayState(SpellDisplayState displayState)
+    public virtual void SetSpellDisplayState(SpellDisplayState displayState)
     {
         currentSpellDisplayState = displayState;
 
-        mainCV.blocksRaycasts = displayState != SpellDisplayState.Locked;
         lockedContainer.SetActive(currentSpellDisplayState == SpellDisplayState.Locked);
 
         if (displayState == SpellDisplayState.Selected)
@@ -122,10 +151,6 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
         }
         else
         {
-            if (displayState == SpellDisplayState.ChoosingDiscard || displayState == SpellDisplayState.ChoosingExhaust)
-            {
-                // 
-            }
             shakeTweener.Kill();
         }
     }
@@ -141,7 +166,6 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
         spellIcon.sprite = spell.GetSpellSprite();
         nameText.text = spell.Name;
         spell.SetEquippedTo(this);
-        SetEmpty(false);
 
         // Set Card Color
         SpellColorInfo colorInfo = UIManager._Instance.GetSpellColor(spell.Color);
@@ -165,30 +189,6 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
         onExit += DestroyToolTip;
     }
 
-    public virtual void Unset()
-    {
-        nameText.text = "";
-        text.text = "";
-        spellIcon.sprite = defaultSprite;
-        progressBar.fillAmount = 1;
-        SetEmpty(true);
-        Spell = null;
-
-        shakeTweener.Kill();
-
-        onEnter -= CallSpawnToolTip;
-        onExit -= DestroyToolTip;
-    }
-
-    public void SetEmpty(bool isEmpty)
-    {
-        IsEmpty = isEmpty;
-        foreach (GameObject obj in disableWhenEmpty)
-        {
-            obj.SetActive(!isEmpty);
-        }
-    }
-
     public void SetTargetScale(float v)
     {
         targetScale = v;
@@ -202,12 +202,7 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
     public virtual void CallSpawnToolTip()
     {
         if (currentSpellDisplayState == SpellDisplayState.ToolTip) return;
-
-        // Only spawn ToolTip if spell is set
-        if (!IsEmpty)
-        {
-            SpawnToolTipFunc();
-        }
+        SpawnToolTipFunc();
     }
 
     protected virtual void SpawnToolTipFunc()

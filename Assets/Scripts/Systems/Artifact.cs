@@ -449,7 +449,7 @@ public class LooseTrigger : Artifact
 
     protected override void Effect()
     {
-        GameManager._Instance.TriggerRandomPassiveSpell();
+        CombatManager._Instance.TriggerRandomPassiveSpell();
         ShowArtifactProc();
     }
 }

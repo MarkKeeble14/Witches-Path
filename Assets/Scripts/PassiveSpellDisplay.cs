@@ -36,18 +36,6 @@ public class PassiveSpellDisplay : SpellDisplay
         }
     }
 
-    public override void Unset()
-    {
-        base.Unset();
-
-        // Set progress bar Fill
-        progressBar.fillAmount = 1;
-
-        // Deal with Secondary Text
-        infoBlock.SetActive(false);
-        text.text = "";
-    }
-
     public void OnClick()
     {
         if (CombatManager._Instance.InCombat &&

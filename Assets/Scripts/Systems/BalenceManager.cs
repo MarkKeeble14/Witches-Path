@@ -2,43 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[System.Serializable]
-public class ActiveSpellSpecDictionary
-{
-    [SerializeField] private int cooldown = 1;
-    [SerializeField] private int manaCost = 1;
-    [SerializeField] private SerializableDictionary<string, int> additionalParameters = new SerializableDictionary<string, int>();
-
-    public int GetSpec(string identifier)
-    {
-        switch (identifier)
-        {
-            case "Cooldown":
-                return cooldown;
-            case "ManaCost":
-                return manaCost;
-            default:
-                return additionalParameters[identifier];
-        }
-    }
-}
-
-
-[System.Serializable]
-public class PassiveSpellSpecDictionary
-{
-    [SerializeField] private SerializableDictionary<string, int> additionalParameters = new SerializableDictionary<string, int>();
-
-    public int GetSpec(string identifier)
-    {
-        switch (identifier)
-        {
-            default:
-                return additionalParameters[identifier];
-        }
-    }
-}
-
 public class BalenceManager : MonoBehaviour
 {
     public static BalenceManager _Instance { get; private set; }
@@ -57,15 +20,6 @@ public class BalenceManager : MonoBehaviour
     [SerializeField]
     private SerializableDictionary<string, SerializableDictionary<string, int>> afflictionSpecDict
         = new SerializableDictionary<string, SerializableDictionary<string, int>>();
-
-    [Header("Spells")]
-    [SerializeField]
-    private SerializableDictionary<string, PassiveSpellSpecDictionary> passiveSpellSpecDict
-        = new SerializableDictionary<string, PassiveSpellSpecDictionary>();
-
-    [SerializeField]
-    private SerializableDictionary<string, ActiveSpellSpecDictionary> activeSpellSpecDict
-    = new SerializableDictionary<string, ActiveSpellSpecDictionary>();
 
     [Header("Map")]
     [SerializeField]
@@ -141,19 +95,6 @@ public class BalenceManager : MonoBehaviour
     public int GetValue(AfflictionType afflictionType, string identifier)
     {
         return afflictionSpecDict[afflictionType.ToString()][identifier];
-    }
-
-    public int GetValue(SpellLabel spellLabel, SpellCastType spellType, string identifier)
-    {
-        switch (spellType)
-        {
-            case SpellCastType.Active:
-                return activeSpellSpecDict[spellLabel.ToString()].GetSpec(identifier);
-            case SpellCastType.Passive:
-                return passiveSpellSpecDict[spellLabel.ToString()].GetSpec(identifier);
-            default:
-                throw new Exception();
-        }
     }
 
     public int GetValue(MapNodeType type, string identifier)

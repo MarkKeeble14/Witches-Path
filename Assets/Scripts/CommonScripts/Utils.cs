@@ -194,7 +194,7 @@ public class Utils
         return -1;
     }
 
-    public static float TestFunc(string label, Action func, bool printResult)
+    public static float TestFuncRuntime(string label, Action func, bool printResult)
     {
         System.Diagnostics.Stopwatch st = new System.Diagnostics.Stopwatch();
         st.Start();
@@ -205,12 +205,12 @@ public class Utils
         return st.ElapsedMilliseconds;
     }
 
-    public static void TestFunc(int repititions, string label, Action func, bool printResult, bool printAvg)
+    public static void TestFuncRuntime(int repititions, string label, Action func, bool printResult, bool printAvg)
     {
         float total = 0;
         for (int i = 0; i < repititions; i++)
         {
-            total += TestFunc(label, func, printResult);
+            total += TestFuncRuntime(label, func, printResult);
         }
         if (printAvg)
         {

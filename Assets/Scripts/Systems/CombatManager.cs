@@ -81,6 +81,7 @@ public partial class CombatManager : MonoBehaviour
     [Header("Combat Settings")]
     [SerializeField] private List<DamageType> wardableDamageTypes = new List<DamageType>();
     private int handSize;
+    private Pile<Spell> passiveSpellPile;
     private Pile<Spell> drawPile;
     private Pile<Spell> discardPile;
     private Pile<Spell> exhaustPile;
@@ -137,6 +138,7 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private string castButtonTextWhileCasting = "Casting";
     [SerializeField] private string castButtonTextPostCasting = "End Turn";
     [SerializeField] private string castButtonTextEnemyTurn = "Enemy Turn";
+    [SerializeField] private GameObject alterHandInstructionContainer;
     [SerializeField] private TextMeshProUGUI alterHandInstructionText;
     [SerializeField] private GameObject alterHandBackground;
 
@@ -152,6 +154,7 @@ public partial class CombatManager : MonoBehaviour
     [Header("Character")]
     [SerializeField] private CombatentHPBar characterHPBar;
     [SerializeField] private Image characterCombatSprite;
+    [SerializeField] private TextMeshProUGUI characterBasicAttackDamageText;
     [SerializeField] private CanvasGroup characterCombatSpriteCV;
     [SerializeField] private EffectTextDisplay characterEffectTextDisplay;
     [SerializeField] private TextMeshProUGUI castButtonText;
@@ -274,6 +277,21 @@ public partial class CombatManager : MonoBehaviour
         yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(dialogueBubbleCV, 0, dialogueBubbleFadeOutRate));
     }
 
+    public void ReduceActiveSpellCDsByPercent(float normalizedPercent)
+    {
+        // normaliedPercent is some number between 0 and 1
+        // 0 = 0%, 1 = 100%
+        // .14 = 14%
+        // etc
+        foreach (ActiveSpell activeSpell in hand.GetEntriesMatching(spell => spell.Type == SpellCastType.Active))
+        {
+            if (activeSpell.OnCooldown)
+            {
+                activeSpell.MultiplyCooldown(normalizedPercent);
+            }
+        }
+    }
+
     public void CloseCurrentlyDisplayedSpellPile()
     {
         closeCurrentlyDisplayedSpellPile = true;
@@ -296,6 +314,8 @@ public partial class CombatManager : MonoBehaviour
         showSpellPileTitleText.text = "Discard Pile";
         StartCoroutine(ShowSpellPile(discardPile, spell => true, Order.Unaltered));
     }
+
+    [SerializeField] private GameObject[] disableWhileCasting;
 
     private IEnumerator ShowSpellPile(Pile<Spell> toShow, Func<Spell, bool> viableSpell, Order order)
     {
@@ -337,7 +357,6 @@ public partial class CombatManager : MonoBehaviour
         {
             VisualSpellDisplay cur = spawnedDisplays[0];
             spawnedDisplays.RemoveAt(0);
-            cur.SetSpellDisplayState(SpellDisplayState.Normal);
             Destroy(cur.gameObject);
         }
     }
@@ -346,6 +365,7 @@ public partial class CombatManager : MonoBehaviour
     {
         this.drawPile = drawPile;
         this.drawPile.Shuffle();
+        passiveSpellPile = new Pile<Spell>();
         discardPile = new Pile<Spell>();
         hand = new Pile<Spell>();
         exhaustPile = new Pile<Spell>();
@@ -393,6 +413,10 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
+    [SerializeField] private VisualSpellDisplay cardDisplayPrefab;
+    [SerializeField] private HandLayoutGroup spawnCardDisplayPrefabOn;
+    [SerializeField] private float shiftHandYBy;
+
     /// <summary>
     /// Returns false if unable to draw a card
     /// </summary>
@@ -403,18 +427,19 @@ public partial class CombatManager : MonoBehaviour
 
         Spell spell = drawPile.DrawTop();
         hand.Add(spell);
-        GameManager._Instance.EquipSpell(spell);
+
+        // Spawn Card
+        VisualSpellDisplay spawned = Instantiate(cardDisplayPrefab, null);
+        spawnCardDisplayPrefabOn.AddChild(spawned.transform);
+        spawned.SetSpell(spell);
+        spawned.SetSpellDisplayState(SpellDisplayState.InHand);
 
         spell.OnDraw();
 
         // Callback
         OnDrawSpell?.Invoke();
 
-        // Spawn Effect Text if it's a Passive
-        if (spell.Type == SpellCastType.Passive)
-        {
-            SpawnEffectText(EffectTextStyle.Fade, spell.Name, UIManager._Instance.GetEffectTextColor("EquipPassiveSpell"), Target.Character);
-        }
+        CallRecalculateKeyBinds();
 
         return true;
     }
@@ -429,6 +454,7 @@ public partial class CombatManager : MonoBehaviour
             // Remove Spell from Hand
             Spell spell = toDiscard[0];
             hand.Remove(spell);
+            Destroy(spell.GetEquippedTo().gameObject);
 
             // Add Spell to Discard Pile
             discardPile.Add(spell);
@@ -442,9 +468,6 @@ public partial class CombatManager : MonoBehaviour
             // Remove Spell from to Remove
             toDiscard.RemoveAt(0);
 
-            // Unequip Spell
-            GameManager._Instance.UnequipSpell(spell);
-
             yield return new WaitForSeconds(discardSpellDelay);
         }
     }
@@ -456,6 +479,8 @@ public partial class CombatManager : MonoBehaviour
             hand.Remove(spell);
             discardPile.Add(spell);
 
+            Destroy(spell.GetEquippedTo().gameObject);
+
             // Callback
             spell.OnAnyDiscard();
 
@@ -463,8 +488,7 @@ public partial class CombatManager : MonoBehaviour
             spell.OnSpecificDiscard();
             OnSpecificDiscardSpell?.Invoke();
 
-            // Unequip Spell
-            GameManager._Instance.UnequipSpell(spell);
+            CallRecalculateKeyBinds();
         }
     }
 
@@ -475,14 +499,86 @@ public partial class CombatManager : MonoBehaviour
             hand.Remove(spell);
             exhaustPile.Add(spell);
 
+            Destroy(spell.GetEquippedTo().gameObject);
+
             // Callback
             spell.OnExhaust();
 
             // Callback
             OnExhaustSpell?.Invoke();
 
-            // Unequip Spell
-            GameManager._Instance.UnequipSpell(spell);
+            CallRecalculateKeyBinds();
+        }
+    }
+
+    private void AddSpellToPassiveSpellPile(PassiveSpell spell)
+    {
+        if (hand.Contains(spell))
+        {
+            // Check for Free Spell Casts
+            if (NumFreeSpells > 0)
+            {
+                NumFreeSpells -= 1;
+            }
+            else
+            {
+                // Consume Mana
+                GameManager._Instance.AlterPlayerCurrentMana(-spell.ManaCost);
+            }
+
+            hand.Remove(spell);
+            passiveSpellPile.Add(spell);
+
+            Destroy(spell.GetEquippedTo().gameObject);
+
+            CallRecalculateKeyBinds();
+        }
+    }
+
+    private KeyCode[] handHotKeyBindings = new KeyCode[] { KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4,
+        KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9, KeyCode.Alpha0 };
+    private KeyCode GetKeyBindingAtIndex(int index)
+    {
+        return handHotKeyBindings[index];
+    }
+
+    [SerializeField] private PassiveSpellDisplay passiveSpellDisplayPrefab;
+    [SerializeField] private Transform passiveSpellDispalysList;
+    [SerializeField] private Vector2 cardSizeInHand;
+    private PassiveSpellDisplay SpawnPassiveSpellDisplay()
+    {
+        PassiveSpellDisplay spawned = Instantiate(passiveSpellDisplayPrefab, passiveSpellDispalysList);
+        return spawned;
+    }
+
+    public void ActivatePassiveSpell(PassiveSpell spell)
+    {
+        AddSpellToPassiveSpellPile(spell);
+        EquipPassiveSpell(spell);
+    }
+
+    private void EquipPassiveSpell(PassiveSpell spell)
+    {
+        spell.OnEquip();
+
+        // Spawn a display to use
+        PassiveSpellDisplay spellDisplay = SpawnPassiveSpellDisplay();
+
+        spellDisplay.SetSpell(spell);
+
+        SpawnEffectText(EffectTextStyle.Fade, spell.Name, UIManager._Instance.GetEffectTextColor("EquipPassiveSpell"), Target.Character);
+    }
+
+    public void TriggerRandomPassiveSpell()
+    {
+        if (InCombat)
+        {
+            if (passiveSpellPile.Count > 0)
+            {
+                PassiveSpell spell = (PassiveSpell)RandomHelper.GetRandomFromList(passiveSpellPile.GetEntriesMatching(spell => true));
+                spell.Proc(true);
+                Debug.Log("Triggered: " + spell);
+            }
         }
     }
 
@@ -520,6 +616,28 @@ public partial class CombatManager : MonoBehaviour
         spell.GetEquippedTo().SetSpellDisplayState(currentAlterHandSequenceState);
     }
 
+    public void ReduceActiveSpellCooldowns(int reduceBy)
+    {
+        foreach (ActiveSpell spell in hand.GetEntriesMatching(spell => spell.Type == SpellCastType.Active))
+        {
+            if (spell.OnCooldown)
+            {
+                spell.AlterCooldown(-reduceBy);
+            }
+        }
+    }
+
+    public void ResetActiveSpellCooldowns()
+    {
+        foreach (ActiveSpell spell in hand.GetEntriesMatching(spell => spell.Type == SpellCastType.Active))
+        {
+            if (spell.OnCooldown)
+            {
+                spell.ResetCooldown();
+            }
+        }
+    }
+
     private IEnumerator AlterHandSequence(int numToAlter, Action<Spell> callOnSpell, string label, SpellDisplayState choosingState, Action onComplete)
     {
         if (hand.Count < numToAlter)
@@ -530,7 +648,7 @@ public partial class CombatManager : MonoBehaviour
         {
             currentAlterHandSequenceState = choosingState;
             alterHandInstructionText.gameObject.SetActive(true);
-            alterHandBackground.SetActive(true);
+            alterHandInstructionContainer.SetActive(true);
             hand.ActOnEachSpellInPile(spell => spell.GetEquippedTo().SetSpellDisplayState(choosingState));
 
             while (alterHandSequenceSelectedSpells.Count < numToAlter)
@@ -541,7 +659,7 @@ public partial class CombatManager : MonoBehaviour
             }
         }
 
-        alterHandInstructionText.gameObject.SetActive(false);
+        alterHandInstructionContainer.gameObject.SetActive(false);
 
         while (alterHandSequenceSelectedSpells.Count > 0)
         {
@@ -551,23 +669,34 @@ public partial class CombatManager : MonoBehaviour
             yield return new WaitForSeconds(delayBetweenAlterHandCalls);
         }
 
-        int index = 0;
-        hand.ActOnEachSpellInPile(spell =>
-        {
-            spell.GetEquippedTo().SetSpellDisplayState(SpellDisplayState.Normal);
-
-            // Recalculate Key Bindings
-            SpellDisplay spellDisplay = spell.GetEquippedTo();
-            if (spell.Type == SpellCastType.Active)
-            {
-                ((ActiveSpellDisplay)spellDisplay).SetKeyBinding(GameManager._Instance.GetKeyBindingAtIndex(index));
-                index++;
-            }
-        });
+        CallRecalculateKeyBinds();
         alterHandBackground.SetActive(false);
 
         onComplete?.Invoke();
     }
+
+    private void CallRecalculateKeyBinds()
+    {
+        if (recalculateKeyBindsCoroutine != null) StopCoroutine(recalculateKeyBindsCoroutine);
+        recalculateKeyBindsCoroutine = StartCoroutine(RecalculateKeyBinds());
+    }
+
+    private Coroutine recalculateKeyBindsCoroutine;
+
+    private IEnumerator RecalculateKeyBinds()
+    {
+        yield return new WaitForSeconds(.5f);
+
+        int index = 0;
+        hand.ActOnEachSpellInPile(spell =>
+        {
+            // Recalculate Key Bindings
+            ((VisualSpellDisplay)spell.GetEquippedTo()).SetKeyBinding(GetKeyBindingAtIndex(index));
+            index++;
+
+        });
+    }
+
 
     public IEnumerator ExhaustSpellSequence(int numToExhaust, Action onComplete = null)
     {
@@ -588,9 +717,29 @@ public partial class CombatManager : MonoBehaviour
 
     #region Combat Loop
 
-    public IEnumerator StartCombat(Combat combat, Action onEndAction)
+    public enum ShouldCombatProceedState
+    {
+        Await,
+        Proceed,
+        Cancel
+    }
+
+    private ShouldCombatProceedState proceedWithCombat;
+    public void SetShouldCombatProceed(ShouldCombatProceedState newState)
+    {
+        proceedWithCombat = newState;
+    }
+
+    [SerializeField] private GameObject[] showOnCombat;
+
+    public IEnumerator StartCombat(Combat combat, Action onEndAction, bool waitForConfirm = false)
     {
         Debug.Log("Combat Started: " + combat);
+
+        foreach (GameObject obj in showOnCombat)
+        {
+            obj.SetActive(false);
+        }
 
         // Set Current Variables
         currentEnemy = combat.SpawnedEnemy;
@@ -598,6 +747,29 @@ public partial class CombatManager : MonoBehaviour
         enemyCombatSprite.sprite = currentEnemy.GetCombatSprite();
         enemyNameText.text = currentEnemy.Name;
         enemyBasicAttackDamageText.text = currentEnemy.GetBasicAttackDamage().ToString();
+        characterBasicAttackDamageText.text = PlayerBasicAttackDamage.ToString();
+
+        // Decide whether or not to proceed with Combat
+        if (waitForConfirm)
+        {
+            // Wait for Combat to be Confirmed or Cancelled
+            proceedWithCombat = ShouldCombatProceedState.Await;
+            while (proceedWithCombat == ShouldCombatProceedState.Await)
+            {
+                yield return null;
+            }
+
+            // Combat has Been Cancelled
+            if (proceedWithCombat == ShouldCombatProceedState.Cancel)
+            {
+                yield break;
+            }
+        }
+
+        foreach (GameObject obj in showOnCombat)
+        {
+            obj.SetActive(true);
+        }
 
         // Get Spells
         yield return StartCoroutine(GameManager._Instance.SelectSpellsForCombat(currentEnemy));
@@ -680,8 +852,6 @@ public partial class CombatManager : MonoBehaviour
         // Reset
         ResetCombat();
 
-        GameManager._Instance.UnselectSpellsFromCombat();
-
         combatScreenOpen = false;
 
         GameManager._Instance.ResolveCurrentEvent();
@@ -736,8 +906,6 @@ public partial class CombatManager : MonoBehaviour
             {
                 break;
             }
-
-            yield return StartCoroutine(DiscardHand());
 
             // Enemy Turn
             yield return StartCoroutine(EnemyTurn());
@@ -807,16 +975,27 @@ public partial class CombatManager : MonoBehaviour
         yield return new WaitUntil(() => playerTurnEnded);
         playerTurnEnded = false;
 
-        CanCastSpells = false;
+        foreach (GameObject obj in disableWhileCasting)
+        {
+            obj.SetActive(false);
+        }
 
+        yield return StartCoroutine(DiscardHand());
+
+        CanCastSpells = false;
         yield return StartCoroutine(CastCharacterQueue());
+
+        foreach (GameObject obj in disableWhileCasting)
+        {
+            obj.SetActive(true);
+        }
 
         if (CheckForCombatOver())
         {
             yield break;
         }
 
-        GameManager._Instance.ResetActiveSpellCooldowns();
+        ResetActiveSpellCooldowns();
 
         // Regeneration Effect
         if (TargetHasAffliction(AfflictionType.Regeneration, Target.Character))
@@ -831,6 +1010,17 @@ public partial class CombatManager : MonoBehaviour
         OnPlayerTurnEnd?.Invoke();
 
         Debug.Log("Player Turn Ended");
+    }
+
+    public void TickHandCooldowns(Spell exclude)
+    {
+        // Tick other active spell cooldowns
+        foreach (ActiveSpell activeSpell in hand.GetEntriesMatching(spell => spell.Type == SpellCastType.Active))
+        {
+            if (activeSpell == exclude) continue;
+            if (!activeSpell.OnCooldown) continue;
+            activeSpell.AlterCooldown(-1);
+        }
     }
 
     public void AddSpellToCastQueue(ActiveSpell spell)
@@ -869,25 +1059,19 @@ public partial class CombatManager : MonoBehaviour
         }
         else
         {
+            Debug.Log(spell);
+
             // Set Cooldown
             spell.SetOnCooldown();
 
             // Consume Mana
-            GameManager._Instance.AlterPlayerCurrentMana(-spell.GetManaCost());
+            GameManager._Instance.AlterPlayerCurrentMana(-spell.ManaCost);
         }
 
         // Activate Callback
         OnActiveSpellQueued?.Invoke();
 
         spell.OnQueue();
-
-        // Tick other spell cooldowns
-        List<ActiveSpell> activeSpells = GameManager._Instance.GetActiveSpells();
-        foreach (ActiveSpell activeSpell in activeSpells)
-        {
-            if (!activeSpell.OnCooldown || activeSpell.Equals(spell)) continue;
-            activeSpell.AlterCooldown(-1);
-        }
     }
 
     private IEnumerator CastCharacterQueue()
@@ -1080,12 +1264,6 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void CheckForBonusChange(int prevValue, int newValue, Action<int> onChange, Action<int> endAction)
-    {
-        if (prevValue != newValue) onChange(newValue);
-        endAction(newValue);
-    }
-
     private void ResetCombat()
     {
         // Reset Turn Count
@@ -1104,7 +1282,7 @@ public partial class CombatManager : MonoBehaviour
         ResetCombatentWard(Target.Enemy);
 
         // Clear active spell cooldowns
-        GameManager._Instance.ResetActiveSpellCooldowns();
+        ResetActiveSpellCooldowns();
 
         // Reset Player Mana
         GameManager._Instance.SetCurrentPlayerMana(GameManager._Instance.GetMaxPlayerMana());
@@ -1119,10 +1297,20 @@ public partial class CombatManager : MonoBehaviour
         effectivenessMultiplier = defaultEffectivenessMultiplier;
         effectivenessMultiplierText.text = "x" + Utils.RoundTo(effectivenessMultiplier, 2).ToString();
 
+        // Unequip all Passive Spells
+        foreach (PassiveSpell spell in passiveSpellPile.GetSpells())
+        {
+            spell.OnUnequip();
+
+            PassiveSpellDisplay spellDisplay = (PassiveSpellDisplay)spell.GetEquippedTo();
+            Destroy(spellDisplay.gameObject);
+        }
+
         // Put all Spells back into draw Pile so that GameManager can know which Spells were previously used in Combat
         hand.TransferEntries(drawPile, false);
         discardPile.TransferEntries(drawPile, false);
-        exhaustPile.TransferEntries(drawPile, true);
+        exhaustPile.TransferEntries(drawPile, false);
+        passiveSpellPile.TransferEntries(drawPile, true);
 
         musicSource.Stop();
         musicSource.time = 0;
@@ -1341,19 +1529,15 @@ public partial class CombatManager : MonoBehaviour
 
     #region Damage Management
 
+    private int preCorrectedPlayerBasicAttackDamage => GameManager._Instance.DamageFromEquipment + GameManager._Instance.GetBasicAttackDamage();
+    public int PlayerBasicAttackDamage => preCorrectedPlayerBasicAttackDamage > 0 ? preCorrectedPlayerBasicAttackDamage : 1;
+
     // Basic Attack
     private void PlayerBasicAttack()
     {
-        int basicAttackDamage = GameManager._Instance.DamageFromEquipment + GameManager._Instance.GetBasicAttackDamage();
-
-        // the minimum a basic attack can do is manually set to 1
-        if (basicAttackDamage <= 0)
-        {
-            basicAttackDamage = 1;
-        }
-
+        // the minimum a basic attack can do is 1
         // Attack the enemy
-        AttackCombatent(basicAttackDamage, Target.Enemy, Target.Character, DamageType.Default, DamageSource.BasicAttack);
+        AttackCombatent(PlayerBasicAttackDamage, Target.Enemy, Target.Character, DamageType.Default, DamageSource.BasicAttack);
 
         // Burn Effect
         ApplyBurnEffectOnMap(characterAfflictionMap, Target.Character);

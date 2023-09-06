@@ -636,8 +636,8 @@ public class PoisonCoated : Affliction
 
 public class Ghostly : Affliction
 {
-    protected override string specificToolTipText => "At the Beginning of Every Turn, Gain " + GetStacks() + " Intangible";
-    protected override string genericToolTipText => "At the Beginning of Every Turn, Gain Intangible equal to the number of Ghostly Stacks";
+    protected override string specificToolTipText => "At the End of Every Turn, Gain " + GetStacks() + " Intangible";
+    protected override string genericToolTipText => "At the End of Every Turn, Gain Intangible equal to the number of Ghostly Stacks";
 
     public override AfflictionType Type => AfflictionType.Ghostly;
 
@@ -658,10 +658,10 @@ public class Ghostly : Affliction
         switch (GetOwner())
         {
             case Target.Character:
-                CombatManager._Instance.OnPlayerTurnStart += ApplyIntangible;
+                CombatManager._Instance.OnPlayerTurnEnd += ApplyIntangible;
                 return;
             case Target.Enemy:
-                CombatManager._Instance.OnEnemyTurnStart += ApplyIntangible;
+                CombatManager._Instance.OnEnemyTurnEnd += ApplyIntangible;
                 return;
         }
     }
@@ -671,10 +671,10 @@ public class Ghostly : Affliction
         switch (GetOwner())
         {
             case Target.Character:
-                CombatManager._Instance.OnPlayerTurnStart -= ApplyIntangible;
+                CombatManager._Instance.OnPlayerTurnEnd -= ApplyIntangible;
                 return;
             case Target.Enemy:
-                CombatManager._Instance.OnEnemyTurnStart -= ApplyIntangible;
+                CombatManager._Instance.OnEnemyTurnEnd -= ApplyIntangible;
                 return;
         }
     }

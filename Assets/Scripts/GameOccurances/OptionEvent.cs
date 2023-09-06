@@ -23,7 +23,8 @@ public enum EventLabel
     BookOfTheRepurposed,
     BookOfTheStudious,
     AngerForUpgrade,
-    ASuspiciousTome
+    ASuspiciousTome,
+    FightOrNot
 }
 
 public abstract class OptionEvent
@@ -214,6 +215,8 @@ public abstract class OptionEvent
                 return new AngerForUpgrade();
             case EventLabel.ASuspiciousTome:
                 return new ASuspiciousTome();
+            case EventLabel.FightOrNot:
+                return new FightOrNot();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -1319,7 +1322,7 @@ public class ASuspiciousTome : OptionEvent
 
     protected override void InitializeEventData()
     {
-        Combat testCombat = (Combat)MapManager._Instance.GetUniqueGameOccurance("PossessedTomeCombat");
+        Combat combat = (Combat)MapManager._Instance.GetUniqueGameOccurance("PossessedTomeCombat");
 
         int stage = 0;
 
@@ -1342,7 +1345,7 @@ public class ASuspiciousTome : OptionEvent
                 MakeEventOptionOutcomeWithChance(100, "", delegate
                 {
                     UpdateEventText("The book now lays on the ground, now lifeless as it should've been.");
-                    StartFight(testCombat, true, delegate
+                    StartFight(combat, true, delegate
                     {
                         stage = 2;
                         EventManager._Instance.SetWait(false);
@@ -1366,6 +1369,63 @@ public class ASuspiciousTome : OptionEvent
 
         // Add Options
         AddOptions(fight, wonFight, viewBook, leave);
+    }
+}
+
+public class FightOrNot : OptionEvent
+{
+    public override EventLabel EventLabel => EventLabel.FightOrNot;
+
+    public override Sprite EventArt => null;
+
+    public override string EventName => "...";
+    protected override string defaultEventText => "...";
+
+    protected override void InitializeEventData()
+    {
+        Combat testCombat = (Combat)MapManager._Instance.GetUniqueGameOccurance("PossessedTomeCombat");
+
+        /*
+        EventManager._Instance.StartCoroutine(CombatManager._Instance.StartCombat(testCombat, delegate
+        {
+            EventManager._Instance.SetWait(true);
+            GameOccuranceUIManager._Instance.ForceChangeGameOccurance(MapNodeType.MinorFight, false);
+        }, true));
+        GameOccuranceUIManager._Instance.ForceChangeGameOccurance(MapNodeType.MinorFight, true);
+        EventManager._Instance.SetCombatOptionState(false);
+        */
+
+        // 1: Open Combat UI & Combat Event UI
+        // Choice between Fighting or not fighting
+        // if Choose to fight, disable Combat Event UI, Start Combat
+        // if Choose not to fight, disable Combat UI and end Event
+
+        // 1: Choice Between Reaching and Leaving
+        // Choosing Reach will Chain into another Option where the only option is to fight
+        ConditionalOption fight = new ConditionalOption(() => true,
+            MakeEventOption("Fight", "Fight the ?",
+            () => false,
+                MakeEventOptionOutcomeWithChance(100, "", delegate
+                {
+                    GameOccuranceUIManager._Instance.ForceChangeGameOccurance(MapNodeType.Options, false);
+                    CombatManager._Instance.SetShouldCombatProceed(CombatManager.ShouldCombatProceedState.Proceed);
+                    EventManager._Instance.ChainEvent(this);
+                    EventManager._Instance.SetWait(true);
+
+                })));
+
+        // 4: Leave
+        ConditionalOption leave = new ConditionalOption(() => true,
+            MakeEventOption("Leave", "", () => false,
+                MakeEventOptionOutcomeWithChance(100, "...", delegate
+                {
+                    GameOccuranceUIManager._Instance.ForceChangeGameOccurance(MapNodeType.MinorFight, false);
+
+                    CombatManager._Instance.SetShouldCombatProceed(CombatManager.ShouldCombatProceedState.Cancel);
+                })));
+
+        // Add Options
+        AddOptions(fight, leave);
     }
 }
 

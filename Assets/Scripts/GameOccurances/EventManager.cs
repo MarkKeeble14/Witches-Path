@@ -25,6 +25,7 @@ public class EventManager : MonoBehaviour
     [SerializeField] private Transform optionsDisplay;
     [SerializeField] private GameObject optionsDisplayContainer;
     [SerializeField] private OptionEventOptionDisplay optionEventOptionPrefab;
+    [SerializeField] private GameObject background;
 
     private List<OptionEventOptionDisplay> spawnedOptionDisplays = new List<OptionEventOptionDisplay>();
     private EventOptionOutcome currentOutcome;

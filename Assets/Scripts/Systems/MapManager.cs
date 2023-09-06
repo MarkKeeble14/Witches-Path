@@ -47,6 +47,8 @@ public class MapManager : MonoBehaviour
         }
     }
 
+    public bool MapOpen => mapCV.alpha > 0;
+
     public void Hide()
     {
         shown = false;

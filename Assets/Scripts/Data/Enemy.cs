@@ -195,10 +195,10 @@ public abstract class Enemy
                 return new InfestedRatPack();
             case EnemyType.TheScienceExperiment:
                 return new TheScienceExperiment();
-            case EnemyType.SpiritOfContempt:
-                return new SpiritOfContempt();
             case EnemyType.SpiritsTombGolem:
                 return new SpiritsTombGolem();
+            case EnemyType.SpiritOfContempt:
+                return new SpiritOfContempt();
             case EnemyType.SpiritOfPride:
                 return new SpiritOfPride();
             case EnemyType.SpiritOfWar:

@@ -60,20 +60,12 @@ public class GameManager : MonoBehaviour
     [SerializeField] private List<SpellLabel> unviableSpellRewards;
     private List<SpellLabel> viableSpellRewards = new List<SpellLabel>();
     private int equippableSpellIndex;
-    private List<Spell> equippedSpells = new List<Spell>();
     private Spellbook spellBook;
     public int NumSpells => spellBook.GetSpellBookEntries().Count;
-
-    [Header("Active Spells")]
-    [SerializeField] private KeyCode[] activeSpellBindings;
-    [SerializeField] private ActiveSpellDisplay activeSpellDisplayPrefab;
-    [SerializeField] private Transform activeSpellDisplaysList;
-    private Dictionary<ActiveSpellDisplay, ActiveSpell> equippedActiveSpells = new Dictionary<ActiveSpellDisplay, ActiveSpell>();
 
     [Header("Passive Spells")]
     [SerializeField] private PassiveSpellDisplay passiveSpellDisplayPrefab;
     [SerializeField] private Transform passiveSpellDisplaysList;
-    private Dictionary<PassiveSpellDisplay, PassiveSpell> equippedPassiveSpells = new Dictionary<PassiveSpellDisplay, PassiveSpell>();
 
     [Header("Select Spells For Combat Screen")]
     [SerializeField] private VisualSpellDisplay visualSpellDisplayPrefab;
@@ -158,9 +150,11 @@ public class GameManager : MonoBehaviour
     public Func<Spell, bool> AcceptSpellRewardFunc => spell => !spellRewardsMustMatchCharacterColor || (spellRewardsMustMatchCharacterColor && spell.Color == GetCharacterColor());
     private bool spellRewardsMustMatchCharacterColor = true;
 
-
     private List<PotionIngredientListEntry> spawnedPotionIngredientListEntries = new List<PotionIngredientListEntry>();
+
     [SerializeField] private CanvasGroup upgradeBookButtonCV;
+
+    [SerializeField] private GameObject showPileScreen;
 
     internal void AlterCombatPileSize(int changeBy)
     {
@@ -364,12 +358,12 @@ public class GameManager : MonoBehaviour
                     Debug.Log("Selected: " + viableSpellRewards[equippableSpellIndex]);
                 }
 
-                if (Input.GetKeyDown(KeyCode.Alpha1))
+                if (Input.GetKeyDown(KeyCode.KeypadEnter))
                 {
                     // 
                     AddSpellToSpellBook(viableSpellRewards[equippableSpellIndex]);
                 }
-                if (Input.GetKeyDown(KeyCode.Alpha2))
+                if (Input.GetKeyDown(KeyCode.KeypadPeriod))
                 {
                     //
                 }
@@ -400,12 +394,12 @@ public class GameManager : MonoBehaviour
                     Debug.Log("Selected: " + allArtifact[artifactIndex]);
                 }
 
-                if (Input.GetKeyDown(KeyCode.Alpha1))
+                if (Input.GetKeyDown(KeyCode.KeypadEnter))
                 {
                     AddArtifact(allArtifact[artifactIndex]);
                 }
 
-                if (Input.GetKeyDown(KeyCode.Alpha2))
+                if (Input.GetKeyDown(KeyCode.KeypadPeriod))
                 {
                     // RemoveArtifact(allArtifact[artifactIndex]);
                 }
@@ -436,168 +430,17 @@ public class GameManager : MonoBehaviour
                     Debug.Log("Selected: " + allBook[bookIndex]);
                 }
 
-                if (Input.GetKeyDown(KeyCode.Alpha1))
+                if (Input.GetKeyDown(KeyCode.KeypadEnter))
                 {
                     SwapBooks(bookDisplayTracker.Keys.First(), allBook[bookIndex]);
                 }
 
-                if (Input.GetKeyDown(KeyCode.Alpha2))
+                if (Input.GetKeyDown(KeyCode.KeypadPeriod))
                 {
                     RemoveBook(allBook[bookIndex]);
                 }
 
                 break;
-        }
-    }
-
-    public void TriggerRandomPassiveSpell()
-    {
-        if (CombatManager._Instance.InCombat)
-        {
-            if (equippedPassiveSpells.Count > 0)
-            {
-                PassiveSpell spell = RandomHelper.GetRandomFromArray(equippedPassiveSpells.Values.ToArray());
-                spell.Proc(true);
-                Debug.Log("Triggered: " + spell);
-            }
-        }
-    }
-
-    public bool EquipSpell(Spell spell)
-    {
-        bool didEquip;
-        switch (spell)
-        {
-            case ActiveSpell activeSpell:
-                didEquip = EquipActiveSpell(activeSpell);
-                break;
-            case PassiveSpell passiveSpell:
-                didEquip = EquipPassiveSpell(passiveSpell);
-                break;
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
-
-        if (didEquip)
-        {
-            equippedSpells.Add(spell);
-            spell.OnEquip();
-        }
-
-        return didEquip;
-    }
-
-    public void UnequipSpell(Spell spell)
-    {
-        equippedSpells.Remove(spell);
-        spell.OnUnequip();
-        switch (spell)
-        {
-            case ActiveSpell activeSpell:
-                UnequipActiveSpell(activeSpell);
-                break;
-            case PassiveSpell passiveSpell:
-                UnequipPassiveSpell(passiveSpell);
-                break;
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
-    }
-
-    public PassiveSpellDisplay SpawnPassiveSpellDisplay()
-    {
-        PassiveSpellDisplay spawned = Instantiate(passiveSpellDisplayPrefab, passiveSpellDisplaysList);
-        spawned.SetEmpty(true);
-        return spawned;
-    }
-
-    public KeyCode GetKeyBindingAtIndex(int index)
-    {
-        return activeSpellBindings[index];
-    }
-
-    public ActiveSpellDisplay SpawnActiveSpellDisplay()
-    {
-        ActiveSpellDisplay spawned = Instantiate(activeSpellDisplayPrefab, activeSpellDisplaysList);
-        KeyCode keyBinding = activeSpellBindings[equippedActiveSpells.Count];
-        spawned.SetKeyBinding(keyBinding);
-        spawned.SetEmpty(true);
-        return spawned;
-    }
-
-    public bool EquipPassiveSpell(PassiveSpell spell)
-    {
-        // grab a display to use
-        PassiveSpellDisplay spellDisplay = SpawnPassiveSpellDisplay();
-
-        // if there isn't any unused passive spell slots, then we can't equip this spell
-        if (spellDisplay == null) return false;
-
-        spellDisplay.SetSpell(spell);
-
-        equippedPassiveSpells.Add(spellDisplay, spell);
-
-        return true;
-    }
-
-    public PassiveSpellDisplay UnequipPassiveSpell(Spell spell)
-    {
-        PassiveSpellDisplay loaded = (PassiveSpellDisplay)spell.GetEquippedTo();
-
-        loaded.Unset();
-        equippedPassiveSpells.Remove(loaded);
-        Destroy(loaded.gameObject);
-
-        return loaded;
-    }
-
-    public bool EquipActiveSpell(ActiveSpell spell)
-    {
-        // grab a display to use
-        ActiveSpellDisplay spellDisplay = SpawnActiveSpellDisplay();
-
-        // if there isn't any unused active spell slots, then we can't equip this spell
-        if (spellDisplay == null) return false;
-
-        spellDisplay.SetSpell(spell);
-
-        // Track Lists
-        equippedActiveSpells.Add(spellDisplay, spell);
-
-        // Debug.Log("Equipped: " + newSpell);
-        return true;
-    }
-
-    public ActiveSpellDisplay UnequipActiveSpell(Spell spell)
-    {
-        ActiveSpellDisplay loaded = (ActiveSpellDisplay)spell.GetEquippedTo();
-
-        loaded.Unset();
-        equippedActiveSpells.Remove(loaded);
-        Destroy(loaded.gameObject);
-
-        return loaded;
-    }
-
-    public void ReduceActiveSpellCooldowns(int reduceBy)
-    {
-        foreach (KeyValuePair<ActiveSpellDisplay, ActiveSpell> kvp in equippedActiveSpells)
-        {
-            if (kvp.Value.OnCooldown)
-            {
-                kvp.Value.AlterCooldown(-reduceBy);
-            }
-        }
-    }
-
-    public void ResetActiveSpellCooldowns()
-    {
-        foreach (KeyValuePair<ActiveSpellDisplay, ActiveSpell> kvp in equippedActiveSpells)
-        {
-            if (kvp.Value.OnCooldown)
-            {
-                kvp.Value.ResetCooldown();
-            }
         }
     }
 
@@ -1022,7 +865,6 @@ public class GameManager : MonoBehaviour
         {
             VisualSpellDisplay current = spawnedSelections[0];
             spawnedSelections.RemoveAt(0);
-            current.SetSpellDisplayState(SpellDisplayState.Normal);
             Destroy(current.gameObject);
         }
 
@@ -1037,16 +879,6 @@ public class GameManager : MonoBehaviour
     public void ConfirmSpellSelection()
     {
         spellSelectionForCombatConfirmed = true;
-    }
-
-    public void UnselectSpellsFromCombat()
-    {
-        while (equippedSpells.Count > 0)
-        {
-            Spell current = equippedSpells[0];
-            equippedSpells.RemoveAt(0);
-            UnequipSpell(current);
-        }
     }
 
     public void AddSpellToSpellBook(SpellLabel spellLabel)
@@ -1070,47 +902,6 @@ public class GameManager : MonoBehaviour
     {
         spell.Upgrade(Sign.Positive);
         StartCoroutine(ShowUpgradeSpellSequence(spell));
-    }
-
-    public void ReduceActiveSpellCDsByPercent(float normalizedPercent)
-    {
-        // normaliedPercent is some number between 0 and 1
-        // 0 = 0%, 1 = 100%
-        // .14 = 14%
-        // etc
-        foreach (KeyValuePair<ActiveSpellDisplay, ActiveSpell> kvp in equippedActiveSpells)
-        {
-            if (kvp.Value.OnCooldown)
-            {
-                kvp.Value.MultiplyCooldown(normalizedPercent);
-            }
-        }
-    }
-
-    public List<ActiveSpell> GetActiveSpells()
-    {
-        List<ActiveSpell> toReturn = new List<ActiveSpell>();
-        foreach (KeyValuePair<ActiveSpellDisplay, ActiveSpell> kvp in equippedActiveSpells)
-        {
-            toReturn.Add(kvp.Value);
-        }
-        return toReturn;
-    }
-
-    public void AddActiveSpellSlots(int num)
-    {
-        for (int i = 0; i < num; i++)
-        {
-            SpawnActiveSpellDisplay();
-        }
-    }
-
-    public void AddPassiveSpellSlots(int num)
-    {
-        for (int i = 0; i < num; i++)
-        {
-            SpawnPassiveSpellDisplay();
-        }
     }
     #endregion
 
@@ -1521,7 +1312,10 @@ public class GameManager : MonoBehaviour
 
     public void ToggleMap()
     {
-        MapManager._Instance.ToggleVisibility();
+        if (!CanSetCurrentGameOccurance)
+        {
+            MapManager._Instance.ToggleVisibility();
+        }
     }
 
     public void ToggleSpellBook()
@@ -1545,7 +1339,6 @@ public class GameManager : MonoBehaviour
             {
                 VisualSpellDisplay cur = spellBookSpawnedSpellDisplays[0];
                 spellBookSpawnedSpellDisplays.RemoveAt(0);
-                cur.SetSpellDisplayState(SpellDisplayState.Normal);
                 Destroy(cur.gameObject);
             }
         }
@@ -1720,7 +1513,6 @@ public class GameManager : MonoBehaviour
         {
             VisualSpellDisplay cur = spawnedDisplays[0];
             spawnedDisplays.RemoveAt(0);
-            cur.SetSpellDisplayState(SpellDisplayState.Normal);
             Destroy(cur.gameObject);
         }
 
@@ -2090,7 +1882,6 @@ public class GameManager : MonoBehaviour
         StopCoroutine(changeScale);
 
         // Destroy Visual
-        spellDisplay.SetSpellDisplayState(SpellDisplayState.Normal);
         Destroy(spellDisplayCV.gameObject);
     }
 
