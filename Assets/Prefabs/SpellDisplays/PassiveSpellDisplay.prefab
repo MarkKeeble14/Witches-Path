@@ -113,13 +113,30 @@ MonoBehaviour:
   coloredTexts:
   - {fileID: 8835613769686614093}
   - {fileID: 5287676079695049420}
+  border: {fileID: 7814417858420328025}
   regularScale: 1
   maxScale: 1.75
   changeScaleSpeed: 2.5
   mouseOverTargetScale: 1.25
   lerpScaleRate: 25
-  nonMousedOverSortingOrder: 3
-  mousedOverSortingOrder: 5
+  sortingOrderDict:
+    dictionary:
+    - key: 0
+      value: {x: 2, y: 3}
+    - key: 1
+      value: {x: 2, y: 3}
+    - key: 2
+      value: {x: 2, y: 3}
+    - key: 3
+      value: {x: 1, y: 2}
+    - key: 4
+      value: {x: 1, y: 2}
+    - key: 5
+      value: {x: 1, y: 2}
+    - key: 6
+      value: {x: 3, y: 3}
+    - key: 9
+      value: {x: 1, y: 1}
   infoBlock: {fileID: 9197949876086430732}
 --- !u!225 &1066416173362555348
 CanvasGroup:
@@ -898,7 +915,7 @@ MonoBehaviour:
   m_FillMethod: 4
   m_FillAmount: 1
   m_FillClockwise: 1
-  m_FillOrigin: 2
+  m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
 --- !u!1 &9197949876086430732

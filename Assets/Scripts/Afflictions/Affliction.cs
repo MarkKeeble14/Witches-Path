@@ -493,14 +493,17 @@ public class Levitating : Affliction
 
     public override Sign Sign => Sign.Positive;
 
-    private int damageThisTurn;
-    private int damageNeededToTake;
-    private int currentDamageNeededToTake => damageNeededToTake - damageThisTurn;
     private float percentOfHP;
+    private int ownerHP;
+
+    private int damageNeededToTake => Mathf.RoundToInt(percentOfHP * GetStacks() * ownerHP);
+    private int currentDamageNeededToTake => damageNeededToTake - damageThisTurn;
+    private int damageThisTurn;
     private bool removedThisTurn;
 
     private void ResetDamageThisTurn()
     {
+        Debug.Log("Reset Damage This Turn");
         damageThisTurn = 0;
         removedThisTurn = false;
     }
@@ -530,12 +533,12 @@ public class Levitating : Affliction
         switch (GetOwner())
         {
             case Target.Character:
-                damageNeededToTake = Mathf.RoundToInt(GameManager._Instance.GetMaxPlayerHP() * percentOfHP);
+                ownerHP = GameManager._Instance.GetMaxPlayerHP();
                 CombatManager._Instance.OnPlayerTurnStart += ResetDamageThisTurn;
                 CombatManager._Instance.OnPlayerTakeDamage += TookDamage;
                 break;
             case Target.Enemy:
-                damageNeededToTake = Mathf.RoundToInt(CombatManager._Instance.CurrentEnemy.GetMaxHP() * percentOfHP);
+                ownerHP = CombatManager._Instance.CurrentEnemy.GetMaxHP();
                 CombatManager._Instance.OnEnemyTurnStart += ResetDamageThisTurn;
                 CombatManager._Instance.OnEnemyTakeDamage += TookDamage;
                 break;

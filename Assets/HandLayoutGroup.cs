@@ -5,45 +5,102 @@ using UnityEngine;
 public class HandLayoutGroup : MonoBehaviour
 {
     [SerializeField] private float archHeight = 1;
-    [SerializeField] private float spaceBetweenElements = 50;
+    [SerializeField] private List<float> numChildSpacing = new List<float>();
     [SerializeField] private float rotationPerX = -.1f;
     [SerializeField] private Vector2 childSize;
+    [SerializeField] private bool animatePosition;
+    [SerializeField] private bool animateRotation;
+    [SerializeField] private float animatePosRate;
+    [SerializeField] private float animateRotRate;
+    [SerializeField] private float alterBaseLine;
+    private List<Transform> inHand = new List<Transform>();
+
+    public void RelinquishControl(Transform t)
+    {
+        t.SetParent(null);
+    }
 
     public void AddChild(Transform t)
     {
         (t.transform as RectTransform).sizeDelta = childSize;
-        t.SetParent(transform);
+        t.SetParent(transform, true);
+        AddTransformToHand(t);
+    }
+
+    public void AddTransformToHand(Transform t)
+    {
+        inHand.Add(t);
+    }
+
+    public void RemoveTransformFromHand(Transform t)
+    {
+        inHand.Remove(t);
+    }
+
+    private void SetPos(RectTransform rect, Vector2 targetPos)
+    {
+        SetPos(rect, new Vector3(targetPos.x, targetPos.y, 0));
+    }
+
+    private void SetPos(RectTransform rect, Vector3 targetPos)
+    {
+        if (animatePosition)
+        {
+            rect.localPosition = Vector3.MoveTowards(rect.localPosition, targetPos, Time.deltaTime * animatePosRate);
+        }
+        else
+        {
+            rect.localPosition = targetPos;
+        }
+    }
+
+    private void SetRot(RectTransform rect, Vector3 targetEuler)
+    {
+        if (animateRotation)
+        {
+            rect.rotation = Quaternion.Lerp(rect.rotation, Quaternion.Euler(targetEuler), animateRotRate * Time.deltaTime);
+        }
+        else
+        {
+            rect.rotation = Quaternion.Euler(targetEuler);
+        }
+    }
+
+    public void InsertTransformToHand(Transform t, int index)
+    {
+        inHand.Insert(index, t);
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (transform.childCount % 2 == 1)
+        if (inHand.Count % 2 == 1)
         {
-            int centerPoint = transform.childCount / 2;
-            for (int i = 0; i < transform.childCount; i++)
+            int centerPoint = inHand.Count / 2;
+            for (int i = 0; i < inHand.Count; i++)
             {
-                RectTransform childRect = transform.GetChild(i) as RectTransform;
-                childRect.localPosition = new Vector2(spaceBetweenElements * (i - centerPoint), -Mathf.Abs(i - centerPoint) * archHeight);
-                childRect.localEulerAngles = new Vector3(0, 0, childRect.localPosition.x * rotationPerX);
+                RectTransform childRect = inHand[i] as RectTransform;
+                SetPos(childRect, new Vector2(numChildSpacing[inHand.Count] * (i - centerPoint), (-Mathf.Abs(i - centerPoint) * archHeight) + alterBaseLine));
+                SetRot(childRect, new Vector3(0, 0, childRect.localPosition.x * rotationPerX));
             }
         }
         else
         {
-            float leftCenter = Mathf.FloorToInt(transform.childCount / 2) - .5f;
-            float rightCenter = Mathf.CeilToInt(transform.childCount / 2) - .5f;
-            for (int i = 0; i < transform.childCount; i++)
+            float leftCenter = Mathf.FloorToInt(inHand.Count / 2) - .5f;
+            float rightCenter = Mathf.CeilToInt(inHand.Count / 2) - .5f;
+            for (int i = 0; i < inHand.Count; i++)
             {
-                RectTransform childRect = transform.GetChild(i) as RectTransform;
+                RectTransform childRect = inHand[i] as RectTransform;
+
                 if (i <= leftCenter)
                 {
-                    childRect.localPosition = new Vector2(spaceBetweenElements * (i - leftCenter), -Mathf.Abs(i - leftCenter) * archHeight);
+                    SetPos(childRect, new Vector2(numChildSpacing[inHand.Count] * (i - leftCenter), (-Mathf.Abs(i - leftCenter) * archHeight) + alterBaseLine));
                 }
                 else if (i >= rightCenter)
                 {
-                    childRect.localPosition = new Vector2(spaceBetweenElements * (i - rightCenter), -Mathf.Abs(i - rightCenter) * archHeight);
+                    SetPos(childRect, new Vector2(numChildSpacing[inHand.Count] * (i - rightCenter), (-Mathf.Abs(i - rightCenter) * archHeight) + alterBaseLine));
                 }
-                childRect.localEulerAngles = new Vector3(0, 0, childRect.localPosition.x * rotationPerX);
+                SetRot(childRect, new Vector3(0, 0, childRect.localPosition.x * rotationPerX));
             }
         }
     }

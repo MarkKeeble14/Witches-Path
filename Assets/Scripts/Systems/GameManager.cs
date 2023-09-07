@@ -85,6 +85,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Transform spellBookSpawnSpellDisplaysOn;
     private List<VisualSpellDisplay> spellBookSpawnedSpellDisplays = new List<VisualSpellDisplay>();
 
+    [SerializeField] private GameObject spellPileScreen;
+
     [Header("Select Spell Screen")]
     [SerializeField] private GameObject selectSpellScreen;
     [SerializeField] private Transform spawnSelectSpellDisplaysOn;
@@ -127,6 +129,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI defenseText;
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI spellbookSizeText;
+    [SerializeField] private OnTextChangedEventCaller manaTextEventCaller;
 
     [Header("Delays")]
     [SerializeField] private float delayOnReachNode = 0.5f;
@@ -138,6 +141,8 @@ public class GameManager : MonoBehaviour
     public Action OnEnterNewRoom;
     public Action OnPlayerRecieveDamage;
     private Dictionary<MapNodeType, Action> OnEnterSpecificRoomActionMap = new Dictionary<MapNodeType, Action>();
+
+    public bool OverlaidUIOpen => potionIngredientListScreen.activeInHierarchy || spellBookScreen.activeInHierarchy || spellPileScreen.activeInHierarchy;
 
     public int DamageFromEquipment { get; set; }
     public int DefenseFromEquipment { get; set; }
@@ -236,6 +241,7 @@ public class GameManager : MonoBehaviour
                 viableSpellRewards.Add(label);
         }
 
+
         // Set equipment Tool Tippables
         SetEquipmentToolTippables(equippableHats.Cast<Equipment>().ToList());
         SetEquipmentToolTippables(equippableRobes.Cast<Equipment>().ToList());
@@ -244,6 +250,8 @@ public class GameManager : MonoBehaviour
         SetNewPotion();
 
         EquipCharacterLoadout(playerCharacter);
+
+        InitializeDeck();
 
         CanSetCurrentGameOccurance = true;
     }
@@ -702,6 +710,19 @@ public class GameManager : MonoBehaviour
         }
     }
 
+
+    private void InitializeDeck()
+    {
+        Pile<Spell> starterDeck = new Pile<Spell>();
+
+        foreach (Spell spell in spellBook.GetSpellBookEntries())
+        {
+            starterDeck.Add(spell);
+        }
+
+        CombatManager._Instance.SetSpellPiles(starterDeck);
+        prevCombatDrawPile = starterDeck;
+    }
 
     public IEnumerator SelectSpellsForCombat(Enemy combatEnemy)
     {
@@ -1232,6 +1253,9 @@ public class GameManager : MonoBehaviour
             currentOccurance = null;
             CanSetCurrentGameOccurance = true;
 
+            // Set the new Connections to be Accessable
+            currentNode.SetAllConnectorsState(MapNodeConnectorState.ACCESSABLE, false);
+
             ScoreManager._Instance.AddScore(ScoreReason.RoomCleared);
 
             if (!shouldBreak)
@@ -1294,9 +1318,6 @@ public class GameManager : MonoBehaviour
 
         currentNode = setNodeTo;
         currentOccurance = currentNode.GetSetTo();
-
-        // Set the new Connections to be Accessable
-        setNodeTo.SetAllConnectorsState(MapNodeConnectorState.ACCESSABLE, false);
     }
 
     public GameOccurance GetCurrentGameOccurance()
@@ -1721,6 +1742,11 @@ public class GameManager : MonoBehaviour
 
     public bool CanUpgradeActiveBook => GetOwnedBook(0).CanLevelUp;
 
+    public void PopManaText()
+    {
+        manaTextEventCaller.Force();
+    }
+
     [Header("Game Over")]
     [SerializeField] private CanvasGroup gameOverCV;
     [SerializeField] private CanvasGroup gameWonCV;
@@ -1834,7 +1860,7 @@ public class GameManager : MonoBehaviour
 
         // Scale Up
         spellDisplay.SetScaleLocked(true);
-        Coroutine changeScale = StartCoroutine(Utils.ChangeScale(spellDisplayRect, spellDisplayRect.localScale * 2, spellbookChangeScaleRate, 0));
+        Coroutine changeScale = StartCoroutine(Utils.MoveTowardsScale(spellDisplayRect, spellDisplayRect.localScale * 2, spellbookChangeScaleRate));
 
         // Slowly Fade Visual In
         spellDisplayCV.alpha = 0;
@@ -1867,7 +1893,7 @@ public class GameManager : MonoBehaviour
 
         // Scale Down
         spellDisplay.SetScaleLocked(true);
-        Coroutine changeScale = StartCoroutine(Utils.ChangeScale(spellDisplayRect, Vector3.zero, spellbookChangeScaleRate, 0));
+        Coroutine changeScale = StartCoroutine(Utils.MoveTowardsScale(spellDisplayRect, Vector3.zero, spellbookChangeScaleRate));
 
         // Slowly Fade Visual In
         yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(spellDisplayCV, 1, spellbookChangeFadeInRate));
@@ -1897,7 +1923,7 @@ public class GameManager : MonoBehaviour
 
         // Scale Up
         spellDisplay.SetScaleLocked(true);
-        Coroutine changeScale = StartCoroutine(Utils.ChangeScale(spellDisplayRect, spellDisplayRect.localScale * 2, spellbookChangeScaleRate, 0));
+        Coroutine changeScale = StartCoroutine(Utils.MoveTowardsScale(spellDisplayRect, spellDisplayRect.localScale * 2, spellbookChangeScaleRate));
 
         // Slowly Fade Visual In
         spellDisplayCV.alpha = 0;

@@ -124,6 +124,8 @@ public class UIManager : MonoBehaviour
 
     [SerializeField] private SerializableDictionary<SpellColor, SpellColorInfo> spellColorMap = new SerializableDictionary<SpellColor, SpellColorInfo>();
 
+    [SerializeField] SerializableDictionary<SpellDisplayState, Color> spellDisplayStateBorderColorDict = new SerializableDictionary<SpellDisplayState, Color>();
+
     [SerializeField] private SerializableDictionary<AfflictionType, Sprite> afflictionIconDict = new SerializableDictionary<AfflictionType, Sprite>();
 
     [SerializeField] private Transform canvas;
@@ -142,6 +144,11 @@ public class UIManager : MonoBehaviour
     public SpellColorInfo GetSpellColor(SpellColor color)
     {
         return spellColorMap[color];
+    }
+
+    public Color GetSpellDisplayBorderColor(SpellDisplayState displayState)
+    {
+        return spellDisplayStateBorderColorDict[displayState];
     }
 
     public Color GetRarityColor(Rarity r)

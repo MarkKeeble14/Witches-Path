@@ -15,7 +15,10 @@ public enum SpellDisplayState
     ChoosingExhaust,
     ChoosingDiscard,
     InHand,
-    ToolTip
+    ToolTip,
+    DraggingWontCast,
+    DraggingWillCast,
+    Fading
 }
 
 public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
@@ -40,6 +43,8 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
     private float targetScale;
     protected bool scaleLocked;
     protected SpellDisplayState currentSpellDisplayState = SpellDisplayState.Normal;
+
+    [SerializeField] protected Image border;
 
     [Header("Scale")]
     [SerializeField] private float regularScale;
@@ -78,7 +83,7 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
         onExit += a;
     }
 
-    public void OnPointerClick(PointerEventData eventData)
+    public virtual void OnPointerClick(PointerEventData eventData)
     {
         onClick?.Invoke();
     }
@@ -110,7 +115,7 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
 
     protected virtual void Update()
     {
-        bool hide = (MapManager._Instance.MapOpen && isInHand) || (MapManager._Instance.MapOpen && currentSpellDisplayState == SpellDisplayState.Locked);
+        bool hide = ((MapManager._Instance.MapOpen || GameManager._Instance.OverlaidUIOpen) && isInHand) || (MapManager._Instance.MapOpen && currentSpellDisplayState == SpellDisplayState.Locked);
         mainCV.blocksRaycasts = !hide;
         mainCV.alpha = hide ? 0 : 1;
 
@@ -125,12 +130,14 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
             }
             else
             {
-                canvas.sortingOrder = sortingOrderDict[currentSpellDisplayState].x;
-
                 if (targetScale != regularScale)
                 {
                     // Allow target scale to fall back to regular scale
                     targetScale = Mathf.MoveTowards(targetScale, regularScale, changeScaleSpeed * Time.deltaTime);
+                }
+                else
+                {
+                    canvas.sortingOrder = sortingOrderDict[currentSpellDisplayState].x;
                 }
             }
 
@@ -139,7 +146,7 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
         }
     }
 
-    public virtual void SetSpellDisplayState(SpellDisplayState displayState)
+    public void SetSpellDisplayState(SpellDisplayState displayState)
     {
         currentSpellDisplayState = displayState;
 
@@ -213,5 +220,10 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
     public void DestroyToolTip()
     {
         Destroy(spawnedToolTip);
+    }
+
+    public CanvasGroup GetCanvasGroup()
+    {
+        return mainCV;
     }
 }

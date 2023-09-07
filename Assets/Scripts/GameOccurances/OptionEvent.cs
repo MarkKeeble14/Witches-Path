@@ -24,7 +24,7 @@ public enum EventLabel
     BookOfTheStudious,
     AngerForUpgrade,
     ASuspiciousTome,
-    FightOrNot
+    TakeASip
 }
 
 public abstract class OptionEvent
@@ -34,6 +34,7 @@ public abstract class OptionEvent
     public abstract string EventName { get; }
     public string EventText => eventText;
     protected abstract string defaultEventText { get; }
+    public abstract UseEventUI EventUI { get; }
     private string eventText;
 
     protected void UpdateEventText(string newText)
@@ -138,7 +139,7 @@ public abstract class OptionEvent
     /// <param name="combat"></param>
     /// <param name="isChain"></param>
     /// <param name="onWin"></param>
-    protected void StartFight(Combat combat, bool isChain, Action onWin)
+    protected void StartFight(Combat combat, bool isChain, Action onWin, bool allowSpellSelection)
     {
         if (isChain)
         {
@@ -167,7 +168,7 @@ public abstract class OptionEvent
             {
                 GameManager._Instance.StartCoroutine(GameManager._Instance.GameOverSequence());
             }
-        }));
+        }, allowSpellSelection));
     }
 
     public static OptionEvent GetOptionEventOfType(EventLabel eventLabel)
@@ -215,8 +216,8 @@ public abstract class OptionEvent
                 return new AngerForUpgrade();
             case EventLabel.ASuspiciousTome:
                 return new ASuspiciousTome();
-            case EventLabel.FightOrNot:
-                return new FightOrNot();
+            case EventLabel.TakeASip:
+                return new TakeASip();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -310,13 +311,11 @@ public class EventOptionOutcome
 public class Treasure : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.Treasure;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Treasure";
-
     protected override string defaultEventText => "In front of you stands a Lecturn, a Chest, and a heaping bag of Gold. A faint voice can be heard whispering, " +
         "<shake> Whichever you do not choose shall be lost.</> Which do you approach?";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     protected override void InitializeEventData()
     {
@@ -361,12 +360,10 @@ public class Treasure : OptionEvent
 public class TravellersDelivery : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.TravellersDelivery;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Travellers Delivery";
-
     protected override string defaultEventText => "A wayward traveller approaches you waving a knitted knapsack over his head. He claims to have a gift for you, but requires payment for his services...";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     protected override void InitializeEventData()
     {
@@ -414,12 +411,10 @@ public class TravellersDelivery : OptionEvent
 public class HomeFree : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.HomeFree;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Home Free";
-
     protected override string defaultEventText => "In the distance, you notice a magical portal gurgling in the wind...";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     private GameObject spawnedToolTip;
 
@@ -461,13 +456,11 @@ public class HomeFree : OptionEvent
 public class WitchesHut : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.WitchesHut;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Witches Hut";
-
     protected override string defaultEventText => "You come across a hut with a cauldron smoking up the nearby area. " +
         "Surrounding the cauldron are several ingredients you know can be used to brew potions. There appears to be no one in sight.";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     protected override void InitializeEventData()
     {
@@ -541,12 +534,11 @@ public class WitchesHut : OptionEvent
 public class ArmShapedHole : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.ArmShapedHole;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Pit of Treasures?";
     protected override string defaultEventText => "A deep and dark hole stands in front of you. There could be any number of <shake>dangers</shake> " +
         "within, but possibly treasure as well?. If you just stick your arm in, who knows what may come out?";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     private EventOption reach;
     private int loseHPAmount;
@@ -616,13 +608,11 @@ public class ArmShapedHole : OptionEvent
 public class TheCuriousChild : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.TheCuriousChild;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "The Curious Child";
-
     protected override string defaultEventText => "A young child notices and approaches you.. \"Oh! A visitor... " +
         "Say, I found this thingy in the den, I'd be happy to give it to you in exchange for something?\"";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     private GameObject spawnedToolTip;
 
@@ -702,13 +692,11 @@ public class TheCuriousChild : OptionEvent
 public class SealedChamber : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.SealedChamber;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Sealed Chamber";
-
     protected override string defaultEventText => "Stepping through the halls of the mansion, you take notice of a peculiar looking slot in the wall. " +
         "It appears to be the same size as one of your spell tomes, perhaps placing one into the slot may prove fruitful?";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     private bool preOffer;
     private Spell offerredSpell;
@@ -782,11 +770,10 @@ public class SealedChamber : OptionEvent
 public class GainColoredCards : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.GainColoredCards;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Name";
     protected override string defaultEventText => "Text";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     protected override void InitializeEventData()
     {
@@ -841,11 +828,10 @@ public class GoldAtACost : OptionEvent
     // Booby Trap?
 
     public override EventLabel EventLabel => EventLabel.GoldAtACost;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Name";
     protected override string defaultEventText => "Text";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     private GameObject spawnedToolTip;
 
@@ -894,11 +880,10 @@ public class LifeForReward : OptionEvent
 {
     // Life Drained
     public override EventLabel EventLabel => EventLabel.LifeForReward;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Name";
     protected override string defaultEventText => "Text";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     protected override void InitializeEventData()
     {
@@ -927,11 +912,10 @@ public class LifeForReward : OptionEvent
 public class SpellbookManagement : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.SpellbookManagement;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Name";
     protected override string defaultEventText => "Text";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     protected override void InitializeEventData()
     {
@@ -975,11 +959,10 @@ public class SpellbookManagement : OptionEvent
 public class TheCostOfGreed : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.TheCostOfGreed;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "The Cost of Greed";
     protected override string defaultEventText => "Text";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     private GameObject spawnedToolTip;
 
@@ -1019,11 +1002,10 @@ public class TheCostOfGreed : OptionEvent
 public class RemoveCurseForGold : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.RemoveCurseForGold;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Name";
     protected override string defaultEventText => "Text";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     private GameObject spawnedToolTip;
 
@@ -1084,11 +1066,10 @@ public class RemoveCurseForGold : OptionEvent
 public class TavernkeeperRescue : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.TavernkeepRescue;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Tavernkeep Rescue";
     protected override string defaultEventText => "Text";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     private GameObject spawnedToolTip;
 
@@ -1136,11 +1117,10 @@ public class TavernkeeperRescue : OptionEvent
 public class TraumaRecall : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.TraumaRecall;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Trauma Recall";
     protected override string defaultEventText => "Text";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     private GameObject spawnedCurseToolTip;
     private GameObject spawnedWitchesWardToolTip;
@@ -1185,11 +1165,10 @@ public class TraumaRecall : OptionEvent
 public class BookOfTheAmnesiac : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.BookOfTheAmnesiac;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Book of the Amnesiac";
     protected override string defaultEventText => "Text";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     protected override void InitializeEventData()
     {
@@ -1216,11 +1195,10 @@ public class BookOfTheAmnesiac : OptionEvent
 public class BookOfTheRepurposed : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.BookOfTheRepurposed;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Book of the Repurposed";
     protected override string defaultEventText => "Text";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     protected override void InitializeEventData()
     {
@@ -1247,11 +1225,10 @@ public class BookOfTheRepurposed : OptionEvent
 public class BookOfTheStudious : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.BookOfTheStudious;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Book of the Studious";
     protected override string defaultEventText => "Text";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     protected override void InitializeEventData()
     {
@@ -1278,11 +1255,10 @@ public class BookOfTheStudious : OptionEvent
 public class AngerForUpgrade : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.AngerForUpgrade;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "Name";
     protected override string defaultEventText => "Text";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     private GameObject spawnedToolTip;
 
@@ -1313,12 +1289,11 @@ public class AngerForUpgrade : OptionEvent
 public class ASuspiciousTome : OptionEvent
 {
     public override EventLabel EventLabel => EventLabel.ASuspiciousTome;
-
     public override Sprite EventArt => null;
-
     public override string EventName => "A Suspicious Tome";
     protected override string defaultEventText => "As you walk through the halls, a strange sound comes from one of the bookshelves. Investigating further, you notice a specific book which sits apart from all the rest." +
         " Of note, this particularly book seems to have one <shake>eye</>...";
+    public override UseEventUI EventUI => UseEventUI.Story;
 
     protected override void InitializeEventData()
     {
@@ -1349,7 +1324,7 @@ public class ASuspiciousTome : OptionEvent
                     {
                         stage = 2;
                         EventManager._Instance.SetWait(false);
-                    });
+                    }, false);
                 })));
 
         // 3: View Reward
@@ -1372,60 +1347,56 @@ public class ASuspiciousTome : OptionEvent
     }
 }
 
-public class FightOrNot : OptionEvent
+public class TakeASip : OptionEvent
 {
-    public override EventLabel EventLabel => EventLabel.FightOrNot;
-
+    public override EventLabel EventLabel => EventLabel.TakeASip;
     public override Sprite EventArt => null;
-
-    public override string EventName => "...";
-    protected override string defaultEventText => "...";
+    public override string EventName => "Take a Sip?";
+    protected override string defaultEventText => "You come across an ornate looking chalice. There are strange vibes emanating from it's direction, but stress, worry, and <bounce>adventure</> have made you quite parched.";
+    public override UseEventUI EventUI => UseEventUI.Combat;
 
     protected override void InitializeEventData()
     {
-        Combat testCombat = (Combat)MapManager._Instance.GetUniqueGameOccurance("PossessedTomeCombat");
+        Combat testCombat = (Combat)MapManager._Instance.GetUniqueGameOccurance("HolyGrailCombat");
+        bool fightDefeated = false;
+        bool abandonedFight = false;
 
-        /*
-        EventManager._Instance.StartCoroutine(CombatManager._Instance.StartCombat(testCombat, delegate
-        {
-            EventManager._Instance.SetWait(true);
-            GameOccuranceUIManager._Instance.ForceChangeGameOccurance(MapNodeType.MinorFight, false);
-        }, true));
-        GameOccuranceUIManager._Instance.ForceChangeGameOccurance(MapNodeType.MinorFight, true);
-        EventManager._Instance.SetCombatOptionState(false);
-        */
-
-        // 1: Open Combat UI & Combat Event UI
-        // Choice between Fighting or not fighting
-        // if Choose to fight, disable Combat Event UI, Start Combat
-        // if Choose not to fight, disable Combat UI and end Event
-
-        // 1: Choice Between Reaching and Leaving
-        // Choosing Reach will Chain into another Option where the only option is to fight
-        ConditionalOption fight = new ConditionalOption(() => true,
-            MakeEventOption("Fight", "Fight the ?",
+        // 
+        ConditionalOption fight = new ConditionalOption(() => !fightDefeated && !abandonedFight,
+            MakeEventOption("Sip from the Chalice", "Fight",
             () => false,
                 MakeEventOptionOutcomeWithChance(100, "", delegate
                 {
-                    GameOccuranceUIManager._Instance.ForceChangeGameOccurance(MapNodeType.Options, false);
-                    CombatManager._Instance.SetShouldCombatProceed(CombatManager.ShouldCombatProceedState.Proceed);
-                    EventManager._Instance.ChainEvent(this);
-                    EventManager._Instance.SetWait(true);
+                    UpdateEventText("Having aquired the spoils of war, you carry on...");
+                    StartFight(testCombat, true, delegate
+                    {
+                        fightDefeated = true;
 
+                        RewardManager._Instance.AddReward(ArtifactLabel.HarmonicChalice);
+                        RewardManager._Instance.AddGoldReward(RandomHelper.RandomIntExclusive(25, 40));
+                        RewardManager._Instance.AddReward(Potion.GetRandomPotion(false));
+                        EventManager._Instance.StartCoroutine(RewardManager._Instance.ShowRewardScreen(() => EventManager._Instance.SetWait(false)));
+
+                    }, false);
                 })));
 
-        // 4: Leave
-        ConditionalOption leave = new ConditionalOption(() => true,
+        //
+        ConditionalOption leavePreFight = new ConditionalOption(() => !fightDefeated && !abandonedFight,
             MakeEventOption("Leave", "", () => false,
-                MakeEventOptionOutcomeWithChance(100, "...", delegate
+                MakeEventOptionOutcomeWithChance(100, "", delegate
                 {
-                    GameOccuranceUIManager._Instance.ForceChangeGameOccurance(MapNodeType.MinorFight, false);
-
-                    CombatManager._Instance.SetShouldCombatProceed(CombatManager.ShouldCombatProceedState.Cancel);
+                    UpdateEventText("Not quite thirsty enough to take that kind of risk...");
+                    abandonedFight = true;
+                    EventManager._Instance.ChainEvent(this);
                 })));
+
+        //
+        ConditionalOption leave = new ConditionalOption(() => fightDefeated || abandonedFight,
+            MakeEventOption("Leave", "", () => false,
+                MakeEventOptionOutcomeWithChance(100, "", () => EventManager._Instance.Resolve())));
 
         // Add Options
-        AddOptions(fight, leave);
+        AddOptions(fight, leavePreFight, leave);
     }
 }
 

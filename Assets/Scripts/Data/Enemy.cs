@@ -429,7 +429,7 @@ public class SpiritOfContempt : Enemy
         AddEnemyAction("BigAttack", MakeEnemyAction(() => canBigAttack = false, new EnemySingleAttackIntent(13, DamageType.Evil)));
 
         // Add On Combat Start Actions
-        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Ghostly, 5)));
+        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Ghostly, 3)));
 
         // Make Maps
         PercentageMap<string> nonBigAttackMap = new PercentageMap<string>();
@@ -505,7 +505,7 @@ public class SpiritOfPride : Enemy
             new EnemyGainAfflictionIntent(AfflictionType.Embolden, 3), new EnemyWardIntent(6)));
 
         // Add On Combat Start Actions
-        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Ghostly, 5)));
+        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Ghostly, 3)));
 
         // Make Maps
         PercentageMap<string> canBuffMap = new PercentageMap<string>();
@@ -540,8 +540,8 @@ public class SpiritOfWar : Enemy
         AddEnemyAction("PowerAndProtection", MakeEnemyAction(() => turnsSinceBuff = 0, new EnemyGainAfflictionIntent(AfflictionType.Power, 2), new EnemyGainAfflictionIntent(AfflictionType.Protection, 2)));
 
         // Add On Combat Start Actions
-        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Ghostly, 5)));
-        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.BattleFrenzied, 5)));
+        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Ghostly, 3)));
+        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.BattleFrenzied, 3)));
 
         // Make Maps
         PercentageMap<string> attackMap = new PercentageMap<string>();
@@ -578,7 +578,7 @@ public class SpiritOfDebilitation : Enemy
             new EnemyApplyAfflictionIntent(AfflictionType.Power, -1), new EnemyApplyAfflictionIntent(AfflictionType.Protection, -1)));
 
         // Add On Combat Start Actions
-        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Ghostly, 5)));
+        AddOnCombatStartAction(MakeEnemyAction(null, new EnemyGainAfflictionIntent(AfflictionType.Ghostly, 3)));
 
         // Make Maps
         PercentageMap<string> turn1Map = new PercentageMap<string>();

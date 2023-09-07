@@ -1,14 +1,16 @@
 ﻿using UnityEngine.EventSystems;
-using System;
 using UnityEngine;
 using TMPro;
 using System.Collections;
 using UnityEngine.UI;
 
-public class VisualSpellDisplay : SpellDisplay
+public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler, IEndDragHandler
 {
     [Header("Visual Spell Display")]
     [SerializeField] private float delayBeforeSpawningToolTips = 0.5f;
+    [SerializeField] private float distFromStartToCast = 50;
+    [SerializeField] private float rotateSpeed = 5;
+    private Vector3 dragStartPos;
 
     [Header("References")]
     [SerializeField] private TextMeshProUGUI castTypeText;
@@ -38,8 +40,9 @@ public class VisualSpellDisplay : SpellDisplay
             t += Time.deltaTime;
             yield return null;
         }
-
-        if (!isMouseOver)
+        // Disallow tool tip under certain conditions
+        if (!isMouseOver || currentSpellDisplayState == SpellDisplayState.DraggingWillCast || currentSpellDisplayState == SpellDisplayState.DraggingWontCast
+            || currentSpellDisplayState == SpellDisplayState.Fading)
         {
             yield break;
         }
@@ -85,19 +88,15 @@ public class VisualSpellDisplay : SpellDisplay
         isForUpgrade = b;
     }
 
-    public override void SetSpellDisplayState(SpellDisplayState displayState)
+
+    private void RotateTowardsZero()
     {
-        if (currentSpellDisplayState == SpellDisplayState.InHand && displayState != SpellDisplayState.InHand)
-        {
-            RemoveOnClick(TryCast);
-        }
+        transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(Vector3.zero), rotateSpeed * Time.deltaTime);
+    }
 
-        base.SetSpellDisplayState(displayState);
-
-        if (displayState == SpellDisplayState.InHand)
-        {
-            AddOnClick(TryCast);
-        }
+    private bool IsDisplayStateInHand(SpellDisplayState displayState)
+    {
+        return displayState == SpellDisplayState.ChoosingDiscard || displayState == SpellDisplayState.ChoosingExhaust || displayState == SpellDisplayState.InHand;
     }
 
     public void SetKeyBinding(KeyCode keyCode)
@@ -110,6 +109,8 @@ public class VisualSpellDisplay : SpellDisplay
     public override void SetSpell(Spell spell)
     {
         base.SetSpell(spell);
+
+        name = spell.Name + "(VisualSpellDisplay)";
 
         // Set Rarity Image Color
         rarityImage.color = UIManager._Instance.GetRarityColor(spell.Rarity);
@@ -142,68 +143,94 @@ public class VisualSpellDisplay : SpellDisplay
         }
     }
 
+    private bool isDragging;
+    public override void OnPointerClick(PointerEventData eventData)
+    {
+        base.OnPointerClick(eventData);
+
+        if (currentSpellDisplayState == SpellDisplayState.InHand && !isDragging)
+        {
+            TryCast();
+        }
+        else if (currentSpellDisplayState == SpellDisplayState.ChoosingDiscard || currentSpellDisplayState == SpellDisplayState.ChoosingExhaust)
+        {
+            CombatManager._Instance.ClickedSpellForAlterHandSequence(Spell);
+        }
+    }
+
     protected override void Update()
     {
         base.Update();
 
+        // Set border Color
+        border.color = UIManager._Instance.GetSpellDisplayBorderColor(currentSpellDisplayState);
+
         //
         manaCostText.text = Spell.ManaCost.ToString();
 
-        switch (currentSpellDisplayState)
+        if (currentSpellDisplayState == SpellDisplayState.InHand)
         {
-            case SpellDisplayState.InHand:
-                InHandUpdate();
-                break;
-            case SpellDisplayState.ChoosingDiscard:
-                InHandUpdate();
-                break;
-            case SpellDisplayState.ChoosingExhaust:
-                InHandUpdate();
-                break;
-            default:
-                NotInhandUpdate();
-                break;
+            // Activate On KeyBindPressed
+            if (Input.GetKeyDown(keyCode))
+            {
+                TryCast();
+            }
+        }
+
+        if (IsDisplayStateInHand(currentSpellDisplayState))
+        {
+            InHandUpdate();
+        }
+        else if (currentSpellDisplayState == SpellDisplayState.DraggingWontCast)
+        {
+            // 
+        }
+        else if (currentSpellDisplayState == SpellDisplayState.DraggingWillCast)
+        {
+            //
+        }
+        else
+        {
+            NotInhandUpdate();
         }
     }
 
+
     public void TryCast()
     {
-        if ((currentSpellDisplayState == SpellDisplayState.ChoosingExhaust || currentSpellDisplayState == SpellDisplayState.ChoosingDiscard))
+
+        // Only allow for spell casts while in combat
+        if (CombatManager._Instance.CanCastSpells)
         {
-            CombatManager._Instance.ClickedSpellForAlterHandSequence(Spell);
-        }
-        else if (currentSpellDisplayState == SpellDisplayState.InHand)
-        {
-            // Only allow for spell casts while in combat
-            if (CombatManager._Instance.CanCastSpells)
+            if (!Spell.CanCast)
             {
-                if (!Spell.CanCast) return;
-
-                // Tick Cooldowns
-                CombatManager._Instance.TickHandCooldowns(Spell);
-
                 if (Spell.Type == SpellCastType.Active)
                 {
-                    // Debug.Log("Adding: " + spellToCast + " to Queue");
-                    CombatManager._Instance.AddSpellToCastQueue((ActiveSpell)Spell);
+                    ActiveSpell activeSpell = (ActiveSpell)Spell;
+                    if (!activeSpell.HasMana)
+                    {
+                        GameManager._Instance.PopManaText();
+                    }
                 }
-                else if (Spell.Type == SpellCastType.Passive)
-                {
-                    Debug.Log(Spell + " Passive");
-                    Spell.Cast();
-                }
+                return;
+            }
+
+            // Tick Cooldowns
+            CombatManager._Instance.TickHandCooldowns(Spell);
+
+            CombatManager._Instance.AddSpellToCastQueue(Spell);
+
+            if (Spell.Type == SpellCastType.Passive)
+            {
+                // Automatically remove Passive Spells from Hand when Played
+                CombatManager._Instance.AddSpellToPassiveSpellPile((PassiveSpell)Spell);
             }
         }
+
     }
 
     private void InHandUpdate()
     {
-        // Activate On KeyBindPressed
-        if (Input.GetKeyDown(keyCode))
-        {
-            TryCast();
-        }
-
         if (Spell.Type == SpellCastType.Active)
         {
             ActiveSpell activeSpell = (ActiveSpell)Spell;
@@ -229,8 +256,54 @@ public class VisualSpellDisplay : SpellDisplay
         // 
     }
 
-    public CanvasGroup GetCanvasGroup()
+    public void OnDrag(PointerEventData eventData)
     {
-        return mainCV;
+        if (!isDragging) return;
+
+        transform.position = eventData.position;
+
+        float dist = dragStartPos.y - transform.position.y;
+
+        RotateTowardsZero();
+
+        if (Mathf.Abs(dist) > distFromStartToCast && dist < 0)
+        {
+            SetSpellDisplayState(SpellDisplayState.DraggingWillCast);
+        }
+        else
+        {
+            SetSpellDisplayState(SpellDisplayState.DraggingWontCast);
+        }
+    }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (!IsDisplayStateInHand(currentSpellDisplayState)) return;
+
+        isDragging = true;
+        CombatManager._Instance.HandLayoutGroup.RemoveTransformFromHand(transform);
+        SetSpellDisplayState(SpellDisplayState.DraggingWontCast);
+
+        DestroyToolTip();
+
+        dragStartPos = eventData.position;
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        if (!isDragging) return;
+
+        // Check if should play
+        if (currentSpellDisplayState == SpellDisplayState.DraggingWillCast)
+        {
+            TryCast();
+        }
+
+        if (currentSpellDisplayState == SpellDisplayState.Fading) return;
+
+        // Reset
+        CombatManager._Instance.HandLayoutGroup.InsertTransformToHand(transform, transform.GetSiblingIndex());
+        SetSpellDisplayState(SpellDisplayState.InHand);
+        isDragging = false;
     }
 }

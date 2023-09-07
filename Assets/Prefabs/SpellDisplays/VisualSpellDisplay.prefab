@@ -73,7 +73,7 @@ MonoBehaviour:
   m_FillMethod: 4
   m_FillAmount: 1
   m_FillClockwise: 1
-  m_FillOrigin: 2
+  m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
 --- !u!1 &160001666878696838
@@ -1021,6 +1021,7 @@ MonoBehaviour:
   - {fileID: 347211925214977055}
   - {fileID: 8344746918344750730}
   - {fileID: 1496312441980065768}
+  border: {fileID: 176068047461800008}
   regularScale: 1
   maxScale: 1.75
   changeScaleSpeed: 2.5
@@ -1042,7 +1043,14 @@ MonoBehaviour:
       value: {x: 1, y: 2}
     - key: 6
       value: {x: 3, y: 3}
+    - key: 7
+      value: {x: 3, y: 3}
+    - key: 8
+      value: {x: 3, y: 3}
+    - key: 8
+      value: {x: 1, y: 1}
   delayBeforeSpawningToolTips: 0.5
+  distFromStartToCast: 75
   castTypeText: {fileID: 8344746918344750730}
   manaCostText: {fileID: 2228804517517837315}
   cooldownText: {fileID: 3222128088362801389}
@@ -1051,6 +1059,7 @@ MonoBehaviour:
   keyCodeText: {fileID: 6390130859139562968}
   button: {fileID: 0}
   rarityImage: {fileID: 9098088219400576944}
+  rotateSpeed: 5
 --- !u!225 &5990510238731423548
 CanvasGroup:
   m_ObjectHideFlags: 0

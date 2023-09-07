@@ -71,6 +71,7 @@ public abstract class Spell : ToolTippable
     public abstract SpellCastType Type { get; }
     public abstract SpellColor Color { get; }
     public abstract Rarity Rarity { get; }
+    public virtual DamageType MainDamageType => DamageType.Default;
 
     protected abstract int startManaCost { get; }
     private int manaCost;
@@ -97,6 +98,8 @@ public abstract class Spell : ToolTippable
     protected virtual Vector2Int setUpgradeStatusTo => new Vector2Int(1, 2);
     private Vector2Int upgradeStatus;
     private int minUpgradeStatus;
+
+    public AudioClip AssociatedSoundClip { get => Resources.Load<AudioClip>("SpellData/TestClip"); }
 
     protected abstract string toolTipText { get; }
 
@@ -343,7 +346,7 @@ public abstract class PassiveSpell : Spell
 
     public override void Cast()
     {
-        CombatManager._Instance.ActivatePassiveSpell(this);
+        CombatManager._Instance.EquipPassiveSpell(this);
     }
 
     // Will activate on equipping the Spell
@@ -400,6 +403,7 @@ public class PoisonTips : PassiveSpell
     public override SpellLabel Label => SpellLabel.PoisonTips;
     public override SpellColor Color => SpellColor.Green;
     public override Rarity Rarity => Rarity.Common;
+    public override DamageType MainDamageType => DamageType.Poison;
     public override string Name => "Poison Tips";
 
     private int tracker;
@@ -434,14 +438,8 @@ public class PoisonTips : PassiveSpell
         if (tracker >= procAfter)
         {
             tracker = 0;
-            CombatManager._Instance.OnPlayerBasicAttack += OnNextAttack;
+            Proc(true);
         }
-    }
-
-    private void OnNextAttack()
-    {
-        Proc(true);
-        CombatManager._Instance.OnPlayerBasicAttack -= OnNextAttack;
     }
 
     public override void Proc(bool canDupe)
@@ -478,6 +476,7 @@ public class StaticField : PassiveSpell
     public override SpellColor Color => SpellColor.Blue;
     public override Rarity Rarity => Rarity.Common;
     public override string Name => "Static Field";
+    public override DamageType MainDamageType => DamageType.Electric;
 
     protected override string toolTipText => "Every " + procAfter + " Turn" + (procAfter > 1 ? "s" : "") + ", Apply " + stackAmount + " Electrocuted to the Enemy";
 
@@ -549,6 +548,7 @@ public class Inferno : PassiveSpell
     public override SpellLabel Label => SpellLabel.Inferno;
     public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Common;
+    public override DamageType MainDamageType => DamageType.Fire;
     public override string Name => "Inferno";
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Burn";
     protected override int startManaCost => 1;
@@ -620,6 +620,7 @@ public class BattleTrance : PassiveSpell
     public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Common;
     public override string Name => "Battle Trance";
+    public override DamageType MainDamageType => DamageType.Default;
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain " + stackAmount + " Embolden";
 
     protected override int startManaCost => 1;
@@ -691,6 +692,7 @@ public class MagicRain : PassiveSpell
     public override SpellColor Color => SpellColor.Blue;
     public override Rarity Rarity => Rarity.Common;
     public override string Name => "Magic Rain";
+    public override DamageType MainDamageType => DamageType.Electric;
 
     protected override string toolTipText => "Every " + procAfter + " Turn" + (procAfter > 1 ? "s" : "") + ", Deal " + damageAmount + " Damage to the Enemy";
 
@@ -757,6 +759,7 @@ public class CrushJoints : PassiveSpell
     public override Rarity Rarity => Rarity.Common;
     public override string Name => "Crush Joints";
     public override SpellLabel Label => SpellLabel.CrushJoints;
+    public override DamageType MainDamageType => DamageType.Default;
 
     protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Vulnerable";
 
@@ -835,6 +838,7 @@ public class TeslaCoil : PassiveSpell
     public override SpellColor Color => SpellColor.Blue;
     public override Rarity Rarity => Rarity.Common;
     public override string Name => "Tesla Coil";
+    public override DamageType MainDamageType => DamageType.Electric;
 
     protected override string toolTipText => "Every time an Active Spell is Queued, Deal " + damageAmount + " Damage to the Enemy";
 
@@ -879,6 +883,7 @@ public class Hurt : PassiveSpell
     public override Rarity Rarity => Rarity.Common;
     protected override Vector2Int setUpgradeStatusTo => new Vector2Int(1, 1);
     public override string Name => "Hurt";
+    public override DamageType MainDamageType => DamageType.Evil;
 
     protected override string toolTipText => "At the End of Every turn, Take " + damageAmount + " Damage";
 
@@ -921,6 +926,7 @@ public class Worry : PassiveSpell
     public override SpellColor Color => SpellColor.Curse;
     public override Rarity Rarity => Rarity.Common;
     public override string Name => "Worry";
+    public override DamageType MainDamageType => DamageType.Evil;
 
     protected override string toolTipText => "Every " + procAfter + " Attack" + (procAfter > 1 ? "s" : "") + ", Gain " + stackAmount + " Weak";
 
@@ -989,7 +995,6 @@ public class Worry : PassiveSpell
 public abstract class ActiveSpell : Spell
 {
     public override SpellCastType Type => SpellCastType.Active;
-    public virtual DamageType MainDamageType => DamageType.Default;
     public abstract ActiveSpellType ActiveSpellType { get; }
 
     // Data
@@ -1005,7 +1010,6 @@ public abstract class ActiveSpell : Spell
     public override bool CanCast => !OnCooldown && base.CanCast;
 
     // Sound
-    public AudioClip AssociatedSoundClip { get => Resources.Load<AudioClip>("ActiveSpellData/TestClip"); }
     public virtual AudioClip HitSound { get => Resources.Load<AudioClip>("ActiveSpellData/DefaultHitSound"); }
     public virtual AudioClip MissSound { get => Resources.Load<AudioClip>("ActiveSpellData/DefaultMissSound"); }
 

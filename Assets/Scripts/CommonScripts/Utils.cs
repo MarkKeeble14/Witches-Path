@@ -157,9 +157,18 @@ public class Utils
         return max;
     }
 
-    public static IEnumerator ChangeScale(Transform t, Vector3 target, float changeRate, float graceRange)
+    public static IEnumerator MoveTowardsScale(Transform t, Vector3 target, float changeRate)
     {
-        while (Mathf.Abs((t.localScale - target).magnitude) > graceRange)
+        while (t != null && t.localScale != target)
+        {
+            t.localScale = Vector3.MoveTowards(t.localScale, target, Time.deltaTime * changeRate);
+            yield return null;
+        }
+    }
+
+    public static IEnumerator LerpScale(Transform t, Vector3 target, float changeRate, float graceRange)
+    {
+        while (t != null && Mathf.Abs((t.localScale - target).magnitude) > graceRange)
         {
             t.localScale = Vector3.MoveTowards(t.localScale, target, Time.deltaTime * changeRate);
             yield return null;
@@ -303,6 +312,18 @@ public class Utils
         else
         {
             throw new Exception();
+        }
+    }
+
+    public static IEnumerator MoveRectOnto(RectTransform moving, Transform parent, RectTransform moveOnto, float speed)
+    {
+        moving.SetParent(parent, true);
+        moving.SetAsFirstSibling();
+
+        while (moving.position != moveOnto.position)
+        {
+            moving.position = Vector2.MoveTowards(moving.position, moveOnto.position, speed * Time.deltaTime);
+            yield return null;
         }
     }
 }

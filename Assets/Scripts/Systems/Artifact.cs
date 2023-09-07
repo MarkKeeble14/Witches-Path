@@ -33,7 +33,8 @@ public enum ArtifactLabel
     Boulder,
     Crown,
     CockroachCarcass,
-    EnchantedAura
+    EnchantedAura,
+    HarmonicChalice
 }
 
 public abstract class Artifact : PowerupItem
@@ -142,6 +143,8 @@ public abstract class Artifact : PowerupItem
                 return new CockroachCarcass();
             case ArtifactLabel.EnchantedAura:
                 return new EnchantedAura();
+            case ArtifactLabel.HarmonicChalice:
+                return new HarmonicChalice();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -1385,5 +1388,54 @@ public class EnchantedAura : Artifact
     protected override void Effect()
     {
         CombatManager._Instance.AddAffliction(AfflictionType.Nullify, stackAmount, Target.Character);
+    }
+}
+
+public class HarmonicChalice : Artifact
+{
+    public override string Name => "Harmonic Chalice";
+    protected override ArtifactLabel Label => ArtifactLabel.HarmonicChalice;
+    public override Rarity Rarity => Rarity.Uncommon;
+
+    private int tracker;
+    private int procAfter;
+    private int stackAmount;
+    protected override string toolTipText => "After Queueing " + procAfter + " Active Spells, Gain " + stackAmount + " Regeneration";
+
+    protected override void SetKeywords()
+    {
+        AfflictionKeywords.Add(AfflictionType.Regeneration);
+    }
+
+    protected override void SetParameters()
+    {
+        //
+        procAfter = (int)GetArtifactSpec("ProcAfter");
+        stackAmount = (int)GetArtifactSpec("StackAmount");
+    }
+
+    public override void OnEquip()
+    {
+        CombatManager._Instance.OnActiveSpellQueued += Effect;
+    }
+
+    public override void OnUnequip()
+    {
+        CombatManager._Instance.OnActiveSpellQueued -= Effect;
+    }
+
+    protected override void Effect()
+    {
+        tracker++;
+        if (tracker >= procAfter)
+        {
+            tracker = 0;
+            CombatManager._Instance.AddAffliction(AfflictionType.Nullify, stackAmount, Target.Character);
+        }
+    }
+
+    public override string GetAdditionalText()
+    {
+        return tracker.ToString();
     }
 }

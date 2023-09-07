@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-public class AfflictionIcon : MonoBehaviour
+public class AfflictionIcon : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [SerializeField] private Image image;
     [SerializeField] private TextMeshProUGUI nameText;
@@ -16,8 +17,11 @@ public class AfflictionIcon : MonoBehaviour
     [Header("Animations")]
     [SerializeField] private float regularScale;
     [SerializeField] private float maxScale;
-    private float targetScale;
+    [SerializeField] private float isMousedOverTargetScale;
     [SerializeField] private float changeScaleSpeed = 1f;
+    [SerializeField] private Transform toScale;
+    private float targetScale;
+    private bool isMousedOver;
 
     private GameObject spawnedToolTip;
 
@@ -31,14 +35,22 @@ public class AfflictionIcon : MonoBehaviour
 
     private void Update()
     {
-        // Allow target scale to fall back to regular scale
-        if (targetScale != regularScale)
+        if (isMousedOver)
         {
-            targetScale = Mathf.MoveTowards(targetScale, regularScale, changeScaleSpeed * Time.deltaTime);
+            targetScale = Mathf.Lerp(targetScale, isMousedOverTargetScale, Time.deltaTime * changeScaleSpeed);
+        }
+        else
+        {
+            // Allow target scale to fall back to regular scale
+            if (targetScale != regularScale)
+            {
+                targetScale = Mathf.MoveTowards(targetScale, regularScale, changeScaleSpeed * Time.deltaTime);
+            }
         }
 
+
         // Set Transforms Actual Scale Scale
-        image.transform.localScale = targetScale * Vector3.one;
+        toScale.localScale = targetScale * Vector3.one;
     }
 
     public void AnimateScale()
@@ -69,5 +81,17 @@ public class AfflictionIcon : MonoBehaviour
     public void DestroyToolTip()
     {
         Destroy(spawnedToolTip);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        isMousedOver = true;
+        SpawnToolTip();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        isMousedOver = false;
+        DestroyToolTip();
     }
 }

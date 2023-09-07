@@ -19,7 +19,7 @@ public class PassiveSpellDisplay : SpellDisplay
         }
 
         // Set progress bar Fill
-        progressBar.fillAmount = 1 - PassiveSpell.GetPercentProgress();
+        progressBar.fillAmount = PassiveSpell.GetPercentProgress();
 
         // Deal with Secondary Text
         string spellSecondaryText = PassiveSpell.GetSecondaryText();

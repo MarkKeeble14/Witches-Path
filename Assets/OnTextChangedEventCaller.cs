@@ -25,6 +25,11 @@ public class OnTextChangedEventCaller : MonoBehaviour
         onTextChanged -= a;
     }
 
+    public void Force()
+    {
+        onTextChanged?.Invoke();
+    }
+
     // Update is called once per frame
     void Update()
     {
