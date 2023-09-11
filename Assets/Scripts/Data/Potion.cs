@@ -507,7 +507,7 @@ public abstract class PotionBase : PotionIngredient
 public abstract class PotionTargeter : PotionIngredient
 {
     protected override string componentTypeString => "PotionTargeter";
-    public abstract Target Target { get; }
+    public abstract Combatent Target { get; }
     public abstract Sprite PotionSprite { get; }
     public override PotionIngredientCategory Category => PotionIngredientCategory.Targeter;
 
@@ -591,16 +591,18 @@ public class RainCloud : PotionAugmenter
 
     protected override void CallEffect()
     {
-        if (numTurns > 0)
+        numTurns--;
+        effect?.Invoke();
+        if (numTurns <= 0)
         {
-            effect?.Invoke();
-            numTurns--;
+            CombatManager._Instance.OnTurnStart -= CallEffect;
         }
     }
 
     protected override void InitEffect()
     {
-        CombatManager._Instance.OnEnemyTurnStart += CallEffect;
+        CombatManager._Instance.OnTurnStart += CallEffect;
+        CombatManager._Instance.OnResetCombat -= CallEffect;
     }
 
 }
@@ -891,7 +893,7 @@ public class GlassBottle : PotionTargeter
     public override string Name => "Glass Bottle";
     public override PotionIngredientType Type => PotionIngredientType.GlassBottle;
     public override string EffectOnPotionName => "Drinkable";
-    public override Target Target => Target.Character;
+    public override Combatent Target => Combatent.Character;
     protected override string toolTipText => "Target the Player";
     public override Sprite PotionSprite => Resources.Load<Sprite>("Potions/" + Type.ToString() + "Sprite");
 }
@@ -901,7 +903,7 @@ public class BreakableBottle : PotionTargeter
     public override string Name => "Breakable Bottle";
     public override PotionIngredientType Type => PotionIngredientType.BreakableBottle;
     public override string EffectOnPotionName => "Throwable";
-    public override Target Target => Target.Enemy;
+    public override Combatent Target => Combatent.Enemy;
     protected override string toolTipText => "Target the Enemy";
     public override Sprite PotionSprite => Resources.Load<Sprite>("Potions/" + Type.ToString() + "Sprite");
 }

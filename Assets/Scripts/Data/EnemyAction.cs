@@ -3,61 +3,33 @@ using System.Collections.Generic;
 
 public class EnemyAction
 {
-    private List<EnemyIntent> enemyIntents = new List<EnemyIntent>();
+    private List<Spell> spells = new List<Spell>();
     private Action onActivate;
-    private bool textHidden;
-    public bool TextHidden => textHidden;
 
     // Constructor
-    public EnemyAction(List<EnemyIntent> intents, Action onActivate, bool textHidden)
+    public EnemyAction(Action onActivate, params Spell[] spells)
     {
-        AddEnemyIntents(intents);
-        this.onActivate += onActivate;
-        this.textHidden = textHidden;
+        AddSpellsToAction(spells);
+        this.onActivate = onActivate;
     }
 
-    // Call the Callback
     public void CallOnActivate()
     {
         onActivate?.Invoke();
     }
 
     // Getter
-    public List<EnemyIntent> GetEnemyIntents()
+    public List<Spell> GetActionSpells()
     {
-        return enemyIntents;
+        return spells;
     }
 
-    // Function to Add an IEnumerable of Intents
-    public void AddEnemyIntents(IEnumerable<EnemyIntent> intents)
+    // Add Spells
+    public void AddSpellsToAction(params Spell[] spells)
     {
-        foreach (EnemyIntent intent in intents)
+        foreach (Spell spell in spells)
         {
-            AddEnemyIntent(intent);
+            this.spells.Add(spell);
         }
-    }
-
-    // Function to Add a single Intent
-    public void AddEnemyIntent(EnemyIntent intent)
-    {
-        enemyIntents.Add(intent);
-    }
-
-    public bool HasIntentType(IntentType intentType)
-    {
-        foreach (EnemyIntent intent in enemyIntents)
-        {
-            if (intent.Type == intentType) return true;
-        }
-        return false;
-    }
-
-    public EnemyIntent GetIntentOfType(IntentType intentType)
-    {
-        foreach (EnemyIntent intent in enemyIntents)
-        {
-            if (intent.Type == intentType) return intent;
-        }
-        return null;
     }
 }

@@ -21,10 +21,17 @@ public enum Turn
     Player, Enemy
 }
 
-public enum Target
+public enum Combatent
 {
     Character,
     Enemy,
+}
+
+public enum Target
+{
+    Self,
+    Other,
+    Both
 }
 
 public enum DamageType
@@ -40,11 +47,26 @@ public enum DamageType
 
 public enum DamageSource
 {
-    ActiveSpell,
-    PassiveSpell,
+    Spell,
     BasicAttack,
     Book,
-    EnemyAttack
+}
+
+public enum CombatBaseCallbackType
+{
+    OnBasicAttack,
+    OnTurnStart,
+    OnTurnEnd,
+    OnSpellQueued,
+    OnSpellCast,
+    OnGainAffliction,
+    OnLoseAffliction,
+    OnAttack,
+}
+
+public enum CombatIntCallbackType
+{
+    OnTakeDamage
 }
 
 public partial class CombatManager : MonoBehaviour
@@ -62,7 +84,7 @@ public partial class CombatManager : MonoBehaviour
     private int characterWard;
 
     public Enemy CurrentEnemy => currentEnemy;
-    public int NumFreeSpells { get; set; }
+    public int NumFreeSpells { get; private set; }
     public bool InCombat { get; private set; }
     private bool combatScreenOpen;
     public bool CanCastSpells { get; private set; }
@@ -82,7 +104,7 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private List<DamageType> wardableDamageTypes = new List<DamageType>();
     private int handSize;
     public int MaxHandSize => 10;
-    private Pile<Spell> passiveSpellPile;
+    private Pile<Spell> powerSpellPile;
     private Pile<Spell> drawPile;
     private Pile<Spell> discardPile;
     private Pile<Spell> exhaustPile;
@@ -107,11 +129,12 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private HandLayoutGroup handLayoutGroup;
     public HandLayoutGroup HandLayoutGroup => handLayoutGroup;
 
-    private List<QueuedSpell> spellQueue = new List<QueuedSpell>();
+    private List<QueuedSpell> enemyCastQueue = new List<QueuedSpell>();
+    private List<QueuedSpell> playerCastQueue = new List<QueuedSpell>();
     [SerializeField] private AudioSource spellSFXSource;
 
     [Header("Spell Potency")]
-    [SerializeField] private SemicircleLayoutGroup castingSpellSemiCircle;
+    [SerializeField] private SemicircleLayoutGroup playerQueuedSpellsDisplay;
     [SerializeField] private float decreaseEffectivenessMultiplierOnMiss = 0.25f;
     [SerializeField] private float increaseEffectivenessMultiplierOnHit = 0.1f;
     [SerializeField] private float defaultEffectivenessMultiplier = 1;
@@ -119,8 +142,7 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float effectivenessMultiplierTextMinScale;
     [SerializeField] private float effectivenessMultiplierTextMaxScale;
     [SerializeField] private float animateEffectivenessTextRectScaleSpeed;
-    [SerializeField] private bool setEffectivenessMultiplierToZeroOnMiss;
-    private float effectivenessMultiplier = 0;
+    private float effectivenessMultiplier = 1;
     private List<Circle> spawnedCircles = new List<Circle>();
 
     [Header("Afflictions")]
@@ -139,11 +161,10 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private GameObject alterHandInstructionContainer;
     [SerializeField] private TextMeshProUGUI alterHandInstructionText;
     [SerializeField] private GameObject alterHandBackground;
-    [SerializeField] private Transform passiveSpellDisplaysList;
 
     [Header("Enemy")]
     [SerializeField] private CombatentHPBar enemyHPBar;
-    [SerializeField] private IntentDisplay enemyIntentDisplay;
+    [SerializeField] private SemicircleLayoutGroup enemyQueuedSpellsDisplay;
     [SerializeField] private TextMeshProUGUI enemyBasicAttackDamageText;
     [SerializeField] private TextMeshProUGUI enemyNameText;
     [SerializeField] private Image enemyCombatSprite;
@@ -172,7 +193,6 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private AfflictionIcon afflictionIconPrefab;
     [SerializeField] private SpellPotencyDisplay castingSpellPotencyDisplayPrefab;
     [SerializeField] private Circle circlePrefab; // Circle Object
-    [SerializeField] private PassiveSpellDisplay passiveSpellDisplayPrefab;
 
     [Header("Audio")]
     [SerializeField] private bool playSFXOnHit;
@@ -185,7 +205,7 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private RectTransform enemyCombatSpriteRect;
     [SerializeField] private int spriteOffset = 50;
     [SerializeField] private float baseEnemyCombatSpriteAnimationSpeed = 25;
-    [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierStart = 1;
+    [SerializeField] private float combatSpriteAnimationMultiplier = 1;
     [SerializeField] private float enemyCombatSpriteAnimationSpeedMultiplierGain = 1;
     [SerializeField] private float combatSpriteAlphaChangeRate = 5;
 
@@ -207,7 +227,6 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float delayBeforeEnemyAttack = 1;
     [SerializeField] private float delayAfterEnemyTurn = 1;
     [SerializeField] private float delayBetweenAlterHandCalls = 0.05f;
-    [SerializeField] private float delayAfterPassiveSpellCast = 0.5f;
 
     [Header("Discard Animation")]
     [SerializeField] private float discardedCardMinScale = .15f;
@@ -220,47 +239,63 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float exhaustCardUpAmount;
     [SerializeField] private float exhaustSlideDuration = 1;
 
-    [Header("Passive Spell Animation")]
+    [Header("Power Spell Animation")]
     [SerializeField] private float powerSpellShrinkDuration;
 
     [SerializeField] private GameObject[] showOnCombat;
 
     // Callbacks
     public Action OnTurnStart;
-
-    public Action OnPlayerBasicAttack;
-    public Action OnPlayerTurnStart;
-    public Action OnPlayerTurnEnd;
-    public Action OnPassiveSpellProc;
-
-    public Action OnActiveSpellQueued;
-    public Action OnPassiveSpellQueued;
-    public Action OnActiveSpellActivated;
-    public Action OnOffensiveActiveSpellActivated;
-    public Action OnDefensiveActiveSpellActivated;
-    public Action OnUtilityActiveSpellActivated;
-
-    public Action OnCharacterGainAffliction;
-    public Action OnCharacterLoseAffliction;
-    public Action<int> OnPlayerTakeDamage;
-    public Action OnPlayerAttack;
-
-    public Action OnEnemyBasicAttack;
-    public Action OnEnemyTurnStart;
-    public Action OnEnemyTurnEnd;
-    public Action OnEnemyGainAffliction;
-    public Action OnEnemyLoseAffliction;
-    public Action<int> OnEnemyTakeDamage;
-    public Action OnEnemyAttack;
-
     public Action OnExhaustSpell;
     public Action OnSpecificDiscardSpell;
     public Action OnDrawSpell;
-
     public Action OnCombatStart;
     public Action OnCombatEnd;
-
     public Action OnResetCombat;
+
+    // Should Contain -
+    // Basic Attack
+    // Turn Start
+    // Turn End
+    // Spell Queued
+    // Spell Cast
+    // Gain Affliction
+    // Lose Affliction
+    // General Attack
+    public Dictionary<Combatent, Dictionary<CombatBaseCallbackType, Action>> CombatentBaseCallbackMap = new Dictionary<Combatent, Dictionary<CombatBaseCallbackType, Action>>();
+
+    // Should Contain -
+    // Take Damage
+    public Dictionary<Combatent, Dictionary<CombatIntCallbackType, Action<int>>> CombatentIntCallbackMap = new Dictionary<Combatent, Dictionary<CombatIntCallbackType, Action<int>>>();
+
+    private void SetupCombatentBaseCallbackMap(Combatent combatent)
+    {
+        Dictionary<CombatBaseCallbackType, Action> callbackMap = new Dictionary<CombatBaseCallbackType, Action>();
+        callbackMap.Add(CombatBaseCallbackType.OnSpellQueued, null);
+        callbackMap.Add(CombatBaseCallbackType.OnSpellCast, null);
+        callbackMap.Add(CombatBaseCallbackType.OnAttack, null);
+        callbackMap.Add(CombatBaseCallbackType.OnBasicAttack, null);
+        callbackMap.Add(CombatBaseCallbackType.OnGainAffliction, null);
+        callbackMap.Add(CombatBaseCallbackType.OnLoseAffliction, null);
+        callbackMap.Add(CombatBaseCallbackType.OnTurnEnd, null);
+        callbackMap.Add(CombatBaseCallbackType.OnTurnStart, null);
+        CombatentBaseCallbackMap.Add(combatent, callbackMap);
+    }
+
+    private void SetupCombatentIntCallbackMap(Combatent combatent)
+    {
+        Dictionary<CombatIntCallbackType, Action<int>> callbackMap = new Dictionary<CombatIntCallbackType, Action<int>>();
+        callbackMap.Add(CombatIntCallbackType.OnTakeDamage, null);
+        CombatentIntCallbackMap.Add(combatent, callbackMap);
+    }
+
+    private void SetupCombatCallbackMaps()
+    {
+        SetupCombatentBaseCallbackMap(Combatent.Character);
+        SetupCombatentIntCallbackMap(Combatent.Character);
+        SetupCombatentBaseCallbackMap(Combatent.Enemy);
+        SetupCombatentIntCallbackMap(Combatent.Enemy);
+    }
 
     private EnemyAction currentEnemyAction;
 
@@ -274,7 +309,7 @@ public partial class CombatManager : MonoBehaviour
         public Coroutine CurrentCoroutine;
     }
 
-    [SerializeField] private SerializableDictionary<Target, SpeechBubbleDataContainer> speechBubbles = new SerializableDictionary<Target, SpeechBubbleDataContainer>();
+    [SerializeField] private SerializableDictionary<Combatent, SpeechBubbleDataContainer> speechBubbles = new SerializableDictionary<Combatent, SpeechBubbleDataContainer>();
     [SerializeField] private float dialogueBubbleFadeInRate = 1;
     [SerializeField] private float dialogueBubbleFadeOutRate = 1;
     [SerializeField] private float defaultDialogueDuration = 2.5f;
@@ -286,18 +321,18 @@ public partial class CombatManager : MonoBehaviour
         return handHotKeyBindings[index];
     }
 
-    public void CallPlayDialogue(string s, Target target)
+    public void CallPlayDialogue(string s, Combatent target)
     {
         CallPlayDialogue(s, defaultDialogueDuration, target);
     }
 
-    public void CallPlayDialogue(string s, float duration, Target target)
+    public void CallPlayDialogue(string s, float duration, Combatent target)
     {
         if (speechBubbles[target].CurrentCoroutine != null) StopCoroutine(speechBubbles[target].CurrentCoroutine);
         speechBubbles[target].CurrentCoroutine = StartCoroutine(PlayDialogue(s, duration, target));
     }
 
-    private IEnumerator PlayDialogue(string s, float duration, Target target)
+    private IEnumerator PlayDialogue(string s, float duration, Combatent target)
     {
         Debug.Log("Playing Dialogue");
         SpeechBubbleDataContainer data = speechBubbles[target];
@@ -311,13 +346,13 @@ public partial class CombatManager : MonoBehaviour
         yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(data.CV, 0, dialogueBubbleFadeOutRate));
     }
 
-    public void ReduceActiveSpellCDsByPercent(float normalizedPercent)
+    public void ReduceSpellCDsByPercent(float normalizedPercent)
     {
         // normaliedPercent is some number between 0 and 1
         // 0 = 0%, 1 = 100%
         // .14 = 14%
         // etc
-        foreach (ActiveSpell activeSpell in hand.GetEntriesMatching(spell => spell.Type == SpellCastType.Active))
+        foreach (ReusableSpell activeSpell in hand.GetEntriesMatching(spell => spell.SpellCastType == SpellCastType.Reusable))
         {
             if (activeSpell.OnCooldown)
             {
@@ -397,7 +432,7 @@ public partial class CombatManager : MonoBehaviour
     {
         this.drawPile = drawPile;
         this.drawPile.Shuffle();
-        passiveSpellPile = new Pile<Spell>();
+        powerSpellPile = new Pile<Spell>();
         discardPile = new Pile<Spell>();
         hand = new Pile<Spell>();
         exhaustPile = new Pile<Spell>();
@@ -425,14 +460,14 @@ public partial class CombatManager : MonoBehaviour
         {
             if (hand.Count >= MaxHandSize)
             {
-                CallPlayDialogue("I have no room in my Hand...", Target.Character);
+                CallPlayDialogue("I have no room in my Hand...", Combatent.Character);
                 break;
             }
 
             // There are absolutely no cards to draw remaining
             if (drawPile.Count == 0 && discardPile.Count == 0)
             {
-                CallPlayDialogue("I'm of of Spells...?", Target.Character);
+                CallPlayDialogue("I'm of of Spells...?", Combatent.Character);
                 break;
             }
 
@@ -468,7 +503,8 @@ public partial class CombatManager : MonoBehaviour
         spawned.SetSpell(spell);
         spawned.SetSpellDisplayState(SpellDisplayState.InHand);
 
-        spell.OnDraw();
+        // "Callback"
+        StartCoroutine(CallSpellEffectsRoutine(spell.SpellCallbackMap[SpellCallbackType.OnDraw], null, Combatent.Character, Combatent.Enemy, false));
 
         // Callback
         OnDrawSpell?.Invoke();
@@ -517,7 +553,7 @@ public partial class CombatManager : MonoBehaviour
         Destroy(card.gameObject);
     }
 
-    private IEnumerator PlayPassiveSpellAnim(SpellDisplay card, Action preDestroy)
+    private IEnumerator PowerSpellAnimation(SpellDisplay card, Action preDestroy)
     {
         RectTransform t = (RectTransform)card.transform;
         card.SetScaleLocked(true);
@@ -537,39 +573,22 @@ public partial class CombatManager : MonoBehaviour
     private IEnumerator DiscardHand()
     {
         bool done = false;
-        // Discard all Spells that are not Passives
+
         List<Spell> toDiscard = hand.GetEntriesMatching(spell => true);
 
         while (toDiscard.Count > 0)
         {
             // Remove Spell from Hand
             Spell spell = toDiscard[0];
-            hand.Remove(spell);
-
-            SpellDisplay equippedTo = spell.GetEquippedTo();
-
-            handLayoutGroup.RemoveTransformFromHand(spell.GetEquippedTo().transform);
-            StartCoroutine(DiscardCardAnimation(equippedTo, delegate
-            {
-                if (toDiscard.Count == 0)
-                {
-                    done = true;
-                }
-            }));
-
-            // Add Spell to Discard Pile
-            discardPile.Add(spell);
-
-            // Callback
-            spell.OnAnyDiscard();
-
-            // Callback
-            spell.OnForceDiscard();
-
-            // Remove Spell from to Remove
+            DiscardSpell(spell);
             toDiscard.RemoveAt(0);
 
             yield return new WaitForSeconds(discardSpellDelay);
+
+            if (toDiscard.Count == 0)
+            {
+                done = true;
+            }
         }
 
         yield return new WaitUntil(() => done);
@@ -585,12 +604,13 @@ public partial class CombatManager : MonoBehaviour
             handLayoutGroup.RemoveTransformFromHand(spell.GetEquippedTo().transform);
             StartCoroutine(DiscardCardAnimation(spell.GetEquippedTo(), delegate
             {
-                // Callback
-                spell.OnAnyDiscard();
+                // "Callback"
+                StartCoroutine(CallSpellEffectsRoutine(spell.SpellCallbackMap[SpellCallbackType.OnAnyDiscard], null, Combatent.Character, Combatent.Enemy, false));
 
-                // Callback
-                spell.OnSpecificDiscard();
-                OnSpecificDiscardSpell?.Invoke();
+                if (spell is ReusableSpell)
+                {
+                    ((ReusableSpell)spell).ResetCooldown();
+                }
 
                 CallRecalculateKeyBinds();
             }));
@@ -611,8 +631,8 @@ public partial class CombatManager : MonoBehaviour
 
             StartCoroutine(ExhaustCardAnimation(spell.GetEquippedTo(), delegate
             {
-                // Callback
-                spell.OnExhaust();
+                // "Callback"
+                StartCoroutine(CallSpellEffectsRoutine(spell.SpellCallbackMap[SpellCallbackType.OnExhaust], null, Combatent.Character, Combatent.Enemy, false));
 
                 // Callback
                 OnExhaustSpell?.Invoke();
@@ -622,53 +642,23 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void AddSpellToPassiveSpellPile(PassiveSpell spell)
+    public void AddSpellToPowerSpellPile(PowerSpell spell)
     {
         if (hand.Contains(spell))
         {
             hand.Remove(spell);
-            passiveSpellPile.Add(spell);
+            powerSpellPile.Add(spell);
 
             handLayoutGroup.RemoveTransformFromHand(spell.GetEquippedTo().transform);
 
             spell.GetEquippedTo().SetSpellDisplayState(SpellDisplayState.Fading);
 
-            StartCoroutine(PlayPassiveSpellAnim(spell.GetEquippedTo(), delegate
+            StartCoroutine(PowerSpellAnimation(spell.GetEquippedTo(), delegate
             {
                 Destroy(spell.GetEquippedTo().gameObject);
                 CallRecalculateKeyBinds();
             }));
 
-        }
-    }
-
-    private PassiveSpellDisplay SpawnPassiveSpellDisplay()
-    {
-        PassiveSpellDisplay spawned = Instantiate(passiveSpellDisplayPrefab, passiveSpellDisplaysList);
-        return spawned;
-    }
-
-    public void EquipPassiveSpell(PassiveSpell spell)
-    {
-        spell.OnEquip();
-
-        // Spawn a display to use
-        PassiveSpellDisplay spellDisplay = SpawnPassiveSpellDisplay();
-        spellDisplay.SetSpell(spell);
-
-        SpawnEffectText(EffectTextStyle.Fade, spell.Name, UIManager._Instance.GetEffectTextColor("EquipPassiveSpell"), Target.Character);
-    }
-
-    public void TriggerRandomPassiveSpell()
-    {
-        if (InCombat)
-        {
-            if (passiveSpellPile.Count > 0)
-            {
-                PassiveSpell spell = (PassiveSpell)RandomHelper.GetRandomFromList(passiveSpellPile.GetEntriesMatching(spell => true));
-                spell.Proc(true);
-                Debug.Log("Triggered: " + spell);
-            }
         }
     }
 
@@ -720,7 +710,7 @@ public partial class CombatManager : MonoBehaviour
 
     public void ReduceActiveSpellCooldowns(int reduceBy)
     {
-        foreach (ActiveSpell spell in hand.GetEntriesMatching(spell => spell.Type == SpellCastType.Active))
+        foreach (ReusableSpell spell in hand.GetEntriesMatching(spell => spell.SpellCastType == SpellCastType.Reusable))
         {
             if (spell.OnCooldown)
             {
@@ -731,7 +721,7 @@ public partial class CombatManager : MonoBehaviour
 
     public void ResetActiveSpellCooldowns()
     {
-        foreach (ActiveSpell spell in hand.GetEntriesMatching(spell => spell.Type == SpellCastType.Active))
+        foreach (ReusableSpell spell in hand.GetEntriesMatching(spell => spell.SpellCastType == SpellCastType.Reusable))
         {
             if (spell.OnCooldown)
             {
@@ -769,6 +759,19 @@ public partial class CombatManager : MonoBehaviour
             Spell spell = alterHandSequenceSelectedSpells[0];
             alterHandSequenceSelectedSpells.RemoveAt(0);
 
+            if (choosingState == SpellDisplayState.ChoosingDiscard)
+            {
+                // "Callback"
+                StartCoroutine(CallSpellEffectsRoutine(spell.SpellCallbackMap[SpellCallbackType.OnSpecificDiscard], null, Combatent.Character, Combatent.Enemy, false));
+
+                // Callback
+                OnSpecificDiscardSpell?.Invoke();
+            }
+            if (choosingState == SpellDisplayState.ChoosingExhaust)
+            {
+                //
+            }
+
             callOnSpell(spell);
 
             yield return new WaitForSeconds(delayBetweenAlterHandCalls);
@@ -802,7 +805,6 @@ public partial class CombatManager : MonoBehaviour
         });
     }
 
-
     public IEnumerator ExhaustSpellSequence(int numToExhaust, Action onComplete = null)
     {
         yield return StartCoroutine(AlterHandSequence(numToExhaust, spell => ExhaustSpell(spell), "Exhaust", SpellDisplayState.ChoosingExhaust, onComplete));
@@ -817,7 +819,11 @@ public partial class CombatManager : MonoBehaviour
     {
         _Instance = this;
 
+        // Create Circle Pool 
         CreateCirclePool();
+
+        // Setup Callback Maps
+        SetupCombatCallbackMaps();
     }
 
     #region Combat Loop
@@ -912,12 +918,12 @@ public partial class CombatManager : MonoBehaviour
             yield return new WaitForSeconds(delayAfterEnemyDeath);
 
             // Bandaged Effect
-            if (TargetHasAffliction(AfflictionType.Bandages, Target.Character))
+            if (TargetHasAffliction(AfflictionType.Bandages, Combatent.Character))
             {
                 int numBandagedStacks = characterAfflictionMap[AfflictionType.Bandages].GetStacks();
                 GameManager._Instance.AlterPlayerCurrentHP(numBandagedStacks, DamageType.Heal);
-                ConsumeAfflictionStack(AfflictionType.Bandages, Target.Character, numBandagedStacks);
-                ShowAfflictionProc(AfflictionType.Bandages, Target.Character);
+                ConsumeAfflictionStack(AfflictionType.Bandages, Combatent.Character, numBandagedStacks);
+                ShowAfflictionProc(AfflictionType.Bandages, Combatent.Character);
                 yield return new WaitForSeconds(delayAfterBandagesEffect);
             }
         }
@@ -953,7 +959,10 @@ public partial class CombatManager : MonoBehaviour
         // Allow Enemy to Act on OnCombatStart Actions
         foreach (EnemyAction action in currentEnemy.GetOnCombatStartActions())
         {
-            yield return StartCoroutine(EnemyActOnAction(action));
+            foreach (Spell spell in action.GetActionSpells())
+            {
+                AddSpellToCastQueue(spell, Combatent.Enemy);
+            }
         }
 
         StartCoroutine(UpdateDuringCombat());
@@ -970,14 +979,20 @@ public partial class CombatManager : MonoBehaviour
             // Call OnTurnStart
             OnTurnStart?.Invoke();
 
-            // Decide Enemy Intent
-            currentEnemyAction = currentEnemy.GetEnemyIntent();
-            enemyIntentDisplay.SetEnemyAction(currentEnemyAction);
+            // Queue all Spells of Given Action
+            currentEnemyAction = currentEnemy.GetEnemyAction();
+            foreach (Spell spell in currentEnemyAction.GetActionSpells())
+            {
+                AddSpellToCastQueue(spell, Combatent.Enemy);
+            }
 
             yield return StartCoroutine(DrawHand());
 
             // Player Turn
             yield return StartCoroutine(PlayerTurn());
+
+            // Reset Effectiveness Multiplier
+            effectivenessMultiplier = defaultEffectivenessMultiplier;
 
             if (CheckForCombatOver())
             {
@@ -986,6 +1001,9 @@ public partial class CombatManager : MonoBehaviour
 
             // Enemy Turn
             yield return StartCoroutine(EnemyTurn());
+
+            // Reset Effectiveness Multiplier
+            effectivenessMultiplier = defaultEffectivenessMultiplier;
 
             if (CheckForCombatOver())
             {
@@ -996,30 +1014,16 @@ public partial class CombatManager : MonoBehaviour
             yield return new WaitForSeconds(delayAfterEnemyTurn);
 
             // Reset for Turn
+            foreach (GameObject obj in disableWhileCasting)
+            {
+                obj.SetActive(true);
+            }
+
             GameManager._Instance.AlterPlayerCurrentMana(GameManager._Instance.GetManaPerTurn());
         }
 
         // Call On Combat End
         OnCombatEnd?.Invoke();
-    }
-
-    public void ReplaceCurrentEnemyAction(EnemyAction newAction)
-    {
-        currentEnemyAction = newAction;
-        enemyIntentDisplay.ClearIntents();
-        enemyIntentDisplay.SetEnemyAction(currentEnemyAction);
-    }
-
-    public void ReplaceCurrentEnemyAction()
-    {
-        currentEnemyAction = currentEnemy.GetEnemyIntent(new List<EnemyAction>() { currentEnemyAction });
-        enemyIntentDisplay.ClearIntents();
-        enemyIntentDisplay.SetEnemyAction(currentEnemyAction);
-    }
-
-    public EnemyAction GetCurrentEnemyAction()
-    {
-        return currentEnemyAction;
     }
 
     private IEnumerator PlayerTurn()
@@ -1029,7 +1033,7 @@ public partial class CombatManager : MonoBehaviour
         currentTurn = Turn.Player;
 
         // Reset Ward
-        ResetCombatentWard(Target.Character);
+        ResetCombatentWard(Combatent.Character);
 
         // Allow player to cast spells
         CanCastSpells = true;
@@ -1038,11 +1042,12 @@ public partial class CombatManager : MonoBehaviour
         // Show Turn Display
         yield return StartCoroutine(turnDisplay.Show("Player Turn", turnNumber > 1 ? turnNumber + Utils.GetNumericalSuffix(turnNumber) + " Turn" : ""));
 
-        OnPlayerTurnStart?.Invoke();
+        // Callback
+        CombatentBaseCallbackMap[Combatent.Character][CombatBaseCallbackType.OnTurnStart]?.Invoke();
 
         // Tick Relevant Afflictions
-        ApplyBlightEffectOnMap(characterAfflictionMap, Target.Character);
-        ApplyPoisonEffectOnMap(characterAfflictionMap, Target.Character);
+        ApplyBlightEffectOnMap(characterAfflictionMap, Combatent.Character);
+        ApplyPoisonEffectOnMap(characterAfflictionMap, Combatent.Character);
 
         if (CheckForCombatOver())
         {
@@ -1060,12 +1065,7 @@ public partial class CombatManager : MonoBehaviour
         }
 
         CanCastSpells = false;
-        yield return StartCoroutine(CastCharacterQueue());
-
-        foreach (GameObject obj in disableWhileCasting)
-        {
-            obj.SetActive(true);
-        }
+        yield return StartCoroutine(CastSpellQueue(playerCastQueue, Combatent.Character, Combatent.Enemy));
 
         if (CheckForCombatOver())
         {
@@ -1075,16 +1075,14 @@ public partial class CombatManager : MonoBehaviour
         ResetActiveSpellCooldowns();
 
         // Regeneration Effect
-        if (TargetHasAffliction(AfflictionType.Regeneration, Target.Character))
+        if (TargetHasAffliction(AfflictionType.Regeneration, Combatent.Character))
         {
-            AlterCombatentHP(GetTargetAfflictionStacks(AfflictionType.Regeneration, Target.Character), Target.Character, DamageType.Heal);
-            ConsumeAfflictionStack(AfflictionType.Regeneration, Target.Character);
+            AlterCombatentHP(GetTargetAfflictionStacks(AfflictionType.Regeneration, Combatent.Character), Combatent.Character, DamageType.Heal);
+            ConsumeAfflictionStack(AfflictionType.Regeneration, Combatent.Character);
         }
 
-        // Reset effectiveness multiplier
-        effectivenessMultiplier = defaultEffectivenessMultiplier;
-
-        OnPlayerTurnEnd?.Invoke();
+        // Callback
+        CombatentBaseCallbackMap[Combatent.Character][CombatBaseCallbackType.OnTurnEnd]?.Invoke();
 
         Debug.Log("Player Turn Ended");
     }
@@ -1092,7 +1090,7 @@ public partial class CombatManager : MonoBehaviour
     public void TickHandCooldowns(Spell exclude)
     {
         // Tick other active spell cooldowns
-        foreach (ActiveSpell activeSpell in hand.GetEntriesMatching(spell => spell.Type == SpellCastType.Active))
+        foreach (ReusableSpell activeSpell in hand.GetEntriesMatching(spell => spell.SpellCastType == SpellCastType.Reusable))
         {
             if (activeSpell == exclude) continue;
             if (!activeSpell.OnCooldown) continue;
@@ -1100,43 +1098,68 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void AddSpellToCastQueue(Spell spell)
+    public void AddSpellToCastQueue(Spell spell, Combatent adder, bool canEcho = true)
     {
+        // Echo Effect
+        if (TargetHasAffliction(AfflictionType.Echo, adder) && canEcho)
+        {
+            ConsumeAfflictionStack(AfflictionType.Echo, adder);
+            ShowAfflictionProc(AfflictionType.Echo, adder);
+            AddSpellToCastQueue(spell, adder, false);
+        }
+
         // Spawn new display
-        SpellPotencyDisplay spellPotencyDisplay = Instantiate(castingSpellPotencyDisplayPrefab, castingSpellSemiCircle.transform);
+        SpellPotencyDisplay spellPotencyDisplay = Instantiate(castingSpellPotencyDisplayPrefab, GetQueuedSpellDisplayForTarget(adder).transform);
         spellPotencyDisplay.SetSpell(spell);
+        QueuedSpell toQueue = new QueuedSpell(spell, spellPotencyDisplay);
 
-        QueuedSpell toQueue = new QueuedSpell(spell, spellPotencyDisplay, spellQueue.Count);
-        toQueue.SpellQueueDisplay = spellPotencyDisplay;
-
-        // Indicate the first spell to be cast
-        if (spellQueue.Count == 0)
+        switch (adder)
         {
-            spellPotencyDisplay.SetOutlineColor(Color.red);
-        }
-        else
-        {
-            spellPotencyDisplay.SetOutlineColor(Color.black);
-        }
+            case Combatent.Character:
 
-        // Spawn casting queue potency display
-        if (spell.Type == SpellCastType.Active)
-        {
-            // Set Potency
-            spellPotencyDisplay.SetCurrentPotency(effectivenessMultiplier);
-            spellPotencyDisplay.SetMaxPotency(maxEffectivenessMultiplier);
-
-            // Activate Callback
-            OnActiveSpellQueued?.Invoke();
+                AddSpellToPlayerCastQueue(spell, spellPotencyDisplay);
+                playerCastQueue.Add(toQueue);
+                break;
+            case Combatent.Enemy:
+                AddSpellToEnemyCastQueue(spell, spellPotencyDisplay);
+                enemyCastQueue.Add(toQueue);
+                break;
         }
-        else
-        {
-            // Set Potency
-            spellPotencyDisplay.SetCurrentPotency(defaultEffectivenessMultiplier);
-            spellPotencyDisplay.SetMaxPotency(maxEffectivenessMultiplier);
+    }
 
-            OnPassiveSpellQueued?.Invoke();
+    private SemicircleLayoutGroup GetQueuedSpellDisplayForTarget(Combatent t)
+    {
+        switch (t)
+        {
+            case Combatent.Character:
+                return playerQueuedSpellsDisplay;
+            case Combatent.Enemy:
+                return enemyQueuedSpellsDisplay;
+            default:
+                throw new UnhandledSwitchCaseException();
         }
+    }
+
+    private void AddSpellToEnemyCastQueue(Spell spell, SpellPotencyDisplay spellPotencyDisplay)
+    {
+        // Spawn Queue Display
+        spellPotencyDisplay.SetCurrentPotency(defaultEffectivenessMultiplier);
+        spellPotencyDisplay.SetMaxPotency(maxEffectivenessMultiplier);
+
+        CombatentBaseCallbackMap[Combatent.Enemy][CombatBaseCallbackType.OnSpellQueued]?.Invoke();
+
+        // "Callback"
+        StartCoroutine(CallSpellEffectsRoutine(spell.SpellCallbackMap[SpellCallbackType.OnQueue], null, Combatent.Enemy, Combatent.Character, false));
+    }
+
+    private void AddSpellToPlayerCastQueue(Spell spell, SpellPotencyDisplay spellPotencyDisplay)
+    {
+        // Spawn Queue Display
+        spellPotencyDisplay.SetCurrentPotency(effectivenessMultiplier);
+        spellPotencyDisplay.SetMaxPotency(maxEffectivenessMultiplier);
+
+        // Callback
+        CombatentBaseCallbackMap[Combatent.Character][CombatBaseCallbackType.OnSpellQueued]?.Invoke();
 
         // Check for Free Spell Casts
         if (NumFreeSpells > 0)
@@ -1145,21 +1168,20 @@ public partial class CombatManager : MonoBehaviour
         }
         else
         {
-            if (spell.Type == SpellCastType.Active)
+            if (spell.SpellCastType == SpellCastType.Reusable)
             {
                 // Set Cooldown
-                ((ActiveSpell)spell).SetOnCooldown();
+                ((ReusableSpell)spell).SetOnCooldown();
             }
             // Consume Mana
             GameManager._Instance.AlterPlayerCurrentMana(-spell.ManaCost);
         }
 
-        spellQueue.Add(toQueue);
-
-        spell.OnQueue();
+        // "Callback"
+        StartCoroutine(CallSpellEffectsRoutine(spell.SpellCallbackMap[SpellCallbackType.OnQueue], null, Combatent.Character, Combatent.Enemy, false));
     }
 
-    private IEnumerator CastCharacterQueue()
+    private IEnumerator CastSpellQueue(List<QueuedSpell> castQueue, Combatent caster, Combatent other)
     {
         // Cast Queue
         isCastingQueue = true;
@@ -1167,41 +1189,34 @@ public partial class CombatManager : MonoBehaviour
         // Set effectiveness multiplier text to be active
         effectivenessMultiplierText.gameObject.SetActive(true);
 
-        while (spellQueue.Count > 0)
+        while (castQueue.Count > 0)
         {
             // Get Spell from Queue
-            QueuedSpell spell = spellQueue[0];
+            QueuedSpell spell = castQueue[0];
 
             // Show next up spell cast
-            if (spellQueue.Count > 0)
+            if (castQueue.Count > 0)
             {
-                spellQueue[0].SpellQueueDisplay.SetOutlineColor(Color.red);
+                castQueue[0].SpellQueueDisplay.SetOutlineColor(Color.red);
             }
 
             // Remove Spell from Queue
-            spellQueue.RemoveAt(0);
+            castQueue.RemoveAt(0);
 
             // Remove UI from spell queue & from Spell Potency Display
             Destroy(spell.SpellQueueDisplay.gameObject);
 
             // Cast Spell
-            yield return StartCoroutine(CastSpell(spell));
+            yield return StartCoroutine(CastSpell(spell, caster, other));
 
             // Killed the enemy or died themselves, either way remove the rest of the queued spells
             if (CheckForCombatOver())
             {
-                // Killed the Enemy
-                if (currentEnemyHP <= 0)
-                {
-                    // Callback
-                    spell.Spell.OnKill();
-                }
-
                 // Remove Spell Potency Displays and Queued Spell Displays as Combat is now Over
-                while (spellQueue.Count > 0)
+                while (castQueue.Count > 0)
                 {
-                    QueuedSpell cur = spellQueue[0];
-                    spellQueue.RemoveAt(0);
+                    QueuedSpell cur = castQueue[0];
+                    castQueue.RemoveAt(0);
 
                     // Remove UI from Spell Potency Display
                     Destroy(cur.SpellQueueDisplay.gameObject);
@@ -1222,7 +1237,7 @@ public partial class CombatManager : MonoBehaviour
     }
 
 
-    private IEnumerator CastSpell(QueuedSpell queuedSpell)
+    private IEnumerator CastSpell(QueuedSpell queuedSpell, Combatent caster, Combatent other)
     {
         Spell spell = queuedSpell.Spell;
 
@@ -1230,26 +1245,16 @@ public partial class CombatManager : MonoBehaviour
         spellSFXSource.clip = spell.AssociatedSoundClip;
         spellSFXSource.Play();
 
-        if (spell.Type == SpellCastType.Passive)
-        {
-            spell.Cast();
-            yield return new WaitForSeconds(delayAfterPassiveSpellCast);
-        }
-        else
-        {
-            ActiveSpell activeSpell = (ActiveSpell)queuedSpell.Spell;
+        // Set hit & miss sounds
+        hitSound = spell.HitSound;
+        missSound = spell.MissSound;
 
-            // Set hit & miss sounds
-            hitSound = activeSpell.HitSound;
-            missSound = activeSpell.MissSound;
+        // Set effectiveness multiplier text to be at zero
+        effectivenessMultiplierTextRect.anchoredPosition = Vector2.zero;
 
+        // Play Sequence
+        yield return StartCoroutine(PlaySpell(spell, queuedSpell.SpellQueueDisplay, caster, other));
 
-            // Set effectiveness multiplier text to be at zero
-            effectivenessMultiplierTextRect.anchoredPosition = Vector2.zero;
-
-            // Play Sequence
-            yield return StartCoroutine(PlaySpell(activeSpell, queuedSpell.SpellQueueDisplay));
-        }
     }
 
     private IEnumerator EnemyTurn()
@@ -1259,22 +1264,26 @@ public partial class CombatManager : MonoBehaviour
         currentTurn = Turn.Enemy;
 
         // Reset Ward
-        ResetCombatentWard(Target.Enemy);
+        ResetCombatentWard(Combatent.Enemy);
 
         // Show Turn Display
         yield return StartCoroutine(turnDisplay.Show("Enemy Turn", ""));
 
-        OnEnemyTurnStart?.Invoke();
+        // Callback
+        CombatentBaseCallbackMap[Combatent.Enemy][CombatBaseCallbackType.OnTurnStart]?.Invoke();
 
         // Allow Enemy to Act on OnTurnStart Actions
         foreach (EnemyAction action in currentEnemy.GetOnTurnStartActions())
         {
-            yield return StartCoroutine(EnemyActOnAction(action));
+            foreach (Spell spell in action.GetActionSpells())
+            {
+                AddSpellToCastQueue(spell, Combatent.Enemy);
+            }
         }
 
         // Tick Relevant Afflictions
-        ApplyBlightEffectOnMap(enemyAfflictionMap, Target.Enemy);
-        ApplyPoisonEffectOnMap(enemyAfflictionMap, Target.Enemy);
+        ApplyBlightEffectOnMap(enemyAfflictionMap, Combatent.Enemy);
+        ApplyPoisonEffectOnMap(enemyAfflictionMap, Combatent.Enemy);
 
         if (CheckForCombatOver())
         {
@@ -1282,26 +1291,28 @@ public partial class CombatManager : MonoBehaviour
         }
 
         yield return new WaitForSeconds(delayBeforeEnemyAttack);
+        currentEnemyAction.CallOnActivate();
 
-        yield return StartCoroutine(EnemyActOnAction(currentEnemyAction));
-
-        // Clear Enemy Intent
-        enemyIntentDisplay.ClearIntents();
+        yield return StartCoroutine(CastSpellQueue(enemyCastQueue, Combatent.Enemy, Combatent.Character));
 
         // Regeneration Effect
-        if (TargetHasAffliction(AfflictionType.Regeneration, Target.Enemy))
+        if (TargetHasAffliction(AfflictionType.Regeneration, Combatent.Enemy))
         {
-            AlterCombatentHP(GetTargetAfflictionStacks(AfflictionType.Regeneration, Target.Enemy), Target.Enemy, DamageType.Heal);
-            ConsumeAfflictionStack(AfflictionType.Regeneration, Target.Enemy);
+            AlterCombatentHP(GetTargetAfflictionStacks(AfflictionType.Regeneration, Combatent.Enemy), Combatent.Enemy, DamageType.Heal);
+            ConsumeAfflictionStack(AfflictionType.Regeneration, Combatent.Enemy);
         }
 
         // Allow Enemy to Act on OnTurnEnd Actions
         foreach (EnemyAction action in currentEnemy.GetOnTurnEndActions())
         {
-            yield return StartCoroutine(EnemyActOnAction(action));
+            foreach (Spell spell in action.GetActionSpells())
+            {
+                AddSpellToCastQueue(spell, Combatent.Enemy);
+            }
         }
 
-        OnEnemyTurnEnd?.Invoke();
+        // Callback
+        CombatentBaseCallbackMap[Combatent.Enemy][CombatBaseCallbackType.OnTurnEnd]?.Invoke();
 
         Debug.Log("Enemy Turn Ended");
     }
@@ -1369,11 +1380,11 @@ public partial class CombatManager : MonoBehaviour
         hasCastQueue = false;
 
         // Clear Afflictions
-        ClearAfflictionMap(enemyAfflictionMap, Target.Enemy);
-        ClearAfflictionMap(characterAfflictionMap, Target.Character);
+        ClearAfflictionMap(enemyAfflictionMap, Combatent.Enemy);
+        ClearAfflictionMap(characterAfflictionMap, Combatent.Character);
 
-        ResetCombatentWard(Target.Character);
-        ResetCombatentWard(Target.Enemy);
+        ResetCombatentWard(Combatent.Character);
+        ResetCombatentWard(Combatent.Enemy);
 
         // Clear active spell cooldowns
         ResetActiveSpellCooldowns();
@@ -1385,37 +1396,22 @@ public partial class CombatManager : MonoBehaviour
         characterHPBar.Clear();
         enemyHPBar.Clear();
 
-        enemyIntentDisplay.ClearIntents();
-
         // Reset
         effectivenessMultiplier = defaultEffectivenessMultiplier;
         effectivenessMultiplierText.text = "x" + Utils.RoundTo(effectivenessMultiplier, 2).ToString();
-
-        // Unequip all Passive Spells
-        foreach (PassiveSpell spell in passiveSpellPile.GetSpells())
-        {
-            spell.OnUnequip();
-
-            PassiveSpellDisplay spellDisplay = (PassiveSpellDisplay)spell.GetEquippedTo();
-            Destroy(spellDisplay.gameObject);
-        }
 
         // Put all Spells back into draw Pile so that GameManager can know which Spells were previously used in Combat
         hand.TransferEntries(drawPile, false);
         discardPile.TransferEntries(drawPile, false);
         exhaustPile.TransferEntries(drawPile, false);
-        passiveSpellPile.TransferEntries(drawPile, true);
+        powerSpellPile.TransferEntries(drawPile, true);
 
         musicSource.Stop();
         musicSource.time = 0;
 
         // Clear Spell Queue
-        while (spellQueue.Count > 0)
-        {
-            QueuedSpell spell = spellQueue[0];
-            Destroy(spell.SpellQueueDisplay.gameObject);
-            spellQueue.RemoveAt(0);
-        }
+        ClearCastQueue(playerCastQueue);
+        ClearCastQueue(enemyCastQueue);
 
         // Destroy Circles
         ClearCircleList();
@@ -1425,6 +1421,16 @@ public partial class CombatManager : MonoBehaviour
 
         // Callback
         OnResetCombat?.Invoke();
+    }
+
+    private void ClearCastQueue(List<QueuedSpell> castQueue)
+    {
+        while (castQueue.Count > 0)
+        {
+            QueuedSpell spell = castQueue[0];
+            Destroy(spell.SpellQueueDisplay.gameObject);
+            castQueue.RemoveAt(0);
+        }
     }
 
     public void SetPlayerTurnEnded(bool b)
@@ -1441,20 +1447,37 @@ public partial class CombatManager : MonoBehaviour
     {
         return currentEnemyHP <= 0 || GameManager._Instance.GetCurrentCharacterHP() <= 0;
     }
+
+    public void ReplaceCurrentEnemyAction(EnemyAction newAction)
+    {
+        ClearCastQueue(enemyCastQueue);
+
+        currentEnemyAction = newAction;
+        foreach (Spell spell in currentEnemyAction.GetActionSpells())
+        {
+            AddSpellToCastQueue(spell, Combatent.Enemy);
+        }
+    }
+
+    public void ReplaceCurrentEnemyAction()
+    {
+        ReplaceCurrentEnemyAction(currentEnemy.GetEnemyAction(new List<EnemyAction>() { currentEnemyAction }));
+    }
+
     #endregion
 
     #region Spell Gameplay
 
-    private IEnumerator PlaySpell(ActiveSpell queueActiveSpell, SpellPotencyDisplay spellPotencyDisplay)
+    private IEnumerator PlaySpell(Spell spell, SpellPotencyDisplay spellPotencyDisplay, Combatent caster, Combatent other)
     {
         Coroutine updatePotencyDisplay = StartCoroutine(UpdateSpellPotencyDisplay(spellPotencyDisplay));
         float t = 0;
 
         // Foreach Batch in the Spell
-        for (int i = 0; i < queueActiveSpell.Batches.Count; i++)
+        for (int i = 0; i < spell.Batches.Count; i++)
         {
             // Get Current Batch
-            SpellNoteBatch currentBatch = queueActiveSpell.Batches[i];
+            SpellNoteBatch currentBatch = spell.Batches[i];
 
             // Spawn Batch of Circles
             for (int p = 0; p < currentBatch.NumNotes; p++)
@@ -1462,7 +1485,7 @@ public partial class CombatManager : MonoBehaviour
                 SpellNote currentNote = currentBatch.GetNote(p);
                 Circle c = circlePool.Get();
                 spawnedCircles.Add(c);
-                c.Set(currentNote, UIManager._Instance.GetDamageTypeColor(queueActiveSpell.MainDamageType));
+                c.Set(currentNote, UIManager._Instance.GetDamageTypeColor(spell.MainDamageType));
 
                 t = 0;
                 while (t < currentNote.DelayAfter)
@@ -1479,7 +1502,10 @@ public partial class CombatManager : MonoBehaviour
                             spawned.Cancel();
                         }
 
-                        Destroy(spellPotencyDisplay.gameObject);
+                        if (spellPotencyDisplay != null)
+                        {
+                            Destroy(spellPotencyDisplay.gameObject);
+                        }
 
                         yield break;
                     }
@@ -1499,8 +1525,31 @@ public partial class CombatManager : MonoBehaviour
         // Stop update potency display coroutine
         StopCoroutine(updatePotencyDisplay);
 
+        // Callback
+        CombatentBaseCallbackMap[Combatent.Character][CombatBaseCallbackType.OnSpellCast]?.Invoke();
+
         // Apply effects
-        queueActiveSpell.Cast();
+        yield return StartCoroutine(CallSpellEffectsRoutine(spell.GetSpellEffects(), null, caster, other));
+
+        // Callback
+        switch (other)
+        {
+            case Combatent.Character:
+                if (GameManager._Instance.GetCurrentCharacterHP() <= 0)
+                {
+                    // "Callback"
+                    StartCoroutine(CallSpellEffectsRoutine(spell.SpellCallbackMap[SpellCallbackType.OnKill], null, Combatent.Enemy, Combatent.Character, false));
+                }
+                break;
+            case Combatent.Enemy:
+                if (currentEnemyHP <= 0)
+                {
+                    // "Callback"
+                    StartCoroutine(CallSpellEffectsRoutine(spell.SpellCallbackMap[SpellCallbackType.OnKill], null, Combatent.Character, Combatent.Enemy, false));
+                }
+                break;
+        }
+
     }
 
     public void OnNoteHit(RectTransform ofNoteHit)
@@ -1517,14 +1566,31 @@ public partial class CombatManager : MonoBehaviour
         // Player Attack
         PlayerBasicAttack();
 
-        // Increase effectiveness Multiplier
-        if (effectivenessMultiplier + increaseEffectivenessMultiplierOnHit > maxEffectivenessMultiplier)
+        // Change effectiveness Multiplier
+        switch (currentTurn)
         {
-            effectivenessMultiplier = maxEffectivenessMultiplier;
-        }
-        else
-        {
-            effectivenessMultiplier += increaseEffectivenessMultiplierOnHit;
+            case Turn.Enemy:
+                if (effectivenessMultiplier - increaseEffectivenessMultiplierOnHit < 0)
+                {
+                    effectivenessMultiplier = 0;
+                }
+                else
+                {
+                    effectivenessMultiplier -= increaseEffectivenessMultiplierOnHit;
+                }
+                break;
+            case Turn.Player:
+                if (effectivenessMultiplier + increaseEffectivenessMultiplierOnHit > maxEffectivenessMultiplier)
+                {
+                    effectivenessMultiplier = maxEffectivenessMultiplier;
+                }
+                else
+                {
+                    effectivenessMultiplier += increaseEffectivenessMultiplierOnHit;
+                }
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
         }
     }
 
@@ -1542,25 +1608,35 @@ public partial class CombatManager : MonoBehaviour
         // Enemy Attack?
         EnemyBasicAttack();
 
-        // Decrease effectiveness Multiplier
-        if (effectivenessMultiplier - decreaseEffectivenessMultiplierOnMiss < 0)
+        // Change effectiveness Multiplier
+        switch (currentTurn)
         {
-            effectivenessMultiplier = 0;
-        }
-        else
-        {
-            if (setEffectivenessMultiplierToZeroOnMiss)
-            {
-                effectivenessMultiplier = 0;
-            }
-            else
-            {
-                effectivenessMultiplier -= decreaseEffectivenessMultiplierOnMiss;
-            }
+            case Turn.Enemy:
+                if (effectivenessMultiplier + decreaseEffectivenessMultiplierOnMiss > maxEffectivenessMultiplier)
+                {
+                    effectivenessMultiplier = maxEffectivenessMultiplier;
+                }
+                else
+                {
+                    effectivenessMultiplier += decreaseEffectivenessMultiplierOnMiss;
+                }
+                break;
+            case Turn.Player:
+                if (effectivenessMultiplier - decreaseEffectivenessMultiplierOnMiss < 0)
+                {
+                    effectivenessMultiplier = 0;
+                }
+                else
+                {
+                    effectivenessMultiplier -= decreaseEffectivenessMultiplierOnMiss;
+                }
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
         }
     }
 
-    public float GetActiveSpellEffectivenessMultiplier()
+    public float GetSpellEffectivenessMultiplier()
     {
         return effectivenessMultiplier;
     }
@@ -1627,33 +1703,46 @@ public partial class CombatManager : MonoBehaviour
     {
         // the minimum a basic attack can do is 1
         // Attack the enemy
-        AttackCombatent(PlayerBasicAttackDamage, Target.Enemy, Target.Character, DamageType.Default, DamageSource.BasicAttack);
+        AttackCombatent(PlayerBasicAttackDamage, Combatent.Enemy, Combatent.Character, DamageType.Default, DamageSource.BasicAttack);
 
         // Burn Effect
-        ApplyBurnEffectOnMap(characterAfflictionMap, Target.Character);
+        ApplyBurnEffectOnMap(characterAfflictionMap, Combatent.Character);
 
         // Only call this if the combat isn't over
         if (!CheckForCombatOver())
         {
-            OnPlayerBasicAttack?.Invoke();
+            // Callback
+            CombatentBaseCallbackMap[Combatent.Character][CombatBaseCallbackType.OnBasicAttack]?.Invoke();
         }
     }
 
-    private IEnumerator AnimateEnemySpriteAttack()
+    private IEnumerator AnimateSpriteAttack(Combatent attacker)
     {
-        Vector2 originalPos = enemyCombatSpriteRect.anchoredPosition;
-        Vector2 newPos = originalPos - new Vector2(spriteOffset, 0);
-        float animationSpeedMultiplier = enemyCombatSpriteAnimationSpeedMultiplierStart;
-        while (enemyCombatSpriteRect.anchoredPosition.x > newPos.x)
+        RectTransform attackerSpriteRect = GetTargetSpriteImage(attacker).transform as RectTransform;
+        Vector2 originalPos = attackerSpriteRect.anchoredPosition;
+        Vector2 newPos;
+        switch (attacker)
         {
-            enemyCombatSpriteRect.anchoredPosition = Vector2.MoveTowards(enemyCombatSpriteRect.anchoredPosition, newPos, Time.deltaTime * baseEnemyCombatSpriteAnimationSpeed * animationSpeedMultiplier);
+            case Combatent.Character:
+                newPos = originalPos + new Vector2(spriteOffset, 0);
+                break;
+            case Combatent.Enemy:
+                newPos = originalPos - new Vector2(spriteOffset, 0);
+                break;
+            default: throw new Exception();
+        }
+
+        float animationSpeedMultiplier = combatSpriteAnimationMultiplier;
+        while (attackerSpriteRect.anchoredPosition.x > newPos.x)
+        {
+            attackerSpriteRect.anchoredPosition = Vector2.MoveTowards(attackerSpriteRect.anchoredPosition, newPos, Time.deltaTime * baseEnemyCombatSpriteAnimationSpeed * animationSpeedMultiplier);
             animationSpeedMultiplier += Time.deltaTime * enemyCombatSpriteAnimationSpeedMultiplierGain;
             yield return null;
         }
 
-        while (enemyCombatSpriteRect.anchoredPosition.x < originalPos.x)
+        while (attackerSpriteRect.anchoredPosition.x < originalPos.x)
         {
-            enemyCombatSpriteRect.anchoredPosition = Vector2.MoveTowards(enemyCombatSpriteRect.anchoredPosition, originalPos, Time.deltaTime * baseEnemyCombatSpriteAnimationSpeed * animationSpeedMultiplier);
+            attackerSpriteRect.anchoredPosition = Vector2.MoveTowards(attackerSpriteRect.anchoredPosition, originalPos, Time.deltaTime * baseEnemyCombatSpriteAnimationSpeed * animationSpeedMultiplier);
             yield return null;
         }
     }
@@ -1679,121 +1768,195 @@ public partial class CombatManager : MonoBehaviour
             attackDamage = 1;
         }
 
-        AttackCombatent(attackDamage, Target.Character, Target.Enemy, DamageType.Default, DamageSource.BasicAttack);
+        AttackCombatent(attackDamage, Combatent.Character, Combatent.Enemy, DamageType.Default, DamageSource.BasicAttack);
 
         // Burn Effect
-        ApplyBurnEffectOnMap(enemyAfflictionMap, Target.Enemy);
+        ApplyBurnEffectOnMap(enemyAfflictionMap, Combatent.Enemy);
 
         // Only call on enemy attack if the player is still alive
         if (!CheckForCombatOver())
         {
-            OnEnemyBasicAttack?.Invoke();
+            // Callback
+            CombatentBaseCallbackMap[Combatent.Enemy][CombatBaseCallbackType.OnBasicAttack]?.Invoke();
         }
     }
 
-    private IEnumerator EnemyActOnAction(EnemyAction enemyAction)
+    private void HandleSpellSingleAttackEffect(SpellSingleAttackEffect singleAttack, Combatent target, Combatent caster)
     {
-        List<EnemyIntent> enemyIntents = enemyAction.GetEnemyIntents();
-
-        bool hasAnimatedSprite = false;
-        foreach (EnemyIntent intent in enemyIntents)
+        if (singleAttack.Target == Target.Other || singleAttack.Target == Target.Both)
         {
-            // Paralyze Effect
-            if (TargetHasAffliction(AfflictionType.Paralyze, Target.Enemy))
-            {
-                ConsumeAfflictionStack(AfflictionType.Paralyze, Target.Enemy);
-                ShowAfflictionProc(AfflictionType.Paralyze, Target.Enemy);
-                ShakeCombatent(Target.Enemy);
-                continue;
-            }
+            AttackCombatent(singleAttack.DamageAmount, target, caster, singleAttack.DamageType, DamageSource.Spell);
+        }
+        if (singleAttack.Target == Target.Self || singleAttack.Target == Target.Both)
+        {
+            AttackCombatent(singleAttack.DamageAmount, caster, caster, singleAttack.DamageType, DamageSource.Spell);
+        }
+    }
 
-            switch (intent)
-            {
-                case EnemySingleAttackIntent singleAttack:
+    private void HandleSpellMultiAttackEffect(SpellMultiAttackEffect multiAttack, Combatent target, Combatent caster)
+    {
+        if (multiAttack.Target == Target.Other || multiAttack.Target == Target.Both)
+        {
+            AttackCombatent(multiAttack.DamageAmount, target, caster, multiAttack.DamageType, DamageSource.Spell);
+        }
+        if (multiAttack.Target == Target.Self || multiAttack.Target == Target.Both)
+        {
+            AttackCombatent(multiAttack.DamageAmount, caster, caster, multiAttack.DamageType, DamageSource.Spell);
+        }
+    }
 
-                    if (singleAttack.AttackAnimationStyle != EnemyAttackAnimationStyle.None)
+    private void HandleWardEffect(SpellWardEffect ward, Combatent target, Combatent caster)
+    {
+        if (ward.Target == Target.Other || ward.Target == Target.Both)
+        {
+            GiveCombatentWard(ward.WardAmount, target);
+        }
+        if (ward.Target == Target.Self || ward.Target == Target.Both)
+        {
+            GiveCombatentWard(ward.WardAmount, caster);
+        }
+    }
+
+    private void HandleApplyAfflictionEffect(SpellApplyAfflictionEffect apply, Combatent target, Combatent caster)
+    {
+        if (apply.Target == Target.Other || apply.Target == Target.Both)
+        {
+            AddAffliction(apply.AfflictionType, apply.NumStacks, target);
+        }
+        if (apply.Target == Target.Self || apply.Target == Target.Both)
+        {
+            AddAffliction(apply.AfflictionType, apply.NumStacks, caster);
+        }
+    }
+
+    private void HandleCleanseAfflictionEffect(SpellCleanseAfflictionsEffect cleanse, Combatent target, Combatent caster)
+    {
+        if (cleanse.Target == Target.Other || cleanse.Target == Target.Both)
+        {
+            RemoveAfflictionsOfSignFromMap(target, cleanse.toCleanse);
+        }
+        if (cleanse.Target == Target.Self || cleanse.Target == Target.Both)
+        {
+            RemoveAfflictionsOfSignFromMap(caster, cleanse.toCleanse);
+        }
+    }
+
+    private void HandleAlterHPEffect(SpellAlterHPEffect alterHP, Combatent target, Combatent caster)
+    {
+        if (alterHP.Target == Target.Other || alterHP.Target == Target.Both)
+        {
+            AlterCombatentHP(alterHP.HPAmount, target, alterHP.DamageType);
+        }
+        if (alterHP.Target == Target.Self || alterHP.Target == Target.Both)
+        {
+            AlterCombatentHP(alterHP.HPAmount, caster, alterHP.DamageType);
+        }
+    }
+
+    private void HandleDrawEffect(SpellDrawEffect draw)
+    {
+        CallDrawSpells(draw.NumToDraw);
+    }
+
+    private IEnumerator CallSpellEffectsRoutine(List<SpellEffect> spellEffects, Action callOnFinish, Combatent caster, Combatent target, bool allowAnimations = true)
+    {
+        // Paralyze Effect
+        if (TargetHasAffliction(AfflictionType.Paralyze, caster))
+        {
+            ConsumeAfflictionStack(AfflictionType.Paralyze, caster);
+            ShowAfflictionProc(AfflictionType.Paralyze, caster);
+            ShakeCombatent(caster);
+            yield break;
+        }
+
+        // Go Ahead with Attack
+        bool hasAnimatedSprite = false;
+        foreach (SpellEffect spellEffect in spellEffects)
+        {
+            switch (spellEffect)
+            {
+                case SpellSingleAttackEffect singleAttack:
+                    // Animation
+                    if (allowAnimations && singleAttack.AttackAnimationStyle != AttackAnimationStyle.None)
                     {
-                        yield return StartCoroutine(AnimateEnemySpriteAttack());
+                        yield return StartCoroutine(AnimateSpriteAttack(caster));
                         hasAnimatedSprite = true;
                     }
 
-                    AttackCombatent(singleAttack.DamageAmount, Target.Character, Target.Enemy, singleAttack.DamageType, DamageSource.EnemyAttack);
+                    HandleSpellSingleAttackEffect(singleAttack, target, caster);
 
                     break;
-                case EnemyMultiAttackIntent multiAttack:
-
+                case SpellMultiAttackEffect multiAttack:
                     for (int i = 0; i < multiAttack.NumAttacks; i++)
                     {
                         // Either animate every attack or only the first attack depending on what is set
-                        if (multiAttack.AttackAnimationStyle == EnemyAttackAnimationStyle.PerAttack
-                            || (multiAttack.AttackAnimationStyle == EnemyAttackAnimationStyle.Once && !hasAnimatedSprite))
+                        // Animation
+                        if (allowAnimations && (multiAttack.AttackAnimationStyle == AttackAnimationStyle.PerAttack
+                            || (multiAttack.AttackAnimationStyle == AttackAnimationStyle.Once && !hasAnimatedSprite)))
                         {
-                            yield return StartCoroutine(AnimateEnemySpriteAttack());
+                            yield return StartCoroutine(AnimateSpriteAttack(caster));
                             hasAnimatedSprite = true;
                         }
 
-                        AttackCombatent(multiAttack.DamageAmount, Target.Character, Target.Enemy, multiAttack.DamageType, DamageSource.EnemyAttack);
+                        HandleSpellMultiAttackEffect(multiAttack, target, caster);
 
                         yield return new WaitForSeconds(multiAttack.TimeBetweenAttacks);
                     }
-
                     break;
-                case EnemyWardIntent ward:
-
-                    GiveCombatentWard(ward.WardAmount, Target.Enemy);
-
+                case SpellWardEffect ward:
+                    HandleWardEffect(ward, target, caster);
                     break;
-                case EnemyApplyAfflictionIntent apply:
-
-                    if (!hasAnimatedSprite)
+                case SpellApplyAfflictionEffect apply:
+                    // Animation
+                    if (allowAnimations && !hasAnimatedSprite)
                     {
-                        yield return StartCoroutine(AnimateEnemySpriteAttack());
+                        yield return StartCoroutine(AnimateSpriteAttack(caster));
                         hasAnimatedSprite = true;
                     }
 
-                    AddAffliction(apply.AfflictionType, apply.NumStacks, Target.Character);
-
+                    HandleApplyAfflictionEffect(apply, target, caster);
                     break;
-                case EnemyGainAfflictionIntent gain:
-
-                    AddAffliction(gain.AfflictionType, gain.NumStacks, Target.Enemy);
-
+                case SpellCleanseAfflictionsEffect cleanse:
+                    HandleCleanseAfflictionEffect(cleanse, target, caster);
                     break;
-                case EnemyHealIntent heal:
-
-                    AlterCombatentHP(heal.HealAmount, Target.Enemy, DamageType.Heal);
-
+                case SpellAlterHPEffect alterHP:
+                    HandleAlterHPEffect(alterHP, target, caster);
                     break;
-                case EnemyCleanseAfflictionsIntent cleanse:
-
-                    List<Affliction> toRemove = new List<Affliction>();
-                    Debug.Log("Cleanse");
-                    foreach (Affliction affliction in GetTargetAfflictionMap(Target.Enemy).Values)
-                    {
-                        Debug.Log("On Aff: " + affliction);
-                        if (cleanse.toCleanse.Contains(affliction.Sign))
-                        {
-                            toRemove.Add(affliction);
-                        }
-                    }
-
-                    while (toRemove.Count > 0)
-                    {
-                        Affliction removingAff = toRemove[0];
-                        toRemove.RemoveAt(0);
-                        Debug.Log("Removing Aff: " + removingAff);
-                        RemoveAffliction(Target.Enemy, removingAff.Type);
-                    }
+                case SpellDrawEffect draw:
+                    HandleDrawEffect(draw);
                     break;
                 default:
                     throw new UnhandledSwitchCaseException();
             }
         }
 
-        enemyAction.CallOnActivate();
+
+        // Call on Finish
+        callOnFinish?.Invoke();
     }
 
-    public void AlterCombatentHP(int amount, Target target, DamageType damageType)
+    private void RemoveAfflictionsOfSignFromMap(Combatent combatent, List<Sign> toCleanse)
+    {
+        List<Affliction> toRemove = new List<Affliction>();
+
+        foreach (Affliction affliction in GetTargetAfflictionMap(combatent).Values)
+        {
+            // Debug.Log("On Aff: " + affliction);
+            if (toCleanse.Contains(affliction.Sign))
+            {
+                toRemove.Add(affliction);
+            }
+        }
+
+        while (toRemove.Count > 0)
+        {
+            Affliction removingAff = toRemove[0];
+            toRemove.RemoveAt(0);
+            RemoveAffliction(combatent, removingAff.Type);
+        }
+    }
+
+    public void AlterCombatentHP(int amount, Combatent target, DamageType damageType)
     {
         if (amount < 0)
         {
@@ -1810,12 +1973,12 @@ public partial class CombatManager : MonoBehaviour
         PopupText text;
         switch (target)
         {
-            case Target.Character:
+            case Combatent.Character:
 
                 // Use Ward
                 if (amount < 0 && wardableDamageTypes.Contains(damageType))
                 {
-                    int wardUsed = UseWard(amount, Target.Character, () => characterWard, i => characterWard += i);
+                    int wardUsed = UseWard(amount, Combatent.Character, () => characterWard, i => characterWard += i);
                     amount += wardUsed;
 
                     // Only Spawn Text if Amount is still < 0 after using Ward
@@ -1839,9 +2002,9 @@ public partial class CombatManager : MonoBehaviour
                 if (amount < 0)
                 {
                     // Callback
-                    OnPlayerTakeDamage?.Invoke(amount * -1);
+                    CombatentIntCallbackMap[Combatent.Character][CombatIntCallbackType.OnTakeDamage]?.Invoke(amount * -1);
 
-                    ShakeCombatent(Target.Character);
+                    ShakeCombatent(Combatent.Character);
                 }
 
                 // Finalize player HP damage
@@ -1849,12 +2012,12 @@ public partial class CombatManager : MonoBehaviour
                 characterHPBar.SetCurrentHP(GameManager._Instance.GetCurrentCharacterHP());
 
                 break;
-            case Target.Enemy:
+            case Combatent.Enemy:
 
                 // Use Ward
                 if (amount < 0 && wardableDamageTypes.Contains(damageType))
                 {
-                    int wardUsed = UseWard(amount, Target.Enemy, () => enemyWard, i => enemyWard += i);
+                    int wardUsed = UseWard(amount, Combatent.Enemy, () => enemyWard, i => enemyWard += i);
                     amount += wardUsed;
 
                     // Only Spawn Text if Amount is still < 0 after using Ward
@@ -1882,9 +2045,9 @@ public partial class CombatManager : MonoBehaviour
                 else if (currentEnemyHP + amount < 0) // tried to damage past 0
                 {
                     // Callback
-                    OnEnemyTakeDamage?.Invoke(amount * -1);
+                    CombatentIntCallbackMap[Combatent.Character][CombatIntCallbackType.OnTakeDamage]?.Invoke(amount * -1);
 
-                    ShakeCombatent(Target.Enemy);
+                    ShakeCombatent(Combatent.Enemy);
 
                     currentEnemyHP = 0;
                 }
@@ -1894,10 +2057,10 @@ public partial class CombatManager : MonoBehaviour
                     // Apply amount
                     currentEnemyHP += amount;
 
-                    // Callbacks
-                    OnEnemyTakeDamage?.Invoke(amount * -1);
+                    // Callback
+                    CombatentIntCallbackMap[Combatent.Character][CombatIntCallbackType.OnTakeDamage]?.Invoke(amount * -1);
 
-                    ShakeCombatent(Target.Enemy);
+                    ShakeCombatent(Combatent.Enemy);
                 }
                 else
                 {
@@ -1912,7 +2075,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void AttackCombatent(int amount, Target target, Target attacker, DamageType damageType, DamageSource damageSource)
+    public void AttackCombatent(int amount, Combatent target, Combatent attacker, DamageType damageType, DamageSource damageSource)
     {
         // Thorns Effect
         if (TargetHasAffliction(AfflictionType.Thorns, target))
@@ -1938,22 +2101,14 @@ public partial class CombatManager : MonoBehaviour
         }
 
         // Callback
-        switch (attacker)
-        {
-            case Target.Character:
-                OnPlayerAttack?.Invoke();
-                break;
-            case Target.Enemy:
-                OnEnemyAttack?.Invoke();
-                break;
-        }
+        CombatentBaseCallbackMap[attacker][CombatBaseCallbackType.OnAttack]?.Invoke();
 
         AlterCombatentHP(-damage, target, damageType);
     }
 
     // Calculation Function
     // Takes a number and spits out the number post effects
-    public int CalculateDamage(int amount, Target attacker, Target target, DamageType damageType, DamageSource source, bool consumeAfflictions)
+    public int CalculateDamage(int amount, Combatent attacker, Combatent target, DamageType damageType, DamageSource source, bool consumeAfflictions)
     {
         // Attacker Effects
         // Power Effect
@@ -1970,8 +2125,8 @@ public partial class CombatManager : MonoBehaviour
         }
 
         // Black Prism Effect
-        if (attacker == Target.Character
-            && source == DamageSource.ActiveSpell
+        if (attacker == Combatent.Character
+            && source == DamageSource.Spell
             && GameManager._Instance.HasArtifact(ArtifactLabel.BlackPrism))
         {
             amount = Mathf.CeilToInt(amount * (BlackPrism.DamageMultiplier / 100));
@@ -2055,7 +2210,7 @@ public partial class CombatManager : MonoBehaviour
 
     // Calculation Function
     // Takes a number and spits out the number post effects
-    public int CalculateWard(int amount, Target applyingTo)
+    public int CalculateWard(int amount, Combatent applyingTo)
     {
         if (TargetHasAffliction(AfflictionType.Protection, applyingTo))
         {
@@ -2069,19 +2224,19 @@ public partial class CombatManager : MonoBehaviour
         return amount;
     }
 
-    private int UseWard(int amount, Target target, Func<int> getFunc, Action<int> alterFunc)
+    private int UseWard(int amount, Combatent target, Func<int> getFunc, Action<int> alterFunc)
     {
         // Levitating Effect
         switch (target)
         {
-            case Target.Character:
-                if (TargetHasAffliction(AfflictionType.Levitating, Target.Enemy))
+            case Combatent.Character:
+                if (TargetHasAffliction(AfflictionType.Levitating, Combatent.Enemy))
                 {
                     return 0;
                 }
                 break;
-            case Target.Enemy:
-                if (TargetHasAffliction(AfflictionType.Levitating, Target.Character))
+            case Combatent.Enemy:
+                if (TargetHasAffliction(AfflictionType.Levitating, Combatent.Character))
                 {
                     return 0;
                 }
@@ -2118,30 +2273,30 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void GiveCombatentWard(int wardAmount, Target target)
+    public void GiveCombatentWard(int wardAmount, Combatent target)
     {
         wardAmount = CalculateWard(wardAmount, target);
         CallDamageTypeAnimation(DamageType.Ward, target);
         switch (target)
         {
-            case Target.Character:
+            case Combatent.Character:
                 characterWard += wardAmount;
                 characterHPBar.SetWard(characterWard);
                 break;
-            case Target.Enemy:
+            case Combatent.Enemy:
                 enemyWard += wardAmount;
                 enemyHPBar.SetWard(enemyWard);
                 break;
         }
     }
 
-    public int GetCombatentWard(Target target)
+    public int GetCombatentWard(Combatent target)
     {
         switch (target)
         {
-            case Target.Character:
+            case Combatent.Character:
                 return characterWard;
-            case Target.Enemy:
+            case Combatent.Enemy:
                 return enemyWard;
             default:
                 throw new UnhandledSwitchCaseException();
@@ -2161,22 +2316,22 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void ResetCombatentWard(Target target)
+    public void ResetCombatentWard(Combatent target)
     {
         switch (target)
         {
-            case Target.Character:
+            case Combatent.Character:
                 characterWard = 0;
                 characterHPBar.SetWard(characterWard);
                 break;
-            case Target.Enemy:
+            case Combatent.Enemy:
                 enemyWard = 0;
                 enemyHPBar.SetWard(enemyWard);
                 break;
         }
     }
 
-    public int GetPowerBonus(Target owner)
+    public int GetPowerBonus(Combatent owner)
     {
         int powerBonus = 0;
         if (TargetHasAffliction(AfflictionType.Power, owner))
@@ -2186,7 +2341,7 @@ public partial class CombatManager : MonoBehaviour
         return powerBonus;
     }
 
-    public int GetProtectionBonus(Target owner)
+    public int GetProtectionBonus(Combatent owner)
     {
         int protectionBonus = 0;
         if (TargetHasAffliction(AfflictionType.Protection, owner))
@@ -2196,7 +2351,7 @@ public partial class CombatManager : MonoBehaviour
         return protectionBonus;
     }
 
-    private void CallDamageTypeAnimation(DamageType damageType, Target target)
+    private void CallDamageTypeAnimation(DamageType damageType, Combatent target)
     {
         switch (damageType)
         {
@@ -2209,7 +2364,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private IEnumerator DefaultDamageTypeAnimation(DamageType damageType, Target target)
+    private IEnumerator DefaultDamageTypeAnimation(DamageType damageType, Combatent target)
     {
         DamageTypeAnimator animator = Instantiate(defaultDamageTypeAnimatorPrefab, GetTargetSpriteImage(target).transform);
         animator.CV.alpha = 0;
@@ -2226,7 +2381,7 @@ public partial class CombatManager : MonoBehaviour
         Destroy(animator.gameObject);
     }
 
-    private IEnumerator WardDamageTypeAnimation(Target target)
+    private IEnumerator WardDamageTypeAnimation(Combatent target)
     {
         DamageTypeAnimator animator = Instantiate(wardDamageTypeAnimatorPrefab, GetTargetSpriteImage(target).transform);
         animator.CV.alpha = 0;
@@ -2248,11 +2403,11 @@ public partial class CombatManager : MonoBehaviour
 
     #region Afflictions
 
-    public void AddAffliction(AfflictionType type, int num, Target target)
+    public void AddAffliction(AfflictionType type, int num, Combatent target)
     {
         switch (target)
         {
-            case Target.Character:
+            case Combatent.Character:
 
                 if (type == AfflictionType.Weak && GameManager._Instance.HasArtifact(ArtifactLabel.SpecialSpinich))
                 {
@@ -2268,21 +2423,21 @@ public partial class CombatManager : MonoBehaviour
 
                 if (SetAffliction(type, num, target))
                 {
-                    // Character was given new Affliction
-                    OnCharacterGainAffliction?.Invoke();
+                    // Callback
+                    CombatentBaseCallbackMap[Combatent.Character][CombatBaseCallbackType.OnGainAffliction]?.Invoke();
                 }
                 break;
-            case Target.Enemy:
+            case Combatent.Enemy:
                 if (SetAffliction(type, num, target))
                 {
-                    // Enemy was given new Affliction
-                    OnEnemyGainAffliction?.Invoke();
+                    // Callback
+                    CombatentBaseCallbackMap[Combatent.Enemy][CombatBaseCallbackType.OnGainAffliction]?.Invoke();
                 }
                 break;
         }
     }
 
-    public Affliction GetAffliction(AfflictionType type, Target owner)
+    public Affliction GetAffliction(AfflictionType type, Combatent owner)
     {
         if (TargetHasAffliction(type, owner))
         {
@@ -2294,7 +2449,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void ShowAfflictionProc(AfflictionType type, Target t)
+    public void ShowAfflictionProc(AfflictionType type, Combatent t)
     {
         Dictionary<AfflictionType, AfflictionIcon> map = GetTargetAfflictionDisplays(t);
         if (map.ContainsKey(type))
@@ -2303,7 +2458,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private bool SetAffliction(AfflictionType type, int numStacks, Target target)
+    private bool SetAffliction(AfflictionType type, int numStacks, Combatent target)
     {
         Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(target);
         Transform parentTo = GetTargetParentAfflictionTo(target);
@@ -2388,7 +2543,7 @@ public partial class CombatManager : MonoBehaviour
         return isNewInstance;
     }
 
-    private void UpdateHPBarAfflictions(AfflictionType type, Target target)
+    private void UpdateHPBarAfflictions(AfflictionType type, Combatent target)
     {
         int v;
         switch (type)
@@ -2413,7 +2568,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void ClearAfflictionMap(Dictionary<AfflictionType, Affliction> map, Target t)
+    private void ClearAfflictionMap(Dictionary<AfflictionType, Affliction> map, Combatent t)
     {
         Dictionary<AfflictionType, Affliction>.KeyCollection keys = map.Keys;
         Dictionary<AfflictionType, AfflictionIcon> displays = GetTargetAfflictionDisplays(t);
@@ -2426,27 +2581,27 @@ public partial class CombatManager : MonoBehaviour
         map.Clear();
     }
 
-    private Dictionary<AfflictionType, Affliction> GetTargetAfflictionMap(Target t)
+    private Dictionary<AfflictionType, Affliction> GetTargetAfflictionMap(Combatent t)
     {
-        return t == Target.Character ? characterAfflictionMap : enemyAfflictionMap;
+        return t == Combatent.Character ? characterAfflictionMap : enemyAfflictionMap;
     }
 
-    private Dictionary<AfflictionType, AfflictionIcon> GetTargetAfflictionDisplays(Target t)
+    private Dictionary<AfflictionType, AfflictionIcon> GetTargetAfflictionDisplays(Combatent t)
     {
-        return t == Target.Character ? characterAfflictionIconTracker : enemyAfflictionIconTracker;
+        return t == Combatent.Character ? characterAfflictionIconTracker : enemyAfflictionIconTracker;
     }
 
-    private Transform GetTargetParentAfflictionTo(Target t)
+    private Transform GetTargetParentAfflictionTo(Combatent t)
     {
-        return t == Target.Character ? characterAfflictionList : enemyAfflictionList;
+        return t == Combatent.Character ? characterAfflictionList : enemyAfflictionList;
     }
 
-    public bool TargetHasAffliction(AfflictionType type, Target target)
+    public bool TargetHasAffliction(AfflictionType type, Combatent target)
     {
         return GetTargetAfflictionMap(target).ContainsKey(type);
     }
 
-    public Affliction GetTargetAffliction(AfflictionType type, Target target)
+    public Affliction GetTargetAffliction(AfflictionType type, Combatent target)
     {
         if (TargetHasAffliction(type, target))
         {
@@ -2455,7 +2610,7 @@ public partial class CombatManager : MonoBehaviour
         return null;
     }
 
-    public void ConsumeAfflictionStack(AfflictionType type, Target target, int toConsume = 1)
+    public void ConsumeAfflictionStack(AfflictionType type, Combatent target, int toConsume = 1)
     {
         // Only consumes a stack if there are stacks to be consumed
         Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(target);
@@ -2468,7 +2623,7 @@ public partial class CombatManager : MonoBehaviour
         UpdateHPBarAfflictions(type, target);
     }
 
-    public void RemoveAffliction(Target target, AfflictionType type)
+    public void RemoveAffliction(Combatent target, AfflictionType type)
     {
         Debug.Log("Removing: " + type + " From " + target);
 
@@ -2500,19 +2655,11 @@ public partial class CombatManager : MonoBehaviour
         SpawnEffectText(EffectTextStyle.Fade, removingAff.GetToolTipLabel() + " Wears Off", UIManager._Instance.GetEffectTextColor("AfflictionRemoved"), target,
             UIManager._Instance.GetAfflictionIcon(removingAff.Type));
 
-        // Callbacks
-        switch (target)
-        {
-            case Target.Character:
-                OnCharacterLoseAffliction?.Invoke();
-                break;
-            case Target.Enemy:
-                OnEnemyLoseAffliction?.Invoke();
-                break;
-        }
+        // Callback
+        CombatentBaseCallbackMap[target][CombatBaseCallbackType.OnLoseAffliction]?.Invoke();
     }
 
-    private int GetTargetAfflictionStacks(AfflictionType type, Target target)
+    private int GetTargetAfflictionStacks(AfflictionType type, Combatent target)
     {
         if (TargetHasAffliction(type, target))
         {
@@ -2524,7 +2671,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void ApplyPoisonEffectOnMap(Dictionary<AfflictionType, Affliction> map, Target target)
+    private void ApplyPoisonEffectOnMap(Dictionary<AfflictionType, Affliction> map, Combatent target)
     {
         if (map.ContainsKey(AfflictionType.Poison))
         {
@@ -2538,7 +2685,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void ApplyBlightEffectOnMap(Dictionary<AfflictionType, Affliction> map, Target target)
+    private void ApplyBlightEffectOnMap(Dictionary<AfflictionType, Affliction> map, Combatent target)
     {
         if (map.ContainsKey(AfflictionType.Blight))
         {
@@ -2553,7 +2700,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void ApplyBurnEffectOnMap(Dictionary<AfflictionType, Affliction> map, Target target)
+    private void ApplyBurnEffectOnMap(Dictionary<AfflictionType, Affliction> map, Combatent target)
     {
         if (map.ContainsKey(AfflictionType.Burn))
         {
@@ -2563,7 +2710,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void ClearRandomAffliction(Target t, Sign sign)
+    public void ClearRandomAffliction(Combatent t, Sign sign)
     {
         List<AfflictionType> negativeAfflictions = new List<AfflictionType>();
         Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(t);
@@ -2586,60 +2733,60 @@ public partial class CombatManager : MonoBehaviour
 
     #region UI
 
-    private Image GetTargetSpriteImage(Target target)
+    private Image GetTargetSpriteImage(Combatent target)
     {
         switch (target)
         {
-            case Target.Character:
+            case Combatent.Character:
                 return characterCombatSprite;
-            case Target.Enemy:
+            case Combatent.Enemy:
                 return enemyCombatSprite;
             default:
                 throw new UnhandledSwitchCaseException();
         }
     }
 
-    public void SpawnEffectText(EffectTextStyle style, string text, Color c, Target owner, Sprite withIcon = null)
+    public void SpawnEffectText(EffectTextStyle style, string text, Color c, Combatent owner, Sprite withIcon = null)
     {
         if (!combatScreenOpen) return;
         switch (owner)
         {
-            case Target.Character:
+            case Combatent.Character:
                 characterEffectTextDisplay.CallSpawnEffectText(style, text, c, withIcon);
                 return;
-            case Target.Enemy:
+            case Combatent.Enemy:
                 enemyEffectTextDisplay.CallSpawnEffectText(style, text, c, withIcon);
                 return;
         }
     }
 
-    public void SpawnEffectIcon(EffectIconStyle style, Sprite sprite, Target owner)
+    public void SpawnEffectIcon(EffectIconStyle style, Sprite sprite, Combatent owner)
     {
         if (!combatScreenOpen) return;
         switch (owner)
         {
-            case Target.Character:
+            case Combatent.Character:
                 characterEffectTextDisplay.CallSpawnEffectIcon(style, sprite);
                 return;
-            case Target.Enemy:
+            case Combatent.Enemy:
                 enemyEffectTextDisplay.CallSpawnEffectIcon(style, sprite);
                 return;
         }
     }
 
-    public void ShakeCombatent(Target target)
+    public void ShakeCombatent(Combatent target)
     {
         RectTransform rect = GetTargetSpriteImage(target).transform as RectTransform;
         rect.DOShakeAnchorPos(shakeCombatentDuration, shakeCombatentStrength, shakeCombatentVibrato, shakeCombatentRandomness, false, true, ShakeRandomnessMode.Harmonic);
     }
 
-    private CombatentHPBar GetCombatentHPBar(Target target)
+    private CombatentHPBar GetCombatentHPBar(Combatent target)
     {
         switch (target)
         {
-            case Target.Character:
+            case Combatent.Character:
                 return characterHPBar;
-            case Target.Enemy:
+            case Combatent.Enemy:
                 return enemyHPBar;
             default:
                 throw new UnhandledSwitchCaseException();
@@ -2647,4 +2794,11 @@ public partial class CombatManager : MonoBehaviour
     }
 
     #endregion
+
+    [ContextMenu("Test/AddFreeSpellCast")]
+    public void AddFreeSpellCast()
+    {
+        NumFreeSpells++;
+        SpawnEffectText(EffectTextStyle.UpAndFade, "Free Spell", UIManager._Instance.GetEffectTextColor("FreeSpell"), Combatent.Character);
+    }
 }

@@ -23,7 +23,7 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
 
     [Header("Spell Dependant")]
     [SerializeField] private Image rarityImage;
-    private bool isForUpgrade;
+    private bool isDragging;
 
     private KeyCode keyCode;
 
@@ -50,44 +50,10 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
         SpawnToolTipFunc();
     }
 
-    protected override void SpawnToolTipFunc()
-    {
-        if (isForUpgrade)
-        {
-            Spell upgradedSpell = Spell.GetSpellOfType(Spell.Label);
-
-            if (upgradedSpell.CanUpgrade)
-            {
-                upgradedSpell.Upgrade(Sign.Positive);
-                spawnedToolTip = UIManager._Instance.SpawnComparisonToolTips(
-                    new ToolTippableComparisonData[]
-                        {
-                        new ToolTippableComparisonData("Current: ", Spell),
-                        new ToolTippableComparisonData("Upgraded: ", upgradedSpell)
-                        },
-                    transform);
-            }
-            else
-            {
-                base.SpawnToolTipFunc();
-            }
-        }
-        else
-        {
-            base.SpawnToolTipFunc();
-        }
-    }
-
     public override void CallSpawnToolTip()
     {
         StartCoroutine(SpawnToolTipsAfterDelay());
     }
-
-    public void SetIsForUpgrade(bool b)
-    {
-        isForUpgrade = b;
-    }
-
 
     private void RotateTowardsZero()
     {
@@ -117,33 +83,17 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
 
         switch (spell)
         {
-            case ActiveSpell activeSpell:
+            case ReusableSpell activeSpell:
                 castTypeText.text = "Active";
-
-                // Show Detail of Spells
-                string[] tokens = spell.GetToolTipText().Split(',');
-                string r = "";
-                for (int i = 0; i < tokens.Length; i++)
-                {
-                    r += tokens[i];
-                    if (i < tokens.Length - 1)
-                    {
-                        r += "\n";
-                    }
-                }
-                text.text = r;
-
                 break;
-            case PassiveSpell passiveSpell:
-                castTypeText.text = "Passive";
-                text.text = spell.GetToolTipText();
+            case PowerSpell powerSpell:
+                castTypeText.text = "Power";
                 break;
             default:
                 throw new UnhandledSwitchCaseException();
         }
     }
 
-    private bool isDragging;
     public override void OnPointerClick(PointerEventData eventData)
     {
         base.OnPointerClick(eventData);
@@ -167,6 +117,9 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
 
         //
         manaCostText.text = Spell.ManaCost.ToString();
+
+        // Show Detail of Spells
+        text.text = Spell.GetToolTipText();
 
         if (currentSpellDisplayState == SpellDisplayState.InHand)
         {
@@ -198,19 +151,14 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
 
     public void TryCast()
     {
-
         // Only allow for spell casts while in combat
         if (CombatManager._Instance.CanCastSpells)
         {
             if (!Spell.CanCast)
             {
-                if (Spell.Type == SpellCastType.Active)
+                if (!Spell.HasMana)
                 {
-                    ActiveSpell activeSpell = (ActiveSpell)Spell;
-                    if (!activeSpell.HasMana)
-                    {
-                        GameManager._Instance.PopManaText();
-                    }
+                    GameManager._Instance.PopManaText();
                 }
                 return;
             }
@@ -218,22 +166,21 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
             // Tick Cooldowns
             CombatManager._Instance.TickHandCooldowns(Spell);
 
-            CombatManager._Instance.AddSpellToCastQueue(Spell);
+            CombatManager._Instance.AddSpellToCastQueue(Spell, Combatent.Character);
 
-            if (Spell.Type == SpellCastType.Passive)
+            if (Spell.SpellCastType == SpellCastType.Power)
             {
-                // Automatically remove Passive Spells from Hand when Played
-                CombatManager._Instance.AddSpellToPassiveSpellPile((PassiveSpell)Spell);
+                // Automatically remove Power Spells from Hand when Played
+                CombatManager._Instance.AddSpellToPowerSpellPile((PowerSpell)Spell);
             }
         }
-
     }
 
     private void InHandUpdate()
     {
-        if (Spell.Type == SpellCastType.Active)
+        if (Spell.SpellCastType == SpellCastType.Reusable)
         {
-            ActiveSpell activeSpell = (ActiveSpell)Spell;
+            ReusableSpell activeSpell = (ReusableSpell)Spell;
             if (activeSpell.CurrentCooldown > 0)
             {
                 cooldownContainer.SetActive(true);

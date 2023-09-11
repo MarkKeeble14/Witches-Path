@@ -6,11 +6,6 @@ public class BalenceManager : MonoBehaviour
 {
     public static BalenceManager _Instance { get; private set; }
 
-    [Header("Artifacts")]
-    [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, int>> artifactSpecDict
-        = new SerializableDictionary<string, SerializableDictionary<string, int>>();
-
     [Header("Books")]
     [SerializeField]
     private SerializableDictionary<string, SerializableDictionary<string, int>> bookSpecDict
@@ -67,11 +62,6 @@ public class BalenceManager : MonoBehaviour
     public int GetValue(PotionIngredientType ingredientType, string identifier)
     {
         return ingredientSpecDict[ingredientType.ToString()][identifier][0];
-    }
-
-    public int GetValue(ArtifactLabel artifactLabel, string identifier)
-    {
-        return artifactSpecDict[artifactLabel.ToString()][identifier];
     }
 
     public int UpdateValue(BookLabel bookLabel, string identifier, int changeBy)

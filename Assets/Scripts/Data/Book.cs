@@ -123,7 +123,7 @@ public abstract class Book : PowerupItem
     protected void ShowBookProc()
     {
         GameManager._Instance.AnimateBook(Label);
-        CombatManager._Instance.SpawnEffectIcon(EffectIconStyle.FadeAndGrow, GetSprite(), Target.Character);
+        CombatManager._Instance.SpawnEffectIcon(EffectIconStyle.FadeAndGrow, GetSprite(), Combatent.Character);
     }
 
     protected void ShowBookLevelUp()
@@ -324,7 +324,7 @@ public class BusinessTextbook : Book
     protected override void Effect()
     {
         GameManager._Instance.AlterGold(-useCost);
-        CombatManager._Instance.AttackCombatent(-damageAmount, Target.Character, Target.Enemy, DamageType.Default, DamageSource.Book);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Combatent.Character, Combatent.Enemy, DamageType.Default, DamageSource.Book);
     }
 
     protected override void LevelUp()

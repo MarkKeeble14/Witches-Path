@@ -42,6 +42,7 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
     [SerializeField] private TextMeshProUGUI[] coloredTexts;
     private float targetScale;
     protected bool scaleLocked;
+    protected bool cvLocked;
     protected SpellDisplayState currentSpellDisplayState = SpellDisplayState.Normal;
 
     [SerializeField] protected Image border;
@@ -115,9 +116,17 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
 
     protected virtual void Update()
     {
-        bool hide = ((MapManager._Instance.MapOpen || GameManager._Instance.OverlaidUIOpen) && isInHand) || (MapManager._Instance.MapOpen && currentSpellDisplayState == SpellDisplayState.Locked);
-        mainCV.blocksRaycasts = !hide;
-        mainCV.alpha = hide ? 0 : 1;
+        if (!cvLocked)
+        {
+            bool hide = ((MapManager._Instance.MapOpen || GameManager._Instance.OverlaidUIOpen) && isInHand) || (MapManager._Instance.MapOpen && currentSpellDisplayState == SpellDisplayState.Locked);
+            mainCV.blocksRaycasts = !hide;
+            mainCV.alpha = hide ? 0 : 1;
+        }
+
+        if (currentSpellDisplayState == SpellDisplayState.ToolTip)
+        {
+            canvas.sortingOrder = sortingOrderDict[currentSpellDisplayState].y;
+        }
 
         if (!scaleLocked)
         {
@@ -185,13 +194,6 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
             text.color = colorInfo.TextColor;
         }
 
-        // This must be done after Setting the Color of the rest of the Text
-        // Debug.Log(spell.Name + " - Has Been Upgraded: " + spell.HasBeenUpgraded);
-        if (spell.HasBeenUpgraded)
-        {
-            nameText.color = UIManager._Instance.GetEffectTextColor("UpgradedSpell");
-        }
-
         onEnter += CallSpawnToolTip;
         onExit += DestroyToolTip;
     }
@@ -204,6 +206,11 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
     public void SetScaleLocked(bool b)
     {
         scaleLocked = b;
+    }
+
+    public void SetCVLocked(bool b)
+    {
+        cvLocked = b;
     }
 
     public virtual void CallSpawnToolTip()

@@ -21,10 +21,9 @@ public enum EventLabel
     TraumaRecall,
     BookOfTheAmnesiac,
     BookOfTheRepurposed,
-    BookOfTheStudious,
-    AngerForUpgrade,
+    TakeASip,
+    RemoveTwoForAnger,
     ASuspiciousTome,
-    TakeASip
 }
 
 public abstract class OptionEvent
@@ -210,10 +209,8 @@ public abstract class OptionEvent
                 return new BookOfTheAmnesiac();
             case EventLabel.BookOfTheRepurposed:
                 return new BookOfTheRepurposed();
-            case EventLabel.BookOfTheStudious:
-                return new BookOfTheStudious();
-            case EventLabel.AngerForUpgrade:
-                return new AngerForUpgrade();
+            case EventLabel.RemoveTwoForAnger:
+                return new RemoveTwoForAnger();
             case EventLabel.ASuspiciousTome:
                 return new ASuspiciousTome();
             case EventLabel.TakeASip:
@@ -840,17 +837,17 @@ public class GoldAtACost : OptionEvent
         int gainGoldAmount = GetEventSpec("GoldAmount");
         int loseHPAmount = Mathf.RoundToInt(((float)GetEventSpec("DamageAmount") / 100) * GameManager._Instance.GetMaxPlayerHP());
 
-        Spell pain = Spell.GetSpellOfType(SpellLabel.Hurt);
+        Spell injure = Spell.GetSpellOfType(SpellLabel.Injure);
 
         // 1: Offer
         ConditionalOption determined = new ConditionalOption(() => true,
             MakeEventOption("Be Determined", "Gain " + gainGoldAmount + " Gold, Become Cursed - Hurt",
             () => false,
-            t => spawnedToolTip = UIManager._Instance.SpawnSpellToolTip(pain, t), () => GameObject.Destroy(spawnedToolTip),
+            t => spawnedToolTip = UIManager._Instance.SpawnSpellToolTip(injure, t), () => GameObject.Destroy(spawnedToolTip),
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
                     GameManager._Instance.AlterGold(gainGoldAmount);
-                    GameManager._Instance.AddSpellToSpellBook(SpellLabel.Hurt);
+                    GameManager._Instance.AddSpellToSpellBook(injure);
                 })));
 
         ConditionalOption tactful = new ConditionalOption(() => true,
@@ -1222,39 +1219,9 @@ public class BookOfTheRepurposed : OptionEvent
     }
 }
 
-public class BookOfTheStudious : OptionEvent
+public class RemoveTwoForAnger : OptionEvent
 {
-    public override EventLabel EventLabel => EventLabel.BookOfTheStudious;
-    public override Sprite EventArt => null;
-    public override string EventName => "Book of the Studious";
-    protected override string defaultEventText => "Text";
-    public override UseEventUI EventUI => UseEventUI.Story;
-
-    protected override void InitializeEventData()
-    {
-        // 1:
-        ConditionalOption read = new ConditionalOption(() => true,
-            MakeEventOption("Read", "Choose a Spell to Upgrade",
-            () => false,
-                MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
-                {
-                    EventManager._Instance.StartCoroutine(GameManager._Instance.UpgradeSpellSequence(spell => true));
-                })));
-
-        ConditionalOption leave = new ConditionalOption(() => true,
-            MakeEventOption("Leave", "", () => false,
-                MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
-                {
-                })));
-
-        // Add Options
-        AddOptions(read, leave);
-    }
-}
-
-public class AngerForUpgrade : OptionEvent
-{
-    public override EventLabel EventLabel => EventLabel.AngerForUpgrade;
+    public override EventLabel EventLabel => EventLabel.RemoveTwoForAnger;
     public override Sprite EventArt => null;
     public override string EventName => "Name";
     protected override string defaultEventText => "Text";
@@ -1268,18 +1235,18 @@ public class AngerForUpgrade : OptionEvent
 
         // 1:
         ConditionalOption option = new ConditionalOption(() => true,
-            MakeEventOption("Upgrade", "Choose a Spell to Upgrade, Become Cursed - Anger",
+            MakeEventOption("Remove", "Choose 2 Spells to Remove, Become Cursed - Anger",
             () => false, t => spawnedToolTip = UIManager._Instance.SpawnSpellToolTip(anger, t), () => GameObject.Destroy(spawnedToolTip),
-                MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
+                MakeEventOptionOutcomeWithChance(100, "You suddenly feel very upset about the loss of those cards...", delegate
                 {
-                    EventManager._Instance.StartCoroutine(GameManager._Instance.UpgradeSpellSequence(spell => true, 1,
+                    EventManager._Instance.StartCoroutine(GameManager._Instance.RemoveSpellSequence(spell => true, 2,
                         () => GameManager._Instance.AddSpellToSpellBook(anger)));
                 })));
 
         // 2: Leave
         ConditionalOption leave = new ConditionalOption(() => true,
             MakeEventOption("Leave", "", () => false,
-                MakeEventOptionOutcomeWithChance(100, "Outcome Text", null)));
+                MakeEventOptionOutcomeWithChance(100, "", null)));
 
         // Add Options
         AddOptions(option, leave);

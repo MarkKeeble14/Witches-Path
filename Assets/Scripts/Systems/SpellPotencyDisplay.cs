@@ -67,7 +67,7 @@ public class SpellPotencyDisplay : MonoBehaviour, IPointerEnterHandler, IPointer
 
         //
         cv.blocksRaycasts = CombatManager._Instance.AllowGameSpaceToolTips && !(MapManager._Instance.MapOpen || GameManager._Instance.OverlaidUIOpen);
-        Debug.Log(cv.blocksRaycasts);
+
         if (cv.blocksRaycasts)
         {
             cv.alpha = Mathf.Lerp(cv.alpha, 1, Time.deltaTime * animateAlphaSpeed);
