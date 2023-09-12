@@ -328,8 +328,18 @@ public abstract class Spell : ToolTippable
         }, .25f));
         */
 
-        Batches.Add(new SpellNoteBatch(2, .5f, .5f));
-        Batches.Add(new SpellNoteBatch(3, .5f, .5f));
+        // Random Batches
+        for (int i = 0; i < 3; i++)
+        {
+            Batches.Add(new SpellNoteBatch(RandomHelper.RandomIntInclusive(2, 3), RandomHelper.RandomFloat(0.3f, .6f), RandomHelper.RandomFloat(.85f, 1.1f)));
+            if (RandomHelper.RandomBool())
+            {
+                break;
+            }
+        }
+
+        // Batches.Add(new SpellNoteBatch(2, .5f, .5f));
+        // Batches.Add(new SpellNoteBatch(3, .5f, .5f));
     }
 
     protected int GetNumNotes()
@@ -1121,15 +1131,9 @@ public class WitchesWill : ReusableSpell
     protected override int startCooldown => 1;
     protected override int startManaCost => 1;
 
-    public WitchesWill(int damageAmount = 100) : base()
+    public WitchesWill(int damageAmount = 4) : base()
     {
         AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
-    }
-
-    protected override void SetBatches()
-    {
-        Batches.Add(new SpellNoteBatch(2, .5f, 0.5f));
-        Batches.Add(new SpellNoteBatch(2, .45f, 0.25f));
     }
 
     protected override void SetSpellEffects()
@@ -1190,11 +1194,6 @@ public class Greed : ReusableSpell
         GeneralKeywords.Add(ToolTipKeyword.Gold);
     }
 
-    protected override void SetBatches()
-    {
-        Batches.Add(new SpellNoteBatch(3, 0.4f, 0.25f));
-    }
-
     protected override void SetSpellEffects()
     {
         AddSpellEffects(new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(damageAmount), MainDamageType, Target.Both));
@@ -1216,11 +1215,6 @@ public class Anger : ReusableSpell
     {
         AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
         AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
-    }
-
-    protected override void SetBatches()
-    {
-        Batches.Add(new SpellNoteBatch(3, 0.4f, 0.25f));
     }
 
     protected override void SetSpellEffects()
@@ -1249,11 +1243,6 @@ public class Frusteration : ReusableSpell
         AddSpellStat(SpellStat.SelfDamageAmount, selfDamageAmount);
 
         AddActionCallback(SpellCallbackType.OnCast, "Increase the amount of damage dealt to yourself by " + 2, () => currentSelfDamageAmount += 2);
-    }
-
-    protected override void SetBatches()
-    {
-        Batches.Add(new SpellNoteBatch(3, 0.4f, 0.25f));
     }
 
     protected override void ResetOnCombatReset()
