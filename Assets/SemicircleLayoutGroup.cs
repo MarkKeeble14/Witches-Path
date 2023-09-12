@@ -7,15 +7,25 @@ public class SemicircleLayoutGroup : MonoBehaviour
     [SerializeField] private float radius;
     [SerializeField] private float maxAngle = 180;
     [SerializeField] private float initialAngle;
+    [SerializeField] private bool reverseOrder;
 
     [Header("Animating Movement")]
     [SerializeField] private bool animate;
     [SerializeField] private float animateSpeed;
 
+    public void SetChildOrder(Transform child)
+    {
+        if (reverseOrder)
+        {
+            child.SetAsFirstSibling();
+        }
+    }
+
     private void Update()
     {
         int numChildren = transform.childCount;
         float increment = maxAngle / numChildren;
+
         for (int i = 0; i < numChildren; i++)
         {
             float angle = initialAngle + i * increment + increment / 2;

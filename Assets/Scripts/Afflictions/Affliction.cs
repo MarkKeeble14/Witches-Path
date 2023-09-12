@@ -722,9 +722,9 @@ public class Nullify : Affliction
 
 public class Jumpy : Affliction
 {
-    protected override string specificToolTipText => "The next " + (numTimesCanRandomize > 1 ? numTimesCanRandomize + " times an" : "time") + " Active Spell is Queued this Turn, Randomize the Enemies Intent." +
+    protected override string specificToolTipText => "The next " + (numTimesCanRandomize > 1 ? numTimesCanRandomize + " times an" : "time") + " Spell is Queued this Turn, Randomize a Queued Spell." +
         " The number of Times this Effect can Occur is Reset each Turn";
-    protected override string genericToolTipText => "Upon Queueing an Active Spell, Randomize the Enemies Intent";
+    protected override string genericToolTipText => "Upon Queueing a Spell, Randomize a Queued Spell";
 
     public override AfflictionType Type => AfflictionType.Jumpy;
 
@@ -742,7 +742,7 @@ public class Jumpy : Affliction
         if (numTimesCanRandomize <= 0) return;
 
         // Get a new Enemy Action that is not the current one
-        CombatManager._Instance.ReplaceCurrentEnemyAction();
+        CombatManager._Instance.RandomizeSpell(GetOwner());
 
         numTimesHasRandomized++;
         attachedTo.AnimateScale();
@@ -802,6 +802,7 @@ public abstract class ProcAfterAffliction : Affliction
     protected abstract int procAfter { get; }
     protected int tracker { get; private set; }
     private Combatent callbackOwner => GetOwner();
+    protected string trackerText => "(" + tracker + " / " + procAfter + ")";
 
     private void Tick()
     {
@@ -830,7 +831,7 @@ public abstract class ProcAfterAffliction : Affliction
 
 public class Embalmed : ProcAfterAffliction
 {
-    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Poison";
+    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Poison " + trackerText;
     protected override string genericToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies Poison";
     public override AfflictionType Type => AfflictionType.Embalmed;
     public override Sign Sign => Sign.Positive;
@@ -851,7 +852,8 @@ public class Embalmed : ProcAfterAffliction
 
 public class Charged : ProcAfterAffliction
 {
-    protected override string specificToolTipText => "At the Beginning of Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Turn, Apply " + stackAmount + " Electrocuted";
+    protected override string specificToolTipText => "At the Beginning of Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Turn, Apply " + stackAmount
+        + " Electrocuted " + trackerText;
     protected override string genericToolTipText => "At the Beginning of Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Turn, Apply Electrocuted";
     public override AfflictionType Type => AfflictionType.Charged;
     public override Sign Sign => Sign.Positive;
@@ -873,7 +875,8 @@ public class Charged : ProcAfterAffliction
 
 public class TorchTipped : ProcAfterAffliction
 {
-    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Burn";
+    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount
+        + " Burn " + trackerText;
     protected override string genericToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies Burn";
     public override AfflictionType Type => AfflictionType.TorchTipped;
     public override Sign Sign => Sign.Positive;
@@ -894,7 +897,8 @@ public class TorchTipped : ProcAfterAffliction
 
 public class Amped : ProcAfterAffliction
 {
-    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain " + stackAmount + " Embolden";
+    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain " + stackAmount
+        + " Embolden " + trackerText;
     protected override string genericToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain Embolden";
     public override AfflictionType Type => AfflictionType.Amped;
     public override Sign Sign => Sign.Positive;
@@ -915,7 +919,8 @@ public class Amped : ProcAfterAffliction
 
 public class Stormy : ProcAfterAffliction
 {
-    protected override string specificToolTipText => "At the End of Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Turn, Apply " + stackAmount + " Paralyze";
+    protected override string specificToolTipText => "At the End of Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Turn, Apply " + stackAmount
+        + " Paralyze " + trackerText;
     protected override string genericToolTipText => "At the End of Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Turn, Apply Paralyze";
     public override AfflictionType Type => AfflictionType.Stormy;
     public override Sign Sign => Sign.Positive;
@@ -936,7 +941,8 @@ public class Stormy : ProcAfterAffliction
 
 public class Brutish : ProcAfterAffliction
 {
-    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Vulnerable";
+    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies "
+        + stackAmount + " Vulnerable " + trackerText;
     protected override string genericToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies Vulnerable";
     public override AfflictionType Type => AfflictionType.Brutish;
     public override Sign Sign => Sign.Positive;
@@ -957,7 +963,8 @@ public class Brutish : ProcAfterAffliction
 
 public class Conducting : ProcAfterAffliction
 {
-    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Spell Queued, Deal " + damageAmount + " Damage";
+    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Spell Queued, Deal "
+        + damageAmount + " Damage " + trackerText;
     protected override string genericToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Spell Queued Will Deal Damage";
     public override AfflictionType Type => AfflictionType.Conducting;
     public override Sign Sign => Sign.Positive;
@@ -997,7 +1004,8 @@ public class Hurt : ProcAfterAffliction
 
 public class Worried : ProcAfterAffliction
 {
-    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain " + stackAmount + " Weak";
+    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain "
+        + stackAmount + " Weak " + trackerText;
     protected override string genericToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Causes the Afflicted to Become Weak";
     public override AfflictionType Type => AfflictionType.Worried;
     public override Sign Sign => Sign.Negative;

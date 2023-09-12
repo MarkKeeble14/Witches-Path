@@ -166,7 +166,7 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
             // Tick Cooldowns
             CombatManager._Instance.TickHandCooldowns(Spell);
 
-            CombatManager._Instance.AddSpellToCastQueue(Spell, Combatent.Character);
+            CombatManager._Instance.AddSpellToCastQueue(Spell, Combatent.Character, Combatent.Enemy);
 
             if (Spell.SpellCastType == SpellCastType.Power)
             {

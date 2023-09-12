@@ -4,7 +4,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
-public class SpellPotencyDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("Settings")]
     [SerializeField] private Vector2 minMaxScale;
@@ -14,7 +14,6 @@ public class SpellPotencyDisplay : MonoBehaviour, IPointerEnterHandler, IPointer
     [Header("Animate")]
     [SerializeField] private float animateScaleSpeed;
     [SerializeField] private float animateAlphaSpeed;
-    private float currentPotency;
     private float goalScale;
 
     [SerializeField] private CanvasGroup cv;
@@ -24,18 +23,20 @@ public class SpellPotencyDisplay : MonoBehaviour, IPointerEnterHandler, IPointer
 
     private Spell representingSpell;
     private GameObject spawnedToolTip;
-    private float maxPotency;
+    private bool allowScale = false;
 
     public void SetSpell(Spell spell)
     {
         representingSpell = spell;
-        SetMainColor(UIManager._Instance.GetDamageTypeColor(spell.MainDamageType));
+        SetMainColor(UIManager._Instance.GetSpellColor(spell.Color));
         text.text = spell.Name;
+        name = spell.Name + "(QueuedSpellDisplay)";
     }
 
-    public void SetMainColor(Color color)
+    public void SetMainColor(SpellColorInfo colorInfo)
     {
-        mainImage.color = color;
+        mainImage.color = colorInfo.Color;
+        text.color = colorInfo.TextColor;
     }
 
     public void SetOutlineColor(Color color)
@@ -43,16 +44,10 @@ public class SpellPotencyDisplay : MonoBehaviour, IPointerEnterHandler, IPointer
         outline.effectColor = color;
     }
 
-    public void SetCurrentPotency(float v)
+    public void SetAllowScale(bool allowScale)
     {
-        currentPotency = v;
+        this.allowScale = allowScale;
     }
-
-    public void SetMaxPotency(float v)
-    {
-        maxPotency = v;
-    }
-
 
     private void Update()
     {
@@ -62,12 +57,16 @@ public class SpellPotencyDisplay : MonoBehaviour, IPointerEnterHandler, IPointer
             DestroyToolTip();
         }
 
-        goalScale = MathHelper.Normalize(currentPotency, 0, maxPotency, minMaxScale.x, minMaxScale.y);
-        toScale.localScale = Vector3.Lerp(toScale.localScale, goalScale * Vector3.one, Time.deltaTime * animateScaleSpeed);
+        // Update Scale
+        goalScale = MathHelper.Normalize(CombatManager._Instance.CurrentSpellEffectivenessMultiplier, CombatManager._Instance.MinSpellEffectivenessMultiplier,
+            CombatManager._Instance.MaxSpellEffectivenessMultiplier, minMaxScale.x, minMaxScale.y);
+        if (allowScale || !CombatManager._Instance.IsCastingQueue)
+        {
+            toScale.localScale = Vector3.Lerp(toScale.localScale, goalScale * Vector3.one, Time.deltaTime * animateScaleSpeed);
+        }
 
-        //
+        // Update Blocks raycast and Alpha repsectively
         cv.blocksRaycasts = CombatManager._Instance.AllowGameSpaceToolTips && !(MapManager._Instance.MapOpen || GameManager._Instance.OverlaidUIOpen);
-
         if (cv.blocksRaycasts)
         {
             cv.alpha = Mathf.Lerp(cv.alpha, 1, Time.deltaTime * animateAlphaSpeed);
@@ -92,7 +91,9 @@ public class SpellPotencyDisplay : MonoBehaviour, IPointerEnterHandler, IPointer
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (CombatManager._Instance.AllowGameSpaceToolTips)
+        {
             SpawnToolTip();
+        }
     }
 
     public void OnPointerExit(PointerEventData eventData)

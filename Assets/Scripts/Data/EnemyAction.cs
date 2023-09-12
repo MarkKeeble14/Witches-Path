@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class EnemyAction
 {
@@ -30,6 +31,7 @@ public class EnemyAction
         foreach (Spell spell in spells)
         {
             this.spells.Add(spell);
+            spell.SetCombatent(Combatent.Enemy, Combatent.Character);
         }
     }
 }

@@ -155,6 +155,14 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private GameObject showPileScreen;
 
+    [Header("Spellbook Change Sequences")]
+    [SerializeField] private float spellbookChangeFadeOutRate = 1;
+    [SerializeField] private float spellbookChangeFadeInRate = 1;
+    [SerializeField] private float spellbookChangeScaleRate = 1;
+    [SerializeField] private float spellbookChangeDelayBeforeFadingOut;
+    [SerializeField] private Vector2 addSpellDisplaySizeDelta = new Vector2(300, 400);
+    [SerializeField] private Transform spellBookChangeDisplayContainer;
+
     internal void AlterCombatPileSize(int changeBy)
     {
         if (combatPileSize + changeBy < 1)
@@ -674,7 +682,6 @@ public class GameManager : MonoBehaviour
         foreach (EnemyAction action in enemyActions)
         {
             List<Spell> actionSpells = action.GetActionSpells();
-
             foreach (Spell spell in actionSpells)
             {
                 if (!addedSpells.Contains(spell.Label))
@@ -1813,13 +1820,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    [Header("Spellbook Change Sequences")]
-    [SerializeField] private float spellbookChangeFadeOutRate = 1;
-    [SerializeField] private float spellbookChangeFadeInRate = 1;
-    [SerializeField] private float spellbookChangeScaleRate = 1;
-    [SerializeField] private float spellbookChangeDelayBeforeFadingOut;
-    [SerializeField] private Vector2 addSpellDisplaySizeDelta = new Vector2(300, 400);
-    [SerializeField] private Transform spellBookChangeDisplayContainer;
     public IEnumerator ShowAddSpellSequence(Spell spell)
     {
         // Spawn Visual

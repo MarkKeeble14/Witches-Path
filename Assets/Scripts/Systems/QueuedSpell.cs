@@ -4,9 +4,9 @@
 public class QueuedSpell
 {
     public Spell Spell;
-    public SpellPotencyDisplay SpellQueueDisplay;
+    public QueuedSpellDisplay SpellQueueDisplay;
 
-    public QueuedSpell(Spell spell, SpellPotencyDisplay spawned)
+    public QueuedSpell(Spell spell, QueuedSpellDisplay spawned)
     {
         Spell = spell;
         SpellQueueDisplay = spawned;

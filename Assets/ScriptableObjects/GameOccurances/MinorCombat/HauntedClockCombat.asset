@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4c66d2c9f0d014844bd55af72da36e53, type: 3}
-  m_Name: SpiritOfWarCombat
+  m_Name: HauntedClockCombat
   m_EditorClassIdentifier: 
   mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
-  enemyType: 15
+  enemyType: 4
   itemRewards:
     dictionary:
     - key: 4
@@ -30,7 +30,7 @@ MonoBehaviour:
     - key: 2
       value:
         percentageMap:
-        - key: {x: 20, y: 40}
+        - key: {x: 30, y: 50}
           value: 100
     - key: 3
       value:

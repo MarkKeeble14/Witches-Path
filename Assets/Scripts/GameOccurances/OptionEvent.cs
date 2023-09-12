@@ -1282,7 +1282,7 @@ public class ASuspiciousTome : OptionEvent
 
         // 2: Only Given the Optoin to Fight
         ConditionalOption fight = new ConditionalOption(() => stage == 1,
-            MakeEventOption("Fight", "Fight the now floating Book, Recieve the Option to View a new Book",
+            MakeEventOption("Fight", "Fight the attacking Book",
             () => false,
                 MakeEventOptionOutcomeWithChance(100, "", delegate
                 {

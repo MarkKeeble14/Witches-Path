@@ -244,7 +244,7 @@ GameObject:
   - component: {fileID: 1310457930990201170}
   - component: {fileID: 6523458672712908457}
   m_Layer: 0
-  m_Name: SpellPotencyDisplay
+  m_Name: QueuedSpellDisplayPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -291,7 +291,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0ea292ceed1dfb489bd643c81aa2f31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minMaxScale: {x: 0.25, y: 3.5}
+  minMaxScale: {x: 0.25, y: 3.25}
   toScale: {fileID: 7930833743587960993}
   uninteractableAlpha: 0.4
   animateScaleSpeed: 5

@@ -112,10 +112,6 @@ public class SpellSingleAttackEffect : SpellAttackEffect
     public SpellSingleAttackEffect(Func<int> damageAmount, DamageType damageType, Target target) : base(damageAmount, damageType, AttackAnimationStyle.Once, target)
     {
     }
-
-    public SpellSingleAttackEffect(int damageAmount, DamageType damageType, Target target) : base(() => damageAmount, damageType, AttackAnimationStyle.Once, target)
-    {
-    }
 }
 
 
@@ -156,28 +152,11 @@ public class SpellMultiAttackEffect : SpellAttackEffect
         TimeBetweenAttacks = timeBetweenAttacks;
     }
 
-    public SpellMultiAttackEffect(Func<int> damageAmount, int numAttacks, DamageType damageType, Target target, AttackAnimationStyle animationStyle = AttackAnimationStyle.PerAttack,
-        float timeBetweenAttacks = 0.1f)
-        : base(damageAmount, damageType, animationStyle, target)
-    {
-        this.numAttacks = () => numAttacks;
-        TimeBetweenAttacks = timeBetweenAttacks;
-    }
-
     public SpellMultiAttackEffect(int damageAmount, Func<int> numAttacks, DamageType damageType, Target target, AttackAnimationStyle animationStyle = AttackAnimationStyle.PerAttack,
         float timeBetweenAttacks = 0.1f)
         : base(() => damageAmount, damageType, animationStyle, target)
     {
         this.numAttacks = numAttacks;
-        TimeBetweenAttacks = timeBetweenAttacks;
-    }
-
-    public SpellMultiAttackEffect(int damageAmount, int numAttacks, DamageType damageType, Target target, AttackAnimationStyle animationStyle = AttackAnimationStyle.PerAttack,
-        float timeBetweenAttacks = 0.1f
-        )
-        : base(() => damageAmount, damageType, animationStyle, target)
-    {
-        this.numAttacks = () => numAttacks;
         TimeBetweenAttacks = timeBetweenAttacks;
     }
 }
@@ -210,11 +189,6 @@ public class SpellWardEffect : SpellEffect
     public SpellWardEffect(Func<int> wardAmount, Target target) : base(target)
     {
         this.wardAmount = wardAmount;
-    }
-
-    public SpellWardEffect(int wardAmount, Target target) : base(target)
-    {
-        this.wardAmount = () => wardAmount;
     }
 
     protected override void AddKeywords()
@@ -258,13 +232,6 @@ public class SpellApplyAfflictionEffect : SpellEffect
         AfflictionType = affType;
         afflictionKeywords.Add(affType);
         this.numStacks = numStacks;
-    }
-
-    public SpellApplyAfflictionEffect(AfflictionType affType, int numStacks, Target target) : base(target)
-    {
-        AfflictionType = affType;
-        afflictionKeywords.Add(affType);
-        this.numStacks = () => numStacks;
     }
 }
 
@@ -386,34 +353,5 @@ public class SpellAlterHPEffect : SpellEffect
     {
         DamageType = damageType;
         this.hpAmount = hpAmount;
-    }
-
-    public SpellAlterHPEffect(int hpAmount, DamageType damageType, Target target) : base(target)
-    {
-        DamageType = damageType;
-        this.hpAmount = () => hpAmount;
-    }
-}
-
-// Enemy never draws spells so if an enemy is using this then theres bigger things amiss
-public class SpellDrawEffect : SpellEffect
-{
-    public int NumToDraw => numToDraw();
-    private Func<int> numToDraw { get; set; }
-
-    public override SpellEffectType Type => SpellEffectType.Draw;
-
-    protected override string name => "Draw";
-
-    protected override string toolTipText => "Draw " + NumToDraw + " Spell" + (NumToDraw > 1 ? "s" : "");
-
-    public SpellDrawEffect(Func<int> numToDraw) : base(Target.Self)
-    {
-        this.numToDraw = numToDraw;
-    }
-
-    public SpellDrawEffect(int numToDraw) : base(Target.Self)
-    {
-        this.numToDraw = () => numToDraw;
     }
 }
