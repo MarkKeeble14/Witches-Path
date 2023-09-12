@@ -18,7 +18,7 @@ MonoBehaviour:
   startingHat: {fileID: 11400000, guid: a707352352167154381b4d14c6832951, type: 2}
   startingWand: {fileID: 11400000, guid: a794f23a6bced8a4f869c3618d2329a4, type: 2}
   startingBook: 0
-  startingSpells: 16000000160000001600000016000000170000001700000006000000040000000400000002000000
+  startingSpells: 1600000016000000160000001600000017000000
   startingCurrency: 100
   startingClothierCurrency: 0
   defaultActiveSpell: 22
@@ -27,5 +27,5 @@ MonoBehaviour:
   basicAttackDamage: 0
   startingCombatPileSize: 10
   startingHandSize: 5
-  maxMana: 8
-  manaPerTurnSubFromMax: 1
+  maxMana: 5
+  manaPerTurnSubFromMax: 0

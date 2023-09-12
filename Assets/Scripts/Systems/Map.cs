@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -36,6 +37,7 @@ public struct MapSectionInfo
     public int NumPaths;
     public Vector2Int ChanceToConnectPaths;
     public MapNodeSizingInfo SizingInfo;
+    public SerializableDictionary<MapNodeType, List<GameOccurance>> SpecificMapNodes;
 }
 
 [System.Serializable]
@@ -66,8 +68,8 @@ public class Map
     [SerializeField] private PercentageMap<MapNodeType> randomNodeTypeOdds;
 
     [Header("Map Settings")]
-    [SerializeField] private SerializableDictionary<MapNodeType, List<GameOccurance>> mapNodes = new SerializableDictionary<MapNodeType, List<GameOccurance>>();
     [SerializeField] private List<EventLabelWithCondition> optionEvents = new List<EventLabelWithCondition>();
+    [SerializeField] private SerializableDictionary<MapNodeType, List<GameOccurance>> generalMapNodes = new SerializableDictionary<MapNodeType, List<GameOccurance>>();
 
     [Header("General Settings")]
     [SerializeField] private List<MapNodeType> earlySetters = new List<MapNodeType>();
@@ -85,6 +87,7 @@ public class Map
 
     [Header("References")]
     [SerializeField] private OptionEventGameOccurance optionEventGameOccurance;
+    private MiniBossCombat previousEliteCombat;
 
     // Map Data
     private List<MapNodeUI[,]> spawnedGridNodes = new List<MapNodeUI[,]>();
@@ -300,6 +303,7 @@ public class Map
                 MapNodeUI spawned = GameObject.Instantiate(mapNodePrefab, grid.transform);
                 spawned.name += "<" + sectionIndex + ", " + i + ", " + p + ">";
                 newNodes[i, p] = spawned;
+                spawned.SetSectionIndex(sectionIndex);
 
                 // Set Node Unaccessable
                 spawned.SetMapNodeState(MapNodeState.UNACCESSABLE);
@@ -582,8 +586,6 @@ public class Map
         }
     }
 
-    private MiniBossCombat previousEliteCombat;
-
     // Sets the node to a random game occurance of the given type
     public void SetNodeGameOccurance(MapNodeUI node, MapNodeType nodeType)
     {
@@ -593,7 +595,7 @@ public class Map
             // Get a new combat that is not the same as the previous
             do
             {
-                newCombat = GetGameOccuranceOfType(MapNodeType.MiniBoss, false);
+                newCombat = GetGameOccuranceOfType(mapSections[node.SectionIndex], MapNodeType.MiniBoss, false);
             } while (newCombat == previousEliteCombat);
 
             // Update the previous Combat
@@ -605,14 +607,25 @@ public class Map
         else
         {
             // Set the Node
-            node.Set(GetGameOccuranceOfType(nodeType), mapNodeIconDict[nodeType], nodeType);
+            node.Set(GetGameOccuranceOfType(mapSections[node.SectionIndex], nodeType), mapNodeIconDict[nodeType], nodeType);
         }
     }
 
     // Gets a random Game Occurance of a MapNodeType, and does any of the additional management needed
     // as well such as perhaps removing whatever option was selected
-    public GameOccurance GetGameOccuranceOfType(MapNodeType nodeType, bool allowRemoveFromPool = true)
+    public GameOccurance GetGameOccuranceOfType(MapSectionInfo sectionInfo, MapNodeType nodeType, bool allowRemoveFromPool = true)
     {
+        // Determine Options
+        List<GameOccurance> options;
+        if (sectionInfo.SpecificMapNodes.ContainsKey(nodeType))
+        {
+            options = sectionInfo.SpecificMapNodes[nodeType];
+        }
+        else
+        {
+            options = generalMapNodes[nodeType];
+        }
+
         if (nodeType == MapNodeType.Options)
         {
             // Determine which Option Events can Occur
@@ -648,50 +661,27 @@ public class Map
             optionEventGameOccurance.SetEvent(chosenEvent.GetEventLabel());
             return optionEventGameOccurance;
         }
-        else if (nodeType == MapNodeType.MinorFight || nodeType == MapNodeType.MiniBoss || nodeType == MapNodeType.Boss)
+        else if (nodeType == MapNodeType.MinorFight || nodeType == MapNodeType.MiniBoss || nodeType == MapNodeType.Boss) // Uses General
         {
             // Get a Game Occurance of the type we want
-            GameOccurance gameOccurance = RandomHelper.GetRandomFromList(mapNodes[nodeType]);
+            GameOccurance gameOccurance = RandomHelper.GetRandomFromList(options);
 
             // Provided removing the Occurance won't leave us with no more Game Occurances to take AND that we want to, remove it so we don't have repeats
-            if (mapNodes[nodeType].Count > 1 && allowRemoveFromPool)
+            if (options.Count > 1 && allowRemoveFromPool)
             {
-                mapNodes[nodeType].Remove(gameOccurance);
+                options.Remove(gameOccurance);
             }
 
             return gameOccurance;
         }
-        else if (nodeType == MapNodeType.Random)
+        else if (nodeType == MapNodeType.Random) // Defer
         {
             nodeType = randomNodeTypeOdds.GetOption();
-            return GetGameOccuranceOfType(nodeType);
+            return GetGameOccuranceOfType(sectionInfo, nodeType);
         }
         else
         {
-            return RandomHelper.GetRandomFromList(mapNodes[nodeType]);
-        }
-    }
-
-    private void TestMinorCombatDistribution()
-    {
-        Dictionary<GameOccurance, int> testMap = new Dictionary<GameOccurance, int>();
-        List<GameOccurance> randomOptions = mapNodes[MapNodeType.MinorFight];
-        for (int i = 0; i < 1000; i++)
-        {
-            GameOccurance randomOccurance = RandomHelper.GetRandomFromList(randomOptions);
-            if (testMap.ContainsKey(randomOccurance))
-            {
-                testMap[randomOccurance] = testMap[randomOccurance] + 1;
-            }
-            else
-            {
-                testMap.Add(randomOccurance, 1);
-            }
-        }
-
-        foreach (KeyValuePair<GameOccurance, int> kvp in testMap)
-        {
-            Debug.Log(kvp.Key + ": " + kvp.Value + " - " + ((float)kvp.Value / randomOptions.Count) + "% of Total");
+            return RandomHelper.GetRandomFromList(options);
         }
     }
 }
