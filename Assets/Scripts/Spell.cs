@@ -1,8 +1,16 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
+
+public enum SpellAlterStatDuration
+{
+    Permanant,
+    Combat,
+    UntilCast
+}
 
 public enum SpellCallbackType
 {
@@ -12,7 +20,8 @@ public enum SpellCallbackType
     OnKill,
     OnQueue,
     OnAnyDiscard,
-    OnCast
+    OnCast,
+    OnCombatReset
 }
 
 public enum SpellStat
@@ -146,43 +155,27 @@ public abstract class Spell : ToolTippable
     public bool HasMana => GameManager._Instance.GetCurrentPlayerMana() >= ManaCost;
     public virtual bool CanCast => HasMana;
 
+    // Callbacks
+    private Dictionary<SpellCallbackType, SpellCallbackData> spellCallbackMap = new Dictionary<SpellCallbackType, SpellCallbackData>();
+
     // UI
     protected string toolTipText => GetSpellEffectString(spellEffects) + GetSpellCallbackStrings();
 
     protected Combatent caster;
     protected Combatent other;
-
-    public void SetCombatent(Combatent caster, Combatent other)
-    {
-        this.caster = caster;
-        this.other = other;
-    }
-
-
     private SpellDisplay equippedTo;
 
-    // Callbacks
-    private Dictionary<SpellCallbackType, SpellCallbackData> spellCallbackMap = new Dictionary<SpellCallbackType, SpellCallbackData>();
-
-    public void CallSpellCallback(SpellCallbackType callbackOn)
-    {
-        // Call Spell Effect Callbacks
-        CombatManager._Instance.StartCoroutine(
-            CombatManager._Instance.CallSpellEffectsRoutine(spellCallbackMap[callbackOn].SpellEffects, null, caster, other, false));
-
-        // Callback
-        spellCallbackMap[callbackOn].Callback?.Invoke();
-    }
+    // Stat
+    private Dictionary<SpellStat, int> spellStatDict = new Dictionary<SpellStat, int>();
+    private Dictionary<SpellStat, List<int>> combatAlterSpellStatValueHistory = new Dictionary<SpellStat, List<int>>();
+    private Dictionary<SpellStat, List<int>> untilCastAlterSpellStatValueHistory = new Dictionary<SpellStat, List<int>>();
 
     public class SpellCallbackData
     {
         public List<SpellEffect> SpellEffects = new List<SpellEffect>();
-        public string FuncCallbackString;
+        public Func<string> FuncCallbackString = null;
         public Action Callback;
     }
-
-    // Stat
-    private Dictionary<SpellStat, int> spellStatDict = new Dictionary<SpellStat, int>();
 
     public Spell()
     {
@@ -192,14 +185,26 @@ public abstract class Spell : ToolTippable
         SetKeywords();
 
         // Simplest way to have this information is to default to this and then somewhere around MakeEnemyAction we'll change it
+        // Could consider a Factory instead?
         SetCombatent(Combatent.Character, Combatent.Enemy);
 
+        // Revert any Stat Changes that happened during combat that were not set to be permanant
+        AddUnamedActionCallback(SpellCallbackType.OnCombatReset, () => RevertAlterStatChanges(SpellAlterStatDuration.Combat));
+        AddUnamedActionCallback(SpellCallbackType.OnCombatReset, () => RevertAlterStatChanges(SpellAlterStatDuration.UntilCast));
+        AddUnamedActionCallback(SpellCallbackType.OnCast, () => RevertAlterStatChanges(SpellAlterStatDuration.UntilCast));
+
+        // Set Mana Cost
         manaCost = startManaCost;
     }
 
     protected void AddSpellStat(SpellStat stat, int value)
     {
         spellStatDict.Add(stat, value);
+    }
+
+    public bool HasSpellStat(SpellStat stat)
+    {
+        return spellStatDict.ContainsKey(stat);
     }
 
     public int GetSpellStat(SpellStat stat)
@@ -219,14 +224,74 @@ public abstract class Spell : ToolTippable
         }
     }
 
+    private void RevertAlterStatChanges(SpellAlterStatDuration type)
+    {
+        Dictionary<SpellStat, List<int>> reverting;
+        switch (type)
+        {
+            case SpellAlterStatDuration.Combat:
+                reverting = combatAlterSpellStatValueHistory;
+                break;
+            case SpellAlterStatDuration.UntilCast:
+                reverting = untilCastAlterSpellStatValueHistory;
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+
+        List<SpellStat> keys = reverting.Keys.ToList();
+        for (int i = 0; i < keys.Count; i++)
+        {
+            SpellStat stat = keys[i];
+
+            while (reverting[stat].Count > 0)
+            {
+                AlterSpellStat(stat, -reverting[stat][0], SpellAlterStatDuration.Permanant);
+                reverting[stat].RemoveAt(0);
+            }
+        }
+    }
+
+    private void TrackAlterStatChange(SpellStat stat, int alterBy, SpellAlterStatDuration duration)
+    {
+        Dictionary<SpellStat, List<int>> addingTo;
+        switch (duration)
+        {
+            case SpellAlterStatDuration.Combat:
+                addingTo = combatAlterSpellStatValueHistory;
+                break;
+            case SpellAlterStatDuration.UntilCast:
+                addingTo = untilCastAlterSpellStatValueHistory;
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+
+        if (addingTo.ContainsKey(stat))
+        {
+            addingTo[stat].Add(alterBy);
+        }
+        else
+        {
+            addingTo.Add(stat, new List<int>() { alterBy });
+        }
+    }
+
     public void SetSpellStatTo(SpellStat stat, int newValue)
     {
         spellStatDict[stat] = newValue;
     }
 
-    public void AlterSpellStat(SpellStat stat, int alterBy)
+    public void AlterSpellStat(SpellStat stat, int alterBy, SpellAlterStatDuration duration)
     {
+        if (duration == SpellAlterStatDuration.Combat || duration == SpellAlterStatDuration.UntilCast)
+        {
+            TrackAlterStatChange(stat, alterBy, duration);
+        }
+
+        int prevValue = spellStatDict[stat];
         spellStatDict[stat] += alterBy;
+        Debug.Log("Altering Spell Stat: " + prevValue + " -> " + spellStatDict[stat]);
     }
 
     private void SetupCallbackMap()
@@ -238,6 +303,7 @@ public abstract class Spell : ToolTippable
         spellCallbackMap.Add(SpellCallbackType.OnQueue, new SpellCallbackData());
         spellCallbackMap.Add(SpellCallbackType.OnSpecificDiscard, new SpellCallbackData());
         spellCallbackMap.Add(SpellCallbackType.OnCast, new SpellCallbackData());
+        spellCallbackMap.Add(SpellCallbackType.OnCombatReset, new SpellCallbackData());
     }
 
     protected void AddSpellEffectCallback(SpellCallbackType callbackOn, params SpellEffect[] effects)
@@ -245,18 +311,42 @@ public abstract class Spell : ToolTippable
         spellCallbackMap[callbackOn].SpellEffects.AddRange(effects);
     }
 
-    protected void AddActionCallback(SpellCallbackType callbackOn, string addToCallbackString, Action action)
+    protected void AddNamedActionCallback(SpellCallbackType callbackOn, Func<string> addToCallbackString, Action action)
     {
         spellCallbackMap[callbackOn].Callback += action;
-        spellCallbackMap[callbackOn].FuncCallbackString += addToCallbackString;
+
+        if (addToCallbackString().Length > 0)
+        {
+            if (spellCallbackMap[callbackOn].Callback != null)
+            {
+                spellCallbackMap[callbackOn].FuncCallbackString += () => ", ";
+            }
+            spellCallbackMap[callbackOn].FuncCallbackString += addToCallbackString;
+        }
     }
+
+    protected void AddUnamedActionCallback(SpellCallbackType callbackOn, Action action)
+    {
+        spellCallbackMap[callbackOn].Callback += action;
+    }
+
+    public void CallSpellCallback(SpellCallbackType callbackOn)
+    {
+        // Call Spell Effect Callbacks
+        CombatManager._Instance.StartCoroutine(
+            CombatManager._Instance.CallSpellEffects(spellCallbackMap[callbackOn].SpellEffects, null, caster, other, false));
+
+        // Callback
+        spellCallbackMap[callbackOn].Callback?.Invoke();
+    }
+
 
     private string GetSpellCallbackStrings()
     {
         string final = "";
         foreach (KeyValuePair<SpellCallbackType, SpellCallbackData> kvp in spellCallbackMap)
         {
-            if (kvp.Value.SpellEffects.Count <= 0) continue;
+            if (kvp.Value.SpellEffects.Count <= 0 || kvp.Value.Callback == null) continue;
 
             final += "\n" + kvp.Key.ToString() + ": ";
 
@@ -266,7 +356,7 @@ public abstract class Spell : ToolTippable
                 final += GetSpellEffectString(kvp.Value.SpellEffects);
             }
 
-            final += kvp.Value.FuncCallbackString;
+            final += kvp.Value.FuncCallbackString();
         }
         return final;
     }
@@ -290,16 +380,6 @@ public abstract class Spell : ToolTippable
     protected virtual void SetKeywords()
     {
         // 
-    }
-
-    protected virtual void ResetOnCombatReset()
-    {
-        // 
-    }
-
-    public virtual void CallOnCombatEnd()
-    {
-        ResetOnCombatReset();
     }
 
     // Notes
@@ -329,9 +409,10 @@ public abstract class Spell : ToolTippable
         */
 
         // Random Batches
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 2; i++)
         {
-            Batches.Add(new SpellNoteBatch(RandomHelper.RandomIntInclusive(2, 3), RandomHelper.RandomFloat(0.3f, .6f), RandomHelper.RandomFloat(.85f, 1.1f)));
+            Batches.Add(new SpellNoteBatch(RandomHelper.RandomIntInclusive(1, 3), RandomHelper.RandomFloat(0.3f, .6f),
+                RandomHelper.RandomFloat(0.25f, .5f), RandomHelper.RandomFloat(.95f, 1.05f)));
             if (RandomHelper.RandomBool())
             {
                 break;
@@ -438,6 +519,11 @@ public abstract class Spell : ToolTippable
     protected virtual string GetDetailText()
     {
         return "";
+    }
+    public void SetCombatent(Combatent caster, Combatent other)
+    {
+        this.caster = caster;
+        this.other = other;
     }
 
     // Equipped To
@@ -651,9 +737,9 @@ public abstract class ReusableSpell : Spell
         switch (caster)
         {
             case Combatent.Character:
-                return ", Cooldown: " + MaxCooldown + " - " + SpellType + (SpellType == ReusableSpellType.Offensive ? " (" + MainDamageType + ")" : "");
+                return ", Cooldown: " + MaxCooldown + " - " + SpellType;
             case Combatent.Enemy:
-                return (SpellType == ReusableSpellType.Offensive ? " (" + MainDamageType + ")" : "");
+                return "";
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -690,8 +776,9 @@ public class Fireball : ReusableSpell
 
     protected override void SetSpellEffects()
     {
-        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Burn, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other),
-            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
+        AddSpellEffects(
+            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Burn, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
     }
 }
 
@@ -721,8 +808,9 @@ public class Shock : ReusableSpell
 
     protected override void SetSpellEffects()
     {
-        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Electrocuted, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other),
-            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
+        AddSpellEffects(
+            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Electrocuted, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
     }
 }
 
@@ -807,15 +895,15 @@ public class Toxify : ReusableSpell
     protected override void SetSpellEffects()
     {
         AddSpellEffects(
-            new SpellApplyAfflictionEffect(AfflictionType.Poison, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other),
-            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
+            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Poison, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
     }
 }
 
 public class DoubleHit : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellLabel Label => SpellLabel.DoubleHit;
     public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Common;
@@ -837,7 +925,7 @@ public class DoubleHit : ReusableSpell
 public class Flurry : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellLabel Label => SpellLabel.Flurry;
     public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Uncommon;
@@ -972,7 +1060,8 @@ public class TradeBlood : ReusableSpell
 
     protected override void SetSpellEffects()
     {
-        AddSpellEffects(new SpellAlterHPEffect(() => -GetSpellStat(SpellStat.SelfDamageAmount), MainDamageType, Target.Self),
+        AddSpellEffects(
+            new SpellAlterHPEffect(() => -GetSpellStat(SpellStat.SelfDamageAmount), MainDamageType, Target.Self),
             new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
     }
 }
@@ -1039,9 +1128,9 @@ public class Overexcite : ReusableSpell
 public class Phase : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Utility;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellLabel Label => SpellLabel.Phase;
-    public override SpellColor Color => SpellColor.Green;
+    public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Rare;
     public override string Name => "Phase";
     protected override int startCooldown => 5;
@@ -1067,7 +1156,7 @@ public class Phase : ReusableSpell
 public class Reverberate : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Utility;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellColor Color => SpellColor.Blue;
     public override Rarity Rarity => Rarity.Rare;
     public override string Name => "Reverberate";
@@ -1096,7 +1185,7 @@ public class ImpartialAid : ReusableSpell
 {
     public override DamageType MainDamageType => DamageType.Heal;
     public override ReusableSpellType SpellType => ReusableSpellType.Utility;
-    public override SpellColor Color => SpellColor.Blue;
+    public override SpellColor Color => SpellColor.Green;
     public override Rarity Rarity => Rarity.Rare;
     public override string Name => "Impartial Aid";
     public override SpellLabel Label => SpellLabel.ImpartialAid;
@@ -1122,7 +1211,7 @@ public class ImpartialAid : ReusableSpell
 
 public class WitchesWill : ReusableSpell
 {
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
     public override SpellLabel Label => SpellLabel.WitchesWill;
     public override SpellColor Color => GameManager._Instance.GetCharacterColor();
@@ -1235,6 +1324,7 @@ public class Frusteration : ReusableSpell
     protected override int startCooldown => 3;
     protected override int startManaCost => 2;
 
+    private int increaseSelfDamageAmountBy = 2;
     private int currentSelfDamageAmount;
 
     public Frusteration(int otherDamageAmount = 15, int selfDamageAmount = 2) : base()
@@ -1242,13 +1332,10 @@ public class Frusteration : ReusableSpell
         AddSpellStat(SpellStat.OtherDamageAmount, otherDamageAmount);
         AddSpellStat(SpellStat.SelfDamageAmount, selfDamageAmount);
 
-        AddActionCallback(SpellCallbackType.OnCast, "Increase the amount of damage dealt to yourself by " + 2, () => currentSelfDamageAmount += 2);
-    }
-
-    protected override void ResetOnCombatReset()
-    {
-        base.ResetOnCombatReset();
-        currentSelfDamageAmount = GetSpellStat(SpellStat.SelfDamageAmount);
+        // Add Callbacks
+        AddNamedActionCallback(SpellCallbackType.OnCast, () => "Increase the amount of Damage Dealt to Self by " + increaseSelfDamageAmountBy,
+            () => currentSelfDamageAmount += increaseSelfDamageAmountBy);
+        AddNamedActionCallback(SpellCallbackType.OnCombatReset, () => "", () => currentSelfDamageAmount = GetSpellStat(SpellStat.SelfDamageAmount));
     }
 
     protected override void SetSpellEffects()
@@ -1292,10 +1379,10 @@ public class ChannelCurrent : ReusableSpell
 
 public class QuickCast : ReusableSpell
 {
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
     public override SpellLabel Label => SpellLabel.QuickCast;
-    public override SpellColor Color => SpellColor.Enemy;
+    public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Common;
     public override string Name => "Quick Cast";
     protected override int startCooldown => 3;
@@ -1307,8 +1394,8 @@ public class QuickCast : ReusableSpell
         AddSpellStat(SpellStat.DrawAmount, drawAmount);
 
         // Add Callback
-        // Maybe not Right???
-        AddActionCallback(SpellCallbackType.OnQueue, "Draw " + GetSpellStat(SpellStat.DrawAmount) + " Spells", () => CombatManager._Instance.CallDrawSpells(GetSpellStat(SpellStat.DrawAmount)));
+        AddNamedActionCallback(SpellCallbackType.OnQueue, () => "Draw " + GetSpellStat(SpellStat.DrawAmount) + " Spells",
+            () => CombatManager._Instance.CallDrawSpells(GetSpellStat(SpellStat.DrawAmount)));
     }
 
     protected override void SetSpellEffects()
@@ -1399,7 +1486,7 @@ public class CrushJoints : PowerSpell
 {
     public override string Name => "Crush Joints";
     public override SpellLabel Label => SpellLabel.CrushJoints;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Common;
     protected override int startManaCost => 3;
@@ -1426,7 +1513,7 @@ public class BattleTrance : PowerSpell
 {
     public override string Name => "Battle Trance";
     public override SpellLabel Label => SpellLabel.BattleTrance;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Common;
     protected override int startManaCost => 3;
@@ -1558,7 +1645,7 @@ public class Levitate : ReusableSpell
     public override string Name => "Levitate";
     public override SpellLabel Label => SpellLabel.Levitate;
     public override ReusableSpellType SpellType => ReusableSpellType.Utility;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellColor Color => SpellColor.Enemy;
     public override Rarity Rarity => Rarity.Common;
     protected override int startManaCost => 3;
@@ -1578,7 +1665,7 @@ public class Levitate : ReusableSpell
 public class StudyPower : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Utility;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellColor Color => SpellColor.Enemy;
     public override Rarity Rarity => Rarity.Common;
     public override SpellLabel Label => SpellLabel.StudyPower;
@@ -1606,7 +1693,7 @@ public class StudyPower : ReusableSpell
 public class StudyProtection : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Utility;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellColor Color => SpellColor.Enemy;
     public override Rarity Rarity => Rarity.Common;
     public override SpellLabel Label => SpellLabel.StudyProtection;
@@ -1709,7 +1796,7 @@ public class FlamingLashes : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
     public override DamageType MainDamageType => DamageType.Fire;
-    public override SpellColor Color => SpellColor.Enemy;
+    public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Common;
     public override SpellLabel Label => SpellLabel.FlamingLashes;
     public override string Name => "Flaming Lashes";
@@ -1825,8 +1912,8 @@ public class Recouperate : ReusableSpell
 public class BrutalSmash : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
-    public override DamageType MainDamageType => DamageType.Default;
-    public override SpellColor Color => SpellColor.Enemy;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Common;
     public override SpellLabel Label => SpellLabel.BrutalSmash;
     public override string Name => "Brutal Smash";
@@ -1855,7 +1942,7 @@ public class BrutalSmash : ReusableSpell
 public class Bash : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellColor Color => SpellColor.Enemy;
     public override Rarity Rarity => Rarity.Common;
     public override SpellLabel Label => SpellLabel.Bash;
@@ -1877,8 +1964,8 @@ public class Bash : ReusableSpell
 public class EnterFrenzy : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Utility;
-    public override DamageType MainDamageType => DamageType.Default;
-    public override SpellColor Color => SpellColor.Enemy;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Common;
     public override SpellLabel Label => SpellLabel.EnterFrenzy;
     public override string Name => "Enter Frenzy";
@@ -1905,7 +1992,7 @@ public class EnterFrenzy : ReusableSpell
 public class CoatEdges : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Utility;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellColor Color => SpellColor.Enemy;
     public override Rarity Rarity => Rarity.Common;
     public override SpellLabel Label => SpellLabel.CoatEdges;
@@ -1995,7 +2082,7 @@ public class Belch : ReusableSpell
 public class Ghost : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Utility;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellLabel Label => SpellLabel.Ghost;
     public override SpellColor Color => SpellColor.Enemy;
     public override Rarity Rarity => Rarity.Common;
@@ -2052,7 +2139,7 @@ public class Sap : ReusableSpell
 public class Tackle : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellLabel Label => SpellLabel.Tackle;
     public override SpellColor Color => SpellColor.Enemy;
     public override Rarity Rarity => Rarity.Common;
@@ -2074,7 +2161,7 @@ public class Tackle : ReusableSpell
 public class GrowSpikes : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Utility;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellLabel Label => SpellLabel.GrowSpikes;
     public override SpellColor Color => SpellColor.Enemy;
     public override Rarity Rarity => Rarity.Common;
@@ -2102,7 +2189,7 @@ public class GrowSpikes : ReusableSpell
 public class LoseResolve : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Utility;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellLabel Label => SpellLabel.LoseResolve;
     public override SpellColor Color => SpellColor.Enemy;
     public override Rarity Rarity => Rarity.Common;
@@ -2114,7 +2201,7 @@ public class LoseResolve : ReusableSpell
     {
         AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
 
-        AddActionCallback(SpellCallbackType.OnCast, "", () => CombatManager._Instance.CallPlayDialogue("I wasn't made for this!", caster));
+        AddUnamedActionCallback(SpellCallbackType.OnCast, () => CombatManager._Instance.CallPlayDialogue("I wasn't made for this!", caster));
     }
 
     protected override void SetKeywords()
@@ -2132,7 +2219,7 @@ public class LoseResolve : ReusableSpell
 public class Harden : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Utility;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellLabel Label => SpellLabel.Harden;
     public override SpellColor Color => SpellColor.Enemy;
     public override Rarity Rarity => Rarity.Common;
@@ -2194,7 +2281,7 @@ public class ViralChomp : ReusableSpell
 public class Claw : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellLabel Label => SpellLabel.Claw;
     public override SpellColor Color => SpellColor.Enemy;
     public override Rarity Rarity => Rarity.Common;
@@ -2240,7 +2327,7 @@ public class HateFilledStrike : ReusableSpell
 public class Struggle : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Utility;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellLabel Label => SpellLabel.Struggle;
     public override SpellColor Color => SpellColor.Enemy;
     public override Rarity Rarity => Rarity.Common;
@@ -2272,7 +2359,7 @@ public class Struggle : ReusableSpell
 public class Unleash : ReusableSpell
 {
     public override ReusableSpellType SpellType => ReusableSpellType.Utility;
-    public override DamageType MainDamageType => DamageType.Default;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellLabel Label => SpellLabel.Unleash;
     public override SpellColor Color => SpellColor.Enemy;
     public override Rarity Rarity => Rarity.Common;

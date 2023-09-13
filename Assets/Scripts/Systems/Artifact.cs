@@ -665,7 +665,7 @@ public class RustyCannon : Artifact
         tracker += 1;
         if (tracker > numTurns)
         {
-            CombatManager._Instance.AlterCombatentHP(-damageAmount, Combatent.Enemy, DamageType.Default);
+            CombatManager._Instance.AlterCombatentHP(-damageAmount, Combatent.Enemy, DamageType.Physical);
             ShowArtifactProc();
             hasActivated = true;
         }
@@ -705,7 +705,7 @@ public class VoodooDoll : Artifact
 
     protected override void Effect()
     {
-        CombatManager._Instance.AlterCombatentHP(-damageAmount, Combatent.Enemy, DamageType.Default);
+        CombatManager._Instance.AlterCombatentHP(-damageAmount, Combatent.Enemy, DamageType.Physical);
         ShowArtifactProc();
     }
 }
@@ -993,7 +993,7 @@ public class Boulder : Artifact
         if (tracker >= procAfter)
         {
             Debug.Log(damageAmount);
-            CombatManager._Instance.AlterCombatentHP(-damageAmount, Combatent.Enemy, DamageType.Default);
+            CombatManager._Instance.AlterCombatentHP(-damageAmount, Combatent.Enemy, DamageType.Physical);
             ShowArtifactProc();
             tracker = 0;
             damageAmount += damageIncrease;
@@ -1037,7 +1037,7 @@ public class CockroachCarcass : Artifact
     protected override ArtifactLabel Label => ArtifactLabel.CockroachCarcass;
     public override Rarity Rarity => Rarity.Event;
 
-    private int numCurses => GameManager._Instance.GetSpellbook().GetNumSpellsMatchingCondition(spell => spell.Color == SpellColor.Curse);
+    private int numCurses => GameManager._Instance.Spellbook.GetNumEntriesMatching(spell => spell.Color == SpellColor.Curse);
     protected override string toolTipText => "Upon Entering Combat, Apply Blight equal to the number of Curses in your Spellbook " +
         "to the Enemy (" + numCurses + ")";
 

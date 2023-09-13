@@ -33,6 +33,11 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
         name = spell.Name + "(QueuedSpellDisplay)";
     }
 
+    public void ShowStatChange(SpellStat type)
+    {
+        Debug.Log(name + ": Changed - " + type);
+    }
+
     public void SetMainColor(SpellColorInfo colorInfo)
     {
         mainImage.color = colorInfo.Color;
@@ -58,12 +63,17 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
         }
 
         // Update Scale
-        goalScale = MathHelper.Normalize(CombatManager._Instance.CurrentSpellEffectivenessMultiplier, CombatManager._Instance.MinSpellEffectivenessMultiplier,
-            CombatManager._Instance.MaxSpellEffectivenessMultiplier, minMaxScale.x, minMaxScale.y);
-        if (allowScale || !CombatManager._Instance.IsCastingQueue)
+        if (allowScale)
         {
-            toScale.localScale = Vector3.Lerp(toScale.localScale, goalScale * Vector3.one, Time.deltaTime * animateScaleSpeed);
+            goalScale = MathHelper.Normalize(CombatManager._Instance.CurrentSpellEffectivenessMultiplier, CombatManager._Instance.MinSpellEffectivenessMultiplier,
+                CombatManager._Instance.MaxSpellEffectivenessMultiplier, minMaxScale.x, minMaxScale.y);
         }
+        else
+        {
+            goalScale = MathHelper.Normalize(CombatManager._Instance.DefaultSpellEffectivenessMultiplier, CombatManager._Instance.MinSpellEffectivenessMultiplier,
+                CombatManager._Instance.MaxSpellEffectivenessMultiplier, minMaxScale.x, minMaxScale.y);
+        }
+        toScale.localScale = Vector3.Lerp(toScale.localScale, goalScale * Vector3.one, Time.deltaTime * animateScaleSpeed);
 
         // Update Blocks raycast and Alpha repsectively
         cv.blocksRaycasts = CombatManager._Instance.AllowGameSpaceToolTips && !(MapManager._Instance.MapOpen || GameManager._Instance.OverlaidUIOpen);

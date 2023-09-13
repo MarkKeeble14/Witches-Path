@@ -4,6 +4,12 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+public enum QueuePosition
+{
+    Next,
+    Last
+}
+
 public enum SpellEffectType
 {
     SingleAttack,
@@ -13,7 +19,9 @@ public enum SpellEffectType
     MultiAttack,
     Heal,
     CleanseAfflictions,
-    Draw
+    Draw,
+    AlterQueuedSpell,
+    QueueSpell
 }
 
 public abstract class SpellEffect : ToolTippable
@@ -95,17 +103,22 @@ public class SpellSingleAttackEffect : SpellAttackEffect
     {
         get
         {
+            string res;
             switch (Target)
             {
                 case Target.Both:
-                    return "Attack Both Combatents for " + DamageAmount + " Damage";
+                    res = "Attack Both Combatents for " + DamageAmount + " Damage";
+                    break;
                 case Target.Self:
-                    return "Attack Self for " + DamageAmount + " Damage";
+                    res = "Attack Self for " + DamageAmount + " Damage";
+                    break;
                 case Target.Other:
-                    return "Attack Opponent for " + DamageAmount + " Damage";
+                    res = "Attack Opponent for " + DamageAmount + " Damage";
+                    break;
                 default:
                     throw new UnhandledSwitchCaseException();
             }
+            return res + " (" + DamageType + ")";
         }
     }
 
@@ -124,17 +137,22 @@ public class SpellMultiAttackEffect : SpellAttackEffect
     {
         get
         {
+            string res;
             switch (Target)
             {
                 case Target.Both:
-                    return "Attack Both Combatents for " + DamageAmount + " Damage " + NumAttacks + " Times";
+                    res = "Attack Both Combatents for " + DamageAmount + " Damage " + NumAttacks + " Times";
+                    break;
                 case Target.Self:
-                    return "Attack Self for " + DamageAmount + " Damage " + NumAttacks + " Times";
+                    res = "Attack Self for " + DamageAmount + " Damage " + NumAttacks + " Times";
+                    break;
                 case Target.Other:
-                    return "Attack Opponant for " + DamageAmount + " Damage " + NumAttacks + " Times";
+                    res = "Attack Opponant for " + DamageAmount + " Damage " + NumAttacks + " Times";
+                    break;
                 default:
                     throw new UnhandledSwitchCaseException();
             }
+            return res + " (" + DamageType + ")";
         }
     }
 
@@ -353,5 +371,90 @@ public class SpellAlterHPEffect : SpellEffect
     {
         DamageType = damageType;
         this.hpAmount = hpAmount;
+    }
+}
+
+public class SpellAlterQueuedSpellEffect : SpellEffect
+{
+    public override SpellEffectType Type => SpellEffectType.AlterQueuedSpell;
+
+    protected override string name => "Alter Queued Spell";
+
+    protected override string toolTipText
+    {
+        get
+        {
+            string res = "Alter the ";
+
+            if (ApplicableStats.Count == 1)
+            {
+                res += ApplicableStats[0].ToString();
+            }
+            else if (ApplicableStats.Count == 2)
+            {
+                res += ApplicableStats[0].ToString() + " or " + ApplicableStats[1];
+            }
+            else
+            {
+                for (int i = 0; i < ApplicableStats.Count; i++)
+                {
+                    if (i < ApplicableStats.Count - 2)
+                    {
+                        res += ApplicableStats[i].ToString() + ", ";
+                    }
+                    else if (i == ApplicableStats.Count - 1)
+                    {
+                        res += "or " + ApplicableStats[i].ToString();
+                    }
+                }
+            }
+            res += " of a Queued Spell by " + AlterBy;
+            switch (AlteredStatDuration)
+            {
+                case SpellAlterStatDuration.Combat:
+                    res += " For the Rest of Combat";
+                    break;
+                case SpellAlterStatDuration.UntilCast:
+                    res += " Until it is Cast";
+                    break;
+                case SpellAlterStatDuration.Permanant:
+                    res += " Permanantly";
+                    break;
+                default:
+                    throw new UnhandledSwitchCaseException();
+            }
+            return res;
+        }
+    }
+
+    private Func<int> alterBy { get; set; }
+    public int AlterBy => alterBy();
+    public SpellAlterStatDuration AlteredStatDuration { get; private set; }
+    public List<SpellStat> ApplicableStats { get; private set; }
+
+    public SpellAlterQueuedSpellEffect(Func<int> alterBy, SpellAlterStatDuration alteredStatDuration, Target target, params SpellStat[] applicableStats) : base(target)
+    {
+        this.alterBy = alterBy;
+        AlteredStatDuration = alteredStatDuration;
+        ApplicableStats = applicableStats.ToList();
+    }
+}
+
+public class SpellQueueSpellEffect : SpellEffect
+{
+    public override SpellEffectType Type => SpellEffectType.QueueSpell;
+
+    protected override string name => "Queue Spell";
+
+    protected override string toolTipText => "Queue Up " + ToQueue.Name;
+
+    public Spell ToQueue { get; private set; }
+
+    // TODO
+    public QueuePosition QueuePosition { get; private set; }
+    public SpellQueueSpellEffect(Spell toQueue, QueuePosition queuePosition, Target target) : base(target)
+    {
+        ToQueue = toQueue;
+        QueuePosition = queuePosition;
     }
 }

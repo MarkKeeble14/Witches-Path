@@ -571,14 +571,12 @@ public abstract class PotionAugmenter : PotionIngredient
 public class RainCloud : PotionAugmenter
 {
     public override PotionIngredientType Type => PotionIngredientType.RainCloud;
-
     public override string Name => "Rain Cloud";
-
     protected override string toolTipText => "Potion Effect Will Activate At the Beginning of The Next " + numTurns + " Enemy Turns";
-
     public override string EffectOnPotionName => "Repeating";
 
     private int numTurns;
+    private bool active;
 
     protected override void SetKeywords()
     {
@@ -596,13 +594,24 @@ public class RainCloud : PotionAugmenter
         if (numTurns <= 0)
         {
             CombatManager._Instance.OnTurnStart -= CallEffect;
+            active = false;
         }
     }
 
     protected override void InitEffect()
     {
+        active = true;
         CombatManager._Instance.OnTurnStart += CallEffect;
-        CombatManager._Instance.OnResetCombat -= CallEffect;
+        CombatManager._Instance.OnResetCombat += CheckForRemoveOnCombatEnd;
+    }
+
+    private void CheckForRemoveOnCombatEnd()
+    {
+        if (active)
+        {
+            CombatManager._Instance.OnTurnStart -= CallEffect;
+            CombatManager._Instance.OnResetCombat -= CheckForRemoveOnCombatEnd;
+        }
     }
 
 }
@@ -619,7 +628,7 @@ public class HammerHandle : PotionBase
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
         int damageAmount = GetPotionSpec("DamageAmount", potionPotency.Potency);
-        CombatManager._Instance.AlterCombatentHP(-damageAmount, potionTargeting.Target, DamageType.Default);
+        CombatManager._Instance.AlterCombatentHP(-damageAmount, potionTargeting.Target, DamageType.Physical);
     }
 }
 

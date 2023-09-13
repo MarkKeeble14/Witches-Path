@@ -58,21 +58,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private List<SpellLabel> unviableSpellRewards;
     private List<SpellLabel> viableSpellRewards = new List<SpellLabel>();
     private int equippableSpellIndex;
-    private Spellbook spellBook;
-    public int NumSpells => spellBook.GetSpellBookEntries().Count;
+    public Pile<Spell> Spellbook { get; private set; }
+    public int NumSpells => Spellbook.Count;
 
-    [Header("Select Spells For Combat Screen")]
     [SerializeField] private VisualSpellDisplay visualSpellDisplayPrefab;
-    [SerializeField] private GameObject selectSpellsForCombatScreen;
-    [SerializeField] private Transform parentSelectSpellOptionsTo;
-    [SerializeField] private Button confirmSelectSpellsForCombatButton;
-    [SerializeField] private Image confirmSelectSpellsForCombatImage;
-    [SerializeField] private TextMeshProUGUI confirmSelectSpellsForCombatText;
-    [SerializeField] private TextMeshProUGUI selectSpellsForCombatTitleText;
-    [SerializeField] private TypewriterByWord selectSpellsForCombatScreenTitleTypewriter;
-    private bool spellSelectionForCombatConfirmed;
-    [SerializeField] private string allowedToFightTitleText = "Enter Combat";
-    [SerializeField] private string unallowedToFightTitleText = "Select Your Spells";
 
     [Header("Spell Book Screen")]
     [SerializeField] private GameObject spellBookScreen;
@@ -253,8 +242,6 @@ public class GameManager : MonoBehaviour
 
         EquipCharacterLoadout(playerCharacter);
 
-        InitializeDeck();
-
         CanSetCurrentGameOccurance = true;
     }
 
@@ -286,7 +273,7 @@ public class GameManager : MonoBehaviour
         currencyText.text = Mathf.RoundToInt(currentPlayerCurrency).ToString();
         clothierCurrencyText.text = Mathf.RoundToInt(currentPlayerClothierCurrency).ToString();
 
-        spellbookSizeText.text = spellBook.GetNumSpellsMatchingCondition(spell => true).ToString();
+        spellbookSizeText.text = Spellbook.Count.ToString();
 
         // Set Timer Text
         int hours = TimeSpan.FromSeconds(Time.realtimeSinceStartup).Hours;
@@ -611,7 +598,7 @@ public class GameManager : MonoBehaviour
 
     public Spell GetRandomOwnedSpell()
     {
-        return RandomHelper.GetRandomFromList(spellBook.GetSpellBookEntries());
+        return RandomHelper.GetRandomFromList(Spellbook.GetSpells());
     }
 
     public Spell GetRandomSpell(Func<Spell, bool> includeConditions, bool removeFromPool = false)
@@ -651,257 +638,6 @@ public class GameManager : MonoBehaviour
         return Spell.GetSpellOfType(chosenSpellLabel);
     }
 
-    [Header("Before Combat Information")]
-    [SerializeField] private TextMeshProUGUI enemyNameText;
-    [SerializeField] private TextMeshProUGUI enemyAdditionalInfoText;
-    [SerializeField] private EnemyInfoBlock onCombatStart;
-    [SerializeField] private EnemyInfoBlock onTurnStart;
-    [SerializeField] private EnemyInfoBlock onTurnEnd;
-    [SerializeField] private EnemyInfoBlock combatActions;
-
-    [System.Serializable]
-    private struct EnemyInfoBlock
-    {
-        public GameObject Container;
-        public Transform List;
-    }
-    [SerializeField] private EnemyActionInfoBlockDisplay enemyIntentDisplayPrefab;
-    private List<EnemyActionInfoBlockDisplay> spawnedInfoBlockIntentDisplays = new List<EnemyActionInfoBlockDisplay>();
-
-    private void SetEnemyInformationText(EnemyInfoBlock infoBlock, List<EnemyAction> enemyActions)
-    {
-        if (enemyActions.Count <= 0)
-        {
-            infoBlock.Container.SetActive(false);
-            return;
-        }
-        infoBlock.Container.SetActive(true);
-
-        List<Spell> spellsToDisplay = new List<Spell>();
-        List<SpellLabel> addedSpells = new List<SpellLabel>();
-        foreach (EnemyAction action in enemyActions)
-        {
-            List<Spell> actionSpells = action.GetActionSpells();
-            foreach (Spell spell in actionSpells)
-            {
-                if (!addedSpells.Contains(spell.Label))
-                {
-                    addedSpells.Add(spell.Label);
-                    spellsToDisplay.Add(spell);
-                }
-            }
-        }
-
-        foreach (Spell spell in spellsToDisplay)
-        {
-            EnemyActionInfoBlockDisplay spawned = Instantiate(enemyIntentDisplayPrefab, infoBlock.List);
-            spawned.Set(spell);
-            spawnedInfoBlockIntentDisplays.Add(spawned);
-        }
-    }
-
-    private void ClearEnemyInfoBlockIntentDisplays()
-    {
-        while (spawnedInfoBlockIntentDisplays.Count > 0)
-        {
-            EnemyActionInfoBlockDisplay current = spawnedInfoBlockIntentDisplays[0];
-            spawnedInfoBlockIntentDisplays.RemoveAt(0);
-            Destroy(current.gameObject);
-        }
-    }
-
-
-    private void InitializeDeck()
-    {
-        Pile<Spell> starterDeck = new Pile<Spell>();
-
-        foreach (Spell spell in spellBook.GetSpellBookEntries())
-        {
-            starterDeck.Add(spell);
-        }
-
-        CombatManager._Instance.SetSpellPiles(starterDeck);
-        prevCombatDrawPile = starterDeck;
-    }
-
-    public IEnumerator SelectSpellsForCombat(Enemy combatEnemy)
-    {
-        // Set the screen to be visible
-        selectSpellsForCombatScreen.SetActive(true);
-
-        // Start Typewriter effect
-        selectSpellsForCombatScreenTitleTypewriter.StartShowingText(true);
-
-        // Set things according to the enemy so the player knows what they're fighting
-        enemyNameText.text = combatEnemy.Name;
-        if (combatEnemy.AdditionalInfoText.Length > 0)
-        {
-            enemyAdditionalInfoText.gameObject.SetActive(true);
-            enemyAdditionalInfoText.text = combatEnemy.AdditionalInfoText;
-        }
-        else
-        {
-            enemyAdditionalInfoText.gameObject.SetActive(false);
-        }
-        SetEnemyInformationText(onCombatStart, combatEnemy.GetOnCombatStartActions());
-        SetEnemyInformationText(onTurnStart, combatEnemy.GetOnTurnStartActions());
-        SetEnemyInformationText(onTurnEnd, combatEnemy.GetOnTurnEndActions());
-        SetEnemyInformationText(combatActions, combatEnemy.GetEnemyActions());
-
-        // Get Spells
-        List<VisualSpellDisplay> spawnedSelections = new List<VisualSpellDisplay>();
-        int numAvailableSpells = spellBook.GetNumSpellsMatchingCondition(spell => true);
-
-        Pile<Spell> newCombatDrawPile = new Pile<Spell>();
-
-        foreach (Spell spell in spellBook.GetSpellBookEntries())
-        {
-            VisualSpellDisplay spawned = Instantiate(visualSpellDisplayPrefab, parentSelectSpellOptionsTo);
-            spawnedSelections.Add(spawned);
-            spawned.SetSpell(spell);
-
-            // if the player has less spells available than the pile size, then we just select all for them but do not give them the option to deselect 
-            if (numAvailableSpells <= combatPileSize)
-            {
-                newCombatDrawPile.Add(spell);
-                spawned.SetSpellDisplayState(SpellDisplayState.Locked);
-                spawned.GetCanvasGroup().blocksRaycasts = false;
-                continue;
-            }
-            else if (prevCombatDrawPile.Contains(spell)) // Automatically Load previously selected Spells BUT ALSO we'll be allowing them to be de-selected
-            {
-                // Automatically Select
-                newCombatDrawPile.Add(spell);
-                spawned.SetSpellDisplayState(SpellDisplayState.Selected);
-
-            }
-            else if (spell.Color == SpellColor.Curse || spell.Color == SpellColor.Status)
-            {
-                // Automatically Select
-                // Curses and Statuses are Automatically Loaded and Locked
-                newCombatDrawPile.Add(spell);
-                spawned.SetSpellDisplayState(SpellDisplayState.Locked);
-                spawned.GetCanvasGroup().blocksRaycasts = false;
-                continue;
-            }
-
-            // Add Callbacks to all Spells that have not been already handled
-            spawned.AddOnClick(delegate
-            {
-                if (newCombatDrawPile.Contains(spell))
-                {
-                    newCombatDrawPile.Remove(spell);
-                    spawned.SetSpellDisplayState(SpellDisplayState.Normal);
-                }
-                else
-                {
-                    newCombatDrawPile.Add(spell);
-                    spawned.SetSpellDisplayState(SpellDisplayState.Selected);
-                }
-            });
-        }
-
-        // Spawn Choices
-        // To proceed, the player must click the confirm button
-        // The player must equip at least one spell (provided they have any)
-        bool prevAllowed = false;
-        bool allowed = false;
-        confirmSelectSpellsForCombatButton.interactable = false;
-        List<Tween> confirmButtonTweens = new List<Tween>();
-        selectSpellsForCombatTitleText.text = unallowedToFightTitleText;
-        while (!spellSelectionForCombatConfirmed)
-        {
-            // Set button text and interactable state
-            // if the player has absolutely no available Spells, just allow them to proceed
-            confirmSelectSpellsForCombatText.text = newCombatDrawPile.Count + " / " + combatPileSize;
-
-            if (numAvailableSpells == 0)
-            {
-                allowed = true;
-            }
-            else if (numAvailableSpells < combatPileSize)
-            {
-                // if the player has less spells than is maximally allowed, they must equip then all
-                allowed = newCombatDrawPile.Count == numAvailableSpells;
-            }
-            else
-            {
-                // Otherwise, they must choose which to take and which to leave
-                allowed = newCombatDrawPile.Count == combatPileSize;
-            }
-
-            // Essentially Checks if a Change in Allowed State has Occurred & will only set the text then
-            // Hopefully stops the Typewriter from never displaying text
-            if (prevAllowed != allowed)
-            {
-                confirmSelectSpellsForCombatButton.interactable = allowed;
-
-                // if going from unallowed to allowed, start tweens
-                if (prevAllowed == false)
-                {
-                    // Change color
-                    confirmButtonTweens.Add(confirmSelectSpellsForCombatImage.DOColor(Color.red, 1));
-                    // Make shake
-                    confirmButtonTweens.Add(confirmSelectSpellsForCombatButton.transform.DOShakePosition(1, 3, 10, 90, false, true).SetLoops(-1));
-                }
-                else // going from allowed to unallowed, kill tweens
-                {
-                    // Kill Tweens
-                    while (confirmButtonTweens.Count > 0)
-                    {
-                        Tween t = confirmButtonTweens[0];
-                        confirmButtonTweens.RemoveAt(0);
-                        t.Kill();
-                    }
-                    // And reset color
-                    confirmSelectSpellsForCombatImage.DOColor(Color.white, 1);
-                }
-
-                selectSpellsForCombatTitleText.text = allowed ? allowedToFightTitleText : unallowedToFightTitleText;
-            }
-            prevAllowed = allowed;
-
-            yield return null;
-        }
-
-        // Ensure any remaining Tweens have been Killed
-        while (confirmButtonTweens.Count > 0)
-        {
-            Tween t = confirmButtonTweens[0];
-            confirmButtonTweens.RemoveAt(0);
-            t.Kill();
-        }
-        // and reset color
-        confirmSelectSpellsForCombatImage.DOColor(Color.white, 1);
-
-        // Player has made selection
-        spellSelectionForCombatConfirmed = false;
-
-        // Set each spell to be on Out of Combat Cooldown
-        // For now, testing not doing this
-        // combatDrawPile.ActOnEachSpellInPile(spell => spellBook.SetSpellUnavailable(spell));
-
-        // Destroy spawned objects
-        while (spawnedSelections.Count > 0)
-        {
-            VisualSpellDisplay current = spawnedSelections[0];
-            spawnedSelections.RemoveAt(0);
-            Destroy(current.gameObject);
-        }
-
-        ClearEnemyInfoBlockIntentDisplays();
-
-        selectSpellsForCombatScreen.SetActive(false);
-
-        CombatManager._Instance.SetSpellPiles(newCombatDrawPile);
-        prevCombatDrawPile = newCombatDrawPile;
-    }
-
-    public void ConfirmSpellSelection()
-    {
-        spellSelectionForCombatConfirmed = true;
-    }
-
     public void AddSpellToSpellBook(SpellLabel spellLabel)
     {
         AddSpellToSpellBook(Spell.GetSpellOfType(spellLabel));
@@ -909,13 +645,13 @@ public class GameManager : MonoBehaviour
 
     public void AddSpellToSpellBook(Spell spell)
     {
-        spellBook.AddSpell(spell);
+        Spellbook.Add(spell);
         StartCoroutine(ShowAddSpellSequence(spell));
     }
 
     public void RemoveSpellFromSpellBook(Spell spell)
     {
-        spellBook.RemoveSpell(spell);
+        Spellbook.Remove(spell);
         StartCoroutine(ShowRemoveSpellSequence(spell));
     }
     #endregion
@@ -927,7 +663,11 @@ public class GameManager : MonoBehaviour
         CombatManager._Instance.SetHandSize(c.GetStartingHandSize());
 
         // Equip starting spells
-        spellBook = new Spellbook(c.GetStartingSpells());
+        Spellbook = new Pile<Spell>();
+        foreach (SpellLabel label in c.GetStartingSpells())
+        {
+            Spellbook.Add(Spell.GetSpellOfType(label));
+        }
 
         // Equip character equipment
         EquipEquipment(c.GetStartingRobe());
@@ -1340,7 +1080,7 @@ public class GameManager : MonoBehaviour
         // Opening 
         if (spellBookScreen.activeInHierarchy)
         {
-            foreach (Spell spell in spellBook.GetSpellBookEntries())
+            foreach (Spell spell in Spellbook.GetSpells())
             {
                 VisualSpellDisplay spawned = Instantiate(visualSpellDisplayPrefab, spellBookSpawnSpellDisplaysOn);
                 spawned.SetSpell(spell);
@@ -1361,11 +1101,6 @@ public class GameManager : MonoBehaviour
         MapManager._Instance.ToggleVisibility();
     }
 
-    public Spellbook GetSpellbook()
-    {
-        return spellBook;
-    }
-
     public void RemoveRandomSpellOfColor(SpellColor ofColor)
     {
         RemoveRandomSpellsMatchingConditions(spell => spell.Color == ofColor);
@@ -1375,7 +1110,7 @@ public class GameManager : MonoBehaviour
     {
         // Make list of all spells matching condition
         List<Spell> toRemove = new List<Spell>();
-        foreach (Spell entry in spellBook.GetSpellBookEntries())
+        foreach (Spell entry in Spellbook.GetSpells())
         {
             if (removeCondition(entry))
             {
@@ -1398,7 +1133,7 @@ public class GameManager : MonoBehaviour
     {
         // Make list of all spells matching condition
         List<Spell> toRemove = new List<Spell>();
-        foreach (Spell entry in spellBook.GetSpellBookEntries())
+        foreach (Spell entry in Spellbook.GetSpells())
         {
             if (removeCondition(entry))
             {
@@ -1470,7 +1205,7 @@ public class GameManager : MonoBehaviour
         List<Spell> selectedSpells = new List<Spell>();
 
         // Opening 
-        foreach (Spell spell in spellBook.GetSpellBookEntries())
+        foreach (Spell spell in Spellbook.GetSpells())
         {
             if (!viableSpell(spell))
             {
@@ -2399,7 +2134,7 @@ public class GameManager : MonoBehaviour
                     int minSpells;
                     if (TryParseArgument(eventLabel, argument, out minSpells))
                     {
-                        return spellBook.GetNumSpellsMatchingCondition(spell => true) >= minSpells;
+                        return Spellbook.GetNumEntriesMatching(spell => true) >= minSpells;
                     }
                     else
                     {
@@ -2410,7 +2145,7 @@ public class GameManager : MonoBehaviour
                     int minCurses;
                     if (TryParseArgument(eventLabel, argument, out minCurses))
                     {
-                        return spellBook.GetNumSpellsMatchingCondition(spell => spell.Color == SpellColor.Curse) >= minCurses;
+                        return Spellbook.GetNumEntriesMatching(spell => spell.Color == SpellColor.Curse) >= minCurses;
                     }
                     else
                     {

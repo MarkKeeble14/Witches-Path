@@ -8,6 +8,7 @@ using UnityEngine.UI;
 using UnityEngine.Pool;
 using TMPro;
 using DG.Tweening;
+using System.Linq;
 
 public enum Order
 {
@@ -36,7 +37,7 @@ public enum Target
 
 public enum DamageType
 {
-    Default,
+    Physical,
     Poison,
     Electric,
     Fire,
@@ -142,6 +143,7 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float minSpellEffectivenessMultiplier = 0;
     public float MinSpellEffectivenessMultiplier => minSpellEffectivenessMultiplier;
     [SerializeField] private float defaultEffectivenessMultiplier = 1;
+    public float DefaultSpellEffectivenessMultiplier => defaultEffectivenessMultiplier;
     public float MaxSpellEffectivenessMultiplier => maxSpellEffectivenessMultiplier;
     [SerializeField] private float maxSpellEffectivenessMultiplier;
     private float currentSpellEffectivenessMultiplier = 1;
@@ -440,14 +442,19 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void SetSpellPiles(Pile<Spell> drawPile)
+    public void SetSpellPiles(Pile<Spell> spellbook)
     {
-        this.drawPile = drawPile;
-        this.drawPile.Shuffle();
+        drawPile = new Pile<Spell>();
         powerSpellPile = new Pile<Spell>();
         discardPile = new Pile<Spell>();
         hand = new Pile<Spell>();
         exhaustPile = new Pile<Spell>();
+
+        foreach (Spell spell in spellbook.GetSpells())
+        {
+            drawPile.Add(spell);
+        }
+
         drawPileCountText.text = drawPile.Count.ToString();
     }
 
@@ -859,11 +866,7 @@ public partial class CombatManager : MonoBehaviour
             obj.SetActive(true);
         }
 
-        if (allowSpellSlection)
-        {
-            // Get Spells
-            yield return StartCoroutine(GameManager._Instance.SelectSpellsForCombat(currentEnemy));
-        }
+        SetSpellPiles(GameManager._Instance.Spellbook);
 
         // Set Up Combat
         combatScreenOpen = true;
@@ -974,7 +977,7 @@ public partial class CombatManager : MonoBehaviour
         }
 
         // Call On Combat Start Spell Effects right Away
-        StartCoroutine(CallSpellEffectsRoutine(currentEnemy.GetOnCombatStartSpellEffects(), null, Combatent.Enemy, Combatent.Character, false));
+        StartCoroutine(CallSpellEffects(currentEnemy.GetOnCombatStartSpellEffects(), null, Combatent.Enemy, Combatent.Character, false));
 
         StartCoroutine(UpdateDuringCombat());
 
@@ -1390,11 +1393,13 @@ public partial class CombatManager : MonoBehaviour
         currentSpellEffectivenessMultiplier = defaultEffectivenessMultiplier;
         effectivenessMultiplierText.text = "x" + Utils.RoundTo(currentSpellEffectivenessMultiplier, 2).ToString();
 
-        // Put all Spells back into draw Pile so that GameManager can know which Spells were previously used in Combat
-        hand.TransferEntries(drawPile, false);
-        discardPile.TransferEntries(drawPile, false);
-        exhaustPile.TransferEntries(drawPile, false);
-        powerSpellPile.TransferEntries(drawPile, true);
+        // Reset Spells
+        hand.TransferEntries(discardPile, false);
+        discardPile.TransferEntries(exhaustPile, false);
+        exhaustPile.TransferEntries(powerSpellPile, false);
+        powerSpellPile.TransferEntries(drawPile, false);
+        drawPile.ActOnEachSpellInPile(spell => spell.CallSpellCallback(SpellCallbackType.OnCombatReset));
+        drawPile.Clear();
 
         musicSource.Stop();
         musicSource.time = 0;
@@ -1555,7 +1560,7 @@ public partial class CombatManager : MonoBehaviour
         yield return new WaitForSeconds(delayAfterNoteSequence);
 
         // Apply effects
-        yield return StartCoroutine(CallSpellEffectsRoutine(spell.GetSpellEffects(), null, caster, other));
+        yield return StartCoroutine(CallSpellEffects(spell.GetSpellEffects(), null, caster, other));
 
         // Callback
         CombatentBaseCallbackMap[Combatent.Character][CombatBaseCallbackType.OnSpellCast]?.Invoke();
@@ -1713,7 +1718,7 @@ public partial class CombatManager : MonoBehaviour
     {
         // the minimum a basic attack can do is 1
         // Attack the enemy
-        AttackCombatent(GetPlayerBasicAttackDamage(), Combatent.Enemy, Combatent.Character, DamageType.Default, DamageSource.BasicAttack);
+        AttackCombatent(GetPlayerBasicAttackDamage(), Combatent.Enemy, Combatent.Character, DamageType.Physical, DamageSource.BasicAttack);
 
         // Burn Effect
         ApplyBurnEffectOnMap(characterAfflictionMap, Combatent.Character);
@@ -1783,7 +1788,7 @@ public partial class CombatManager : MonoBehaviour
     private void EnemyBasicAttack()
     {
 
-        AttackCombatent(GetEnemyBasicAttackDamage(), Combatent.Character, Combatent.Enemy, DamageType.Default, DamageSource.BasicAttack);
+        AttackCombatent(GetEnemyBasicAttackDamage(), Combatent.Character, Combatent.Enemy, DamageType.Physical, DamageSource.BasicAttack);
 
         // Burn Effect
         ApplyBurnEffectOnMap(enemyAfflictionMap, Combatent.Enemy);
@@ -1868,7 +1873,65 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public IEnumerator CallSpellEffectsRoutine(List<SpellEffect> spellEffects, Action callOnFinish, Combatent caster, Combatent target, bool allowAnimations = true)
+    private void HandleAlterQueuedSpellEffect(SpellAlterQueuedSpellEffect alterQueuedSpell, Combatent target, Combatent caster)
+    {
+        if (alterQueuedSpell.Target == Target.Other || alterQueuedSpell.Target == Target.Both)
+        {
+            AlterQueuedSpellEffect(alterQueuedSpell, target);
+        }
+        if (alterQueuedSpell.Target == Target.Self || alterQueuedSpell.Target == Target.Both)
+        {
+            AlterQueuedSpellEffect(alterQueuedSpell, caster);
+        }
+    }
+
+    private void AlterQueuedSpellEffect(SpellAlterQueuedSpellEffect alterQueuedSpell, Combatent caster)
+    {
+        Dictionary<SpellStat, List<Spell>> applicableSpells = GetQueuedSpellsWithStats(caster, alterQueuedSpell.ApplicableStats);
+        if (applicableSpells.Count > 0)
+        {
+            SpellStat alteringStat = RandomHelper.GetRandomFromList(applicableSpells.Keys.ToList());
+            List<Spell> statList = applicableSpells[alteringStat];
+            RandomHelper.GetRandomFromList(statList).AlterSpellStat(alteringStat, alterQueuedSpell.AlterBy, alterQueuedSpell.AlteredStatDuration);
+        }
+    }
+
+    private Dictionary<SpellStat, List<Spell>> GetQueuedSpellsWithStats(Combatent caster, List<SpellStat> statTypes)
+    {
+        Dictionary<SpellStat, List<Spell>> applicableSpells = new Dictionary<SpellStat, List<Spell>>();
+        foreach (QueuedSpell spell in GetTargetSpellQueue(caster))
+        {
+            foreach (SpellStat stat in statTypes)
+            {
+                if (spell.Spell.HasSpellStat(stat))
+                {
+                    if (applicableSpells.ContainsKey(stat))
+                    {
+                        applicableSpells[stat].Add(spell.Spell);
+                    }
+                    else
+                    {
+                        applicableSpells.Add(stat, new List<Spell>() { spell.Spell });
+                    }
+                }
+            }
+        }
+        return applicableSpells;
+    }
+
+    private void HandleQueueSpellEffect(SpellQueueSpellEffect queueSpell, Combatent target, Combatent caster)
+    {
+        if (queueSpell.Target == Target.Other || queueSpell.Target == Target.Both)
+        {
+            AddSpellToCastQueue(queueSpell.ToQueue, target, caster);
+        }
+        if (queueSpell.Target == Target.Self || queueSpell.Target == Target.Both)
+        {
+            AddSpellToCastQueue(queueSpell.ToQueue, caster, target);
+        }
+    }
+
+    public IEnumerator CallSpellEffects(List<SpellEffect> spellEffects, Action callOnFinish, Combatent caster, Combatent target, bool allowAnimations = true)
     {
         // if there's an activate tween on the caster, wait until it's finished
         if (combatentShakeTweenDict.ContainsKey(caster))
@@ -1937,6 +2000,12 @@ public partial class CombatManager : MonoBehaviour
                     break;
                 case SpellAlterHPEffect alterHP:
                     HandleAlterHPEffect(alterHP, target, caster);
+                    break;
+                case SpellAlterQueuedSpellEffect alterQueuedSpell:
+                    HandleAlterQueuedSpellEffect(alterQueuedSpell, target, caster);
+                    break;
+                case SpellQueueSpellEffect queueSpell:
+                    HandleQueueSpellEffect(queueSpell, target, caster);
                     break;
                 default:
                     throw new UnhandledSwitchCaseException();
@@ -2095,7 +2164,7 @@ public partial class CombatManager : MonoBehaviour
         {
             int thornsDamage = GetTargetAfflictionMap(target)[AfflictionType.Thorns].GetStacks();
             ShowAfflictionProc(AfflictionType.Thorns, target);
-            AlterCombatentHP(-thornsDamage, attacker, DamageType.Default);
+            AlterCombatentHP(-thornsDamage, attacker, DamageType.Physical);
         }
 
         // Attempted to Basic Attack for less than 0 (i.e., a Heal)
@@ -2754,6 +2823,19 @@ public partial class CombatManager : MonoBehaviour
                 return characterCombatSprite;
             case Combatent.Enemy:
                 return enemyCombatSprite;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
+
+    private List<QueuedSpell> GetTargetSpellQueue(Combatent target)
+    {
+        switch (target)
+        {
+            case Combatent.Character:
+                return playerCastQueue;
+            case Combatent.Enemy:
+                return enemyCastQueue;
             default:
                 throw new UnhandledSwitchCaseException();
         }

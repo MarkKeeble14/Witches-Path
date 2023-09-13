@@ -392,7 +392,7 @@ public class TravellersDelivery : OptionEvent
                 }),
                 MakeEventOptionOutcomeWithChance(50, "The traveller notices your windup and manages to kick your shin before running off.", delegate
                 {
-                    GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Default);
+                    GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Physical);
                 })));
 
         // 3: Leave
@@ -484,7 +484,7 @@ public class WitchesHut : OptionEvent
                 }),
                 MakeEventOptionOutcomeWithChance(10, MakeEventOptionOutcome(failText, delegate
                 {
-                    GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Default);
+                    GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Physical);
                 })
                 )));
 
@@ -499,7 +499,7 @@ public class WitchesHut : OptionEvent
                 }),
                 MakeEventOptionOutcomeWithChance(40, MakeEventOptionOutcome(failText, delegate
                 {
-                    GameManager._Instance.AlterPlayerCurrentHP(-(loseHPAmount * 2), DamageType.Default);
+                    GameManager._Instance.AlterPlayerCurrentHP(-(loseHPAmount * 2), DamageType.Physical);
                 })
                 )));
 
@@ -514,7 +514,7 @@ public class WitchesHut : OptionEvent
                 }),
                 MakeEventOptionOutcomeWithChance(75, MakeEventOptionOutcome(failText, delegate
                 {
-                    GameManager._Instance.AlterPlayerCurrentHP(-(loseHPAmount * 3), DamageType.Default);
+                    GameManager._Instance.AlterPlayerCurrentHP(-(loseHPAmount * 3), DamageType.Physical);
                 })
                 )));
 
@@ -569,7 +569,7 @@ public class ArmShapedHole : OptionEvent
             MakeEventOptionOutcomeWithChance(failureOdds, "N/A", delegate
             {
                 UpdateEventText("<shake>" + GetHurtPhrase() + "...</shake> Try Again?");
-                GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Default);
+                GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Physical);
                 loseHPAmount += 1;
                 successOdds += 5;
                 EventManager._Instance.ChainEvent(this);
@@ -865,7 +865,7 @@ public class GoldAtACost : OptionEvent
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
                     GameManager._Instance.AlterGold(gainGoldAmount);
-                    GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Default);
+                    GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Physical);
                 })));
 
         // Add Options
@@ -1013,7 +1013,7 @@ public class RemoveCurseForGold : OptionEvent
         int removalCost = RandomHelper.RandomIntExclusive(minCost, maxCost);
 
         int numCurses = GetEventSpec("NumCurses");
-        bool hasSufficientCurses = GameManager._Instance.GetSpellbook().GetNumSpellsMatchingCondition(spell => spell.Color == SpellColor.Curse) > numCurses;
+        bool hasSufficientCurses = GameManager._Instance.Spellbook.GetNumEntriesMatching(spell => spell.Color == SpellColor.Curse) > numCurses;
 
         Artifact deadCockroach = Artifact.GetArtifactOfType(ArtifactLabel.CockroachCarcass);
 
@@ -1084,7 +1084,7 @@ public class TavernkeeperRescue : OptionEvent
             () => false, t => spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(vipCard, t), () => GameObject.Destroy(spawnedToolTip),
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
-                    GameManager._Instance.AlterPlayerCurrentHP(-interveneDamageAmount, DamageType.Default);
+                    GameManager._Instance.AlterPlayerCurrentHP(-interveneDamageAmount, DamageType.Physical);
                     GameManager._Instance.AddArtifact(vipCard);
                 })));
 
@@ -1098,7 +1098,7 @@ public class TavernkeeperRescue : OptionEvent
                 MakeEventOptionOutcomeWithChance(75, "Outcome Text", delegate
                 {
                     GameManager._Instance.AlterGold(distractGoldAmount);
-                    GameManager._Instance.AlterPlayerCurrentHP(-distractDamageAmount, DamageType.Default);
+                    GameManager._Instance.AlterPlayerCurrentHP(-distractDamageAmount, DamageType.Physical);
                 })));
 
         // 2: Leave
@@ -1147,7 +1147,7 @@ public class TraumaRecall : OptionEvent
 
         ConditionalOption wardOff = new ConditionalOption(() => true,
             MakeEventOption("Ward Off", "Lose Witches Ward",
-            () => GameManager._Instance.GetSpellbook().GetNumSpellsMatchingCondition(spell => spell.Label == SpellLabel.WitchesWard) <= 0,
+            () => GameManager._Instance.Spellbook.GetNumEntriesMatching(spell => spell.Label == SpellLabel.WitchesWard) <= 0,
             t => spawnedWitchesWardToolTip = UIManager._Instance.SpawnSpellToolTip(Spell.GetSpellOfType(SpellLabel.WitchesWard), t), () => GameObject.Destroy(spawnedWitchesWardToolTip),
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {

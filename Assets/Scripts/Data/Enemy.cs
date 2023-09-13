@@ -321,15 +321,15 @@ public class LivingCandle : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        AddEnemyAction("SingleAttackAndBurn", MakeEnemyAction(null, new Fireball(4, 2)));
-        AddEnemyAction("MultiAttackAndBurn", MakeEnemyAction(null, new FlamingLashes(3, 3, 4)));
+        AddEnemyAction("SingleAttackAndBurn", MakeEnemyAction(null, new Fireball(3, 2)));
+        AddEnemyAction("MultiAttackAndBurn", MakeEnemyAction(null, new FlamingLashes(2, 2, 2)));
         AddEnemyAction("EmboldenAndPower", MakeEnemyAction(null, new Excite(1), new StudyPower(1), new Excite(1)));
-        AddEnemyAction("IntangibleAndEmbolden", MakeEnemyAction(null, new Ghost(1), new Overexcite(4, 2)));
+        AddEnemyAction("IntangibleAndEmbolden", MakeEnemyAction(null, new Ghost(1), new Overexcite(3, 2)));
 
         // Make Map
         PercentageMap<string> actionMap = new PercentageMap<string>();
-        actionMap.AddOption(MakeOption(40, "SingleAttackAndBurn"));
-        actionMap.AddOption(MakeOption(40, "MultiAttackAndBurn"));
+        actionMap.AddOption(MakeOption(50, "SingleAttackAndBurn"));
+        actionMap.AddOption(MakeOption(30, "MultiAttackAndBurn"));
         actionMap.AddOption(MakeOption(10, "EmboldenAndPower"));
         actionMap.AddOption(MakeOption(10, "IntangibleAndEmbolden"));
 
@@ -415,7 +415,7 @@ public class AncientDaggerSet : Enemy
         AddEnemyAction("PoisonCoated", MakeEnemyAction(null, new CoatEdges(1)));
         AddEnemyAction("ExtraAttack", MakeEnemyAction(delegate
         {
-            flurry.AlterSpellStat(SpellStat.HitAmount, 1);
+            flurry.AlterSpellStat(SpellStat.HitAmount, 1, SpellAlterStatDuration.Combat);
             AddToEnemyAction("Power", new Protect(2));
         }, new Protect(2), new Protect(2), new Protect(2)));
 

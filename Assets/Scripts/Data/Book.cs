@@ -324,7 +324,7 @@ public class BusinessTextbook : Book
     protected override void Effect()
     {
         GameManager._Instance.AlterGold(-useCost);
-        CombatManager._Instance.AttackCombatent(-damageAmount, Combatent.Character, Combatent.Enemy, DamageType.Default, DamageSource.Book);
+        CombatManager._Instance.AttackCombatent(-damageAmount, Combatent.Character, Combatent.Enemy, DamageType.Physical, DamageSource.Book);
     }
 
     protected override void LevelUp()
