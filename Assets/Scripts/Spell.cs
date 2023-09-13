@@ -174,7 +174,7 @@ public abstract class Spell : ToolTippable
     {
         public List<SpellEffect> SpellEffects = new List<SpellEffect>();
         public Func<string> FuncCallbackString = null;
-        public Action Callback;
+        public Action Callback = null;
     }
 
     public Spell()
@@ -346,7 +346,7 @@ public abstract class Spell : ToolTippable
         string final = "";
         foreach (KeyValuePair<SpellCallbackType, SpellCallbackData> kvp in spellCallbackMap)
         {
-            if (kvp.Value.SpellEffects.Count <= 0 || kvp.Value.Callback == null) continue;
+            if (kvp.Value.SpellEffects.Count <= 0 && (kvp.Value != null && kvp.Value.FuncCallbackString().Length <= 0)) continue;
 
             final += "\n" + kvp.Key.ToString() + ": ";
 

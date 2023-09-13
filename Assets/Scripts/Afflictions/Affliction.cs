@@ -582,7 +582,7 @@ public class Levitating : Affliction
 public class BattleFrenzied : Affliction
 {
     protected override string specificToolTipText => "Upon Dealing at or Above " + damageToActivate + " Damage, Gain " + GetStacks() + " Embolden";
-    protected override string genericToolTipText => "Gain Embolden equal to the number of Embolden Stacks Upon dealing Damage equal to or Above " + damageToActivate;
+    protected override string genericToolTipText => "Gain Embolden equal to the number of BattleFrenzied Stacks Upon dealing Damage equal to or Above " + damageToActivate;
 
     public override AfflictionType Type => AfflictionType.BattleFrenzied;
 
