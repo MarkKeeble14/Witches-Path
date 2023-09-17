@@ -3,8 +3,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
+using System.Collections.Generic;
 
-public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+
+public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ToolTippable
 {
     [Header("Settings")]
     [SerializeField] private Vector2 minMaxScale;
@@ -20,28 +22,42 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
     [SerializeField] private Outline outline;
     [SerializeField] private Image mainImage;
     [SerializeField] private TextMeshProUGUI text;
+    [SerializeField] private ShowSpellStatChangeDisplay showSpellStatChangePrefab;
+    [SerializeField] private TextMeshProUGUI prepTimeText;
+
+    [SerializeField] private SemicircleLayoutGroup spellEffects;
+    [SerializeField] private QueuedSpellEffectDisplay spellEffectPrefab;
 
     private Spell representingSpell;
     private GameObject spawnedToolTip;
     private bool allowScale = false;
+    private int prepTime;
 
     public void SetSpell(Spell spell)
     {
-        representingSpell = spell;
-        SetMainColor(UIManager._Instance.GetSpellColor(spell.Color));
+        SetMainColor(UIManager._Instance.GetSpellPrimaryFunctionColor(spell.PrimaryFunction));
         text.text = spell.Name;
-        name = spell.Name + "(QueuedSpellDisplay)";
+
+        foreach (SpellEffect effect in spell.GetSpellEffects())
+        {
+            QueuedSpellEffectDisplay effectDisplay = Instantiate(spellEffectPrefab, spellEffects.transform);
+            effectDisplay.Set(effect);
+        }
+        name = spell.Label + "(QueuedSpellDisplay)";
+        representingSpell = spell;
     }
 
-    public void ShowStatChange(SpellStat type)
+    public void ShowStatChange(SpellStat type, Sign sign)
     {
-        Debug.Log(name + ": Changed - " + type);
+        // Debug.Log(name + ": Changed - " + type);
+        ShowSpellStatChangeDisplay spawned = Instantiate(showSpellStatChangePrefab, transform);
+        spawned.Set(type, sign, null);
     }
 
     public void SetMainColor(SpellColorInfo colorInfo)
     {
         mainImage.color = colorInfo.Color;
-        text.color = colorInfo.TextColor;
+        prepTimeText.color = colorInfo.TextColor;
     }
 
     public void SetOutlineColor(Color color)
@@ -52,6 +68,17 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
     public void SetAllowScale(bool allowScale)
     {
         this.allowScale = allowScale;
+    }
+
+    public void SetPrepTime(int prepTime)
+    {
+        this.prepTime = prepTime;
+        prepTimeText.text = prepTime.ToString();
+    }
+
+    public int GetPrepTime()
+    {
+        return prepTime;
     }
 
     private void Update()
@@ -76,21 +103,29 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
         toScale.localScale = Vector3.Lerp(toScale.localScale, goalScale * Vector3.one, Time.deltaTime * animateScaleSpeed);
 
         // Update Blocks raycast and Alpha repsectively
-        cv.blocksRaycasts = CombatManager._Instance.AllowGameSpaceToolTips && !(MapManager._Instance.MapOpen || GameManager._Instance.OverlaidUIOpen);
-        if (cv.blocksRaycasts)
+        if (GameManager._Instance.OverlaidUIOpen || MapManager._Instance.MapOpen)
         {
-            cv.alpha = Mathf.Lerp(cv.alpha, 1, Time.deltaTime * animateAlphaSpeed);
+            cv.blocksRaycasts = false;
+            cv.alpha = 0;
         }
         else
         {
-            cv.alpha = Mathf.Lerp(cv.alpha, uninteractableAlpha, Time.deltaTime * animateAlphaSpeed);
+            cv.blocksRaycasts = CombatManager._Instance.AllowGameSpaceToolTips;
+            if (cv.blocksRaycasts)
+            {
+                cv.alpha = Mathf.Lerp(cv.alpha, 1, Time.deltaTime * animateAlphaSpeed);
+            }
+            else
+            {
+                cv.alpha = Mathf.Lerp(cv.alpha, uninteractableAlpha, Time.deltaTime * animateAlphaSpeed);
+            }
         }
 
     }
 
     private void SpawnToolTip()
     {
-        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(representingSpell, transform);
+        spawnedToolTip = UIManager._Instance.SpawnEqualListingToolTips(new List<ToolTippable>() { representingSpell, this }, transform);
     }
 
     private void DestroyToolTip()
@@ -109,5 +144,39 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
     public void OnPointerExit(PointerEventData eventData)
     {
         DestroyToolTip();
+    }
+
+    public List<AfflictionType> GetAfflictionKeyWords()
+    {
+        return new List<AfflictionType>();
+    }
+
+    public List<ToolTipKeyword> GetGeneralKeyWords()
+    {
+        return new List<ToolTipKeyword>();
+    }
+
+    public List<ToolTippable> GetOtherToolTippables()
+    {
+        return new List<ToolTippable>();
+    }
+
+    public string GetToolTipLabel()
+    {
+        return "Prep Time";
+    }
+
+    public string GetToolTipText()
+    {
+        string text = "This Spell will be Cast";
+        if (prepTime == 1)
+        {
+            text += " this Turn";
+        }
+        else
+        {
+            text += " in " + prepTime + " Turn" + (prepTime > 1 ? "s" : "");
+        }
+        return text;
     }
 }

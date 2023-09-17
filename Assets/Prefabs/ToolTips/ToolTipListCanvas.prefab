@@ -117,6 +117,7 @@ MonoBehaviour:
   listPrefab: {fileID: 688318303557204337, guid: 6975d024ba47f2e49911d20c98ef023d, type: 3}
   rect: {fileID: 5623648688860580294}
   hLayout: {fileID: 4270271739658227897}
+  canvas: {fileID: 8821605779439932857}
 --- !u!114 &4270271739658227897
 MonoBehaviour:
   m_ObjectHideFlags: 0

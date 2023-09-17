@@ -107,34 +107,50 @@ public class UIManager : MonoBehaviour
     [SerializeField] private float spellToolTipWidth = 250;
     [SerializeField] private float spellToolTipHeight = 300;
 
-    [SerializeField] SerializableDictionary<TextDecorationLabel, Color> textDecorationColorMap = new SerializableDictionary<TextDecorationLabel, Color>();
-
-    [SerializeField] private SerializableDictionary<string, string> keyWordData = new SerializableDictionary<string, string>();
-    private List<string> afflictionTypes = new List<string>();
-
-    private List<string> numericalSuffixes => new List<string>() { "st", "nd", "rd", "th" };
-
+    [SerializeField] private int baseToolTipCanvasSortOrder = 5;
+    private int numActiveToolTipCanvases;
+    [Header("UI Maps")]
     [SerializeField] private SerializableDictionary<UISection, UISectionInformation> UISectionMap = new SerializableDictionary<UISection, UISectionInformation>();
 
-    [SerializeField] private SerializableDictionary<DamageType, Color> damageTypeColorMap = new SerializableDictionary<DamageType, Color>();
+    [Header("Text Maps")]
+    [SerializeField] SerializableDictionary<TextDecorationLabel, Color> textDecorationColorMap = new SerializableDictionary<TextDecorationLabel, Color>();
+    [SerializeField] private SerializableDictionary<string, string> keyWordData = new SerializableDictionary<string, string>();
+    [SerializeField] private SerializableDictionary<string, string[]> multiTokenKeywords = new SerializableDictionary<string, string[]>();
+    [SerializeField] private SerializableDictionary<string, string[]> multiTokenAfflictions = new SerializableDictionary<string, string[]>();
+    [SerializeField] private SerializableDictionary<string, Color> effectTextColors = new SerializableDictionary<string, Color>();
+    private List<string> afflictionTypes = new List<string>();
+    private List<string> numericalSuffixes => new List<string>() { "st", "nd", "rd", "th" };
 
+    [Header("Spell Maps")]
+    [SerializeField] private SerializableDictionary<SpellEffectType, Sprite> spellEffectIconDict = new SerializableDictionary<SpellEffectType, Sprite>();
+    [SerializeField] private SerializableDictionary<DamageType, Color> damageTypeColorMap = new SerializableDictionary<DamageType, Color>();
+    [SerializeField] private SerializableDictionary<SpellColor, SpellColorInfo> spellColorMap = new SerializableDictionary<SpellColor, SpellColorInfo>();
+    [SerializeField] private SerializableDictionary<SpellPrimaryFunction, SpellColorInfo> spellPrimaryFunctionColorMap = new SerializableDictionary<SpellPrimaryFunction, SpellColorInfo>();
+    [SerializeField] SerializableDictionary<SpellDisplayState, Color> spellDisplayStateBorderColorDict = new SerializableDictionary<SpellDisplayState, Color>();
+    [SerializeField] private SerializableDictionary<SpellStat, Sprite> spellStatIcons = new SerializableDictionary<SpellStat, Sprite>();
+
+    [Header("Potion Maps")]
     [SerializeField] private SerializableDictionary<PotionIngredientCategory, Sprite> potionIngredientCategorySpriteMap = new SerializableDictionary<PotionIngredientCategory, Sprite>();
 
-    [SerializeField] private SerializableDictionary<Rarity, Color> rarityColorMap = new SerializableDictionary<Rarity, Color>();
-
-    [SerializeField] private SerializableDictionary<SpellColor, SpellColorInfo> spellColorMap = new SerializableDictionary<SpellColor, SpellColorInfo>();
-
-    [SerializeField] SerializableDictionary<SpellDisplayState, Color> spellDisplayStateBorderColorDict = new SerializableDictionary<SpellDisplayState, Color>();
-
+    [Header("Affliction Maps")]
     [SerializeField] private SerializableDictionary<AfflictionType, Sprite> afflictionIconDict = new SerializableDictionary<AfflictionType, Sprite>();
+
+    [Header("Other Maps")]
+    [SerializeField] private SerializableDictionary<Rarity, Color> rarityColorMap = new SerializableDictionary<Rarity, Color>();
+    [SerializeField] private SerializableDictionary<Sign, Sprite> signIcons = new SerializableDictionary<Sign, Sprite>();
 
     [SerializeField] private Transform canvas;
     public Transform Canvas => canvas;
 
-    [SerializeField] private SerializableDictionary<string, Color> effectTextColors = new SerializableDictionary<string, Color>();
+    public Sprite GetSpellStatIcon(SpellStat stat)
+    {
+        return spellStatIcons[stat];
+    }
 
-    [SerializeField] private SerializableDictionary<string, string[]> multiTokenAfflictions = new SerializableDictionary<string, string[]>();
-    [SerializeField] private SerializableDictionary<string, string[]> multiTokenKeywords = new SerializableDictionary<string, string[]>();
+    public Sprite GetSignIcon(Sign sign)
+    {
+        return signIcons[sign];
+    }
 
     public Color GetEffectTextColor(string key)
     {
@@ -487,17 +503,32 @@ public class UIManager : MonoBehaviour
         return list.gameObject;
     }
 
+    private int GetNumListings(List<ToolTippable> listings)
+    {
+        if (listings.Count == 0) return 0;
+
+        int num = 0;
+        foreach (ToolTippable tt in listings)
+        {
+            num += 1;
+            num += tt.GetAfflictionKeyWords().Count;
+            num += tt.GetGeneralKeyWords().Count;
+            num += GetNumListings(tt.GetOtherToolTippables());
+        }
+        return num;
+    }
+
     public GameObject SpawnEqualListingToolTips(List<ToolTippable> listings, Transform spawningOn)
     {
         // Spawn the ToolTipList object that will house all of our other tooltips
-        ToolTipList list = SpawnToolTipList(spawningOn, listings.Count, 1);
+        ToolTipList list = SpawnToolTipList(spawningOn, GetNumListings(listings), 1);
         Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
 
         // Spawn ToolTips for Additional ToolTippables
         for (int i = 0; i < listings.Count; i++)
         {
             ToolTippable tt = listings[i];
-            SpawnToolTip(tt.GetToolTipLabel(), tt.GetToolTipText(), vLayout);
+            SpawnGenericToolTips(tt, vLayout);
         }
 
         return list.gameObject;
@@ -634,6 +665,8 @@ public class UIManager : MonoBehaviour
 
         // Spawn Tool Tip List
         ToolTipList spawned = Instantiate(toolTipList, spawningFor);
+        numActiveToolTipCanvases++;
+        spawned.Set(numActiveToolTipCanvases + baseToolTipCanvasSortOrder, () => numActiveToolTipCanvases--);
         RectTransform listRect = spawned.GetRect();
         HorizontalLayoutGroup hLayout = spawned.GetHorizontalLayoutGroup();
         hLayout.spacing = toolTipSpacing;
@@ -815,5 +848,15 @@ public class UIManager : MonoBehaviour
     public Sprite GetAfflictionIcon(AfflictionType type)
     {
         return afflictionIconDict[type];
+    }
+
+    public SpellColorInfo GetSpellPrimaryFunctionColor(SpellPrimaryFunction primaryFunction)
+    {
+        return spellPrimaryFunctionColorMap[primaryFunction];
+    }
+
+    public Sprite GetSpellEffectIcon(SpellEffectType type)
+    {
+        return spellEffectIconDict[type];
     }
 }

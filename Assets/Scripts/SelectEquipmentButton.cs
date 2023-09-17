@@ -4,23 +4,14 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.EventSystems;
 
-public enum EquipmentSequence
-{
-    Reforge,
-    Strengthen
-}
-
 public class SelectEquipmentButton : SelectButton, IPointerEnterHandler, IPointerExitHandler
 {
-
     [SerializeField] private RectTransform mainRect;
-    [SerializeField] private float costObjWidth = 100;
 
     [SerializeField] private TextMeshProUGUI costText;
     [SerializeField] private TextMeshProUGUI labelText;
     [SerializeField] private GameObject costObj;
 
-    private EquipmentSequence partOfSequence;
     private Equipment representingEquipment;
     private GameObject spawnedToolTip;
 
@@ -32,33 +23,17 @@ public class SelectEquipmentButton : SelectButton, IPointerEnterHandler, IPointe
     public void Set(Equipment e, Action a)
     {
         representingEquipment = e;
-        Set(e.GetName(), a);
+        Set(e.name, a);
     }
 
-    public void ShowCost(string label, EquipmentSequence inSequence)
+    public void ShowCost(string label)
     {
-        partOfSequence = inSequence;
         labelText.text = label;
-        if (partOfSequence == EquipmentSequence.Reforge)
-        {
-            Utils.SetRight(mainRect, costObjWidth);
-            costObj.SetActive(true);
-            SetCostText();
-        }
-    }
-
-    private void SetCostText()
-    {
-        if (partOfSequence == EquipmentSequence.Reforge)
-        {
-            costText.text = representingEquipment.GetCostToReforge().ToString();
-        }
     }
 
     private void Update()
     {
-        SetText(representingEquipment.GetName());
-        SetCostText();
+        SetText(representingEquipment.name);
     }
 
     public void SpawnToolTip()

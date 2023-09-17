@@ -1,35 +1,24 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class BookShopOffer : ShopOffer
 {
-    [SerializeField] private Book book;
-    protected override void Purchase()
-    {
-        GameManager._Instance.AddBook(book.GetLabel());
-    }
+    private Book book;
+    [SerializeField] private Image bookIcon;
+
+    protected override ToolTippable toolTippable => book;
 
     public void Set(Book setTo, int cost)
     {
         book = setTo;
-        itemText.text = book.Name;
         this.cost = cost;
-
-        // Tool Tips
-        onPointerEnter += SpawnToolTip;
-        onPointerExit += DestroyToolTip;
+        bookIcon.sprite = book.GetSprite();
     }
 
-    // Tool Tips
-    private GameObject spawnedToolTip;
-
-    public void SpawnToolTip()
+    protected override void Purchase()
     {
-        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(book, transform);
-    }
-
-    public void DestroyToolTip()
-    {
-        Destroy(spawnedToolTip);
+        GameManager._Instance.AddBook(book.GetLabel());
+        DestroyToolTip();
     }
 }

@@ -10,5 +10,6 @@ public class QueuedSpell
     {
         Spell = spell;
         SpellQueueDisplay = spawned;
+        spawned.SetPrepTime(spell.PrepTime);
     }
 }

@@ -102,8 +102,6 @@ public partial class CombatManager : MonoBehaviour
     private ObjectPool<Circle> circlePool;
     private List<Circle> circleList = new List<Circle>(); // Circles List
 
-    [Header("Combat Settings")]
-    [SerializeField] private List<DamageType> wardableDamageTypes = new List<DamageType>();
     private int handSize;
     public int MaxHandSize => 10;
     private Pile<Spell> powerSpellPile;
@@ -169,6 +167,7 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private GameObject alterHandInstructionContainer;
     [SerializeField] private TextMeshProUGUI alterHandInstructionText;
     [SerializeField] private GameObject alterHandBackground;
+    public bool SpellPileScreenOpen => showSpellPileScreen.activeInHierarchy;
 
     [Header("Enemy")]
     [SerializeField] private CombatentHPBar enemyHPBar;
@@ -236,6 +235,7 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float delayAfterEnemyTurn = 1;
     [SerializeField] private float delayBetweenAlterHandCalls = 0.05f;
     [SerializeField] private float delayAfterNoteSequence = 0.25f;
+    [SerializeField] private float delayBetweenSpellPrepTimeTicks = 0.125f;
 
 
     [Header("Discard Animation")]
@@ -253,6 +253,7 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private float powerSpellShrinkDuration;
 
     [SerializeField] private GameObject[] showOnCombat;
+    private List<Spell> spellCastThisTurn = new List<Spell>();
 
     // Callbacks
     public Action OnTurnStart;
@@ -262,6 +263,7 @@ public partial class CombatManager : MonoBehaviour
     public Action OnCombatStart;
     public Action OnCombatEnd;
     public Action OnResetCombat;
+
 
     // Should Contain -
     // Basic Attack
@@ -398,6 +400,7 @@ public partial class CombatManager : MonoBehaviour
         StartCoroutine(ShowSpellPile(discardPile, spell => true, Order.Unaltered));
     }
 
+
     private IEnumerator ShowSpellPile(Pile<Spell> toShow, Func<Spell, bool> viableSpell, Order order)
     {
         showSpellPileScreen.SetActive(true);
@@ -454,6 +457,7 @@ public partial class CombatManager : MonoBehaviour
         {
             drawPile.Add(spell);
         }
+        drawPile.Shuffle();
 
         drawPileCountText.text = drawPile.Count.ToString();
     }
@@ -486,7 +490,7 @@ public partial class CombatManager : MonoBehaviour
             // There are absolutely no cards to draw remaining
             if (drawPile.Count == 0 && discardPile.Count == 0)
             {
-                CallPlayDialogue("I'm of of Spells...?", Combatent.Character);
+                CallPlayDialogue("I'm out of Spells...?", Combatent.Character);
                 break;
             }
 
@@ -599,7 +603,7 @@ public partial class CombatManager : MonoBehaviour
         {
             // Remove Spell from Hand
             Spell spell = toDiscard[0];
-            DiscardSpell(spell);
+            DiscardSpell(spell, false);
             toDiscard.RemoveAt(0);
 
             yield return new WaitForSeconds(discardSpellDelay);
@@ -613,7 +617,7 @@ public partial class CombatManager : MonoBehaviour
         yield return new WaitUntil(() => done);
     }
 
-    public void DiscardSpell(Spell spell)
+    public void DiscardSpell(Spell spell, bool recalculateKeybinds = true)
     {
         if (hand.Contains(spell))
         {
@@ -631,7 +635,10 @@ public partial class CombatManager : MonoBehaviour
                     ((ReusableSpell)spell).ResetCooldown();
                 }
 
-                CallRecalculateKeyBinds();
+                if (recalculateKeybinds)
+                {
+                    CallRecalculateKeyBinds();
+                }
             }));
         }
     }
@@ -818,7 +825,6 @@ public partial class CombatManager : MonoBehaviour
             // Recalculate Key Bindings
             ((VisualSpellDisplay)spell.GetEquippedTo()).SetKeyBinding(GetKeyBindingAtIndex(index));
             index++;
-
         });
     }
 
@@ -1049,6 +1055,7 @@ public partial class CombatManager : MonoBehaviour
 
         // Reset Ward
         ResetCombatentWard(Combatent.Character);
+        spellCastThisTurn.Clear();
 
         // Allow player to cast spells
         CanCastSpells = true;
@@ -1098,6 +1105,12 @@ public partial class CombatManager : MonoBehaviour
 
         // Callback
         CombatentBaseCallbackMap[Combatent.Character][CombatBaseCallbackType.OnTurnEnd]?.Invoke();
+
+        // Callback
+        foreach (Spell spell in spellCastThisTurn)
+        {
+            spell.CallSpellCallback(SpellCallbackType.OnPlayerTurnEnd);
+        }
 
         Debug.Log("Player Turn Ended");
     }
@@ -1190,20 +1203,31 @@ public partial class CombatManager : MonoBehaviour
         // Set effectiveness multiplier text to be active
         effectivenessMultiplierText.gameObject.SetActive(true);
 
-        while (castQueue.Count > 0)
+        for (int i = 0; i < castQueue.Count;)
         {
             // Get Spell from Queue
-            QueuedSpell spell = castQueue[0];
+            QueuedSpell spell = castQueue[i];
+            int currentPrepTime = spell.SpellQueueDisplay.GetPrepTime();
+            spell.SpellQueueDisplay.SetPrepTime(currentPrepTime - 1);
+
+            if (currentPrepTime - 1 > 0)
+            {
+                i++;
+                yield return new WaitForSeconds(delayBetweenSpellPrepTimeTicks);
+                continue;
+            }
+
+            // Can proceed to Cast
             spell.SpellQueueDisplay.SetAllowScale(true);
 
             // Show next up spell cast
-            if (castQueue.Count > 0)
+            if (castQueue.Count > i + 1)
             {
-                castQueue[0].SpellQueueDisplay.SetOutlineColor(Color.red);
+                castQueue[i + 1].SpellQueueDisplay.SetOutlineColor(Color.red);
             }
 
             // Remove Spell from Queue
-            castQueue.RemoveAt(0);
+            castQueue.RemoveAt(i);
 
             // Cast Spell
             yield return StartCoroutine(CastSpell(spell, caster, other));
@@ -1233,6 +1257,7 @@ public partial class CombatManager : MonoBehaviour
     private IEnumerator CastSpell(QueuedSpell queuedSpell, Combatent caster, Combatent other)
     {
         Spell spell = queuedSpell.Spell;
+        spellCastThisTurn.Add(spell);
 
         // Set SFX source to spell audio clip
         spellSFXSource.clip = spell.AssociatedSoundClip;
@@ -1244,6 +1269,7 @@ public partial class CombatManager : MonoBehaviour
 
         // Set effectiveness multiplier text to be at zero
         effectivenessMultiplierTextRect.anchoredPosition = Vector2.zero;
+
 
         // Play Sequence
         yield return StartCoroutine(PlaySpell(spell, queuedSpell.SpellQueueDisplay, caster, other));
@@ -1887,18 +1913,20 @@ public partial class CombatManager : MonoBehaviour
 
     private void AlterQueuedSpellEffect(SpellAlterQueuedSpellEffect alterQueuedSpell, Combatent caster)
     {
-        Dictionary<SpellStat, List<Spell>> applicableSpells = GetQueuedSpellsWithStats(caster, alterQueuedSpell.ApplicableStats);
+        Dictionary<SpellStat, List<QueuedSpell>> applicableSpells = GetQueuedSpellsWithStats(caster, alterQueuedSpell.ApplicableStats);
         if (applicableSpells.Count > 0)
         {
             SpellStat alteringStat = RandomHelper.GetRandomFromList(applicableSpells.Keys.ToList());
-            List<Spell> statList = applicableSpells[alteringStat];
-            RandomHelper.GetRandomFromList(statList).AlterSpellStat(alteringStat, alterQueuedSpell.AlterBy, alterQueuedSpell.AlteredStatDuration);
+            List<QueuedSpell> applicableSpellList = applicableSpells[alteringStat];
+            QueuedSpell alteringSpell = RandomHelper.GetRandomFromList(applicableSpellList);
+            alteringSpell.Spell.AlterSpellStat(alteringStat, alterQueuedSpell.AlterBy, alterQueuedSpell.AlteredStatDuration);
+            alteringSpell.SpellQueueDisplay.ShowStatChange(alteringStat, alterQueuedSpell.AlterBy > 0 ? Sign.Positive : Sign.Negative);
         }
     }
 
-    private Dictionary<SpellStat, List<Spell>> GetQueuedSpellsWithStats(Combatent caster, List<SpellStat> statTypes)
+    private Dictionary<SpellStat, List<QueuedSpell>> GetQueuedSpellsWithStats(Combatent caster, List<SpellStat> statTypes)
     {
-        Dictionary<SpellStat, List<Spell>> applicableSpells = new Dictionary<SpellStat, List<Spell>>();
+        Dictionary<SpellStat, List<QueuedSpell>> applicableSpells = new Dictionary<SpellStat, List<QueuedSpell>>();
         foreach (QueuedSpell spell in GetTargetSpellQueue(caster))
         {
             foreach (SpellStat stat in statTypes)
@@ -1907,11 +1935,11 @@ public partial class CombatManager : MonoBehaviour
                 {
                     if (applicableSpells.ContainsKey(stat))
                     {
-                        applicableSpells[stat].Add(spell.Spell);
+                        applicableSpells[stat].Add(spell);
                     }
                     else
                     {
-                        applicableSpells.Add(stat, new List<Spell>() { spell.Spell });
+                        applicableSpells.Add(stat, new List<QueuedSpell>() { spell });
                     }
                 }
             }
@@ -2038,7 +2066,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void AlterCombatentHP(int amount, Combatent target, DamageType damageType)
+    public void AlterCombatentHP(int amount, Combatent target, DamageType damageType, bool allowUseWard = true)
     {
         if (amount < 0)
         {
@@ -2058,7 +2086,7 @@ public partial class CombatManager : MonoBehaviour
             case Combatent.Character:
 
                 // Use Ward
-                if (amount < 0 && wardableDamageTypes.Contains(damageType))
+                if (amount < 0 && allowUseWard)
                 {
                     int wardUsed = UseWard(amount, Combatent.Character, () => characterWard, i => characterWard += i);
                     amount += wardUsed;
@@ -2097,7 +2125,7 @@ public partial class CombatManager : MonoBehaviour
             case Combatent.Enemy:
 
                 // Use Ward
-                if (amount < 0 && wardableDamageTypes.Contains(damageType))
+                if (amount < 0 && allowUseWard)
                 {
                     int wardUsed = UseWard(amount, Combatent.Enemy, () => enemyWard, i => enemyWard += i);
                     amount += wardUsed;
@@ -2707,7 +2735,7 @@ public partial class CombatManager : MonoBehaviour
 
     public void RemoveAffliction(Combatent target, AfflictionType type)
     {
-        Debug.Log("Removing: " + type + " From " + target);
+        // Debug.Log("Removing: " + type + " From " + target);
 
         // Get the Affliction we're Removing
         Affliction removingAff = GetTargetAfflictionMap(target)[type];
@@ -2757,7 +2785,7 @@ public partial class CombatManager : MonoBehaviour
     {
         if (map.ContainsKey(AfflictionType.Poison))
         {
-            AlterCombatentHP(-map[AfflictionType.Poison].GetStacks(), target, DamageType.Poison);
+            AlterCombatentHP(-map[AfflictionType.Poison].GetStacks(), target, DamageType.Poison, false);
 
             int v = BalenceManager._Instance.GetValue(AfflictionType.Poison, "PercentToReduceBy");
             float percentToMultiplyBy = (float)v / 100;

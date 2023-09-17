@@ -5,19 +5,33 @@ using TMPro;
 using UnityEngine.UI;
 using System;
 using UnityEngine.EventSystems;
+using DG.Tweening;
 
 public abstract class ShopOffer : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     protected int cost;
 
     [Header("References")]
-    [SerializeField] protected TextMeshProUGUI itemText;
     [SerializeField] protected TextMeshProUGUI costText;
-    [SerializeField] private CanvasGroup cv;
+    [SerializeField] protected CanvasGroup cv;
+    protected abstract ToolTippable toolTippable { get; }
+
+    // Tool Tips
+    private GameObject spawnedToolTip;
 
     protected Action onPointerEnter;
     protected Action onPointerExit;
     protected Action onPointerClick;
+
+    private float scaleTweenDuration = .125f;
+    private float onMouseOverScale = 1.1f;
+
+    private void Awake()
+    {
+        // Tool Tips
+        onPointerEnter += SpawnToolTip;
+        onPointerExit += DestroyToolTip;
+    }
 
     private void Update()
     {
@@ -51,11 +65,23 @@ public abstract class ShopOffer : MonoBehaviour, IPointerClickHandler, IPointerE
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        transform.DOScale(onMouseOverScale, scaleTweenDuration);
         onPointerEnter?.Invoke();
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        transform.DOScale(1, scaleTweenDuration);
         onPointerExit?.Invoke();
+    }
+
+    public void SpawnToolTip()
+    {
+        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(toolTippable, transform);
+    }
+
+    public void DestroyToolTip()
+    {
+        Destroy(spawnedToolTip.gameObject);
     }
 }

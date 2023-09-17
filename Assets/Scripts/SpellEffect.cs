@@ -29,6 +29,8 @@ public abstract class SpellEffect : ToolTippable
     public abstract SpellEffectType Type { get; }
     protected abstract string name { get; }
     protected abstract string toolTipText { get; }
+    public abstract string NumText { get; }
+    public Sprite Sprite => UIManager._Instance.GetSpellEffectIcon(Type);
     protected Target target;
     public Target Target => target;
 
@@ -103,24 +105,21 @@ public class SpellSingleAttackEffect : SpellAttackEffect
     {
         get
         {
-            string res;
             switch (Target)
             {
                 case Target.Both:
-                    res = "Attack Both Combatents for " + DamageAmount + " Damage";
-                    break;
+                    return "Attack Both Combatents for " + DamageAmount + " Damage";
                 case Target.Self:
-                    res = "Attack Self for " + DamageAmount + " Damage";
-                    break;
+                    return "Attack Self for " + DamageAmount + " Damage";
                 case Target.Other:
-                    res = "Attack Opponent for " + DamageAmount + " Damage";
-                    break;
+                    return "Attack Opponent for " + DamageAmount + " Damage";
                 default:
                     throw new UnhandledSwitchCaseException();
             }
-            return res + " (" + DamageType + ")";
         }
     }
+
+    public override string NumText => DamageAmount.ToString();
 
     public SpellSingleAttackEffect(Func<int> damageAmount, DamageType damageType, Target target) : base(damageAmount, damageType, AttackAnimationStyle.Once, target)
     {
@@ -132,27 +131,23 @@ public class SpellMultiAttackEffect : SpellAttackEffect
 {
     public override SpellEffectType Type => SpellEffectType.MultiAttack;
     protected override string name => "Multi-Attacking";
+    public override string NumText => DamageAmount + "x" + NumAttacks;
 
     protected override string toolTipText
     {
         get
         {
-            string res;
             switch (Target)
             {
                 case Target.Both:
-                    res = "Attack Both Combatents for " + DamageAmount + " Damage " + NumAttacks + " Times";
-                    break;
+                    return "Attack Both Combatents for " + DamageAmount + " Damage " + NumAttacks + " Times";
                 case Target.Self:
-                    res = "Attack Self for " + DamageAmount + " Damage " + NumAttacks + " Times";
-                    break;
+                    return "Attack Self for " + DamageAmount + " Damage " + NumAttacks + " Times";
                 case Target.Other:
-                    res = "Attack Opponant for " + DamageAmount + " Damage " + NumAttacks + " Times";
-                    break;
+                    return "Attack Opponant for " + DamageAmount + " Damage " + NumAttacks + " Times";
                 default:
                     throw new UnhandledSwitchCaseException();
             }
-            return res + " (" + DamageType + ")";
         }
     }
 
@@ -204,6 +199,8 @@ public class SpellWardEffect : SpellEffect
         }
     }
 
+    public override string NumText => WardAmount.ToString();
+
     public SpellWardEffect(Func<int> wardAmount, Target target) : base(target)
     {
         this.wardAmount = wardAmount;
@@ -224,6 +221,7 @@ public class SpellApplyAfflictionEffect : SpellEffect
     private Func<int> numStacks { get; set; }
     public int NumStacks => numStacks();
     protected override string name => "Applying Affliction";
+    public override string NumText => NumStacks.ToString();
 
     protected override string toolTipText
     {
@@ -235,7 +233,7 @@ public class SpellApplyAfflictionEffect : SpellEffect
                 case Target.Both:
                     return "Apply " + NumStacks + " " + aff.Name + " to All Combatents";
                 case Target.Self:
-                    return (NumStacks > 0 ? "Gain" : "Lose") + " " + NumStacks + " " + aff.Name;
+                    return (NumStacks > 0 ? "Gain " + NumStacks : "Lose " + (NumStacks * -1)) + " " + aff.Name;
                 case Target.Other:
                     return "Apply " + NumStacks + " " + aff.Name + " to Opponent";
                 default:
@@ -257,7 +255,6 @@ public class SpellCleanseAfflictionsEffect : SpellEffect
 {
     public override SpellEffectType Type => SpellEffectType.CleanseAfflictions;
     public List<Sign> toCleanse { get; private set; }
-
     protected override string name => "Cleansing Afflictions";
     protected override string toolTipText
     {
@@ -276,6 +273,8 @@ public class SpellCleanseAfflictionsEffect : SpellEffect
             }
         }
     }
+
+    public override string NumText => "";
 
     public SpellCleanseAfflictionsEffect(Target target, params Sign[] affOfSignsToCleanse) : base(target)
     {
@@ -365,6 +364,7 @@ public class SpellAlterHPEffect : SpellEffect
         }
     }
 
+    public override string NumText => HPAmount.ToString();
     public override SpellEffectType Type => SpellEffectType.AlterHP;
 
     public SpellAlterHPEffect(Func<int> hpAmount, DamageType damageType, Target target) : base(target)
@@ -427,6 +427,8 @@ public class SpellAlterQueuedSpellEffect : SpellEffect
         }
     }
 
+    public override string NumText => AlterBy.ToString();
+
     private Func<int> alterBy { get; set; }
     public int AlterBy => alterBy();
     public SpellAlterStatDuration AlteredStatDuration { get; private set; }
@@ -447,6 +449,8 @@ public class SpellQueueSpellEffect : SpellEffect
     protected override string name => "Queue Spell";
 
     protected override string toolTipText => "Queue Up " + ToQueue.Name;
+
+    public override string NumText => "";
 
     public Spell ToQueue { get; private set; }
 

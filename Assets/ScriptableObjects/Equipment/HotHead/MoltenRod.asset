@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   name: Molten Rod
   rarity: 0
-  damageChange: 2
-  defenseChange: -1
+  damageChange: 1
+  defenseChange: 0
   manaChange: 0
   AfflictionKeywords: 
   GeneralKeywords: 

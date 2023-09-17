@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   name: Snakeskin Carcass
   rarity: 0
-  damageChange: -1
-  defenseChange: 2
-  manaChange: 1
+  damageChange: 0
+  defenseChange: 1
+  manaChange: 0
   AfflictionKeywords: 
   GeneralKeywords: 

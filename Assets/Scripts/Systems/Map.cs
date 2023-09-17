@@ -37,6 +37,8 @@ public struct MapSectionInfo
     public int NumPaths;
     public Vector2Int ChanceToConnectPaths;
     public MapNodeSizingInfo SizingInfo;
+    public bool ShowSectionConnections;
+    public int MaxNumSectionConnections;
     public SerializableDictionary<MapNodeType, List<GameOccurance>> SpecificMapNodes;
 }
 
@@ -61,6 +63,11 @@ public class EventLabelWithCondition
 [System.Serializable]
 public class Map
 {
+    [Header("Visual Settings")]
+    [SerializeField] private float delayBetweenShowingCells = .1f;
+    [SerializeField] private int numLinesPerConnector;
+    [SerializeField] private float connectorOffsetFromNode;
+
     [Header("Map Config")]
     [SerializeField] private List<MapSectionInfo> mapSections = new List<MapSectionInfo>();
     private Dictionary<int, GridLayoutGroup> spawnedGrids = new Dictionary<int, GridLayoutGroup>();
@@ -73,13 +80,7 @@ public class Map
 
     [Header("General Settings")]
     [SerializeField] private List<MapNodeType> earlySetters = new List<MapNodeType>();
-
-    [Header("Visual Settings")]
-    [SerializeField] private float delayBetweenShowingCells = .1f;
     [SerializeField] private SerializableDictionary<MapNodeType, Sprite> mapNodeIconDict = new SerializableDictionary<MapNodeType, Sprite>();
-    [SerializeField] private int numLinesPerConnector;
-    [SerializeField] private float connectorOffsetFromNode;
-    [SerializeField] private bool showSectionConnections;
 
     [Header("Prefabs")]
     [SerializeField] private MapNodeUI mapNodePrefab;
@@ -177,7 +178,7 @@ public class Map
 
         for (int i = 0; i < mapSections.Count - 1; i++)
         {
-            ConnectMapSections(i, i + 1);
+            ConnectMapSections(i, i + 1, mapSections[i]);
         }
 
         for (int i = 0; i < mapSections.Count; i++)
@@ -319,7 +320,7 @@ public class Map
         return newNodes;
     }
 
-    private void ConnectMapSections(int s1Index, int s2Index)
+    private void ConnectMapSections(int s1Index, int s2Index, MapSectionInfo fromSection)
     {
         // First Section
         MapNodeUI[,] nodes1 = spawnedGridNodes[s1Index];
@@ -343,9 +344,24 @@ public class Map
                 continue;
             }
 
+            List<MapNodeUI> possibleNextNodes = new List<MapNodeUI>();
             for (int p = 0; p < nodes2.GetLength(1); p++)
             {
-                MapNodeUI nextNode = nodes2[0, p];
+                possibleNextNodes.Add(nodes2[0, p]);
+            }
+
+            Canvas.ForceUpdateCanvases();
+            // Sort the list of NextNodes by proximity to the current node
+            possibleNextNodes.Sort(new MapNodeProximityComparer(currentNode));
+
+            int numSectionConnectionsSet = 0;
+            int maxNumSectionConnections = fromSection.MaxNumSectionConnections;
+            for (int p = 0; p < possibleNextNodes.Count; p++)
+            {
+                if (numSectionConnectionsSet >= maxNumSectionConnections) break;
+
+                // Get the Next Node
+                MapNodeUI nextNode = possibleNextNodes[p];
 
                 // Debug.Log("On Next Node: " + nextNode);
                 if (!nextNode.HasBeenSet)
@@ -353,6 +369,10 @@ public class Map
                     // Debug.Log(nextNode + " - Not Yet Set");
                     continue;
                 };
+
+                int x1 = currentNode.Coords.y;
+                int x2 = nextNode.Coords.y;
+                numSectionConnectionsSet++;
 
                 // Debug.Log("Spawing Connection Between: " + currentNode + ", and: " + nextNode);
 
@@ -369,13 +389,13 @@ public class Map
                 {
                     // Even
                     middleColOfRow = Mathf.CeilToInt((float)numCols / 2);
-                    offsetFromCenter = (middleColOfRow - .5f) - i;
+                    offsetFromCenter = (middleColOfRow - .5f) - x1;
                 }
                 else
                 {
                     // Odd
                     middleColOfRow = Mathf.CeilToInt((float)numCols / 2);
-                    offsetFromCenter = (middleColOfRow - 1) - i;
+                    offsetFromCenter = (middleColOfRow - 1) - x1;
                 }
                 offsetFromCenter *= (s1Grid.cellSize.x + s1Grid.spacing.x);
                 // add in this distance, which will then bring us to perfectly in the middle of the second grid
@@ -387,13 +407,13 @@ public class Map
                 {
                     // Even
                     middleColOfRow = Mathf.CeilToInt((float)numCols / 2);
-                    offsetFromCenter = p - (middleColOfRow - .5f);
+                    offsetFromCenter = x2 - (middleColOfRow - .5f);
                 }
                 else
                 {
                     // Odd
                     middleColOfRow = Mathf.CeilToInt((float)numCols / 2);
-                    offsetFromCenter = p - (middleColOfRow - 1);
+                    offsetFromCenter = x2 - (middleColOfRow - 1);
                 }
                 offsetFromCenter *= (s2Grid.cellSize.x + s2Grid.spacing.x);
                 // add in this distance, which will then bring us to the second node
@@ -411,7 +431,7 @@ public class Map
                 // add in half of section 2 cell size to reach middle of Cell in Section 2
                 yChange += s2Grid.cellSize.y / 2;
 
-                currentNode.SetShowConnections(showSectionConnections);
+                currentNode.SetShowConnections(fromSection.ShowSectionConnections);
 
                 currentNode.SpawnConnection(currentNode, nextNode,
                     xChange,
@@ -538,7 +558,7 @@ public class Map
         {
             foreach (MapNodeUI node in mapNodes)
             {
-                node.SetShowConnections(showSectionConnections);
+                node.SetShowConnections(sectionInfo.ShowSectionConnections);
                 SetNode(node, sectionInfo, 0);
             }
         }

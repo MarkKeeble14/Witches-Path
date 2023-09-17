@@ -3,29 +3,56 @@ using UnityEngine;
 using TMPro;
 using System.Collections;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler, IEndDragHandler
 {
-    [Header("Visual Spell Display")]
+    [Header("Visual Settings")]
     [SerializeField] private float delayBeforeSpawningToolTips = 0.5f;
     [SerializeField] private float distFromStartToCast = 50;
     [SerializeField] private float rotateSpeed = 5;
+    [SerializeField] private DGDoShakeData onFailCast;
     private Vector3 dragStartPos;
+    private bool isDragging;
+    private KeyCode keyCode;
 
     [Header("References")]
+    [SerializeField] private Image rarityImage;
+    [SerializeField] private TextMeshProUGUI keyCodeText;
+
+    [Header("Additional Info")]
+    [SerializeField] private SemiUniversalSpellInfoContainer manaCostInfo;
+    [SerializeField] private SemiUniversalSpellInfoContainer cooldownInfo;
+    [SerializeField] private SemiUniversalSpellInfoContainer prepTimeInfo;
+    [SerializeField] private SemiUniversalSpellInfoContainer numAttacksInfo;
+
+    [Header("On Spell")]
     [SerializeField] private TextMeshProUGUI castTypeText;
-    [SerializeField] private TextMeshProUGUI manaCostText;
-    [SerializeField] private TextMeshProUGUI cooldownText;
+    [SerializeField] private TextMeshProUGUI effectInfo;
     [SerializeField] private GameObject cooldownContainer;
     [SerializeField] private Image cooldownDisplay;
-    [SerializeField] private TextMeshProUGUI keyCodeText;
-    [SerializeField] private Button button;
+    [SerializeField] private TextMeshProUGUI cooldownContainerText;
 
-    [Header("Spell Dependant")]
-    [SerializeField] private Image rarityImage;
-    private bool isDragging;
 
-    private KeyCode keyCode;
+    public int GetNumNotes()
+    {
+        return Spell.GetNumNotes();
+    }
+
+    public int GetCooldown()
+    {
+        return ((ReusableSpell)Spell).MaxCooldown;
+    }
+
+    public int GetPrepTime()
+    {
+        return Spell.PrepTime;
+    }
+
+    public int GetManaCost()
+    {
+        return Spell.ManaCost;
+    }
 
     private IEnumerator SpawnToolTipsAfterDelay()
     {
@@ -77,21 +104,10 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
         base.SetSpell(spell);
 
         name = spell.Name + "(VisualSpellDisplay)";
+        castTypeText.text = spell.SpellCastType.ToString();
 
         // Set Rarity Image Color
         rarityImage.color = UIManager._Instance.GetRarityColor(spell.Rarity);
-
-        switch (spell)
-        {
-            case ReusableSpell activeSpell:
-                castTypeText.text = "Active";
-                break;
-            case PowerSpell powerSpell:
-                castTypeText.text = "Power";
-                break;
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
     }
 
     public override void OnPointerClick(PointerEventData eventData)
@@ -115,11 +131,28 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
         // Set border Color
         border.color = UIManager._Instance.GetSpellDisplayBorderColor(currentSpellDisplayState);
 
-        //
-        manaCostText.text = Spell.ManaCost.ToString();
-
         // Show Detail of Spells
-        text.text = Spell.GetToolTipText();
+        effectInfo.text = Spell.GetToolTipText();
+
+        // PrepTime- Always
+        prepTimeInfo.Text.text = GetPrepTime().ToString();
+        // NumAttacks - Always
+        numAttacksInfo.Text.text = GetNumNotes().ToString();
+        if (Spell.Caster != Combatent.Character)
+        {
+            // Cooldown - Not on Enemy Card
+            cooldownInfo.Container.SetActive(false);
+            // ManaCost - Not on Enemy Card
+            manaCostInfo.Container.SetActive(false);
+        }
+        else
+        {
+            manaCostInfo.Text.text = GetManaCost().ToString();
+            if (Spell is ReusableSpell)
+            {
+                cooldownInfo.Text.text = GetCooldown().ToString();
+            }
+        }
 
         if (currentSpellDisplayState == SpellDisplayState.InHand)
         {
@@ -156,10 +189,7 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
         {
             if (!Spell.CanCast)
             {
-                if (!Spell.HasMana)
-                {
-                    GameManager._Instance.PopManaText();
-                }
+                onFailCast.DoShakeAnchorPos(rect);
                 return;
             }
 
@@ -186,7 +216,7 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
                 cooldownContainer.SetActive(true);
                 cooldownDisplay.fillAmount = ((float)activeSpell.CurrentCooldown / activeSpell.MaxCooldown);
                 progressBar.fillAmount = 1 - ((float)activeSpell.CurrentCooldown / activeSpell.MaxCooldown);
-                cooldownText.text = "Cooldown:\n" + Utils.RoundTo(activeSpell.CurrentCooldown, 0).ToString();
+                cooldownContainerText.text = "Cooldown:\n" + Utils.RoundTo(activeSpell.CurrentCooldown, 0).ToString();
             }
             else
             {
@@ -194,8 +224,6 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
                 progressBar.fillAmount = 1;
             }
         }
-
-        manaCostText.text = Spell.ManaCost.ToString();
     }
 
     private void NotInhandUpdate()
@@ -226,6 +254,12 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
     public void OnBeginDrag(PointerEventData eventData)
     {
         if (!IsDisplayStateInHand(currentSpellDisplayState)) return;
+
+        if (!Spell.CanCast)
+        {
+            onFailCast.DoShakeAnchorPos(rect);
+            return;
+        }
 
         isDragging = true;
         CombatManager._Instance.HandLayoutGroup.RemoveTransformFromHand(transform);

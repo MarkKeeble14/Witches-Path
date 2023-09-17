@@ -18,7 +18,8 @@ public enum SpellDisplayState
     ToolTip,
     DraggingWontCast,
     DraggingWillCast,
-    Fading
+    Fading,
+    ShopOffer
 }
 
 public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
@@ -36,6 +37,7 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
     [SerializeField] private GameObject lockedContainer;
     [SerializeField] private Sprite defaultSprite;
     [SerializeField] private Canvas canvas;
+    protected RectTransform rect => transform as RectTransform;
 
     [Header("Color Info")]
     [SerializeField] private Image[] setColorOf;
@@ -118,7 +120,7 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
     {
         if (!cvLocked)
         {
-            bool hide = ((MapManager._Instance.MapOpen || GameManager._Instance.OverlaidUIOpen) && isInHand) || (MapManager._Instance.MapOpen && currentSpellDisplayState == SpellDisplayState.Locked);
+            bool hide = (MapManager._Instance.MapOpen || GameManager._Instance.OverlaidUIOpen || CombatManager._Instance.SpellPileScreenOpen) && isInHand;
             mainCV.blocksRaycasts = !hide;
             mainCV.alpha = hide ? 0 : 1;
         }

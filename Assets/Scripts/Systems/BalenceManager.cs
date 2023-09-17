@@ -31,22 +31,9 @@ public class BalenceManager : MonoBehaviour
     private SerializableDictionary<string, SerializableDictionary<string, int[]>> ingredientSpecDict
         = new SerializableDictionary<string, SerializableDictionary<string, int[]>>();
 
-    [Header("Equipment")]
-    [SerializeField]
-    private SerializableDictionary<ReforgeModifier, List<ReforgeModifierEffect>> reforgeModifierEffects
-        = new SerializableDictionary<ReforgeModifier, List<ReforgeModifierEffect>>();
-    [SerializeField]
-    private SerializableDictionary<ReforgeModifier, int> costToReforgeModifier
-        = new SerializableDictionary<ReforgeModifier, int>();
-
     private void Awake()
     {
         _Instance = this;
-    }
-
-    public List<ReforgeModifierEffect> GetReforgeModifierEffect(ReforgeModifier reforgeModifier)
-    {
-        return reforgeModifierEffects[reforgeModifier];
     }
 
     public bool PotionHasSpec(PotionIngredientType type, string param)
@@ -101,10 +88,5 @@ public class BalenceManager : MonoBehaviour
     {
         if (!eventSpecDict.ContainsKey(label)) return false;
         return eventSpecDict[label].ContainsKey(valueIdentifier);
-    }
-
-    public int GetCostToReforge(ReforgeModifier reforgeModifier)
-    {
-        return costToReforgeModifier[reforgeModifier];
     }
 }

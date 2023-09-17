@@ -4,35 +4,32 @@ using UnityEngine;
 public class SpellShopOffer : ShopOffer
 {
     [SerializeField] private Spell spell;
+    [SerializeField] private VisualSpellDisplay visualSpellDisplay;
 
-    public void Set(SpellLabel setTo, int cost)
+    protected override ToolTippable toolTippable => spell;
+
+    public void Set(Spell setTo, int cost)
     {
-        spell = Spell.GetSpellOfType(setTo);
+        spell = setTo;
         this.cost = cost;
+        visualSpellDisplay.SetSpell(setTo);
 
-        itemText.text = Utils.SplitOnCapitalLetters(setTo.ToString());
+        visualSpellDisplay.SetCVLocked(true);
+        visualSpellDisplay.GetCanvasGroup().blocksRaycasts = false;
+
         costText.text = cost.ToString();
-
-        // Tool Tips
-        onPointerEnter += SpawnToolTip;
-        onPointerExit += DestroyToolTip;
     }
 
     protected override void Purchase()
     {
         GameManager._Instance.AddSpellToSpellBook(spell);
+        DestroyToolTip();
     }
 
-    // Tool Tips
-    private GameObject spawnedToolTip;
-
-    public void SpawnToolTip()
+    private void Update()
     {
-        spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(spell, transform);
-    }
-
-    public void DestroyToolTip()
-    {
-        Destroy(spawnedToolTip);
+        bool hide = GameManager._Instance.OverlaidUIOpen || MapManager._Instance.MapOpen;
+        cv.blocksRaycasts = !hide;
+        cv.alpha = hide ? 0 : 1;
     }
 }

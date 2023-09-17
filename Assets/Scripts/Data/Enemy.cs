@@ -20,7 +20,8 @@ public enum EnemyType
     SpiritOfContempt,
     SpiritsTombGolem,
     SpiritOfPride,
-    SpritOfDebilitation
+    SpritOfDebilitation,
+    FamilyPet
 }
 
 public abstract class Enemy
@@ -232,6 +233,8 @@ public abstract class Enemy
                 return new SpiritOfPride();
             case EnemyType.SpritOfDebilitation:
                 return new SpiritOfDebilitation();
+            case EnemyType.FamilyPet:
+                return new FamilyPet();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -277,8 +280,8 @@ public class HauntedClock : Enemy
 {
     public override string Name => "Haunted Clock";
     public override EnemyType EnemyType => EnemyType.HauntedClock;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(190, 200);
-    protected override int basicAttackDamage => 3;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(115, 125);
+    protected override int basicAttackDamage => 2;
 
     protected override void SetUpBehaviour()
     {
@@ -311,12 +314,44 @@ public class HauntedClock : Enemy
     }
 }
 
+public class FamilyPet : Enemy
+{
+    public override string Name => "The Family Pet";
+    public override EnemyType EnemyType => EnemyType.FamilyPet;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(80, 90);
+    protected override int basicAttackDamage => 2;
+
+    private bool willBuff = false;
+
+    protected override void SetUpBehaviour()
+    {
+        // Make Enemy Actions
+        AddEnemyAction("SingleAttack", MakeEnemyAction(() => willBuff = true, new Tackle(5)));
+        AddEnemyAction("Ward", MakeEnemyAction(() => willBuff = true, new Protect(7)));
+        AddEnemyAction("Protection", MakeEnemyAction(() => willBuff = false, new Harden(1)));
+        AddEnemyAction("Power", MakeEnemyAction(() => willBuff = false, new StudyPower(1), new Protect(5)));
+
+        // Make Map
+        PercentageMap<string> actionMap = new PercentageMap<string>();
+        actionMap.AddOption(MakeOption(75, "SingleAttack"));
+        actionMap.AddOption(MakeOption(25, "Ward"));
+
+        PercentageMap<string> buffMap = new PercentageMap<string>();
+        buffMap.AddOption(MakeOption(75, "Protection"));
+        buffMap.AddOption(MakeOption(25, "Power"));
+
+        // Apply Behaviour
+        AddEnemyBehaviour(() => !willBuff, actionMap);
+        AddEnemyBehaviour(() => willBuff, buffMap);
+    }
+}
+
 public class LivingCandle : Enemy
 {
     public override string Name => "Living Candle";
     public override EnemyType EnemyType => EnemyType.LivingCandle;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(150, 175);
-    protected override int basicAttackDamage => 4;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(90, 100);
+    protected override int basicAttackDamage => 2;
 
     protected override void SetUpBehaviour()
     {
@@ -351,7 +386,7 @@ public class HolyGrail : Enemy
         AddEnemyAction("AttackAndWard", MakeEnemyAction(null, new ScaldingSplash(6, 1), new Protect(6)));
         AddEnemyAction("Attack", MakeEnemyAction(null, new ScaldingSplash(10, 2)));
         AddEnemyAction("WardAndProtection", MakeEnemyAction(null, new Protect(6), new StudyProtection(1)));
-        AddEnemyAction("Regeneration", MakeEnemyAction(null, new CallUntoBlessing(5)));
+        AddEnemyAction("Regeneration", MakeEnemyAction(null, new Blessed(5)));
         AddEnemyAction("Heal", MakeEnemyAction(null, new Recouperate(10)));
 
         // Make Map
@@ -668,9 +703,9 @@ public class PanickedWizard : Enemy
         normalActionMap.AddOption(MakeOption(25, "Buff"));
 
         PercentageMap<string> randomActionmap = new PercentageMap<string>();
-        normalActionMap.AddOption(MakeOption(34, "Random1"));
-        normalActionMap.AddOption(MakeOption(33, "Random2"));
-        normalActionMap.AddOption(MakeOption(33, "Random3"));
+        randomActionmap.AddOption(MakeOption(34, "Random1"));
+        randomActionmap.AddOption(MakeOption(33, "Random2"));
+        randomActionmap.AddOption(MakeOption(33, "Random3"));
 
         // Apply Behaviours
         AddEnemyBehaviour(() => true, normalActionMap);
