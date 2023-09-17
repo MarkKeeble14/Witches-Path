@@ -13,6 +13,11 @@ public class SemicircleLayoutGroup : MonoBehaviour
     [SerializeField] private bool animate;
     [SerializeField] private float animateSpeed;
 
+    public void SetRadius(float radius)
+    {
+        this.radius = radius;
+    }
+
     public void SetChildOrder(Transform child)
     {
         if (reverseOrder)

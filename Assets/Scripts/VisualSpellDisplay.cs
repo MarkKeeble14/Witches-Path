@@ -134,24 +134,12 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
         // Show Detail of Spells
         effectInfo.text = Spell.GetToolTipText();
 
-        // PrepTime- Always
         prepTimeInfo.Text.text = GetPrepTime().ToString();
-        // NumAttacks - Always
         numAttacksInfo.Text.text = GetNumNotes().ToString();
-        if (Spell.Caster != Combatent.Character)
+        manaCostInfo.Text.text = GetManaCost().ToString();
+        if (Spell is ReusableSpell)
         {
-            // Cooldown - Not on Enemy Card
-            cooldownInfo.Container.SetActive(false);
-            // ManaCost - Not on Enemy Card
-            manaCostInfo.Container.SetActive(false);
-        }
-        else
-        {
-            manaCostInfo.Text.text = GetManaCost().ToString();
-            if (Spell is ReusableSpell)
-            {
-                cooldownInfo.Text.text = GetCooldown().ToString();
-            }
+            cooldownInfo.Text.text = GetCooldown().ToString();
         }
 
         if (currentSpellDisplayState == SpellDisplayState.InHand)
@@ -198,11 +186,7 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
 
             CombatManager._Instance.AddSpellToCastQueue(Spell, Combatent.Character, Combatent.Enemy);
 
-            if (Spell.SpellCastType == SpellCastType.Power)
-            {
-                // Automatically remove Power Spells from Hand when Played
-                CombatManager._Instance.AddSpellToPowerSpellPile((PowerSpell)Spell);
-            }
+            CombatManager._Instance.HandleSpellCast(Spell);
         }
     }
 

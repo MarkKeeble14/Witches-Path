@@ -4,7 +4,8 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 using System.Collections.Generic;
-
+using DG.Tweening;
+using System.Collections;
 
 public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ToolTippable
 {
@@ -27,6 +28,14 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
 
     [SerializeField] private SemicircleLayoutGroup spellEffects;
     [SerializeField] private QueuedSpellEffectDisplay spellEffectPrefab;
+
+    [SerializeField] private float spellEffectRadiusRatio = 5;
+    [SerializeField] private float onHoverScaleTo;
+    [SerializeField] private float onHoverScaleDuration;
+    [SerializeField] private RectTransform onHoverToScale;
+
+    [SerializeField] private float delayBeforeSpawningToolTips = .5f;
+    private bool isMousedOver;
 
     private Spell representingSpell;
     private GameObject spawnedToolTip;
@@ -89,6 +98,8 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
             DestroyToolTip();
         }
 
+        spellEffects.SetRadius(transform.localScale.x * spellEffectRadiusRatio);
+
         // Update Scale
         if (allowScale)
         {
@@ -123,9 +134,31 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
 
     }
 
+    private IEnumerator SpawnToolTipsAfterDelay()
+    {
+        float t = 0;
+        while (t < delayBeforeSpawningToolTips)
+        {
+            if (!isMousedOver)
+            {
+                yield break;
+            }
+
+            t += Time.deltaTime;
+            yield return null;
+        }
+        // Disallow tool tip under certain conditions
+        if (!isMousedOver)
+        {
+            yield break;
+        }
+
+        spawnedToolTip = UIManager._Instance.SpawnEqualListingToolTips(new List<ToolTippable>() { representingSpell, this }, transform);
+    }
+
     private void SpawnToolTip()
     {
-        spawnedToolTip = UIManager._Instance.SpawnEqualListingToolTips(new List<ToolTippable>() { representingSpell, this }, transform);
+        StartCoroutine(SpawnToolTipsAfterDelay());
     }
 
     private void DestroyToolTip()
@@ -135,14 +168,18 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        isMousedOver = true;
         if (CombatManager._Instance.AllowGameSpaceToolTips)
         {
+            onHoverToScale.DOScale(onHoverScaleTo, onHoverScaleDuration);
             SpawnToolTip();
         }
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        isMousedOver = false;
+        onHoverToScale.DOScale(1, onHoverScaleDuration);
         DestroyToolTip();
     }
 

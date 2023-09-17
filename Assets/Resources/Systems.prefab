@@ -3961,6 +3961,19 @@ MonoBehaviour:
       value: 
     - key: Campfires
       value: 
+    - key: Exhaust
+      value: Exhausting a Spell places it into a seperate Spell Pile that you cannot
+        draw from
+    - key: Retain
+      value: Spells which Retain are not Discarded at the End of the Turn
+    - key: Ethereal
+      value: Spells which are Ethereal are Exhausted at the End of the Turn
+    - key: Exhausted
+      value: 
+    - key: Discarded
+      value: 
+    - key: Discard
+      value: 
   multiTokenKeywords:
     dictionary:
     - key: Basic

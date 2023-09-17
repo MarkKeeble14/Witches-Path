@@ -592,29 +592,53 @@ public partial class CombatManager : MonoBehaviour
         Destroy(card.gameObject);
     }
 
-
-    private IEnumerator DiscardHand()
+    public void HandleSpellCast(Spell spell)
     {
-        bool done = false;
-
-        List<Spell> toDiscard = hand.GetEntriesMatching(spell => true);
-
-        while (toDiscard.Count > 0)
+        if (spell.SpellCastType == SpellCastType.Power)
         {
-            // Remove Spell from Hand
-            Spell spell = toDiscard[0];
-            DiscardSpell(spell, false);
-            toDiscard.RemoveAt(0);
-
-            yield return new WaitForSeconds(discardSpellDelay);
-
-            if (toDiscard.Count == 0)
+            // Automatically remove Power Spells from Hand when Played
+            AddSpellToPowerSpellPile((PowerSpell)spell);
+        }
+        else
+        {
+            switch (spell.QueueDeckAction)
             {
-                done = true;
+                case SpellQueueDeckAction.Discard:
+                    DiscardSpell(spell);
+                    break;
+                case SpellQueueDeckAction.Exhaust:
+                    ExhaustSpell(spell);
+                    break;
+                case SpellQueueDeckAction.None:
+                    break;
+                default:
+                    throw new UnhandledSwitchCaseException();
             }
         }
+    }
 
-        yield return new WaitUntil(() => done);
+
+    private IEnumerator HandleHandAtEndOfTurn()
+    {
+        List<Spell> toHandle = hand.GetEntriesMatching(spell => true);
+        foreach (Spell spell in toHandle)
+        {
+            switch (spell.EndOfTurnDeckAction)
+            {
+                case SpellEndOfTurnDeckAction.Ethereal:
+                    ExhaustSpell(spell);
+                    break;
+                case SpellEndOfTurnDeckAction.Retain:
+                    break;
+                case SpellEndOfTurnDeckAction.Discard:
+                    DiscardSpell(spell, false);
+                    break;
+                default:
+                    throw new UnhandledSwitchCaseException();
+            }
+
+            yield return new WaitForSeconds(discardSpellDelay);
+        }
     }
 
     public void DiscardSpell(Spell spell, bool recalculateKeybinds = true)
@@ -1048,7 +1072,7 @@ public partial class CombatManager : MonoBehaviour
 
     private IEnumerator PlayerTurn()
     {
-        Debug.Log("Player Turn Started");
+        //E Debug.Log("Player Turn Started");
 
         currentTurn = Turn.Player;
         playerTurnEnded = false;
@@ -1067,10 +1091,6 @@ public partial class CombatManager : MonoBehaviour
         // Callback
         CombatentBaseCallbackMap[Combatent.Character][CombatBaseCallbackType.OnTurnStart]?.Invoke();
 
-        // Tick Relevant Afflictions
-        ApplyBlightEffectOnMap(characterAfflictionMap, Combatent.Character);
-        ApplyPoisonEffectOnMap(characterAfflictionMap, Combatent.Character);
-
         if (CheckForCombatOver())
         {
             yield break;
@@ -1079,7 +1099,7 @@ public partial class CombatManager : MonoBehaviour
         yield return new WaitUntil(() => playerTurnEnded);
         playerTurnEnded = false;
 
-        yield return StartCoroutine(DiscardHand());
+        yield return StartCoroutine(HandleHandAtEndOfTurn());
 
         foreach (GameObject obj in disableWhileCasting)
         {
@@ -1278,7 +1298,7 @@ public partial class CombatManager : MonoBehaviour
 
     private IEnumerator EnemyTurn()
     {
-        Debug.Log("Enemy Turn Started");
+        // Debug.Log("Enemy Turn Started");
 
         currentTurn = Turn.Enemy;
 
@@ -1299,10 +1319,6 @@ public partial class CombatManager : MonoBehaviour
                 AddSpellToCastQueue(spell, Combatent.Enemy, Combatent.Character);
             }
         }
-
-        // Tick Relevant Afflictions
-        ApplyBlightEffectOnMap(enemyAfflictionMap, Combatent.Enemy);
-        ApplyPoisonEffectOnMap(enemyAfflictionMap, Combatent.Enemy);
 
         if (CheckForCombatOver())
         {
@@ -1746,9 +1762,6 @@ public partial class CombatManager : MonoBehaviour
         // Attack the enemy
         AttackCombatent(GetPlayerBasicAttackDamage(), Combatent.Enemy, Combatent.Character, DamageType.Physical, DamageSource.BasicAttack);
 
-        // Burn Effect
-        ApplyBurnEffectOnMap(characterAfflictionMap, Combatent.Character);
-
         // Only call this if the combat isn't over
         if (!CheckForCombatOver())
         {
@@ -1813,11 +1826,7 @@ public partial class CombatManager : MonoBehaviour
 
     private void EnemyBasicAttack()
     {
-
         AttackCombatent(GetEnemyBasicAttackDamage(), Combatent.Character, Combatent.Enemy, DamageType.Physical, DamageSource.BasicAttack);
-
-        // Burn Effect
-        ApplyBurnEffectOnMap(enemyAfflictionMap, Combatent.Enemy);
 
         // Only call on enemy attack if the player is still alive
         if (!CheckForCombatOver())
@@ -2648,34 +2657,28 @@ public partial class CombatManager : MonoBehaviour
         }
 
         // Update hp bar
-        UpdateHPBarAfflictions(type, target);
+        UpdateHPBarAfflictions(target);
 
         return isNewInstance;
     }
 
-    private void UpdateHPBarAfflictions(AfflictionType type, Combatent target)
+    public void UpdateHPBarAfflictions(Combatent target)
     {
         int v;
-        switch (type)
-        {
-            case AfflictionType.Poison:
-                v = (TargetHasAffliction(AfflictionType.Poison, target) ? GetTargetAfflictionStacks(AfflictionType.Poison, target) : 0);
-                // Debug.Log(v);
-                GetCombatentHPBar(target).SetDamageFromPoison(v);
-                break;
-            case AfflictionType.Burn:
-                v = (TargetHasAffliction(AfflictionType.Burn, target) ? BalenceManager._Instance.GetValue(AfflictionType.Burn, "DamageAmount") : 0);
-                // Debug.Log(v);
-                GetCombatentHPBar(target).SetDamageFromBurn(v);
-                break;
-            case AfflictionType.Blight:
-                v = (TargetHasAffliction(AfflictionType.Blight, target) ? GetTargetAfflictionStacks(AfflictionType.Blight, target) : 0);
-                // Debug.Log(v);
-                GetCombatentHPBar(target).SetDamageFromBlight(v);
-                break;
-            default:
-                break;
-        }
+
+        CombatentHPBar hpBar = GetCombatentHPBar(target);
+
+        // Burn
+        v = (TargetHasAffliction(AfflictionType.Burn, target) ? BalenceManager._Instance.GetValue(AfflictionType.Burn, "DamageAmount") : 0);
+        hpBar.SetDamageFromBurn(v);
+
+        // Poison
+        v = (TargetHasAffliction(AfflictionType.Poison, target) ? GetTargetAfflictionStacks(AfflictionType.Poison, target) : 0);
+        hpBar.SetDamageFromPoison(v);
+
+        // Blight
+        v = (TargetHasAffliction(AfflictionType.Blight, target) ? GetTargetAfflictionStacks(AfflictionType.Blight, target) : 0);
+        hpBar.SetDamageFromBlight(v);
     }
 
     private void ClearAfflictionMap(Dictionary<AfflictionType, Affliction> map, Combatent t)
@@ -2730,7 +2733,7 @@ public partial class CombatManager : MonoBehaviour
         aff.AlterStacks(-toConsume);
 
         // update hp bar
-        UpdateHPBarAfflictions(type, target);
+        UpdateHPBarAfflictions(target);
     }
 
     public void RemoveAffliction(Combatent target, AfflictionType type)
@@ -2759,7 +2762,7 @@ public partial class CombatManager : MonoBehaviour
         }
 
         // Update hp bar
-        UpdateHPBarAfflictions(type, target);
+        UpdateHPBarAfflictions(target);
 
         // Spawn Effect Text
         SpawnEffectText(EffectTextStyle.Fade, removingAff.GetToolTipLabel() + " Wears Off", UIManager._Instance.GetEffectTextColor("AfflictionRemoved"), target,
@@ -2778,45 +2781,6 @@ public partial class CombatManager : MonoBehaviour
         else
         {
             return 0;
-        }
-    }
-
-    private void ApplyPoisonEffectOnMap(Dictionary<AfflictionType, Affliction> map, Combatent target)
-    {
-        if (map.ContainsKey(AfflictionType.Poison))
-        {
-            AlterCombatentHP(-map[AfflictionType.Poison].GetStacks(), target, DamageType.Poison, false);
-
-            int v = BalenceManager._Instance.GetValue(AfflictionType.Poison, "PercentToReduceBy");
-            float percentToMultiplyBy = (float)v / 100;
-
-            ConsumeAfflictionStack(AfflictionType.Poison, target, Mathf.RoundToInt(GetAffliction(AfflictionType.Poison, target).GetStacks() * percentToMultiplyBy));
-            ShowAfflictionProc(AfflictionType.Poison, target);
-        }
-    }
-
-    private void ApplyBlightEffectOnMap(Dictionary<AfflictionType, Affliction> map, Combatent target)
-    {
-        if (map.ContainsKey(AfflictionType.Blight))
-        {
-            int numStacks = map[AfflictionType.Blight].GetStacks();
-            AlterCombatentHP(-numStacks, target, DamageType.Poison);
-
-            int v = BalenceManager._Instance.GetValue(AfflictionType.Blight, "PercentToIncreaseBy");
-            float percentToIncreaseBy = (float)v / 100;
-
-            AddAffliction(AfflictionType.Blight, Mathf.CeilToInt(numStacks * percentToIncreaseBy), target);
-            ShowAfflictionProc(AfflictionType.Blight, target);
-        }
-    }
-
-    private void ApplyBurnEffectOnMap(Dictionary<AfflictionType, Affliction> map, Combatent target)
-    {
-        if (map.ContainsKey(AfflictionType.Burn))
-        {
-            AlterCombatentHP(-BalenceManager._Instance.GetValue(AfflictionType.Burn, "DamageAmount"), target, DamageType.Fire);
-            ConsumeAfflictionStack(AfflictionType.Burn, target);
-            ShowAfflictionProc(AfflictionType.Burn, target);
         }
     }
 
