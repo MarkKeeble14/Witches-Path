@@ -15,7 +15,7 @@ MonoBehaviour:
   name: Fiery Wig
   rarity: 0
   damageChange: 0
-  defenseChange: -1
-  manaChange: -1
+  defenseChange: 0
+  manaChange: 1
   AfflictionKeywords: 
   GeneralKeywords: 

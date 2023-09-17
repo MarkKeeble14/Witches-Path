@@ -507,7 +507,7 @@ public abstract class PotionBase : PotionIngredient
 public abstract class PotionTargeter : PotionIngredient
 {
     protected override string componentTypeString => "PotionTargeter";
-    public abstract Target Target { get; }
+    public abstract Combatent Target { get; }
     public abstract Sprite PotionSprite { get; }
     public override PotionIngredientCategory Category => PotionIngredientCategory.Targeter;
 
@@ -571,14 +571,12 @@ public abstract class PotionAugmenter : PotionIngredient
 public class RainCloud : PotionAugmenter
 {
     public override PotionIngredientType Type => PotionIngredientType.RainCloud;
-
     public override string Name => "Rain Cloud";
-
     protected override string toolTipText => "Potion Effect Will Activate At the Beginning of The Next " + numTurns + " Enemy Turns";
-
     public override string EffectOnPotionName => "Repeating";
 
     private int numTurns;
+    private bool active;
 
     protected override void SetKeywords()
     {
@@ -591,16 +589,29 @@ public class RainCloud : PotionAugmenter
 
     protected override void CallEffect()
     {
-        if (numTurns > 0)
+        numTurns--;
+        effect?.Invoke();
+        if (numTurns <= 0)
         {
-            effect?.Invoke();
-            numTurns--;
+            CombatManager._Instance.OnTurnStart -= CallEffect;
+            active = false;
         }
     }
 
     protected override void InitEffect()
     {
-        CombatManager._Instance.OnEnemyTurnStart += CallEffect;
+        active = true;
+        CombatManager._Instance.OnTurnStart += CallEffect;
+        CombatManager._Instance.OnResetCombat += CheckForRemoveOnCombatEnd;
+    }
+
+    private void CheckForRemoveOnCombatEnd()
+    {
+        if (active)
+        {
+            CombatManager._Instance.OnTurnStart -= CallEffect;
+            CombatManager._Instance.OnResetCombat -= CheckForRemoveOnCombatEnd;
+        }
     }
 
 }
@@ -617,7 +628,7 @@ public class HammerHandle : PotionBase
     public override void Effect(PotionTargeter potionTargeting, PotionPotency potionPotency)
     {
         int damageAmount = GetPotionSpec("DamageAmount", potionPotency.Potency);
-        CombatManager._Instance.AlterCombatentHP(-damageAmount, potionTargeting.Target, DamageType.Default);
+        CombatManager._Instance.AlterCombatentHP(-damageAmount, potionTargeting.Target, DamageType.Physical);
     }
 }
 
@@ -891,7 +902,7 @@ public class GlassBottle : PotionTargeter
     public override string Name => "Glass Bottle";
     public override PotionIngredientType Type => PotionIngredientType.GlassBottle;
     public override string EffectOnPotionName => "Drinkable";
-    public override Target Target => Target.Character;
+    public override Combatent Target => Combatent.Character;
     protected override string toolTipText => "Target the Player";
     public override Sprite PotionSprite => Resources.Load<Sprite>("Potions/" + Type.ToString() + "Sprite");
 }
@@ -901,7 +912,7 @@ public class BreakableBottle : PotionTargeter
     public override string Name => "Breakable Bottle";
     public override PotionIngredientType Type => PotionIngredientType.BreakableBottle;
     public override string EffectOnPotionName => "Throwable";
-    public override Target Target => Target.Enemy;
+    public override Combatent Target => Combatent.Enemy;
     protected override string toolTipText => "Target the Enemy";
     public override Sprite PotionSprite => Resources.Load<Sprite>("Potions/" + Type.ToString() + "Sprite");
 }

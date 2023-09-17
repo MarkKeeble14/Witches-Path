@@ -4,13 +4,12 @@
 public class QueuedSpell
 {
     public Spell Spell;
-    public SpellPotencyDisplay SpellQueueDisplay;
-    public int Index;
+    public QueuedSpellDisplay SpellQueueDisplay;
 
-    public QueuedSpell(Spell spell, SpellPotencyDisplay spawned, int index)
+    public QueuedSpell(Spell spell, QueuedSpellDisplay spawned)
     {
         Spell = spell;
         SpellQueueDisplay = spawned;
-        Index = index;
+        spawned.SetPrepTime(spell.PrepTime);
     }
 }

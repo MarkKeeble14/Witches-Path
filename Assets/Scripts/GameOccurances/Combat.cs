@@ -62,7 +62,7 @@ public abstract class Combat : GameOccurance
 
     protected override IEnumerator OnResolve()
     {
-        Debug.Log(name + ": OnResolve");
+        // Debug.Log(name + ": OnResolve");
 
         AdditionalOnResolveActions();
 
@@ -133,6 +133,12 @@ public abstract class Combat : GameOccurance
                         }
                     });
                     break;
+                case RewardType.PotionIngredient:
+                    ParseItemRewardInfo(info, delegate
+                    {
+                        RewardManager._Instance.AddReward(GameManager._Instance.GetRandomPotionIngredient());
+                    });
+                    break;
                 default:
                     throw new UnhandledSwitchCaseException();
             }
@@ -167,7 +173,7 @@ public abstract class Combat : GameOccurance
 
     protected override IEnumerator OnStart()
     {
-        Debug.Log(name + ": OnStart");
+        // Debug.Log(name + ": OnStart");
         yield return GameManager._Instance.StartCoroutine(CombatManager._Instance.StartCombat(this, null));
         GameManager._Instance.ResolveCurrentEvent();
     }

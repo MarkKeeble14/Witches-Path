@@ -25,7 +25,16 @@ public enum AfflictionType
     Electrocuted,
     Nullify,
     Jumpy,
-    Shackled
+    Shackled,
+    Embalmed,
+    Conducting,
+    TorchTipped,
+    Charged,
+    Amped,
+    Stormy,
+    Brutish,
+    Hurt,
+    Worried
 }
 
 public enum Sign
@@ -47,7 +56,7 @@ public abstract class Affliction : ToolTippable
     private int stacks;
 
     // Who does this specific instance of affliction belong to
-    private Target owner;
+    private Combatent owner;
 
     // A list of general keywords
     protected List<ToolTipKeyword> generalKeywords = new List<ToolTipKeyword>();
@@ -141,25 +150,25 @@ public abstract class Affliction : ToolTippable
     }
 
     // Setter
-    public void SetOwner(Target owner)
+    public void SetOwner(Combatent owner)
     {
         this.owner = owner;
     }
 
     // Getter
-    public Target GetOwner()
+    public Combatent GetOwner()
     {
         return owner;
     }
 
-    protected Target GetNonOwner()
+    protected Combatent GetNonOwner()
     {
         switch (owner)
         {
-            case Target.Character:
-                return Target.Enemy;
-            case Target.Enemy:
-                return Target.Character;
+            case Combatent.Character:
+                return Combatent.Enemy;
+            case Combatent.Enemy:
+                return Combatent.Character;
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -252,6 +261,24 @@ public abstract class Affliction : ToolTippable
                 return new Jumpy();
             case AfflictionType.Shackled:
                 return new Shackled();
+            case AfflictionType.Amped:
+                return new Amped();
+            case AfflictionType.Brutish:
+                return new Brutish();
+            case AfflictionType.Charged:
+                return new Charged();
+            case AfflictionType.Conducting:
+                return new Conducting();
+            case AfflictionType.Hurt:
+                return new Hurt();
+            case AfflictionType.Embalmed:
+                return new Embalmed();
+            case AfflictionType.Stormy:
+                return new Stormy();
+            case AfflictionType.TorchTipped:
+                return new TorchTipped();
+            case AfflictionType.Worried:
+                return new Worried();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -532,39 +559,30 @@ public class Levitating : Affliction
     {
         switch (GetOwner())
         {
-            case Target.Character:
+            case Combatent.Character:
                 ownerHP = GameManager._Instance.GetMaxPlayerHP();
-                CombatManager._Instance.OnPlayerTurnStart += ResetDamageThisTurn;
-                CombatManager._Instance.OnPlayerTakeDamage += TookDamage;
                 break;
-            case Target.Enemy:
+            case Combatent.Enemy:
                 ownerHP = CombatManager._Instance.CurrentEnemy.GetMaxHP();
-                CombatManager._Instance.OnEnemyTurnStart += ResetDamageThisTurn;
-                CombatManager._Instance.OnEnemyTakeDamage += TookDamage;
                 break;
+            default:
+                throw new UnhandledSwitchCaseException();
         }
+        CombatManager._Instance.CombatentBaseCallbackMap[GetOwner()][CombatBaseCallbackType.OnTurnStart] += ResetDamageThisTurn;
+        CombatManager._Instance.CombatentIntCallbackMap[GetOwner()][CombatIntCallbackType.OnTakeDamage] += TookDamage;
     }
 
     public override void Unapply()
     {
-        switch (GetOwner())
-        {
-            case Target.Character:
-                CombatManager._Instance.OnPlayerTurnStart -= ResetDamageThisTurn;
-                CombatManager._Instance.OnPlayerTakeDamage -= TookDamage;
-                break;
-            case Target.Enemy:
-                CombatManager._Instance.OnEnemyTurnStart -= ResetDamageThisTurn;
-                CombatManager._Instance.OnEnemyTakeDamage -= TookDamage;
-                break;
-        }
+        CombatManager._Instance.CombatentBaseCallbackMap[GetOwner()][CombatBaseCallbackType.OnTurnStart] -= ResetDamageThisTurn;
+        CombatManager._Instance.CombatentIntCallbackMap[GetOwner()][CombatIntCallbackType.OnTakeDamage] -= TookDamage;
     }
 }
 
 public class BattleFrenzied : Affliction
 {
     protected override string specificToolTipText => "Upon Dealing at or Above " + damageToActivate + " Damage, Gain " + GetStacks() + " Embolden";
-    protected override string genericToolTipText => "Gain Embolden equal to the number of Embolden Stacks Upon dealing Damage equal to or Above " + damageToActivate;
+    protected override string genericToolTipText => "Gain Embolden equal to the number of BattleFrenzied Stacks Upon dealing Damage equal to or Above " + damageToActivate;
 
     public override AfflictionType Type => AfflictionType.BattleFrenzied;
 
@@ -597,28 +615,12 @@ public class BattleFrenzied : Affliction
 
     public override void Apply()
     {
-        switch (GetOwner())
-        {
-            case Target.Character:
-                CombatManager._Instance.OnEnemyTakeDamage += CheckDamageAmount;
-                return;
-            case Target.Enemy:
-                CombatManager._Instance.OnPlayerTakeDamage += CheckDamageAmount;
-                return;
-        }
+        CombatManager._Instance.CombatentIntCallbackMap[GetNonOwner()][CombatIntCallbackType.OnTakeDamage] += CheckDamageAmount;
     }
 
     public override void Unapply()
     {
-        switch (GetOwner())
-        {
-            case Target.Character:
-                CombatManager._Instance.OnEnemyTakeDamage -= CheckDamageAmount;
-                return;
-            case Target.Enemy:
-                CombatManager._Instance.OnPlayerTakeDamage -= CheckDamageAmount;
-                return;
-        }
+        CombatManager._Instance.CombatentIntCallbackMap[GetNonOwner()][CombatIntCallbackType.OnTakeDamage] -= CheckDamageAmount;
     }
 }
 
@@ -658,28 +660,12 @@ public class Ghostly : Affliction
 
     public override void Apply()
     {
-        switch (GetOwner())
-        {
-            case Target.Character:
-                CombatManager._Instance.OnPlayerTurnEnd += ApplyIntangible;
-                return;
-            case Target.Enemy:
-                CombatManager._Instance.OnEnemyTurnEnd += ApplyIntangible;
-                return;
-        }
+        CombatManager._Instance.CombatentBaseCallbackMap[GetOwner()][CombatBaseCallbackType.OnTurnEnd] += ApplyIntangible;
     }
 
     public override void Unapply()
     {
-        switch (GetOwner())
-        {
-            case Target.Character:
-                CombatManager._Instance.OnPlayerTurnEnd -= ApplyIntangible;
-                return;
-            case Target.Enemy:
-                CombatManager._Instance.OnEnemyTurnEnd -= ApplyIntangible;
-                return;
-        }
+        CombatManager._Instance.CombatentBaseCallbackMap[GetOwner()][CombatBaseCallbackType.OnTurnEnd] -= ApplyIntangible;
     }
 }
 
@@ -736,9 +722,9 @@ public class Nullify : Affliction
 
 public class Jumpy : Affliction
 {
-    protected override string specificToolTipText => "The next " + (numTimesCanRandomize > 1 ? numTimesCanRandomize + " times an" : "time") + " Active Spell is Queued this Turn, Randomize the Enemies Intent." +
+    protected override string specificToolTipText => "The next " + (numTimesCanRandomize > 1 ? numTimesCanRandomize + " times an" : "time") + " Spell is Queued this Turn, Randomize a Queued Spell." +
         " The number of Times this Effect can Occur is Reset each Turn";
-    protected override string genericToolTipText => "Upon Queueing an Active Spell, Randomize the Enemies Intent";
+    protected override string genericToolTipText => "Upon Queueing a Spell, Randomize a Queued Spell";
 
     public override AfflictionType Type => AfflictionType.Jumpy;
 
@@ -756,10 +742,10 @@ public class Jumpy : Affliction
         if (numTimesCanRandomize <= 0) return;
 
         // Get a new Enemy Action that is not the current one
-        CombatManager._Instance.ReplaceCurrentEnemyAction();
+        CombatManager._Instance.RandomizeSpell(GetOwner());
+
         numTimesHasRandomized++;
         attachedTo.AnimateScale();
-
     }
 
     private void ResetNumTimesHasRandomized()
@@ -770,15 +756,16 @@ public class Jumpy : Affliction
     public override void Apply()
     {
         base.Apply();
-        CombatManager._Instance.OnActiveSpellQueued += TryRandomizeIntent;
-        CombatManager._Instance.OnPlayerTurnStart += ResetNumTimesHasRandomized;
+
+        CombatManager._Instance.CombatentBaseCallbackMap[GetNonOwner()][CombatBaseCallbackType.OnSpellQueued] += TryRandomizeIntent;
+        CombatManager._Instance.CombatentBaseCallbackMap[GetNonOwner()][CombatBaseCallbackType.OnTurnStart] += ResetNumTimesHasRandomized;
     }
 
     public override void Unapply()
     {
         base.Unapply();
-        CombatManager._Instance.OnActiveSpellQueued -= TryRandomizeIntent;
-        CombatManager._Instance.OnPlayerTurnStart -= ResetNumTimesHasRandomized;
+        CombatManager._Instance.CombatentBaseCallbackMap[GetNonOwner()][CombatBaseCallbackType.OnSpellQueued] -= TryRandomizeIntent;
+        CombatManager._Instance.CombatentBaseCallbackMap[GetNonOwner()][CombatBaseCallbackType.OnTurnStart] -= ResetNumTimesHasRandomized;
     }
 }
 
@@ -806,5 +793,233 @@ public class Shackled : Affliction
         }
 
         base.OnAlteredStacks(changeBy);
+    }
+}
+
+public abstract class ProcAfterAffliction : Affliction
+{
+    protected abstract CombatBaseCallbackType callbackOnType { get; }
+    protected abstract int procAfter { get; }
+    protected int tracker { get; private set; }
+    private Combatent callbackOwner => GetOwner();
+    protected string trackerText => "(" + tracker + " / " + procAfter + ")";
+
+    private void Tick()
+    {
+        tracker++;
+        if (tracker >= procAfter)
+        {
+            Proc();
+            tracker = 0;
+        }
+    }
+
+    public override void Apply()
+    {
+        base.Apply();
+        CombatManager._Instance.CombatentBaseCallbackMap[callbackOwner][callbackOnType] += Tick;
+    }
+
+    public override void Unapply()
+    {
+        base.Unapply();
+        CombatManager._Instance.CombatentBaseCallbackMap[callbackOwner][callbackOnType] -= Tick;
+    }
+
+    protected abstract void Proc();
+}
+
+public class Embalmed : ProcAfterAffliction
+{
+    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Poison " + trackerText;
+    protected override string genericToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies Poison";
+    public override AfflictionType Type => AfflictionType.Embalmed;
+    public override Sign Sign => Sign.Positive;
+    protected override CombatBaseCallbackType callbackOnType => CombatBaseCallbackType.OnBasicAttack;
+    protected override int procAfter => 5;
+    private int stackAmount => GetStacks();
+
+    protected override void SetKeywords()
+    {
+        afflictionKeywords.Add(AfflictionType.Poison);
+    }
+
+    protected override void Proc()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Poison, stackAmount, GetNonOwner());
+    }
+}
+
+public class Charged : ProcAfterAffliction
+{
+    protected override string specificToolTipText => "At the Beginning of Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Turn, Apply " + stackAmount
+        + " Electrocuted " + trackerText;
+    protected override string genericToolTipText => "At the Beginning of Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Turn, Apply Electrocuted";
+    public override AfflictionType Type => AfflictionType.Charged;
+    public override Sign Sign => Sign.Positive;
+    protected override CombatBaseCallbackType callbackOnType => CombatBaseCallbackType.OnTurnStart;
+    protected override int procAfter => 2;
+    private int stackAmount => GetStacks();
+
+    protected override void SetKeywords()
+    {
+        afflictionKeywords.Add(AfflictionType.Electrocuted);
+        afflictionKeywords.Add(AfflictionType.Paralyze);
+    }
+
+    protected override void Proc()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Electrocuted, stackAmount, GetNonOwner());
+    }
+}
+
+public class TorchTipped : ProcAfterAffliction
+{
+    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount
+        + " Burn " + trackerText;
+    protected override string genericToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies Burn";
+    public override AfflictionType Type => AfflictionType.TorchTipped;
+    public override Sign Sign => Sign.Positive;
+    protected override CombatBaseCallbackType callbackOnType => CombatBaseCallbackType.OnBasicAttack;
+    protected override int procAfter => 7;
+    private int stackAmount => GetStacks();
+
+    protected override void SetKeywords()
+    {
+        afflictionKeywords.Add(AfflictionType.Poison);
+    }
+
+    protected override void Proc()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Burn, stackAmount, GetNonOwner());
+    }
+}
+
+public class Amped : ProcAfterAffliction
+{
+    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain " + stackAmount
+        + " Embolden " + trackerText;
+    protected override string genericToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain Embolden";
+    public override AfflictionType Type => AfflictionType.Amped;
+    public override Sign Sign => Sign.Positive;
+    protected override CombatBaseCallbackType callbackOnType => CombatBaseCallbackType.OnBasicAttack;
+    protected override int procAfter => 6;
+    private int stackAmount => GetStacks();
+
+    protected override void SetKeywords()
+    {
+        afflictionKeywords.Add(AfflictionType.Embolden);
+    }
+
+    protected override void Proc()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Embolden, stackAmount, GetOwner());
+    }
+}
+
+public class Stormy : ProcAfterAffliction
+{
+    protected override string specificToolTipText => "At the End of Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Turn, Apply " + stackAmount
+        + " Paralyze " + trackerText;
+    protected override string genericToolTipText => "At the End of Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Turn, Apply Paralyze";
+    public override AfflictionType Type => AfflictionType.Stormy;
+    public override Sign Sign => Sign.Positive;
+    protected override CombatBaseCallbackType callbackOnType => CombatBaseCallbackType.OnTurnEnd;
+    protected override int procAfter => 2;
+    private int stackAmount => GetStacks();
+
+    protected override void SetKeywords()
+    {
+        afflictionKeywords.Add(AfflictionType.Paralyze);
+    }
+
+    protected override void Proc()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Paralyze, stackAmount, GetNonOwner());
+    }
+}
+
+public class Brutish : ProcAfterAffliction
+{
+    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies "
+        + stackAmount + " Vulnerable " + trackerText;
+    protected override string genericToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies Vulnerable";
+    public override AfflictionType Type => AfflictionType.Brutish;
+    public override Sign Sign => Sign.Positive;
+    protected override CombatBaseCallbackType callbackOnType => CombatBaseCallbackType.OnBasicAttack;
+    protected override int procAfter => 9;
+    private int stackAmount => GetStacks();
+
+    protected override void SetKeywords()
+    {
+        afflictionKeywords.Add(AfflictionType.Vulnerable);
+    }
+
+    protected override void Proc()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, stackAmount, GetNonOwner());
+    }
+}
+
+public class Conducting : ProcAfterAffliction
+{
+    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Spell Queued, Deal "
+        + damageAmount + " Damage " + trackerText;
+    protected override string genericToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Spell Queued Will Deal Damage";
+    public override AfflictionType Type => AfflictionType.Conducting;
+    public override Sign Sign => Sign.Positive;
+    protected override CombatBaseCallbackType callbackOnType => CombatBaseCallbackType.OnSpellQueued;
+    protected override int procAfter => 3;
+    private int damageAmount => GetStacks();
+
+    protected override void SetKeywords()
+    {
+    }
+
+    protected override void Proc()
+    {
+        CombatManager._Instance.AlterCombatentHP(damageAmount, GetNonOwner(), DamageType.Electric);
+    }
+}
+
+public class Hurt : ProcAfterAffliction
+{
+    protected override string specificToolTipText => "At the End of Every Turn, Take " + damageAmount + " Damage";
+    protected override string genericToolTipText => "At the End of Every Turn, Take Damage";
+    public override AfflictionType Type => AfflictionType.Hurt;
+    public override Sign Sign => Sign.Negative;
+    protected override CombatBaseCallbackType callbackOnType => CombatBaseCallbackType.OnTurnEnd;
+    protected override int procAfter => 1;
+    private int damageAmount => GetStacks();
+
+    protected override void SetKeywords()
+    {
+    }
+
+    protected override void Proc()
+    {
+        CombatManager._Instance.AlterCombatentHP(damageAmount, GetNonOwner(), DamageType.Electric);
+    }
+}
+
+public class Worried : ProcAfterAffliction
+{
+    protected override string specificToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain "
+        + stackAmount + " Weak " + trackerText;
+    protected override string genericToolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Causes the Afflicted to Become Weak";
+    public override AfflictionType Type => AfflictionType.Worried;
+    public override Sign Sign => Sign.Negative;
+    protected override CombatBaseCallbackType callbackOnType => CombatBaseCallbackType.OnBasicAttack;
+    protected override int procAfter => 8;
+    private int stackAmount => GetStacks();
+
+    protected override void SetKeywords()
+    {
+        afflictionKeywords.Add(AfflictionType.Weak);
+    }
+
+    protected override void Proc()
+    {
+        CombatManager._Instance.AddAffliction(AfflictionType.Weak, stackAmount, GetNonOwner());
     }
 }

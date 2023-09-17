@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 
 public class ToolTipList : MonoBehaviour
 {
@@ -10,6 +11,22 @@ public class ToolTipList : MonoBehaviour
     private List<VerticalLayoutGroup> spawnedVLayouts = new List<VerticalLayoutGroup>();
 
     [SerializeField] private HorizontalLayoutGroup hLayout;
+
+    [SerializeField] private Canvas canvas;
+
+    private Action onDestroyAction;
+
+    public void Set(int sortOrder, Action a)
+    {
+        canvas.sortingOrder = sortOrder;
+        onDestroyAction += a;
+    }
+
+    private void OnDestroy()
+    {
+        onDestroyAction?.Invoke();
+    }
+
 
     public VerticalLayoutGroup SpawnList()
     {

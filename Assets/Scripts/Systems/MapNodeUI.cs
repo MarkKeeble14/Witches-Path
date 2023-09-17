@@ -77,6 +77,12 @@ public class MapNodeUI : MonoBehaviour
     public bool HasBeenSet { get; private set; }
     private MapNodeType nodeType;
 
+    public int SectionIndex { get; private set; }
+    public void SetSectionIndex(int index)
+    {
+        SectionIndex = index;
+    }
+
     public void SpawnConnection(MapNodeUI from, MapNodeUI to, float xChange, float yChange, float offsetFromNode, int numLines)
     {
         AddIncoming(from);

@@ -6,11 +6,6 @@ public class BalenceManager : MonoBehaviour
 {
     public static BalenceManager _Instance { get; private set; }
 
-    [Header("Artifacts")]
-    [SerializeField]
-    private SerializableDictionary<string, SerializableDictionary<string, int>> artifactSpecDict
-        = new SerializableDictionary<string, SerializableDictionary<string, int>>();
-
     [Header("Books")]
     [SerializeField]
     private SerializableDictionary<string, SerializableDictionary<string, int>> bookSpecDict
@@ -36,22 +31,9 @@ public class BalenceManager : MonoBehaviour
     private SerializableDictionary<string, SerializableDictionary<string, int[]>> ingredientSpecDict
         = new SerializableDictionary<string, SerializableDictionary<string, int[]>>();
 
-    [Header("Equipment")]
-    [SerializeField]
-    private SerializableDictionary<ReforgeModifier, List<ReforgeModifierEffect>> reforgeModifierEffects
-        = new SerializableDictionary<ReforgeModifier, List<ReforgeModifierEffect>>();
-    [SerializeField]
-    private SerializableDictionary<ReforgeModifier, int> costToReforgeModifier
-        = new SerializableDictionary<ReforgeModifier, int>();
-
     private void Awake()
     {
         _Instance = this;
-    }
-
-    public List<ReforgeModifierEffect> GetReforgeModifierEffect(ReforgeModifier reforgeModifier)
-    {
-        return reforgeModifierEffects[reforgeModifier];
     }
 
     public bool PotionHasSpec(PotionIngredientType type, string param)
@@ -67,11 +49,6 @@ public class BalenceManager : MonoBehaviour
     public int GetValue(PotionIngredientType ingredientType, string identifier)
     {
         return ingredientSpecDict[ingredientType.ToString()][identifier][0];
-    }
-
-    public int GetValue(ArtifactLabel artifactLabel, string identifier)
-    {
-        return artifactSpecDict[artifactLabel.ToString()][identifier];
     }
 
     public int UpdateValue(BookLabel bookLabel, string identifier, int changeBy)
@@ -111,10 +88,5 @@ public class BalenceManager : MonoBehaviour
     {
         if (!eventSpecDict.ContainsKey(label)) return false;
         return eventSpecDict[label].ContainsKey(valueIdentifier);
-    }
-
-    public int GetCostToReforge(ReforgeModifier reforgeModifier)
-    {
-        return costToReforgeModifier[reforgeModifier];
     }
 }

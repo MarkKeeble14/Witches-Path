@@ -16,6 +16,6 @@ MonoBehaviour:
   rarity: 0
   damageChange: 0
   defenseChange: 0
-  manaChange: 3
+  manaChange: 1
   AfflictionKeywords: 
   GeneralKeywords: 

@@ -1,43 +1,115 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
+public enum SpellPrimaryFunction
+{
+    Damage,
+    Defend,
+    Buff,
+    Afflict,
+    Heal
+}
+
+public enum SpellAlterStatDuration
+{
+    Permanant,
+    Combat,
+    UntilCast
+}
+
+public enum SpellCallbackType
+{
+    OnDraw,
+    OnSpecificDiscard,
+    OnExhaust,
+    OnKill,
+    OnQueue,
+    OnAnyDiscard,
+    OnCast,
+    OnCombatReset,
+    OnPlayerTurnEnd
+}
+
+public enum SpellStat
+{
+    OtherDamageAmount,
+    Aff1StackAmount,
+    Aff2StackAmount,
+    HitAmount,
+    DrawAmount,
+    SelfWardAmount,
+    SelfDamageAmount,
+    HealAmount,
+    OtherWardAmount,
+    PrepTime
+}
+
 public enum SpellLabel
 {
-    PoisonTips, // Passive
-    StaticField, // Passive
-    Inferno, // Passive
-    BattleTrance, // Passive
-    Fireball, // Active
-    Shock, // Active
-    Singe, // Active
-    Plague, // Active
-    Toxify, // Active
-    Jarkai, // Active
-    Flurry, // Active
-    Electrifry, // Active
-    ExposeFlesh, // Active
-    Cripple, // Active
-    TradeBlood, // Active
-    Excite, // Active
-    Overexcite, // Active
-    Forethought, // Active
-    Reverberate, // Active
-    ImpartialAid, // Active
-    MagicRain, // Active
-    CrushJoints, // Active
-    WitchesWill, // Active - Basic
-    WitchesWard, // Active - Basic
-    TeslaCoil, // Passive
-    Hurt, // Passive - Curse
-    Greed, // Active - Curse
-    Anger, // Active - Curse
-    Worry, // Passive - Curse
-    Frusteration, // Active - Curse
-    ChannelCurrent, // Active
-    QuickCast
+    PoisonTips,
+    StaticField,
+    Inferno,
+    BattleTrance,
+    Fireball,
+    Shock,
+    Singe,
+    Plague,
+    Toxify,
+    DoubleHit,
+    Flurry,
+    Electrifry,
+    ExposeFlesh,
+    Cripple,
+    TradeBlood,
+    Excite,
+    Overexcite,
+    Ghost,
+    Reverberate,
+    ImpartialAid,
+    MagicRain,
+    CrushJoints,
+    WitchesWill,
+    WitchesWard,
+    TeslaCoil,
+    Injure,
+    Greed,
+    Anger,
+    Worry,
+    Frusteration,
+    ChannelCurrent,
+    QuickCast,
+    Levitate,
+    StudyPower,
+    StudyProtection,
+    GhastlyGrasp,
+    GhoulishAssault,
+    Protect,
+    FlamingLashes,
+    ScaldingSplash,
+    CallUntoBlessing,
+    Recouperate,
+    BrutalSmash,
+    Bash,
+    EnterFrenzy,
+    CoatEdges,
+    BreakSpirit,
+    Belch,
+    Phase,
+    Sap,
+    Tackle,
+    GrowSpikes,
+    LoseResolve,
+    Harden,
+    ViralChomp,
+    Claw,
+    HateFilledStrike,
+    Struggle,
+    Unleash,
+    BurnBrighter
 }
 
 public enum SpellColor
@@ -47,133 +119,433 @@ public enum SpellColor
     Green,
     Red,
     Blue,
-    Grey
+    Enemy
 }
 
-public enum SpellCastType
-{
-    Active,
-    Passive
-}
-
-public enum ActiveSpellType
+public enum ReusableSpellType
 {
     Offensive,
     Defensive,
     Utility
 }
 
+public enum SpellCastType
+{
+    Reusable,
+    Power
+}
+
 [System.Serializable]
 public abstract class Spell : ToolTippable
 {
+    // Info
     public abstract string Name { get; }
     public abstract SpellLabel Label { get; }
-    public abstract SpellCastType Type { get; }
+    public abstract SpellCastType SpellCastType { get; }
+    public abstract DamageType MainDamageType { get; }
     public abstract SpellColor Color { get; }
     public abstract Rarity Rarity { get; }
-    public virtual DamageType MainDamageType => DamageType.Default;
+    public abstract SpellPrimaryFunction PrimaryFunction { get; }
 
+    // Data
+    public string SpritePath => "Spells/" + Label.ToString().ToLower();
+    public AudioClip AssociatedSoundClip { get => Resources.Load<AudioClip>("SpellData/TestClip"); }
+    public virtual AudioClip HitSound { get => Resources.Load<AudioClip>("ActiveSpellData/DefaultHitSound"); }
+    public virtual AudioClip MissSound { get => Resources.Load<AudioClip>("ActiveSpellData/DefaultMissSound"); }
+
+    // Notes
+    public List<SpellNoteBatch> Batches = new List<SpellNoteBatch>();
+
+    // Data
+    private List<SpellEffect> spellEffects = new List<SpellEffect>();
+    protected List<ToolTipKeyword> GeneralKeywords = new List<ToolTipKeyword>();
+    protected List<AfflictionType> AfflictionKeywords = new List<AfflictionType>();
+
+    // Mana Cost
+    public int PrepTime => GetSpellStat(SpellStat.PrepTime);
     protected abstract int startManaCost { get; }
     private int manaCost;
     public int ManaCost => CombatManager._Instance.NumFreeSpells > 0 ? 0 : manaCost;
-    public bool HasMana => GameManager._Instance.GetCurrentPlayerMana() >= ManaCost;
+    public bool CanCast => canCastData.Evaluate();
 
-    protected void AlterManaCost(int changeBy)
+    // Callbacks
+    private Dictionary<SpellCallbackType, SpellCallbackData> spellCallbackMap = new Dictionary<SpellCallbackType, SpellCallbackData>();
+
+    // UI
+    protected string toolTipText
     {
-        // Throw an exception if trying to reduce the mana cost to below 0
-        if (manaCost + changeBy < 0)
-            throw new Exception();
-        manaCost += changeBy;
+        get
+        {
+            string s = GetSpellEffectString(spellEffects);
+            string cb = GetSpellCallbackStrings();
+            if (cb.Length > 0)
+            {
+                s += "\n" + cb;
+            }
+            string cc = GetSpellCanCastStrings();
+            if (cc.Length > 0)
+            {
+                s += "\n" + cc;
+            }
+            return s;
+        }
     }
 
-    public virtual bool CanCast => HasMana;
-    public string SpritePath => "Spells/" + Label.ToString().ToLower();
+    public Combatent Caster
+    {
+        get; private set;
+    }
 
-    // Determines if the Spell can be Upgraded
-    // The spell can be Upgraded if it's not already at it's max number of Upgrades
-    // OR, if the maximum number of upgrades has been set to -1 to indicate no limit on upgrade
-    public bool CanUpgrade => upgradeStatus.x < upgradeStatus.y || upgradeStatus.y == Utils.StandardSentinalValue;
-    public bool CanDowngrade => upgradeStatus.x > minUpgradeStatus;
-    public bool HasBeenUpgraded => upgradeStatus.x > 1;
-    protected virtual Vector2Int setUpgradeStatusTo => new Vector2Int(1, 2);
-    private Vector2Int upgradeStatus;
-    private int minUpgradeStatus;
+    public Combatent Other
+    {
+        get; private set;
+    }
 
-    public AudioClip AssociatedSoundClip { get => Resources.Load<AudioClip>("SpellData/TestClip"); }
+    private SpellDisplay equippedToSpellDisplay;
 
-    protected abstract string toolTipText { get; }
+    // Stat
+    private Dictionary<SpellStat, int> spellStatDict = new Dictionary<SpellStat, int>();
+    private Dictionary<SpellStat, List<int>> combatAlterSpellStatValueHistory = new Dictionary<SpellStat, List<int>>();
+    private Dictionary<SpellStat, List<int>> untilCastAlterSpellStatValueHistory = new Dictionary<SpellStat, List<int>>();
 
-    protected List<ToolTipKeyword> GeneralKeywords = new List<ToolTipKeyword>();
-    protected List<AfflictionType> AfflictionKeywords = new List<AfflictionType>();
-    private SpellDisplay equippedTo;
+    private SpellCanCastData canCastData = new SpellCanCastData();
+
+    public class SpellCallbackData
+    {
+        public List<SpellEffect> SpellEffects = new List<SpellEffect>();
+        public Func<string> FuncCallbackString = null;
+        public Action Callback = null;
+    }
+
+    public class SpellCanCastData
+    {
+        public List<SpellCanCastCondition> SpellConditions = new List<SpellCanCastCondition>();
+        public Func<string> FuncSpellConditionsString = null;
+        public Func<bool> CanCastFunc = null;
+
+        public bool Evaluate()
+        {
+            if (CanCastFunc != null && !CanCastFunc.Invoke()) return false;
+            bool canCast = true;
+            foreach (SpellCanCastCondition castCondition in SpellConditions)
+            {
+                if (!castCondition.EvaluateCondition()) canCast = false;
+            }
+            return canCast;
+        }
+    }
 
     public Spell()
     {
-        SetParameters();
+        SetSpellEffects();
+
         SetKeywords();
 
-        // Set Upgrade Status & Min Upgrade Status
-        upgradeStatus = setUpgradeStatusTo;
-        minUpgradeStatus = upgradeStatus.x;
+        // Simplest way to have this information is to default to this and then somewhere around MakeEnemyAction we'll change it
+        // Could consider a Factory instead?
+        SetCombatent(Combatent.Character, Combatent.Enemy);
+
+        // Set the Spell to revert any Stat Changes that happened during combat that were not set to be permanant
+        AddSilentActionCallback(SpellCallbackType.OnCombatReset, () => RevertAlterStatChanges(SpellAlterStatDuration.Combat));
+        AddSilentActionCallback(SpellCallbackType.OnCombatReset, () => RevertAlterStatChanges(SpellAlterStatDuration.UntilCast));
+        AddSilentActionCallback(SpellCallbackType.OnCast, () => RevertAlterStatChanges(SpellAlterStatDuration.UntilCast));
+
+        // Add Has Mana Cast Condition
+        AddCanCastCondition(new HasManaSpellCanCastCondition(this));
+
+        // Randomize Note Batches
+        SetNoteBatches();
+
+        // Set Mana Cost
         manaCost = startManaCost;
+
+        SetPrepTime();
     }
 
-    public void Upgrade(Sign sign)
+    protected virtual void SetPrepTime()
     {
-        if (sign == Sign.Positive)
+        AddSpellStat(SpellStat.PrepTime, 2);
+    }
+
+    protected void AddSpellStat(SpellStat stat, int value)
+    {
+        spellStatDict.Add(stat, value);
+    }
+
+    public bool HasSpellStat(SpellStat stat)
+    {
+        return spellStatDict.ContainsKey(stat);
+    }
+
+    public int GetSpellStat(SpellStat stat)
+    {
+        switch (stat)
         {
-            if (CanUpgrade)
+            case SpellStat.OtherDamageAmount:
+                return CombatManager._Instance.CalculateDamage(spellStatDict[stat], Caster, Other, MainDamageType, DamageSource.Spell, false);
+            case SpellStat.SelfDamageAmount:
+                return CombatManager._Instance.CalculateDamage(spellStatDict[stat], Caster, Caster, MainDamageType, DamageSource.Spell, false);
+            case SpellStat.SelfWardAmount:
+                return CombatManager._Instance.CalculateWard(spellStatDict[stat], Caster);
+            case SpellStat.OtherWardAmount:
+                return CombatManager._Instance.CalculateWard(spellStatDict[stat], Caster);
+            default:
+                return spellStatDict[stat];
+        }
+    }
+
+    private void RevertAlterStatChanges(SpellAlterStatDuration type)
+    {
+        Dictionary<SpellStat, List<int>> reverting;
+        switch (type)
+        {
+            case SpellAlterStatDuration.Combat:
+                reverting = combatAlterSpellStatValueHistory;
+                break;
+            case SpellAlterStatDuration.UntilCast:
+                reverting = untilCastAlterSpellStatValueHistory;
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+
+        List<SpellStat> keys = reverting.Keys.ToList();
+        for (int i = 0; i < keys.Count; i++)
+        {
+            SpellStat stat = keys[i];
+
+            while (reverting[stat].Count > 0)
             {
-                OnUpgrade(1);
-                upgradeStatus.x += 1;
+                AlterSpellStat(stat, -reverting[stat][0], SpellAlterStatDuration.Permanant);
+                reverting[stat].RemoveAt(0);
             }
+        }
+    }
+
+    private void TrackAlterStatChange(SpellStat stat, int alterBy, SpellAlterStatDuration duration)
+    {
+        Dictionary<SpellStat, List<int>> addingTo;
+        switch (duration)
+        {
+            case SpellAlterStatDuration.Combat:
+                addingTo = combatAlterSpellStatValueHistory;
+                break;
+            case SpellAlterStatDuration.UntilCast:
+                addingTo = untilCastAlterSpellStatValueHistory;
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+
+        if (addingTo.ContainsKey(stat))
+        {
+            addingTo[stat].Add(alterBy);
         }
         else
         {
-            if (CanDowngrade)
-            {
-                OnUpgrade(-1);
-                upgradeStatus.x -= 1;
-            }
+            addingTo.Add(stat, new List<int>() { alterBy });
         }
     }
 
-    public virtual void OnDraw()
+    public void SetSpellStatTo(SpellStat stat, int newValue)
     {
-        // 
+        spellStatDict[stat] = newValue;
     }
 
-    public virtual void OnSpecificDiscard()
+    public void AlterSpellStat(SpellStat stat, int alterBy, SpellAlterStatDuration duration)
     {
-        // 
+        if (duration == SpellAlterStatDuration.Combat || duration == SpellAlterStatDuration.UntilCast)
+        {
+            TrackAlterStatChange(stat, alterBy, duration);
+        }
+
+        spellStatDict[stat] += alterBy;
     }
 
-    public virtual void OnForceDiscard()
+    protected void AddSpellEffectCallback(SpellCallbackType callbackOn, params SpellEffect[] effects)
     {
-        // 
+        // Add callback type if not already added
+        if (!spellCallbackMap.ContainsKey(callbackOn))
+        {
+            spellCallbackMap.Add(callbackOn, new SpellCallbackData());
+        }
+
+        spellCallbackMap[callbackOn].SpellEffects.AddRange(effects);
     }
 
-    public virtual void OnExhaust()
+    protected void AddNamedActionCallback(SpellCallbackType callbackOn, Func<string> addToCallbackString, Action action)
     {
-        // 
+        if (!spellCallbackMap.ContainsKey(callbackOn)) // Add callback type if not already added
+        {
+            spellCallbackMap.Add(callbackOn, new SpellCallbackData());
+        }
+        else if (spellCallbackMap[callbackOn].FuncCallbackString?.Invoke().Length > 0) // If there are existing Callback Strings 
+        {
+            spellCallbackMap[callbackOn].FuncCallbackString += () => ", ";
+        }
+
+        // Add Callbacks
+        spellCallbackMap[callbackOn].Callback += action;
+        spellCallbackMap[callbackOn].FuncCallbackString += addToCallbackString;
     }
 
-    public virtual void OnKill()
+    protected void AddSilentActionCallback(SpellCallbackType callbackOn, Action action)
     {
-        // 
+        // Add callback type if not already added
+        if (!spellCallbackMap.ContainsKey(callbackOn))
+        {
+            spellCallbackMap.Add(callbackOn, new SpellCallbackData());
+        }
+        spellCallbackMap[callbackOn].Callback += action;
     }
 
-    public virtual void OnQueue()
+    public void CallSpellCallback(SpellCallbackType callbackOn)
     {
-        //
+        if (!spellCallbackMap.ContainsKey(callbackOn)) return;
+
+        // Call Spell Effect Callbacks
+        CombatManager._Instance.StartCoroutine(
+            CombatManager._Instance.CallSpellEffects(spellCallbackMap[callbackOn].SpellEffects, null, Caster, Other, false));
+
+        // Callback
+        spellCallbackMap[callbackOn].Callback?.Invoke();
     }
 
-    public virtual void OnAnyDiscard()
+    private string GetSpellCanCastStrings()
     {
-        // 
+        string final = "";
+
+        foreach (SpellCanCastCondition condition in canCastData.SpellConditions)
+        {
+            string toAdd = condition.GetEvaluationString();
+            if (final.Length == 0)
+            {
+                final += toAdd;
+            }
+            else if (toAdd.Length > 0)
+            {
+                final += ", " + toAdd;
+
+            }
+        }
+
+        if (canCastData.FuncSpellConditionsString != null)
+        {
+            string funcString = canCastData.FuncSpellConditionsString.Invoke();
+            if (funcString.Length > 0)
+            {
+                if (final.Length == 0)
+                {
+                    final += funcString;
+                }
+                else
+                {
+                    final += ", " + funcString;
+                }
+            }
+        }
+
+        return final;
     }
 
-    protected abstract void OnUpgrade(int effectDirection);
+
+    private string GetSpellCallbackStrings()
+    {
+        string final = "";
+        foreach (KeyValuePair<SpellCallbackType, SpellCallbackData> kvp in spellCallbackMap)
+        {
+            bool hasCallback = false;
+            string toAdd = "";
+
+            if (kvp.Value.SpellEffects.Count > 0)
+            {
+                // Add Spell Effects
+                hasCallback = true;
+
+                toAdd += GetSpellEffectString(kvp.Value.SpellEffects);
+            }
+
+            if (kvp.Value != null)
+            {
+                if (kvp.Value.FuncCallbackString?.Invoke().Length > 0)
+                {
+                    hasCallback = true;
+                    toAdd += kvp.Value.FuncCallbackString();
+                }
+            }
+
+            if (hasCallback)
+            {
+                final += GetSpellCallbackTypeString(kvp.Key) + ": " + toAdd;
+            }
+
+        }
+        return final;
+    }
+
+    private string GetSpellCallbackTypeString(SpellCallbackType type)
+    {
+        switch (type)
+        {
+            case SpellCallbackType.OnAnyDiscard:
+                return "Upon Discarding this Spell";
+            case SpellCallbackType.OnCast:
+                return "Upon Casting this Spell";
+            case SpellCallbackType.OnCombatReset:
+                return "Upon Combat Ending";
+            case SpellCallbackType.OnDraw:
+                return "Upon Drawing this Spell";
+            case SpellCallbackType.OnExhaust:
+                return "Upon Exhausting this Spell";
+            case SpellCallbackType.OnKill:
+                return "Upon Killing an Enemy with this Spell";
+            case SpellCallbackType.OnPlayerTurnEnd:
+                return "At the End of the Turn";
+            case SpellCallbackType.OnQueue:
+                return "Upon Queuing this Spell";
+            case SpellCallbackType.OnSpecificDiscard:
+                return "Upon Discarding this Spell";
+            default:
+                throw new UnhandledSwitchCaseException();
+        }
+    }
+
+    private string GetSpellEffectString(List<SpellEffect> spellEffects)
+    {
+        string result = "";
+        for (int i = 0; i < spellEffects.Count; i++)
+        {
+            result += spellEffects[i].GetToolTipText();
+
+            if (spellEffects.Count > 1 && i < spellEffects.Count - 1)
+            {
+                result += ", ";
+            }
+        }
+        return result;
+    }
+
+    // Can Cast Conditions
+    protected void AddCanCastCondition(SpellCanCastCondition condition)
+    {
+        canCastData.SpellConditions.Add(condition);
+    }
+
+    protected void AddNamedCanCastFunc(Func<bool> func, Func<string> addToCanCastString)
+    {
+        if (canCastData.FuncSpellConditionsString?.Invoke().Length > 0) // If there are existing Can Cast Func Strings 
+        {
+            canCastData.FuncSpellConditionsString += () => ", ";
+        }
+
+        canCastData.FuncSpellConditionsString += addToCanCastString;
+        canCastData.CanCastFunc += func;
+    }
+
+    protected void AddSilentCanCastFunc(Func<bool> func)
+    {
+        canCastData.CanCastFunc += func;
+    }
 
     // Sets the Keywords of the Spell
     protected virtual void SetKeywords()
@@ -181,29 +553,98 @@ public abstract class Spell : ToolTippable
         // 
     }
 
-    // Sets Parameters of the Spell
-    protected virtual void SetParameters()
+    // Notes
+    protected virtual void SetNoteBatches()
     {
-        // 
+        /*
+         * Examples
+        Batches.Add(new SpellNoteBatch(new List<SpellNote>()
+        {
+            new SpellNote(.5f, ScreenQuadrant.TopLeft),
+            new SpellNote(.45f, ScreenQuadrant.TopRight),
+            new SpellNote(.4f, ScreenQuadrant.BottomLeft),
+            new SpellNote(.35f, ScreenQuadrant.BottomRight),
+        }, 0));
+
+        Batches.Add(new SpellNoteBatch(new List<SpellNote>()
+        {
+            new SpellNote(.5f, ScreenQuadrant.TopLeft),
+            new SpellNote(.25f, ScreenQuadrant.BottomRight),
+        }, 0));
+
+        Batches.Add(new SpellNoteBatch(new List<SpellNote>()
+        {
+            new SpellNote(.5f),
+            new SpellNote(.25f),
+        }, .25f));
+        */
+
+        // Random Batches
+        for (int i = 0; i < 2; i++)
+        {
+            Batches.Add(new SpellNoteBatch(RandomHelper.RandomIntInclusive(1, 3), RandomHelper.RandomFloat(0.3f, .6f),
+                RandomHelper.RandomFloat(0.25f, .5f), RandomHelper.RandomFloat(.95f, 1.05f)));
+            if (RandomHelper.RandomBool())
+            {
+                break;
+            }
+        }
+
+        // Batches.Add(new SpellNoteBatch(2, .5f, .5f));
+        // Batches.Add(new SpellNoteBatch(3, .5f, .5f));
     }
 
-    public abstract void Cast();
-
-    // Overridable Functions to determine Spell Effect
-    // Determines the actual effect of using the book
-    // Should not be called directly but rather through the CallEffect function
-    protected abstract void Effect();
-
-    // Will call the Effect
-    public abstract void CallEffect();
-    protected virtual void ResetOnCombatReset()
+    public int GetNumNotes()
     {
-        // 
+        int result = 0;
+        foreach (SpellNoteBatch batch in Batches)
+        {
+            result += batch.NumNotes;
+        }
+        return result;
     }
-    public virtual void CallOnCombatEnd()
+
+    // Effectiveness Multiplier
+    protected float GetEffectivenessMultiplier()
     {
-        ResetOnCombatReset();
+        return CombatManager._Instance.CurrentSpellEffectivenessMultiplier;
     }
+
+    protected int PassValueThroughEffectivenessMultiplier(int damage)
+    {
+        return Mathf.CeilToInt(damage * GetEffectivenessMultiplier());
+    }
+
+    #region Spell Effects
+
+    // Overriden to determine what the spell will do when cast
+    protected abstract void SetSpellEffects();
+
+    protected void AddSpellEffects(params SpellEffect[] effects)
+    {
+        spellEffects.AddRange(effects);
+    }
+
+    // Returns the List of Spell Effects
+    public List<SpellEffect> GetSpellEffects()
+    {
+        return spellEffects;
+    }
+
+    public bool HasSpellEffectType(SpellEffectType spellEffectType)
+    {
+        return GetSpellEffectOfType(spellEffectType) != null;
+    }
+
+    public SpellEffect GetSpellEffectOfType(SpellEffectType spellEffectType)
+    {
+        foreach (SpellEffect spellEffect in spellEffects)
+        {
+            if (spellEffect.Type == spellEffectType) return spellEffect;
+        }
+        return null;
+    }
+    #endregion
 
     // Getters
     public Sprite GetSpellSprite()
@@ -221,6 +662,11 @@ public abstract class Spell : ToolTippable
         return GeneralKeywords;
     }
 
+    public List<ToolTippable> GetOtherToolTippables()
+    {
+        return new List<ToolTippable>();
+    }
+
     public virtual string GetToolTipLabel()
     {
         return Name;
@@ -228,32 +674,51 @@ public abstract class Spell : ToolTippable
 
     public string GetToolTipText()
     {
-        return UIManager._Instance.HighlightKeywords(toolTipText + GetDetailText());
+        return toolTipText;
     }
 
-    protected abstract string GetDetailText();
-
-    public List<ToolTippable> GetOtherToolTippables()
+    public void SetCombatent(Combatent caster, Combatent other)
     {
-        return new List<ToolTippable>();
+        Caster = caster;
+        Other = other;
     }
 
-    // Animations
-    protected void ShowSpellProc()
-    {
-        equippedTo.AnimateScale();
-    }
-
+    // Equipped To
     public void SetEquippedTo(SpellDisplay equippedTo)
     {
-        this.equippedTo = equippedTo;
+        equippedToSpellDisplay = equippedTo;
     }
 
     public SpellDisplay GetEquippedTo()
     {
-        return equippedTo;
+        return equippedToSpellDisplay;
     }
 
+    public static void TestGetSpellOfType()
+    {
+        foreach (SpellLabel label in Enum.GetValues(typeof(SpellLabel)))
+        {
+            try
+            {
+                GetSpellOfType(label);
+            }
+            catch (UnhandledSwitchCaseException ex)
+            {
+                Debug.Log("Recieved Switch Case Exception For Label: " + label + "\n" + ex.ToString());
+            }
+        }
+    }
+
+    public static bool SpellListContainSpell(List<Spell> spellList, SpellLabel label)
+    {
+        foreach (Spell spell in spellList)
+        {
+            if (spell.Label == label) return true;
+        }
+        return false;
+    }
+
+    // Get Instance from Enum
     public static Spell GetSpellOfType(SpellLabel label)
     {
         switch (label)
@@ -276,13 +741,13 @@ public abstract class Spell : ToolTippable
                 return new Fireball();
             case SpellLabel.Flurry:
                 return new Flurry();
-            case SpellLabel.Forethought:
-                return new Forethought();
+            case SpellLabel.Ghost:
+                return new Ghost();
             case SpellLabel.ImpartialAid:
                 return new ImpartialAid();
             case SpellLabel.Inferno:
                 return new Inferno();
-            case SpellLabel.Jarkai:
+            case SpellLabel.DoubleHit:
                 return new DoubleHit();
             case SpellLabel.MagicRain:
                 return new MagicRain();
@@ -308,8 +773,8 @@ public abstract class Spell : ToolTippable
                 return new WitchesWard();
             case SpellLabel.TeslaCoil:
                 return new TeslaCoil();
-            case SpellLabel.Hurt:
-                return new Hurt();
+            case SpellLabel.Injure:
+                return new Injure();
             case SpellLabel.Greed:
                 return new Greed();
             case SpellLabel.Anger:
@@ -322,819 +787,87 @@ public abstract class Spell : ToolTippable
                 return new ChannelCurrent();
             case SpellLabel.QuickCast:
                 return new QuickCast();
+            case SpellLabel.Levitate:
+                return new Levitate();
+            case SpellLabel.StudyPower:
+                return new StudyPower();
+            case SpellLabel.StudyProtection:
+                return new StudyProtection();
+            case SpellLabel.GhastlyGrasp:
+                return new GhastlyGrasp();
+            case SpellLabel.GhoulishAssault:
+                return new GhoulishAssault();
+            case SpellLabel.Protect:
+                return new Protect();
+            case SpellLabel.FlamingLashes:
+                return new FlamingLashes();
+            case SpellLabel.ScaldingSplash:
+                return new ScaldingSplash();
+            case SpellLabel.CallUntoBlessing:
+                return new Blessed();
+            case SpellLabel.Recouperate:
+                return new Recouperate();
+            case SpellLabel.BrutalSmash:
+                return new BrutalSmash();
+            case SpellLabel.Bash:
+                return new Bash();
+            case SpellLabel.EnterFrenzy:
+                return new EnterFrenzy();
+            case SpellLabel.CoatEdges:
+                return new CoatEdges();
+            case SpellLabel.BreakSpirit:
+                return new BreakSpirit();
+            case SpellLabel.Belch:
+                return new Belch();
+            case SpellLabel.Phase:
+                return new Phase();
+            case SpellLabel.Sap:
+                return new Sap();
+            case SpellLabel.Tackle:
+                return new Tackle();
+            case SpellLabel.GrowSpikes:
+                return new GrowSpikes();
+            case SpellLabel.LoseResolve:
+                return new LoseResolve();
+            case SpellLabel.Harden:
+                return new Harden();
+            case SpellLabel.ViralChomp:
+                return new ViralChomp();
+            case SpellLabel.Claw:
+                return new Claw();
+            case SpellLabel.HateFilledStrike:
+                return new HateFilledStrike();
+            case SpellLabel.Struggle:
+                return new Struggle();
+            case SpellLabel.Unleash:
+                return new Unleash();
+            case SpellLabel.BurnBrighter:
+                return new BurnBrighter();
             default:
-                throw new UnhandledSwitchCaseException();
+                throw new UnhandledSwitchCaseException(label.ToString());
         }
     }
-
 }
 
-#region Passive Spells
-
-public abstract class PassiveSpell : Spell
+public abstract class ReusableSpell : Spell
 {
-    public override SpellCastType Type => SpellCastType.Passive;
+    public override SpellCastType SpellCastType => SpellCastType.Reusable;
+    public abstract ReusableSpellType SpellType { get; }
 
-    // A Global variable determining whether or not a passive spell being activated should duplicate itself
-    public static int NumDuplicateProcs { get; set; }
-
-    // Unless overriden will return an empty string. If returning a non-empty string, the passive spell display will include this information
-    public virtual string GetSecondaryText()
-    {
-        return "";
-    }
-
-    public override void Cast()
-    {
-        CombatManager._Instance.EquipPassiveSpell(this);
-    }
-
-    // Will activate on equipping the Spell
-    public virtual void OnEquip()
-    {
-        //
-    }
-    // Will activate on unequipping the Spell
-    public virtual void OnUnequip()
-    {
-        //
-    }
-
-    // Calls the effect, could also be used to trigger other function calls or another thing at the same time (even if it's just Debugging) as calling Effect
-    public override void CallEffect()
-    {
-        // Paralyze Effect
-        if (CombatManager._Instance.TargetHasAffliction(AfflictionType.Paralyze, Target.Character))
-        {
-            CombatManager._Instance.ConsumeAfflictionStack(AfflictionType.Paralyze, Target.Character);
-            CombatManager._Instance.ShowAfflictionProc(AfflictionType.Paralyze, Target.Character);
-            CombatManager._Instance.ShakeCombatent(Target.Character);
-            return;
-        }
-
-        Effect();
-    }
-
-    // Activates the spell
-    public virtual void Proc(bool canDupe)
-    {
-        CombatManager._Instance.OnPassiveSpellProc?.Invoke();
-        ShowSpellProc();
-        if (canDupe && NumDuplicateProcs > 0)
-        {
-            Proc(false);
-            NumDuplicateProcs -= 1;
-        }
-    }
-
-    public virtual float GetPercentProgress()
-    {
-        return 1;
-    }
-
-    protected override string GetDetailText()
-    {
-        return "";
-    }
-}
-
-public class PoisonTips : PassiveSpell
-{
-    public override SpellLabel Label => SpellLabel.PoisonTips;
-    public override SpellColor Color => SpellColor.Green;
-    public override Rarity Rarity => Rarity.Common;
-    public override DamageType MainDamageType => DamageType.Poison;
-    public override string Name => "Poison Tips";
-
-    private int tracker;
-    private int procAfter = 5;
-    private int stackAmount = 2;
-    private int changeProcAfterOnUpgrade = -1;
-
-    protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Poison";
-    protected override int startManaCost => 1;
-
-    protected override void SetKeywords()
-    {
-        base.SetKeywords();
-        AfflictionKeywords.Add(AfflictionType.Poison);
-    }
-
-    public override void OnEquip()
-    {
-        base.OnEquip();
-        CombatManager._Instance.OnPlayerBasicAttack += CallEffect;
-    }
-
-    public override void OnUnequip()
-    {
-        base.OnUnequip();
-        CombatManager._Instance.OnPlayerBasicAttack -= CallEffect;
-    }
-
-    protected override void Effect()
-    {
-        tracker += 1;
-        if (tracker >= procAfter)
-        {
-            tracker = 0;
-            Proc(true);
-        }
-    }
-
-    public override void Proc(bool canDupe)
-    {
-        CombatManager._Instance.AddAffliction(AfflictionType.Poison, stackAmount, Target.Enemy);
-        base.Proc(canDupe);
-    }
-
-    public override string GetSecondaryText()
-    {
-        return tracker + "/" + procAfter;
-    }
-
-    public override float GetPercentProgress()
-    {
-        return (float)tracker / procAfter;
-    }
-
-    protected override void ResetOnCombatReset()
-    {
-        base.ResetOnCombatReset();
-        tracker = 0;
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        procAfter += changeProcAfterOnUpgrade;
-    }
-}
-
-public class StaticField : PassiveSpell
-{
-    public override SpellLabel Label => SpellLabel.StaticField;
-    public override SpellColor Color => SpellColor.Blue;
-    public override Rarity Rarity => Rarity.Common;
-    public override string Name => "Static Field";
-    public override DamageType MainDamageType => DamageType.Electric;
-
-    protected override string toolTipText => "Every " + procAfter + " Turn" + (procAfter > 1 ? "s" : "") + ", Apply " + stackAmount + " Electrocuted to the Enemy";
-
-    protected override int startManaCost => 1;
-
-    private int tracker;
-    private int procAfter = 2;
-    private int stackAmount = 5;
-    private int changeStackAmountOnUpgrade = 3;
-
-    protected override void SetKeywords()
-    {
-        base.SetKeywords();
-        AfflictionKeywords.Add(AfflictionType.Electrocuted);
-    }
-
-    public override void OnEquip()
-    {
-        base.OnEquip();
-        CombatManager._Instance.OnPlayerTurnStart += CallEffect;
-    }
-
-    public override void OnUnequip()
-    {
-        base.OnUnequip();
-        CombatManager._Instance.OnPlayerTurnStart -= CallEffect;
-    }
-
-    protected override void Effect()
-    {
-        tracker += 1;
-        if (tracker >= procAfter)
-        {
-            tracker = 0;
-            Proc(true);
-        }
-    }
-
-    public override void Proc(bool canDupe)
-    {
-        CombatManager._Instance.AddAffliction(AfflictionType.Electrocuted, stackAmount, Target.Enemy);
-        base.Proc(canDupe);
-    }
-
-    public override string GetSecondaryText()
-    {
-        return tracker + "/" + procAfter;
-    }
-
-    public override float GetPercentProgress()
-    {
-        return (float)tracker / procAfter;
-    }
-
-    protected override void ResetOnCombatReset()
-    {
-        base.ResetOnCombatReset();
-        tracker = 0;
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        stackAmount += changeStackAmountOnUpgrade;
-    }
-}
-
-public class Inferno : PassiveSpell
-{
-    public override SpellLabel Label => SpellLabel.Inferno;
-    public override SpellColor Color => SpellColor.Red;
-    public override Rarity Rarity => Rarity.Common;
-    public override DamageType MainDamageType => DamageType.Fire;
-    public override string Name => "Inferno";
-    protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Burn";
-    protected override int startManaCost => 1;
-
-    private int tracker;
-    private int stackAmount = 2;
-    private int procAfter = 5;
-    private int changeProcAfteronUpgrade = -2;
-
-    protected override void SetKeywords()
-    {
-        base.SetKeywords();
-        AfflictionKeywords.Add(AfflictionType.Burn);
-    }
-
-    public override void OnEquip()
-    {
-        base.OnEquip();
-        CombatManager._Instance.OnPlayerBasicAttack += CallEffect;
-    }
-
-    public override void OnUnequip()
-    {
-        base.OnUnequip();
-        CombatManager._Instance.OnPlayerBasicAttack -= CallEffect;
-    }
-
-    protected override void Effect()
-    {
-        tracker += 1;
-        if (tracker > procAfter)
-        {
-            tracker = 0;
-            Proc(true);
-        }
-    }
-
-    public override void Proc(bool canDupe)
-    {
-        CombatManager._Instance.AddAffliction(AfflictionType.Burn, stackAmount, Target.Enemy);
-        base.Proc(canDupe);
-    }
-
-    public override string GetSecondaryText()
-    {
-        return tracker + "/" + procAfter;
-    }
-
-    public override float GetPercentProgress()
-    {
-        return (float)tracker / procAfter;
-    }
-
-    protected override void ResetOnCombatReset()
-    {
-        base.ResetOnCombatReset();
-        tracker = 0;
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        procAfter += changeProcAfteronUpgrade;
-    }
-}
-
-public class BattleTrance : PassiveSpell
-{
-    public override SpellLabel Label => SpellLabel.BattleTrance;
-    public override SpellColor Color => SpellColor.Red;
-    public override Rarity Rarity => Rarity.Common;
-    public override string Name => "Battle Trance";
-    public override DamageType MainDamageType => DamageType.Default;
-    protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack, Gain " + stackAmount + " Embolden";
-
-    protected override int startManaCost => 1;
-
-    private int tracker;
-    private int stackAmount = 2;
-    private int procAfter = 7;
-    private int changeProcAfterOnUpgrade = -2;
-
-    protected override void SetKeywords()
-    {
-        base.SetKeywords();
-        AfflictionKeywords.Add(AfflictionType.Embolden);
-    }
-
-    public override void OnEquip()
-    {
-        base.OnEquip();
-        CombatManager._Instance.OnPlayerBasicAttack += CallEffect;
-    }
-
-    public override void OnUnequip()
-    {
-        base.OnUnequip();
-        CombatManager._Instance.OnPlayerBasicAttack -= CallEffect;
-    }
-
-    protected override void Effect()
-    {
-        tracker += 1;
-        if (tracker > procAfter)
-        {
-            tracker = 0;
-            Proc(true);
-        }
-    }
-
-    public override void Proc(bool canDupe)
-    {
-        CombatManager._Instance.AddAffliction(AfflictionType.Embolden, stackAmount, Target.Character);
-        base.Proc(canDupe);
-    }
-
-    public override string GetSecondaryText()
-    {
-        return tracker + "/" + procAfter;
-    }
-
-    public override float GetPercentProgress()
-    {
-        return (float)tracker / procAfter;
-    }
-
-    protected override void ResetOnCombatReset()
-    {
-        base.ResetOnCombatReset();
-        tracker = 0;
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        procAfter += changeProcAfterOnUpgrade;
-    }
-}
-
-public class MagicRain : PassiveSpell
-{
-    public override SpellLabel Label => SpellLabel.MagicRain;
-    public override SpellColor Color => SpellColor.Blue;
-    public override Rarity Rarity => Rarity.Common;
-    public override string Name => "Magic Rain";
-    public override DamageType MainDamageType => DamageType.Electric;
-
-    protected override string toolTipText => "Every " + procAfter + " Turn" + (procAfter > 1 ? "s" : "") + ", Deal " + damageAmount + " Damage to the Enemy";
-
-    protected override int startManaCost => 1;
-
-    private int tracker;
-    private int damageAmount = 9;
-    private int procAfter = 2;
-    private int changeDamageAmountOnUpgrade = 3;
-
-    public override void OnEquip()
-    {
-        base.OnEquip();
-        CombatManager._Instance.OnPlayerTurnStart += CallEffect;
-    }
-
-    public override void OnUnequip()
-    {
-        base.OnUnequip();
-        CombatManager._Instance.OnPlayerTurnStart -= CallEffect;
-    }
-
-    protected override void Effect()
-    {
-        tracker += 1;
-        if (tracker > procAfter)
-        {
-            tracker = 0;
-            Proc(true);
-        }
-    }
-
-    public override void Proc(bool canDupe)
-    {
-        CombatManager._Instance.AlterCombatentHP(-damageAmount, Target.Enemy, DamageType.Default);
-        base.Proc(canDupe);
-    }
-
-    public override string GetSecondaryText()
-    {
-        return tracker + "/" + procAfter;
-    }
-
-    public override float GetPercentProgress()
-    {
-        return (float)tracker / procAfter;
-    }
-
-    protected override void ResetOnCombatReset()
-    {
-        base.ResetOnCombatReset();
-        tracker = 0;
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        damageAmount += changeDamageAmountOnUpgrade;
-    }
-}
-
-public class CrushJoints : PassiveSpell
-{
-    public override SpellColor Color => SpellColor.Red;
-    public override Rarity Rarity => Rarity.Common;
-    public override string Name => "Crush Joints";
-    public override SpellLabel Label => SpellLabel.CrushJoints;
-    public override DamageType MainDamageType => DamageType.Default;
-
-    protected override string toolTipText => "Every " + procAfter + Utils.GetNumericalSuffix(procAfter) + " Basic Attack Applies " + stackAmount + " Vulnerable";
-
-    protected override int startManaCost => 1;
-
-    private int tracker;
-    private int procAfter = 7;
-    private int stackAmount = 2;
-    private int changeStackAmountOnUpgrade = 1;
-
-    protected override void SetKeywords()
-    {
-        base.SetKeywords();
-        AfflictionKeywords.Add(AfflictionType.Vulnerable);
-    }
-
-    public override void OnEquip()
-    {
-        base.OnEquip();
-        CombatManager._Instance.OnPlayerBasicAttack += CallEffect;
-    }
-
-    public override void OnUnequip()
-    {
-        base.OnUnequip();
-        CombatManager._Instance.OnPlayerBasicAttack -= CallEffect;
-    }
-
-    protected override void Effect()
-    {
-        tracker += 1;
-        if (tracker >= procAfter)
-        {
-            tracker = 0;
-            CombatManager._Instance.OnPlayerBasicAttack += OnNextAttack;
-        }
-    }
-
-    public override void Proc(bool canDupe)
-    {
-        CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, stackAmount, Target.Enemy);
-        base.Proc(canDupe);
-    }
-
-    private void OnNextAttack()
-    {
-        Proc(true);
-        CombatManager._Instance.OnPlayerBasicAttack -= OnNextAttack;
-    }
-
-    public override string GetSecondaryText()
-    {
-        return tracker + "/" + procAfter;
-    }
-
-    public override float GetPercentProgress()
-    {
-        return (float)tracker / procAfter;
-    }
-
-    protected override void ResetOnCombatReset()
-    {
-        base.ResetOnCombatReset();
-        tracker = 0;
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        stackAmount += changeStackAmountOnUpgrade;
-    }
-}
-
-public class TeslaCoil : PassiveSpell
-{
-    public override SpellLabel Label => SpellLabel.TeslaCoil;
-    public override SpellColor Color => SpellColor.Blue;
-    public override Rarity Rarity => Rarity.Common;
-    public override string Name => "Tesla Coil";
-    public override DamageType MainDamageType => DamageType.Electric;
-
-    protected override string toolTipText => "Every time an Active Spell is Queued, Deal " + damageAmount + " Damage to the Enemy";
-
-    protected override int startManaCost => 2;
-
-    private int damageAmount = 2;
-    private int changeDamageAmountOnUpgrade = 1;
-
-    public override void OnEquip()
-    {
-        base.OnEquip();
-        CombatManager._Instance.OnActiveSpellQueued += CallEffect;
-    }
-
-    public override void OnUnequip()
-    {
-        base.OnUnequip();
-        CombatManager._Instance.OnActiveSpellQueued -= CallEffect;
-    }
-
-    protected override void Effect()
-    {
-        Proc(true);
-    }
-
-    public override void Proc(bool canDupe)
-    {
-        CombatManager._Instance.AlterCombatentHP(-damageAmount, Target.Enemy, DamageType.Electric);
-        base.Proc(canDupe);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        damageAmount += changeDamageAmountOnUpgrade;
-    }
-}
-
-public class Hurt : PassiveSpell
-{
-    public override SpellLabel Label => SpellLabel.Hurt;
-    public override SpellColor Color => SpellColor.Curse;
-    public override Rarity Rarity => Rarity.Common;
-    protected override Vector2Int setUpgradeStatusTo => new Vector2Int(1, 1);
-    public override string Name => "Hurt";
-    public override DamageType MainDamageType => DamageType.Evil;
-
-    protected override string toolTipText => "At the End of Every turn, Take " + damageAmount + " Damage";
-
-    protected override int startManaCost => 1;
-
-    private int damageAmount = 1;
-
-    public override void OnEquip()
-    {
-        base.OnEquip();
-        CombatManager._Instance.OnPlayerTurnEnd += CallEffect;
-    }
-
-    public override void OnUnequip()
-    {
-        base.OnUnequip();
-        CombatManager._Instance.OnPlayerTurnEnd -= CallEffect;
-    }
-
-    protected override void Effect()
-    {
-        Proc(true);
-    }
-
-    public override void Proc(bool canDupe)
-    {
-        CombatManager._Instance.AlterCombatentHP(-damageAmount, Target.Character, DamageType.Evil);
-        base.Proc(canDupe);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class Worry : PassiveSpell
-{
-    public override SpellLabel Label => SpellLabel.Worry;
-    public override SpellColor Color => SpellColor.Curse;
-    public override Rarity Rarity => Rarity.Common;
-    public override string Name => "Worry";
-    public override DamageType MainDamageType => DamageType.Evil;
-
-    protected override string toolTipText => "Every " + procAfter + " Attack" + (procAfter > 1 ? "s" : "") + ", Gain " + stackAmount + " Weak";
-
-    protected override Vector2Int setUpgradeStatusTo => new Vector2Int(1, 1);
-
-    protected override int startManaCost => 0;
-
-    private int tracker;
-    private int stackAmount = 2;
-    private int procAfter = 10;
-
-    public override void OnEquip()
-    {
-        base.OnEquip();
-        CombatManager._Instance.OnPlayerAttack += CallEffect;
-    }
-
-    public override void OnUnequip()
-    {
-        base.OnUnequip();
-        CombatManager._Instance.OnPlayerAttack -= CallEffect;
-    }
-
-    protected override void Effect()
-    {
-        tracker += 1;
-        if (tracker > procAfter)
-        {
-            tracker = 0;
-            Proc(true);
-        }
-    }
-
-    public override void Proc(bool canDupe)
-    {
-        CombatManager._Instance.AddAffliction(AfflictionType.Weak, stackAmount, Target.Character);
-        base.Proc(canDupe);
-    }
-
-    public override string GetSecondaryText()
-    {
-        return tracker + "/" + procAfter;
-    }
-
-    public override float GetPercentProgress()
-    {
-        return (float)tracker / procAfter;
-    }
-
-    protected override void ResetOnCombatReset()
-    {
-        base.ResetOnCombatReset();
-        tracker = 0;
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-#endregion
-
-#region Active Spells
-
-public abstract class ActiveSpell : Spell
-{
-    public override SpellCastType Type => SpellCastType.Active;
-    public abstract ActiveSpellType ActiveSpellType { get; }
-
-    // Data
+    // Cooldown
     protected abstract int startCooldown { get; }
-
     private int currentCooldown;
     public int CurrentCooldown => currentCooldown;
-
     private int maxCooldown;
     public int MaxCooldown => CombatManager._Instance.NumFreeSpells > 0 ? 0 : maxCooldown;
-
     public bool OnCooldown => CurrentCooldown > 0;
-    public override bool CanCast => !OnCooldown && base.CanCast;
 
-    // Sound
-    public virtual AudioClip HitSound { get => Resources.Load<AudioClip>("ActiveSpellData/DefaultHitSound"); }
-    public virtual AudioClip MissSound { get => Resources.Load<AudioClip>("ActiveSpellData/DefaultMissSound"); }
-
-    public List<SpellNoteBatch> Batches = new List<SpellNoteBatch>();
-
-    public ActiveSpell() : base()
+    public ReusableSpell() : base()
     {
         maxCooldown = startCooldown;
-    }
 
-    public override void CallEffect()
-    {
-        switch (ActiveSpellType)
-        {
-            case ActiveSpellType.Offensive:
-                CombatManager._Instance.OnOffensiveActiveSpellActivated?.Invoke();
-                break;
-            case ActiveSpellType.Defensive:
-                CombatManager._Instance.OnDefensiveActiveSpellActivated?.Invoke();
-                break;
-            case ActiveSpellType.Utility:
-                CombatManager._Instance.OnUtilityActiveSpellActivated?.Invoke();
-                break;
-            default:
-                throw new UnhandledSwitchCaseException();
-        }
-
-        CombatManager._Instance.OnActiveSpellActivated?.Invoke();
-        Effect();
-    }
-
-    public override void OnAnyDiscard()
-    {
-        ResetCooldown();
-    }
-
-    public override void Cast()
-    {
-        // Paralyze Effect
-        if (CombatManager._Instance.TargetHasAffliction(AfflictionType.Paralyze, Target.Character))
-        {
-            CombatManager._Instance.ConsumeAfflictionStack(AfflictionType.Paralyze, Target.Character);
-            CombatManager._Instance.ShowAfflictionProc(AfflictionType.Paralyze, Target.Character);
-            CombatManager._Instance.ShakeCombatent(Target.Character);
-            return;
-        }
-
-        // Echo Effect
-        if (CombatManager._Instance.TargetHasAffliction(AfflictionType.Echo, Target.Character))
-        {
-            CallEffect();
-            CallEffect();
-            CombatManager._Instance.ConsumeAfflictionStack(AfflictionType.Echo, Target.Character);
-            CombatManager._Instance.ShowAfflictionProc(AfflictionType.Echo, Target.Character);
-        }
-        else
-        {
-            CallEffect();
-        }
-
-        // Show Spell Proc
-        ShowSpellProc();
-    }
-
-    protected float GetEffectivenessMultiplier()
-    {
-        return CombatManager._Instance.GetActiveSpellEffectivenessMultiplier();
-    }
-
-    protected int PassValueThroughEffectivenessMultiplier(int damage)
-    {
-        return Mathf.CeilToInt(damage * GetEffectivenessMultiplier());
-    }
-
-    protected override void SetParameters()
-    {
-        base.SetParameters();
-        SetBatches();
-    }
-
-    protected void AlterMaxCooldown(int changeBy)
-    {
-        // Throw an exception if trying to reduce the cooldown to 0 or below
-        if (maxCooldown + changeBy <= 0)
-            throw new Exception();
-        maxCooldown += changeBy;
-    }
-
-    protected virtual void SetBatches()
-    {
-        /*
-         * Examples
-        Batches.Add(new SpellNoteBatch(new List<SpellNote>()
-        {
-            new SpellNote(.5f, ScreenQuadrant.TopLeft),
-            new SpellNote(.45f, ScreenQuadrant.TopRight),
-            new SpellNote(.4f, ScreenQuadrant.BottomLeft),
-            new SpellNote(.35f, ScreenQuadrant.BottomRight),
-        }, 0));
-
-        Batches.Add(new SpellNoteBatch(new List<SpellNote>()
-        {
-            new SpellNote(.5f, ScreenQuadrant.TopLeft),
-            new SpellNote(.25f, ScreenQuadrant.BottomRight),
-        }, 0));
-
-        Batches.Add(new SpellNoteBatch(new List<SpellNote>()
-        {
-            new SpellNote(.5f),
-            new SpellNote(.25f),
-        }, .25f));
-        */
-
-        Batches.Add(new SpellNoteBatch(2, .5f, .5f));
-        Batches.Add(new SpellNoteBatch(3, .5f, .5f));
-    }
-
-    private int GetNumNotes()
-    {
-        int result = 0;
-        foreach (SpellNoteBatch batch in Batches)
-        {
-            result += batch.NumNotes;
-        }
-        return result;
+        // Add Has Mana Cast Condition
+        AddCanCastCondition(new NotOnCooldownSpellCanCastCondition(this));
     }
 
     public void SetOnCooldown()
@@ -1168,38 +901,30 @@ public abstract class ActiveSpell : Spell
     {
         currentCooldown = 0;
     }
-
-    protected override string GetDetailText()
-    {
-        // Order: Mana -> Cooldown -> Attacks
-        return "\nMana Cost: " + startManaCost + ", Cooldown: " + MaxCooldown + ", Attacks: " + GetNumNotes() + " - " + ActiveSpellType;
-    }
-
-    protected int GetCalculatedDamageEnemy(int damage)
-    {
-        return CombatManager._Instance.CalculateDamage(damage, Target.Character, Target.Enemy, MainDamageType, DamageSource.ActiveSpell, false);
-    }
-
-    protected int GetCalculatedWard(int ward, Target target)
-    {
-        return CombatManager._Instance.CalculateWard(ward, target);
-    }
 }
 
-public class Fireball : ActiveSpell
+public abstract class PowerSpell : Spell
 {
+    public override SpellCastType SpellCastType => SpellCastType.Power;
+}
+
+public class Fireball : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
     public override DamageType MainDamageType => DamageType.Fire;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
     public override SpellLabel Label => SpellLabel.Fireball;
     public override SpellColor Color => SpellColor.Red;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
     public override Rarity Rarity => Rarity.Common;
     public override string Name => "Fireball";
-    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage, Apply " + stackAmount + " Burn";
     protected override int startCooldown => 3;
     protected override int startManaCost => 2;
-    private int damageAmount = 7;
-    private int stackAmount = 2;
-    private int changeDamageAmountOnUpgrade = 3;
+
+    public Fireball(int damageAmount = 7, int stackAmount = 2) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
 
     protected override void SetKeywords()
     {
@@ -1207,32 +932,31 @@ public class Fireball : ActiveSpell
         AfflictionKeywords.Add(AfflictionType.Burn);
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, DamageType.Fire, DamageSource.ActiveSpell);
-        CombatManager._Instance.AddAffliction(AfflictionType.Burn, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        damageAmount += changeDamageAmountOnUpgrade;
+        AddSpellEffects(
+            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Burn, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
     }
 }
 
-public class Shock : ActiveSpell
+public class Shock : ReusableSpell
 {
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
     public override DamageType MainDamageType => DamageType.Electric;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
     public override SpellLabel Label => SpellLabel.Shock;
     public override SpellColor Color => SpellColor.Blue;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
     public override Rarity Rarity => Rarity.Common;
     public override string Name => "Shock";
-    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage, Apply " + stackAmount + " Electrocuted";
     protected override int startCooldown => 3;
     protected override int startManaCost => 2;
-    private int damageAmount = 6;
-    private int stackAmount = 2;
-    private int changeStackAmountOnUpgrade = 2;
+
+    public Shock(int damageAmount = 5, int stackAmount = 4) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
 
     protected override void SetKeywords()
     {
@@ -1240,31 +964,31 @@ public class Shock : ActiveSpell
         AfflictionKeywords.Add(AfflictionType.Electrocuted);
         AfflictionKeywords.Add(AfflictionType.Paralyze);
     }
-    protected override void Effect()
-    {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, DamageType.Electric, DamageSource.ActiveSpell);
-        CombatManager._Instance.AddAffliction(AfflictionType.Electrocuted, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
-    }
 
-    protected override void OnUpgrade(int effectDirection)
+    protected override void SetSpellEffects()
     {
-        stackAmount += changeStackAmountOnUpgrade;
+        AddSpellEffects(
+            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Electrocuted, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
     }
 }
 
-public class Singe : ActiveSpell
+public class Singe : ReusableSpell
 {
-    public override DamageType MainDamageType => DamageType.Fire;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
-    public override SpellColor Color => SpellColor.Red;
-    public override Rarity Rarity => Rarity.Common;
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
     public override SpellLabel Label => SpellLabel.Singe;
+    public override DamageType MainDamageType => DamageType.Fire;
+    public override SpellColor Color => SpellColor.Red;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Afflict;
+    public override Rarity Rarity => Rarity.Common;
     public override string Name => "Singe";
-    protected override string toolTipText => "Apply " + stackAmount + " Burn";
     protected override int startCooldown => 3;
     protected override int startManaCost => 2;
-    private int stackAmount = 3;
-    private int changeStackAmountOnUpgrade = 1;
+
+    public Singe(int stackAmount = 3) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
 
     protected override void SetKeywords()
     {
@@ -1272,61 +996,57 @@ public class Singe : ActiveSpell
         AfflictionKeywords.Add(AfflictionType.Burn);
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Burn, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        stackAmount += changeStackAmountOnUpgrade;
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Burn, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
     }
 }
 
-public class Plague : ActiveSpell
+public class Plague : ReusableSpell
 {
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
     public override DamageType MainDamageType => DamageType.Poison;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
-    public override SpellColor Color => SpellColor.Green;
-    public override Rarity Rarity => Rarity.Common;
     public override SpellLabel Label => SpellLabel.Plague;
+    public override SpellColor Color => SpellColor.Green;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Afflict;
+    public override Rarity Rarity => Rarity.Common;
     public override string Name => "Plague";
-    protected override string toolTipText => "Apply " + stackAmount + " Poison";
     protected override int startCooldown => 3;
     protected override int startManaCost => 2;
-    private int stackAmount = 5;
-    private int changeCooldownOnUpgrade = -1;
+
+    public Plague(int stackAmount = 5) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
 
     protected override void SetKeywords()
     {
         AfflictionKeywords.Add(AfflictionType.Poison);
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Poison, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        AlterMaxCooldown(changeCooldownOnUpgrade);
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Poison, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
     }
 }
 
-public class Toxify : ActiveSpell
+public class Toxify : ReusableSpell
 {
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
     public override DamageType MainDamageType => DamageType.Poison;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
     public override SpellColor Color => SpellColor.Green;
     public override Rarity Rarity => Rarity.Common;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
     public override SpellLabel Label => SpellLabel.Toxify;
     public override string Name => "Toxify";
-    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage, Apply " + stackAmount + " Poison";
     protected override int startCooldown => 3;
     protected override int startManaCost => 2;
-    private int damageAmount = 6;
-    private int stackAmount = 3;
-    private int changeDamageAmountOnUpgrade = 3;
+
+    public Toxify(int damageAmount = 6, int stackAmount = 3) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
 
     protected override void SetKeywords()
     {
@@ -1334,91 +1054,79 @@ public class Toxify : ActiveSpell
         AfflictionKeywords.Add(AfflictionType.Poison);
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, MainDamageType, DamageSource.ActiveSpell);
-        CombatManager._Instance.AddAffliction(AfflictionType.Poison, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        damageAmount += changeDamageAmountOnUpgrade;
+        AddSpellEffects(
+            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Poison, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
     }
 }
 
-public class DoubleHit : ActiveSpell
+public class DoubleHit : ReusableSpell
 {
-    public override DamageType MainDamageType => DamageType.Default;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
-    public override SpellLabel Label => SpellLabel.Jarkai;
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellLabel Label => SpellLabel.DoubleHit;
     public override SpellColor Color => SpellColor.Red;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
     public override Rarity Rarity => Rarity.Common;
-    public override string Name => "Jarkai";
-    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage Twice";
+    public override string Name => "Double Hit";
     protected override int startCooldown => 3;
     protected override int startManaCost => 2;
-    private int damageAmount = 7;
-    private int changeDamageAmountOnUpgrade = 2;
 
-    protected override void Effect()
+    public DoubleHit(int damageAmount = 7) : base()
     {
-        for (int i = 0; i < 2; i++)
-        {
-            CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, MainDamageType, DamageSource.ActiveSpell);
-        }
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
     }
 
-    protected override void OnUpgrade(int effectDirection)
+    protected override void SetSpellEffects()
     {
-        damageAmount += changeDamageAmountOnUpgrade;
+        AddSpellEffects(new SpellMultiAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), () => 2, MainDamageType, Target.Other));
     }
 }
 
-public class Flurry : ActiveSpell
+public class Flurry : ReusableSpell
 {
-    public override DamageType MainDamageType => DamageType.Default;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellLabel Label => SpellLabel.Flurry;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
     public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Uncommon;
     public override string Name => "Flurry";
-    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage " + hitAmount + " Times";
     protected override int startCooldown => 4;
     protected override int startManaCost => 3;
-    private int damageAmount = 3;
-    private int hitAmount = 4;
-    private int changeHitAmountOnUpgrade = 1;
 
-    protected override void Effect()
+    public Flurry(int damageAmount = 3, int hitAmount = 4) : base()
     {
-        for (int i = 0; i < hitAmount; i++)
-        {
-            CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, MainDamageType, DamageSource.ActiveSpell);
-        }
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+        AddSpellStat(SpellStat.HitAmount, hitAmount);
     }
 
-    protected override void OnUpgrade(int effectDirection)
+    protected override void SetSpellEffects()
     {
-        hitAmount += changeHitAmountOnUpgrade;
+        AddSpellEffects(new SpellMultiAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)),
+            () => GetSpellStat(SpellStat.HitAmount), MainDamageType, Target.Other));
     }
 }
 
-public class Electrifry : ActiveSpell
+public class Electrifry : ReusableSpell
 {
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
     public override DamageType MainDamageType => DamageType.Electric;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
     public override SpellLabel Label => SpellLabel.Electrifry;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Afflict;
     public override SpellColor Color => SpellColor.Blue;
     public override Rarity Rarity => Rarity.Rare;
     public override string Name => "Electrifry";
-    protected override string toolTipText => "Apply " + electrocutedAmount + " Electrocuted, Apply " + burnAmount + " Burn";
     protected override int startCooldown => 2;
     protected override int startManaCost => 4;
 
-    private int electrocutedAmount = 5;
-    private int burnAmount = 3;
-    private int changeElectrocutedAmountOnUpgrade = 2;
-    private int changeBurnAmountOnUpgrade = 2;
+    public Electrifry(int electrocutedAmount = 7, int burnAmount = 2) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, electrocutedAmount);
+        AddSpellStat(SpellStat.Aff2StackAmount, burnAmount);
+    }
 
     protected override void SetKeywords()
     {
@@ -1428,33 +1136,31 @@ public class Electrifry : ActiveSpell
         AfflictionKeywords.Add(AfflictionType.Burn);
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Electrocuted, PassValueThroughEffectivenessMultiplier(electrocutedAmount), Target.Enemy);
-        CombatManager._Instance.AddAffliction(AfflictionType.Burn, PassValueThroughEffectivenessMultiplier(burnAmount), Target.Enemy);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        electrocutedAmount += changeElectrocutedAmountOnUpgrade;
-        burnAmount += changeBurnAmountOnUpgrade;
+        AddSpellEffects(
+            new SpellApplyAfflictionEffect(AfflictionType.Electrocuted, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Burn, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff2StackAmount)), Target.Other));
     }
 }
 
-public class ExposeFlesh : ActiveSpell
+public class ExposeFlesh : ReusableSpell
 {
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
     public override DamageType MainDamageType => DamageType.Evil;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
     public override SpellColor Color => SpellColor.Red;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
     public override Rarity Rarity => Rarity.Uncommon;
     public override SpellLabel Label => SpellLabel.ExposeFlesh;
     public override string Name => "Expose Flesh";
-    protected override string toolTipText => "Apply " + stackAmount + " Vulnerable, Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage";
     protected override int startCooldown => 2;
     protected override int startManaCost => 2;
-    private int damageAmount = 10;
-    private int stackAmount = 2;
-    private int changeStackAmountOnUpgrade = 1;
+
+    public ExposeFlesh(int damageAmount = 10, int stackAmount = 2) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
 
     protected override void SetKeywords()
     {
@@ -1462,33 +1168,31 @@ public class ExposeFlesh : ActiveSpell
         AfflictionKeywords.Add(AfflictionType.Vulnerable);
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, MainDamageType, DamageSource.ActiveSpell);
-        CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        stackAmount += changeStackAmountOnUpgrade;
+        AddSpellEffects(
+            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Vulnerable, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
     }
 }
 
-public class Cripple : ActiveSpell
+public class Cripple : ReusableSpell
 {
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
     public override DamageType MainDamageType => DamageType.Evil;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
     public override SpellLabel Label => SpellLabel.Cripple;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
     public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Common;
     public override string Name => "Cripple";
-    protected override string toolTipText => "Apply " + stackAmount + " Weak, Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage";
     protected override int startCooldown => 2;
     protected override int startManaCost => 2;
 
-    private int damageAmount = 10;
-    private int stackAmount = 2;
-    private int changeStackAmountOnUpgrade = 2;
+    public Cripple(int damageAmount = 6, int stackAmount = 3) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
 
     protected override void SetKeywords()
     {
@@ -1496,59 +1200,56 @@ public class Cripple : ActiveSpell
         AfflictionKeywords.Add(AfflictionType.Weak);
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, MainDamageType, DamageSource.ActiveSpell);
-        CombatManager._Instance.AddAffliction(AfflictionType.Weak, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        stackAmount += changeStackAmountOnUpgrade;
+        AddSpellEffects(
+            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Weak, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
     }
 }
 
-public class TradeBlood : ActiveSpell
+public class TradeBlood : ReusableSpell
 {
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
     public override DamageType MainDamageType => DamageType.Evil;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
     public override SpellColor Color => SpellColor.Red;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
     public override Rarity Rarity => Rarity.Rare;
     public override SpellLabel Label => SpellLabel.TradeBlood;
     public override string Name => "Trade Blood";
-    protected override string toolTipText => "Lose " + selfDamageAmount + " HP, Deal " +
-        GetCalculatedDamageEnemy(otherDamageAmount) + " Damage";
     protected override int startCooldown => 4;
     protected override int startManaCost => 1;
 
-    private int selfDamageAmount = 2;
-    private int otherDamageAmount = 15;
-    private int changeOtherDamageAmountOnUpgrade = 5;
-
-    protected override void Effect()
+    public TradeBlood(int selfDamageAmount = 2, int otherDamageAmount = 15) : base()
     {
-        GameManager._Instance.AlterPlayerCurrentHP(-selfDamageAmount, MainDamageType);
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(otherDamageAmount), Target.Enemy, Target.Character, MainDamageType, DamageSource.ActiveSpell);
+        AddSpellStat(SpellStat.OtherDamageAmount, otherDamageAmount);
+        AddSpellStat(SpellStat.SelfDamageAmount, selfDamageAmount);
     }
 
-    protected override void OnUpgrade(int effectDirection)
+    protected override void SetSpellEffects()
     {
-        otherDamageAmount += changeOtherDamageAmountOnUpgrade;
+        AddSpellEffects(
+            new SpellAlterHPEffect(() => -GetSpellStat(SpellStat.SelfDamageAmount), MainDamageType, Target.Self),
+            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
     }
 }
 
-public class Excite : ActiveSpell
+public class Excite : ReusableSpell
 {
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Utility;
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Fire;
     public override SpellColor Color => SpellColor.Red;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
     public override Rarity Rarity => Rarity.Uncommon;
     public override SpellLabel Label => SpellLabel.Excite;
     public override string Name => "Excite";
-    protected override string toolTipText => "Gain " + stackAmount + " Embolden";
     protected override int startCooldown => 2;
     protected override int startManaCost => 2;
-    private int stackAmount = 2;
-    private int changeStackAmountOnUpgrade = 2;
+
+    public Excite(int stackAmount = 2) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
 
     protected override void SetKeywords()
     {
@@ -1556,30 +1257,29 @@ public class Excite : ActiveSpell
         AfflictionKeywords.Add(AfflictionType.Embolden);
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Embolden, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Character);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        stackAmount += changeStackAmountOnUpgrade;
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Embolden, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
     }
 }
 
-public class Overexcite : ActiveSpell
+public class Overexcite : ReusableSpell
 {
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Utility;
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Fire;
     public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Rare;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
     public override string Name => "Overexcite";
     public override SpellLabel Label => SpellLabel.Overexcite;
-    protected override string toolTipText => "Gain " + emboldenedAmount + " Embolden, Gain " + vulnerableAmount + " Vulnerable";
     protected override int startCooldown => 2;
     protected override int startManaCost => 2;
-    private int emboldenedAmount = 5;
-    private int vulnerableAmount = 3;
-    private int changeVulnerableAmountOnupgrade = -2;
+
+    public Overexcite(int emboldenAmount = 5, int vulnerableAmount = 2) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, emboldenAmount);
+        AddSpellStat(SpellStat.Aff2StackAmount, vulnerableAmount);
+    }
 
     protected override void SetKeywords()
     {
@@ -1588,30 +1288,29 @@ public class Overexcite : ActiveSpell
         AfflictionKeywords.Add(AfflictionType.Vulnerable);
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Embolden, PassValueThroughEffectivenessMultiplier(emboldenedAmount), Target.Character);
-        CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, PassValueThroughEffectivenessMultiplier(vulnerableAmount), Target.Character);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        vulnerableAmount += changeVulnerableAmountOnupgrade;
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Embolden, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self),
+            new SpellApplyAfflictionEffect(AfflictionType.Vulnerable, () => GetSpellStat(SpellStat.Aff2StackAmount), Target.Self));
     }
 }
 
-public class Forethought : ActiveSpell
+public class Phase : ReusableSpell
 {
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Utility;
-    public override SpellLabel Label => SpellLabel.Forethought;
-    public override SpellColor Color => SpellColor.Green;
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellLabel Label => SpellLabel.Phase;
+    public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Rare;
-    public override string Name => "Forethought";
-    protected override string toolTipText => "Gain " + stackAmount + " Intangible";
+    public override string Name => "Phase";
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
     protected override int startCooldown => 5;
     protected override int startManaCost => 2;
-    private int stackAmount = 1;
-    private int changeCooldownOnUpgrade = -1;
+
+    public Phase(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
 
     protected override void SetKeywords()
     {
@@ -1619,29 +1318,28 @@ public class Forethought : ActiveSpell
         AfflictionKeywords.Add(AfflictionType.Intangible);
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Intangible, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Character);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        AlterMaxCooldown(changeCooldownOnUpgrade);
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Intangible, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
     }
 }
 
-public class Reverberate : ActiveSpell
+public class Reverberate : ReusableSpell
 {
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Utility;
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Physical;
     public override SpellColor Color => SpellColor.Blue;
     public override Rarity Rarity => Rarity.Rare;
     public override string Name => "Reverberate";
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
     public override SpellLabel Label => SpellLabel.Reverberate;
-    protected override string toolTipText => "Gain " + stackAmount + " Echo";
     protected override int startCooldown => 5;
     protected override int startManaCost => 4;
-    private int stackAmount = 2;
-    private int changeStackAmountOnUpgrade = 1;
+
+    public Reverberate(int stackAmount = 2) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
 
     protected override void SetKeywords()
     {
@@ -1649,31 +1347,28 @@ public class Reverberate : ActiveSpell
         AfflictionKeywords.Add(AfflictionType.Echo);
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Echo, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Character);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        stackAmount += changeStackAmountOnUpgrade;
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Echo, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
     }
 }
 
-public class ImpartialAid : ActiveSpell
+public class ImpartialAid : ReusableSpell
 {
     public override DamageType MainDamageType => DamageType.Heal;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Utility;
-    public override SpellColor Color => SpellColor.Blue;
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override SpellColor Color => SpellColor.Green;
     public override Rarity Rarity => Rarity.Rare;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Heal;
     public override string Name => "Impartial Aid";
     public override SpellLabel Label => SpellLabel.ImpartialAid;
-    protected override string toolTipText => "All Combatents Heal for " + healAmount + " HP";
-    protected override int startCooldown => 5;
+    protected override int startCooldown => 7;
     protected override int startManaCost => 5;
 
-    private int healAmount = 2;
-    private int changeHealAmountOnUpgrade = 1;
+    public ImpartialAid(int healAmount = 3) : base()
+    {
+        AddSpellStat(SpellStat.HealAmount, healAmount);
+    }
 
     protected override void SetKeywords()
     {
@@ -1681,61 +1376,56 @@ public class ImpartialAid : ActiveSpell
         GeneralKeywords.Add(ToolTipKeyword.Heal);
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.AlterCombatentHP(PassValueThroughEffectivenessMultiplier(healAmount), Target.Character, DamageType.Heal);
-        CombatManager._Instance.AlterCombatentHP(PassValueThroughEffectivenessMultiplier(healAmount), Target.Enemy, DamageType.Heal);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        AlterManaCost(changeHealAmountOnUpgrade);
+        AddSpellEffects(new SpellAlterHPEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.HealAmount)), DamageType.Heal, Target.Both));
     }
 }
 
-public class WitchesWill : ActiveSpell
+public class WitchesWill : ReusableSpell
 {
-    public override DamageType MainDamageType => DamageType.Default;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
     public override SpellLabel Label => SpellLabel.WitchesWill;
-    public override SpellColor Color => SpellColor.Grey;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
+    public override SpellColor Color => GameManager._Instance.GetCharacterColor();
     public override Rarity Rarity => Rarity.Basic;
     public override string Name => "Witches Will";
-    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage";
     protected override int startCooldown => 1;
     protected override int startManaCost => 1;
-    private int damageAmount = 5;
-    private int changeDamageAmountOnUpgrade = 2;
 
-    protected override void SetBatches()
+    public WitchesWill(int damageAmount = 4) : base()
     {
-        Batches.Add(new SpellNoteBatch(2, .5f, 0.5f));
-        Batches.Add(new SpellNoteBatch(2, .45f, 0.25f));
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
     }
 
-    protected override void Effect()
+    protected override void SetPrepTime()
     {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, MainDamageType, DamageSource.ActiveSpell);
+        AddSpellStat(SpellStat.PrepTime, 1);
     }
 
-    protected override void OnUpgrade(int effectDirection)
+    protected override void SetSpellEffects()
     {
-        damageAmount += changeDamageAmountOnUpgrade;
+        AddSpellEffects(new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
     }
 }
 
-public class WitchesWard : ActiveSpell
+public class WitchesWard : ReusableSpell
 {
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Defensive;
-    public override SpellColor Color => SpellColor.Grey;
+    public override ReusableSpellType SpellType => ReusableSpellType.Defensive;
+    public override DamageType MainDamageType => DamageType.Ward;
+    public override SpellColor Color => GameManager._Instance.GetCharacterColor();
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Defend;
     public override Rarity Rarity => Rarity.Basic;
     public override SpellLabel Label => SpellLabel.WitchesWard;
     public override string Name => "Witches Ward";
-    protected override string toolTipText => "Gain " + GetCalculatedWard(wardAmount, Target.Character) + " Ward";
     protected override int startCooldown => 2;
     protected override int startManaCost => 1;
-    private int wardAmount = 4;
-    private int changeWardAmountOnUpgrade = 2;
+
+    public WitchesWard(int wardAmount = 4) : base()
+    {
+        AddSpellStat(SpellStat.SelfWardAmount, wardAmount);
+    }
 
     protected override void SetKeywords()
     {
@@ -1743,32 +1433,31 @@ public class WitchesWard : ActiveSpell
         GeneralKeywords.Add(ToolTipKeyword.Ward);
     }
 
-    protected override void SetBatches()
+    protected override void SetPrepTime()
+    {
+        AddSpellStat(SpellStat.PrepTime, 1);
+    }
+
+    protected override void SetNoteBatches()
     {
         Batches.Add(new SpellNoteBatch(0, 0, 0.25f));
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.GiveCombatentWard(PassValueThroughEffectivenessMultiplier(wardAmount), Target.Character);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        wardAmount += changeWardAmountOnUpgrade;
+        AddSpellEffects(new SpellWardEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.SelfWardAmount)), Target.Self));
     }
 }
 
-public class Greed : ActiveSpell
+public class Greed : ReusableSpell
 {
     public override DamageType MainDamageType => DamageType.Evil;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
     public override SpellColor Color => SpellColor.Curse;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
     public override Rarity Rarity => Rarity.Common;
     public override SpellLabel Label => SpellLabel.Greed;
-    protected override Vector2Int setUpgradeStatusTo => new Vector2Int(1, 1);
     public override string Name => "Greed";
-    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage to All Combatents";
     protected override int startCooldown => 3;
     protected override int startManaCost => 2;
     private int currencyAmount => GameManager._Instance.GetPlayerCurrency();
@@ -1780,117 +1469,88 @@ public class Greed : ActiveSpell
         GeneralKeywords.Add(ToolTipKeyword.Gold);
     }
 
-    protected override void SetBatches()
+    protected override void SetSpellEffects()
     {
-        Batches.Add(new SpellNoteBatch(3, 0.4f, 0.25f));
-    }
-
-    protected override void Effect()
-    {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, MainDamageType, DamageSource.ActiveSpell);
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Character, Target.Enemy, MainDamageType, DamageSource.ActiveSpell);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        throw new NotImplementedException();
+        AddSpellEffects(new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(damageAmount), MainDamageType, Target.Both));
     }
 }
 
-public class Anger : ActiveSpell
+public class Anger : ReusableSpell
 {
     public override DamageType MainDamageType => DamageType.Evil;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
     public override SpellColor Color => SpellColor.Curse;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
     public override Rarity Rarity => Rarity.Common;
     public override SpellLabel Label => SpellLabel.Anger;
-    protected override Vector2Int setUpgradeStatusTo => new Vector2Int(1, 1);
     public override string Name => "Anger";
-    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(damageAmount) + " Damage, Gain " + stackAmount + " Vulnerable";
     protected override int startCooldown => 3;
     protected override int startManaCost => 2;
-    private int stackAmount = 2;
-    private int damageAmount = 15;
 
-    protected override void SetBatches()
+    public Anger(int damageAmount = 15, int stackAmount = 2) : base()
     {
-        Batches.Add(new SpellNoteBatch(3, 0.4f, 0.25f));
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, MainDamageType, DamageSource.ActiveSpell);
-        CombatManager._Instance.AddAffliction(AfflictionType.Vulnerable, PassValueThroughEffectivenessMultiplier(stackAmount), Target.Enemy);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        throw new NotImplementedException();
+        AddSpellEffects(new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Vulnerable, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
     }
 }
 
-public class Frusteration : ActiveSpell
+public class Frusteration : ReusableSpell
 {
     public override DamageType MainDamageType => DamageType.Evil;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
     public override SpellColor Color => SpellColor.Curse;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
     public override Rarity Rarity => Rarity.Common;
     public override SpellLabel Label => SpellLabel.Frusteration;
-    protected override Vector2Int setUpgradeStatusTo => new Vector2Int(1, 1);
     public override string Name => "Frusteration";
-    protected override string toolTipText => "Deal " + GetCalculatedDamageEnemy(selfDamageAmount) + " Damage to Yourself, Deal " + GetCalculatedDamageEnemy(otherDamageAmount)
-        + " Damage to the Enemy. On use, increase the Damage dealt to Yourself by " + selfDamageAmountIncrease;
     protected override int startCooldown => 3;
     protected override int startManaCost => 2;
-    private int defaultSelfDamageAmount = 2;
-    private int selfDamageAmount = 2;
-    private int otherDamageAmount = 20;
-    private int selfDamageAmountIncrease = 2;
 
-    protected override void SetParameters()
+    private int increaseSelfDamageAmountBy = 2;
+    private int currentSelfDamageAmount;
+
+    public Frusteration(int otherDamageAmount = 15, int selfDamageAmount = 2) : base()
     {
-        base.SetParameters();
-        selfDamageAmount = defaultSelfDamageAmount;
+        AddSpellStat(SpellStat.OtherDamageAmount, otherDamageAmount);
+        AddSpellStat(SpellStat.SelfDamageAmount, selfDamageAmount);
+        currentSelfDamageAmount = GetSpellStat(SpellStat.SelfDamageAmount);
+
+        // Add Callbacks
+        AddNamedActionCallback(SpellCallbackType.OnCast, () => "Increase the amount of Damage Dealt to Self by " + increaseSelfDamageAmountBy,
+            () => currentSelfDamageAmount += increaseSelfDamageAmountBy);
+        AddNamedActionCallback(SpellCallbackType.OnCombatReset, () => "", () => currentSelfDamageAmount = GetSpellStat(SpellStat.SelfDamageAmount));
     }
 
-    protected override void SetBatches()
+    protected override void SetSpellEffects()
     {
-        Batches.Add(new SpellNoteBatch(3, 0.4f, 0.25f));
-    }
-
-    protected override void Effect()
-    {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(selfDamageAmount), Target.Character, Target.Character, MainDamageType, DamageSource.ActiveSpell);
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(otherDamageAmount), Target.Enemy, Target.Character, MainDamageType, DamageSource.ActiveSpell);
-        selfDamageAmount += selfDamageAmountIncrease;
-    }
-
-    protected override void ResetOnCombatReset()
-    {
-        base.ResetOnCombatReset();
-        selfDamageAmount = defaultSelfDamageAmount;
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        throw new NotImplementedException();
+        AddSpellEffects(new SpellSingleAttackEffect(() => currentSelfDamageAmount, MainDamageType, Target.Self),
+            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
     }
 }
 
-public class ChannelCurrent : ActiveSpell
+public class ChannelCurrent : ReusableSpell
 {
     public override DamageType MainDamageType => DamageType.Electric;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
     public override SpellLabel Label => SpellLabel.ChannelCurrent;
     public override SpellColor Color => SpellColor.Blue;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Afflict;
     public override Rarity Rarity => Rarity.Common;
     public override string Name => "Channel Current";
-    protected override string toolTipText => "Apply " + weakAmount + " Weak, Apply " + electrocutedAmount + " Electrocuted";
     protected override int startCooldown => 3;
     protected override int startManaCost => 2;
-    private int electrocutedAmount = 2;
-    private int weakAmount = 2;
-    private int changeElectrocutedAmountOnUpgrade = 2;
+
+    public ChannelCurrent(int electrocutedAmount = 4, int weakAmount = 2) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, electrocutedAmount);
+        AddSpellStat(SpellStat.Aff2StackAmount, weakAmount);
+    }
 
     protected override void SetKeywords()
     {
@@ -1900,48 +1560,1107 @@ public class ChannelCurrent : ActiveSpell
         AfflictionKeywords.Add(AfflictionType.Paralyze);
     }
 
-    protected override void Effect()
+    protected override void SetSpellEffects()
     {
-        CombatManager._Instance.AddAffliction(AfflictionType.Weak, PassValueThroughEffectivenessMultiplier(weakAmount), Target.Enemy);
-        CombatManager._Instance.AddAffliction(AfflictionType.Electrocuted, PassValueThroughEffectivenessMultiplier(electrocutedAmount), Target.Enemy);
-    }
-
-    protected override void OnUpgrade(int effectDirection)
-    {
-        electrocutedAmount += changeElectrocutedAmountOnUpgrade;
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Electrocuted, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Weak, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff2StackAmount)), Target.Other));
     }
 }
 
-public class QuickCast : ActiveSpell
+public class QuickCast : ReusableSpell
 {
-    public override DamageType MainDamageType => DamageType.Default;
-    public override ActiveSpellType ActiveSpellType => ActiveSpellType.Offensive;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
     public override SpellLabel Label => SpellLabel.QuickCast;
-    public override SpellColor Color => SpellColor.Grey;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
+    public override SpellColor Color => SpellColor.Red;
     public override Rarity Rarity => Rarity.Common;
     public override string Name => "Quick Cast";
-    protected override string toolTipText => "Deal " + damageAmount + " Damage, Draw " + drawAmount + " Spell" + (drawAmount > 1 ? "s" : "") + " when Queued";
     protected override int startCooldown => 3;
     protected override int startManaCost => 2;
-    private int damageAmount = 5;
-    private int drawAmount = 1;
-    private int changeDrawAmountOnUpgrade = 1;
 
-    protected override void Effect()
+    public QuickCast(int damageAmount = 6, int drawAmount = 1) : base()
     {
-        CombatManager._Instance.AttackCombatent(PassValueThroughEffectivenessMultiplier(damageAmount), Target.Enemy, Target.Character, MainDamageType, DamageSource.ActiveSpell);
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+        AddSpellStat(SpellStat.DrawAmount, drawAmount);
+
+        // Add Callback
+        AddNamedActionCallback(SpellCallbackType.OnQueue, () => "Draw " + GetSpellStat(SpellStat.DrawAmount) + " Spells",
+            () => CombatManager._Instance.CallDrawSpells(GetSpellStat(SpellStat.DrawAmount)));
     }
 
-    protected override void OnUpgrade(int effectDirection)
+    protected override void SetSpellEffects()
     {
-        drawAmount += changeDrawAmountOnUpgrade;
-    }
-
-    public override void OnQueue()
-    {
-        base.OnQueue();
-        CombatManager._Instance.CallDrawSpells(drawAmount);
+        AddSpellEffects(new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
     }
 }
 
-# endregion
+public class PoisonTips : PowerSpell
+{
+    public override string Name => "Poison Tips";
+    public override SpellLabel Label => SpellLabel.PoisonTips;
+    public override DamageType MainDamageType => DamageType.Poison;
+    public override SpellColor Color => SpellColor.Green;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override Rarity Rarity => Rarity.Common;
+    protected override int startManaCost => 3;
+
+    public PoisonTips(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Embalmed);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Embalmed, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class StaticField : PowerSpell
+{
+    public override string Name => "Static Field";
+    public override SpellLabel Label => SpellLabel.StaticField;
+    public override DamageType MainDamageType => DamageType.Electric;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override SpellColor Color => SpellColor.Blue;
+    public override Rarity Rarity => Rarity.Common;
+    protected override int startManaCost => 3;
+
+    public StaticField(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Charged);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Charged, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class Inferno : PowerSpell
+{
+    public override string Name => "Inferno";
+    public override SpellLabel Label => SpellLabel.Inferno;
+    public override DamageType MainDamageType => DamageType.Fire;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Common;
+    protected override int startManaCost => 3;
+
+    public Inferno(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.TorchTipped);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.TorchTipped, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class CrushJoints : PowerSpell
+{
+    public override string Name => "Crush Joints";
+    public override SpellLabel Label => SpellLabel.CrushJoints;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Common;
+    protected override int startManaCost => 3;
+
+    public CrushJoints(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Brutish);
+        AfflictionKeywords.Add(AfflictionType.Vulnerable);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Brutish, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class BattleTrance : PowerSpell
+{
+    public override string Name => "Battle Trance";
+    public override SpellLabel Label => SpellLabel.BattleTrance;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Common;
+    protected override int startManaCost => 3;
+
+    public BattleTrance(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Amped);
+        AfflictionKeywords.Add(AfflictionType.Embolden);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Amped, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class MagicRain : PowerSpell
+{
+    public override string Name => "Magic Rain";
+    public override SpellLabel Label => SpellLabel.MagicRain;
+    public override DamageType MainDamageType => DamageType.Electric;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+
+    public override SpellColor Color => SpellColor.Blue;
+    public override Rarity Rarity => Rarity.Common;
+    protected override int startManaCost => 3;
+
+    public MagicRain(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Stormy);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Stormy, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class TeslaCoil : PowerSpell
+{
+    public override string Name => "Tesla Coil";
+    public override SpellLabel Label => SpellLabel.TeslaCoil;
+    public override DamageType MainDamageType => DamageType.Electric;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+
+    public override SpellColor Color => SpellColor.Blue;
+    public override Rarity Rarity => Rarity.Common;
+    protected override int startManaCost => 3;
+
+    public TeslaCoil(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Conducting);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Conducting, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class Injure : PowerSpell
+{
+    public override string Name => "Injure";
+    public override SpellLabel Label => SpellLabel.Injure;
+    public override DamageType MainDamageType => DamageType.Evil;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override SpellColor Color => SpellColor.Curse;
+    public override Rarity Rarity => Rarity.Common;
+    protected override int startManaCost => 3;
+
+    public Injure(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Hurt);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Hurt, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class Worry : PowerSpell
+{
+    public override string Name => "Worry";
+    public override SpellLabel Label => SpellLabel.Worry;
+    public override DamageType MainDamageType => DamageType.Evil;
+    public override SpellColor Color => SpellColor.Curse;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+
+    public override Rarity Rarity => Rarity.Common;
+    protected override int startManaCost => 3;
+
+    public Worry(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Worried);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Worried, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class Levitate : ReusableSpell
+{
+    public override string Name => "Levitate";
+    public override SpellLabel Label => SpellLabel.Levitate;
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    protected override int startManaCost => 3;
+    protected override int startCooldown => 2;
+
+    public Levitate(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Levitating, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class StudyPower : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellLabel Label => SpellLabel.StudyPower;
+    public override string Name => "Study Power";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public StudyPower(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Power);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Power, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class StudyProtection : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellLabel Label => SpellLabel.StudyProtection;
+    public override string Name => "Study Protection";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public StudyProtection(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Protection);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Protection, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class GhastlyGrasp : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
+    public override DamageType MainDamageType => DamageType.Evil;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
+    public override SpellLabel Label => SpellLabel.GhastlyGrasp;
+    public override string Name => "Ghastly Grasp";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public GhastlyGrasp(int damageAmount = 10) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
+    }
+}
+
+public class GhoulishAssault : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
+    public override DamageType MainDamageType => DamageType.Evil;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellLabel Label => SpellLabel.GhoulishAssault;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
+    public override string Name => "Ghastly Assault";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public GhoulishAssault(int damageAmount = 3, int hitAmount = 3) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+        AddSpellStat(SpellStat.HitAmount, hitAmount);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellMultiAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)),
+            () => GetSpellStat(SpellStat.HitAmount), MainDamageType, Target.Other));
+    }
+}
+
+public class Protect : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Defensive;
+    public override DamageType MainDamageType => DamageType.Ward;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellLabel Label => SpellLabel.Protect;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Defend;
+    public override string Name => "Protect";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public Protect(int wardAmount = 5) : base()
+    {
+        AddSpellStat(SpellStat.SelfWardAmount, wardAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        GeneralKeywords.Add(ToolTipKeyword.Ward);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellWardEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.SelfWardAmount)), Target.Self));
+    }
+}
+
+public class FlamingLashes : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
+    public override DamageType MainDamageType => DamageType.Fire;
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellLabel Label => SpellLabel.FlamingLashes;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
+    public override string Name => "Flaming Lashes";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public FlamingLashes(int damageAmount = 5, int hitAmount = 2, int burnAmount = 2) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+        AddSpellStat(SpellStat.HitAmount, hitAmount);
+        AddSpellStat(SpellStat.Aff1StackAmount, burnAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Burn);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellMultiAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), () => GetSpellStat(SpellStat.HitAmount), MainDamageType, Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Burn, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
+    }
+}
+
+public class ScaldingSplash : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
+    public override DamageType MainDamageType => DamageType.Holy;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellLabel Label => SpellLabel.ScaldingSplash;
+    public override string Name => "Scalding Splash";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public ScaldingSplash(int damageAmount = 6, int burnAmount = 3) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+        AddSpellStat(SpellStat.Aff1StackAmount, burnAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Burn);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Burn, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
+    }
+}
+
+public class Blessed : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Holy;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellLabel Label => SpellLabel.CallUntoBlessing;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override string Name => "Call Unto Blessing";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public Blessed(int regenerationAmount = 3) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, regenerationAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Regeneration);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Regeneration, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class Recouperate : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Heal;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Heal;
+    public override SpellLabel Label => SpellLabel.Recouperate;
+    public override string Name => "Re-cup-erate";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public Recouperate(int healAmount = 5) : base()
+    {
+        AddSpellStat(SpellStat.HealAmount, healAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        GeneralKeywords.Add(ToolTipKeyword.Heal);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellAlterHPEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.HealAmount)), MainDamageType, Target.Self));
+    }
+}
+
+public class BrutalSmash : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
+    public override SpellLabel Label => SpellLabel.BrutalSmash;
+    public override string Name => "Brutal Smash";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public BrutalSmash(int damageAmount = 6, int vulnerableAmount = 2) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+        AddSpellStat(SpellStat.Aff1StackAmount, vulnerableAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Vulnerable);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Vulnerable, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
+    }
+}
+
+public class Bash : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
+    public override SpellLabel Label => SpellLabel.Bash;
+    public override string Name => "Bash";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public Bash(int damageAmount = 15) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
+    }
+}
+
+public class EnterFrenzy : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellColor Color => SpellColor.Red;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellLabel Label => SpellLabel.EnterFrenzy;
+    public override string Name => "Enter Frenzy";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public EnterFrenzy(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.BattleFrenzied);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.BattleFrenzied, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class CoatEdges : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellLabel Label => SpellLabel.CoatEdges;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override string Name => "Coat Edges";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public CoatEdges(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.PoisonCoated);
+        AfflictionKeywords.Add(AfflictionType.Poison);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.PoisonCoated, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class BreakSpirit : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Evil;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Afflict;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellLabel Label => SpellLabel.BreakSpirit;
+    public override string Name => "Break Spirit";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public BreakSpirit(int weakAmount = 1, int vulnerableAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, weakAmount);
+        AddSpellStat(SpellStat.Aff2StackAmount, vulnerableAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Weak);
+        AfflictionKeywords.Add(AfflictionType.Vulnerable);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(
+            new SpellApplyAfflictionEffect(AfflictionType.Weak, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Vulnerable, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
+    }
+}
+
+public class Belch : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Poison;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Afflict;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override SpellLabel Label => SpellLabel.Belch;
+    public override string Name => "Belch";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    public Belch(int blightAmount = 3) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, blightAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Blight);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(
+            new SpellApplyAfflictionEffect(AfflictionType.Blight, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
+    }
+}
+
+public class Ghost : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override SpellLabel Label => SpellLabel.Ghost;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Ghost";
+    protected override int startCooldown => 5;
+    protected override int startManaCost => 2;
+
+    public Ghost(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Ghostly);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Ghostly, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class Sap : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Evil;
+    public override SpellLabel Label => SpellLabel.Sap;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Afflict;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Sap";
+    protected override int startCooldown => 3;
+    protected override int startManaCost => 2;
+
+    public Sap(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Power);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Power, () => PassValueThroughEffectivenessMultiplier(-GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
+    }
+}
+
+
+public class Tackle : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellLabel Label => SpellLabel.Tackle;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Tackle";
+    protected override int startCooldown => 3;
+    protected override int startManaCost => 2;
+
+    public Tackle(int damageAmount = 8) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
+    }
+}
+
+public class GrowSpikes : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellLabel Label => SpellLabel.GrowSpikes;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Grow Spikes";
+    protected override int startCooldown => 3;
+    protected override int startManaCost => 2;
+
+    public GrowSpikes(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Thorns);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Thorns, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class LoseResolve : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellLabel Label => SpellLabel.LoseResolve;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Lose Resolve";
+    protected override int startCooldown => 3;
+    protected override int startManaCost => 2;
+
+    public LoseResolve(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+
+        AddSilentActionCallback(SpellCallbackType.OnCast, () => CombatManager._Instance.CallPlayDialogue("I wasn't made for this!", Caster));
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Jumpy);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Jumpy, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class Harden : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override SpellLabel Label => SpellLabel.Harden;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Harden";
+    protected override int startCooldown => 3;
+    protected override int startManaCost => 2;
+
+    public Harden(int stackAmount = 1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Protection);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Protection, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+    }
+}
+
+public class ViralChomp : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
+    public override DamageType MainDamageType => DamageType.Poison;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
+    public override SpellLabel Label => SpellLabel.ViralChomp;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Viral Chomp";
+    protected override int startCooldown => 3;
+    protected override int startManaCost => 2;
+
+    public ViralChomp(int damageAmount = 5, int blightAmount = 1, int weakAmount = 2) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+        AddSpellStat(SpellStat.Aff1StackAmount, blightAmount);
+        AddSpellStat(SpellStat.Aff2StackAmount, weakAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Blight);
+        AfflictionKeywords.Add(AfflictionType.Weak);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(
+            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Blight, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other),
+            new SpellApplyAfflictionEffect(AfflictionType.Weak, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff2StackAmount)), Target.Other));
+    }
+}
+
+public class Claw : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
+    public override SpellLabel Label => SpellLabel.Claw;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Claw";
+    protected override int startCooldown => 3;
+    protected override int startManaCost => 2;
+
+    public Claw(int damageAmount = 5) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(
+            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
+    }
+}
+
+public class HateFilledStrike : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Offensive;
+    public override DamageType MainDamageType => DamageType.Evil;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
+    public override SpellLabel Label => SpellLabel.HateFilledStrike;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Hate Filled Strike";
+    protected override int startCooldown => 3;
+    protected override int startManaCost => 2;
+
+    public HateFilledStrike(int damageAmount = 10) : base()
+    {
+        AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(
+            new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
+    }
+}
+
+public class Struggle : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellLabel Label => SpellLabel.Struggle;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Struggle";
+    protected override int startCooldown => 3;
+    protected override int startManaCost => 2;
+
+    public Struggle(int shackledAmount = -1, int protectionAmount = -1) : base()
+    {
+        AddSpellStat(SpellStat.Aff1StackAmount, shackledAmount);
+        AddSpellStat(SpellStat.Aff2StackAmount, protectionAmount);
+    }
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Shackled);
+        AfflictionKeywords.Add(AfflictionType.Protection);
+    }
+
+    protected override void SetNoteBatches()
+    {
+        List<ScreenQuadrant> screenOptions = new List<ScreenQuadrant>() { ScreenQuadrant.BottomLeft, ScreenQuadrant.BottomRight,
+            ScreenQuadrant.TopLeft, ScreenQuadrant.TopRight };
+        ScreenQuadrant q1 = RandomHelper.GetRandomFromList(screenOptions);
+        screenOptions.Remove(q1);
+        ScreenQuadrant q2 = RandomHelper.GetRandomFromList(screenOptions);
+        screenOptions.Remove(q2);
+        ScreenQuadrant q3 = RandomHelper.GetRandomFromList(screenOptions);
+        screenOptions.Remove(q3);
+        ScreenQuadrant q4 = screenOptions[0];
+
+        Batches.Add(new SpellNoteBatch(new List<SpellNote>()
+        {
+            new SpellNote(.5f, q1),
+            new SpellNote(.45f, q2),
+            new SpellNote(.4f, q3),
+            new SpellNote(.35f, q4),
+        }, 0));
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(
+            new SpellApplyAfflictionEffect(AfflictionType.Shackled, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self),
+            new SpellApplyAfflictionEffect(AfflictionType.Protection, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+    }
+}
+
+public class Unleash : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Physical;
+    public override SpellLabel Label => SpellLabel.Unleash;
+    public override SpellColor Color => SpellColor.Enemy;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Unleash";
+    protected override int startCooldown => 3;
+    protected override int startManaCost => 2;
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Shackled);
+        AfflictionKeywords.Add(AfflictionType.Protection);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellCleanseAfflictionsEffect(Target.Self, Sign.Negative));
+    }
+}
+
+public class BurnBrighter : ReusableSpell
+{
+    public override ReusableSpellType SpellType => ReusableSpellType.Utility;
+    public override DamageType MainDamageType => DamageType.Fire;
+    public override SpellLabel Label => SpellLabel.BurnBrighter;
+    public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Buff;
+    public override SpellColor Color => SpellColor.Red;
+    public override Rarity Rarity => Rarity.Common;
+    public override string Name => "Burn Brighter";
+    protected override int startCooldown => 2;
+    protected override int startManaCost => 1;
+
+    protected override void SetKeywords()
+    {
+        base.SetKeywords();
+        AfflictionKeywords.Add(AfflictionType.Shackled);
+        AfflictionKeywords.Add(AfflictionType.Protection);
+    }
+
+    protected override void SetPrepTime()
+    {
+        AddSpellStat(SpellStat.PrepTime, 1);
+    }
+
+    protected override void SetSpellEffects()
+    {
+        AddSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Power, () => 2, Target.Self));
+        AddSpellEffectCallback(SpellCallbackType.OnPlayerTurnEnd, new SpellApplyAfflictionEffect(AfflictionType.Power, () => -2, Target.Self));
+    }
+}

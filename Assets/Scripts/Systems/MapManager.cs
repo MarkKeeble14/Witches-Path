@@ -12,6 +12,7 @@ public class MapManager : MonoBehaviour
     [SerializeField] private float graceRange = 0.1f;
     [SerializeField] private float buildConnectorDelay;
     [SerializeField] private string nextStage;
+    [SerializeField] private Map map;
 
     [SerializeField] private SerializableDictionary<string, GameOccurance> uniqueGameOccurances = new SerializableDictionary<string, GameOccurance>();
 
@@ -20,7 +21,6 @@ public class MapManager : MonoBehaviour
         return uniqueGameOccurances[key];
     }
 
-    [SerializeField] private Map map;
     private CanvasGroup mapCV;
 
     public bool HasNextStage => nextStage.Length > 0;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "Character", menuName = "Character")]
@@ -19,8 +20,6 @@ public class Character : ScriptableObject
     [SerializeField] private int startingClothierCurrency;
 
     [SerializeField] private SpellLabel defaultActiveSpell;
-    [SerializeField] private SpellLabel defaultPassiveSpell;
-
 
     [Header("Combat Settings")]
     [Header("Health")]
@@ -111,14 +110,9 @@ public class Character : ScriptableObject
         return combatSprite;
     }
 
-    public SpellLabel GetDefaultActiveSpell()
+    public SpellLabel GetDefaultSpell()
     {
         return defaultActiveSpell;
-    }
-
-    public SpellLabel GetDefaultPassiveSpell()
-    {
-        return defaultPassiveSpell;
     }
 
     public SpellColor GetColor()

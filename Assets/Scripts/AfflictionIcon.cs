@@ -48,7 +48,6 @@ public class AfflictionIcon : MonoBehaviour, IPointerEnterHandler, IPointerExitH
             }
         }
 
-
         // Set Transforms Actual Scale Scale
         toScale.localScale = targetScale * Vector3.one;
     }

@@ -21,10 +21,9 @@ public enum EventLabel
     TraumaRecall,
     BookOfTheAmnesiac,
     BookOfTheRepurposed,
-    BookOfTheStudious,
-    AngerForUpgrade,
+    TakeASip,
+    RemoveTwoForAnger,
     ASuspiciousTome,
-    TakeASip
 }
 
 public abstract class OptionEvent
@@ -210,10 +209,8 @@ public abstract class OptionEvent
                 return new BookOfTheAmnesiac();
             case EventLabel.BookOfTheRepurposed:
                 return new BookOfTheRepurposed();
-            case EventLabel.BookOfTheStudious:
-                return new BookOfTheStudious();
-            case EventLabel.AngerForUpgrade:
-                return new AngerForUpgrade();
+            case EventLabel.RemoveTwoForAnger:
+                return new RemoveTwoForAnger();
             case EventLabel.ASuspiciousTome:
                 return new ASuspiciousTome();
             case EventLabel.TakeASip:
@@ -395,7 +392,7 @@ public class TravellersDelivery : OptionEvent
                 }),
                 MakeEventOptionOutcomeWithChance(50, "The traveller notices your windup and manages to kick your shin before running off.", delegate
                 {
-                    GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Default);
+                    GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Physical);
                 })));
 
         // 3: Leave
@@ -487,7 +484,7 @@ public class WitchesHut : OptionEvent
                 }),
                 MakeEventOptionOutcomeWithChance(10, MakeEventOptionOutcome(failText, delegate
                 {
-                    GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Default);
+                    GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Physical);
                 })
                 )));
 
@@ -502,7 +499,7 @@ public class WitchesHut : OptionEvent
                 }),
                 MakeEventOptionOutcomeWithChance(40, MakeEventOptionOutcome(failText, delegate
                 {
-                    GameManager._Instance.AlterPlayerCurrentHP(-(loseHPAmount * 2), DamageType.Default);
+                    GameManager._Instance.AlterPlayerCurrentHP(-(loseHPAmount * 2), DamageType.Physical);
                 })
                 )));
 
@@ -517,7 +514,7 @@ public class WitchesHut : OptionEvent
                 }),
                 MakeEventOptionOutcomeWithChance(75, MakeEventOptionOutcome(failText, delegate
                 {
-                    GameManager._Instance.AlterPlayerCurrentHP(-(loseHPAmount * 3), DamageType.Default);
+                    GameManager._Instance.AlterPlayerCurrentHP(-(loseHPAmount * 3), DamageType.Physical);
                 })
                 )));
 
@@ -572,7 +569,7 @@ public class ArmShapedHole : OptionEvent
             MakeEventOptionOutcomeWithChance(failureOdds, "N/A", delegate
             {
                 UpdateEventText("<shake>" + GetHurtPhrase() + "...</shake> Try Again?");
-                GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Default);
+                GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Physical);
                 loseHPAmount += 1;
                 successOdds += 5;
                 EventManager._Instance.ChainEvent(this);
@@ -840,17 +837,17 @@ public class GoldAtACost : OptionEvent
         int gainGoldAmount = GetEventSpec("GoldAmount");
         int loseHPAmount = Mathf.RoundToInt(((float)GetEventSpec("DamageAmount") / 100) * GameManager._Instance.GetMaxPlayerHP());
 
-        Spell pain = Spell.GetSpellOfType(SpellLabel.Hurt);
+        Spell injure = Spell.GetSpellOfType(SpellLabel.Injure);
 
         // 1: Offer
         ConditionalOption determined = new ConditionalOption(() => true,
             MakeEventOption("Be Determined", "Gain " + gainGoldAmount + " Gold, Become Cursed - Hurt",
             () => false,
-            t => spawnedToolTip = UIManager._Instance.SpawnSpellToolTip(pain, t), () => GameObject.Destroy(spawnedToolTip),
+            t => spawnedToolTip = UIManager._Instance.SpawnSpellToolTip(injure, t), () => GameObject.Destroy(spawnedToolTip),
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
                     GameManager._Instance.AlterGold(gainGoldAmount);
-                    GameManager._Instance.AddSpellToSpellBook(SpellLabel.Hurt);
+                    GameManager._Instance.AddSpellToSpellBook(injure);
                 })));
 
         ConditionalOption tactful = new ConditionalOption(() => true,
@@ -868,7 +865,7 @@ public class GoldAtACost : OptionEvent
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
                     GameManager._Instance.AlterGold(gainGoldAmount);
-                    GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Default);
+                    GameManager._Instance.AlterPlayerCurrentHP(-loseHPAmount, DamageType.Physical);
                 })));
 
         // Add Options
@@ -1016,7 +1013,7 @@ public class RemoveCurseForGold : OptionEvent
         int removalCost = RandomHelper.RandomIntExclusive(minCost, maxCost);
 
         int numCurses = GetEventSpec("NumCurses");
-        bool hasSufficientCurses = GameManager._Instance.GetSpellbook().GetNumSpellsMatchingCondition(spell => spell.Color == SpellColor.Curse) > numCurses;
+        bool hasSufficientCurses = GameManager._Instance.Spellbook.GetNumEntriesMatching(spell => spell.Color == SpellColor.Curse) > numCurses;
 
         Artifact deadCockroach = Artifact.GetArtifactOfType(ArtifactLabel.CockroachCarcass);
 
@@ -1087,7 +1084,7 @@ public class TavernkeeperRescue : OptionEvent
             () => false, t => spawnedToolTip = UIManager._Instance.SpawnGenericToolTips(vipCard, t), () => GameObject.Destroy(spawnedToolTip),
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
-                    GameManager._Instance.AlterPlayerCurrentHP(-interveneDamageAmount, DamageType.Default);
+                    GameManager._Instance.AlterPlayerCurrentHP(-interveneDamageAmount, DamageType.Physical);
                     GameManager._Instance.AddArtifact(vipCard);
                 })));
 
@@ -1101,7 +1098,7 @@ public class TavernkeeperRescue : OptionEvent
                 MakeEventOptionOutcomeWithChance(75, "Outcome Text", delegate
                 {
                     GameManager._Instance.AlterGold(distractGoldAmount);
-                    GameManager._Instance.AlterPlayerCurrentHP(-distractDamageAmount, DamageType.Default);
+                    GameManager._Instance.AlterPlayerCurrentHP(-distractDamageAmount, DamageType.Physical);
                 })));
 
         // 2: Leave
@@ -1150,7 +1147,7 @@ public class TraumaRecall : OptionEvent
 
         ConditionalOption wardOff = new ConditionalOption(() => true,
             MakeEventOption("Ward Off", "Lose Witches Ward",
-            () => GameManager._Instance.GetSpellbook().GetNumSpellsMatchingCondition(spell => spell.Label == SpellLabel.WitchesWard) <= 0,
+            () => GameManager._Instance.Spellbook.GetNumEntriesMatching(spell => spell.Label == SpellLabel.WitchesWard) <= 0,
             t => spawnedWitchesWardToolTip = UIManager._Instance.SpawnSpellToolTip(Spell.GetSpellOfType(SpellLabel.WitchesWard), t), () => GameObject.Destroy(spawnedWitchesWardToolTip),
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
@@ -1222,39 +1219,9 @@ public class BookOfTheRepurposed : OptionEvent
     }
 }
 
-public class BookOfTheStudious : OptionEvent
+public class RemoveTwoForAnger : OptionEvent
 {
-    public override EventLabel EventLabel => EventLabel.BookOfTheStudious;
-    public override Sprite EventArt => null;
-    public override string EventName => "Book of the Studious";
-    protected override string defaultEventText => "Text";
-    public override UseEventUI EventUI => UseEventUI.Story;
-
-    protected override void InitializeEventData()
-    {
-        // 1:
-        ConditionalOption read = new ConditionalOption(() => true,
-            MakeEventOption("Read", "Choose a Spell to Upgrade",
-            () => false,
-                MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
-                {
-                    EventManager._Instance.StartCoroutine(GameManager._Instance.UpgradeSpellSequence(spell => true));
-                })));
-
-        ConditionalOption leave = new ConditionalOption(() => true,
-            MakeEventOption("Leave", "", () => false,
-                MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
-                {
-                })));
-
-        // Add Options
-        AddOptions(read, leave);
-    }
-}
-
-public class AngerForUpgrade : OptionEvent
-{
-    public override EventLabel EventLabel => EventLabel.AngerForUpgrade;
+    public override EventLabel EventLabel => EventLabel.RemoveTwoForAnger;
     public override Sprite EventArt => null;
     public override string EventName => "Name";
     protected override string defaultEventText => "Text";
@@ -1268,18 +1235,18 @@ public class AngerForUpgrade : OptionEvent
 
         // 1:
         ConditionalOption option = new ConditionalOption(() => true,
-            MakeEventOption("Upgrade", "Choose a Spell to Upgrade, Become Cursed - Anger",
+            MakeEventOption("Remove", "Choose 2 Spells to Remove, Become Cursed - Anger",
             () => false, t => spawnedToolTip = UIManager._Instance.SpawnSpellToolTip(anger, t), () => GameObject.Destroy(spawnedToolTip),
-                MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
+                MakeEventOptionOutcomeWithChance(100, "You suddenly feel very upset about the loss of those cards...", delegate
                 {
-                    EventManager._Instance.StartCoroutine(GameManager._Instance.UpgradeSpellSequence(spell => true, 1,
+                    EventManager._Instance.StartCoroutine(GameManager._Instance.RemoveSpellSequence(spell => true, 2,
                         () => GameManager._Instance.AddSpellToSpellBook(anger)));
                 })));
 
         // 2: Leave
         ConditionalOption leave = new ConditionalOption(() => true,
             MakeEventOption("Leave", "", () => false,
-                MakeEventOptionOutcomeWithChance(100, "Outcome Text", null)));
+                MakeEventOptionOutcomeWithChance(100, "", null)));
 
         // Add Options
         AddOptions(option, leave);
@@ -1315,7 +1282,7 @@ public class ASuspiciousTome : OptionEvent
 
         // 2: Only Given the Optoin to Fight
         ConditionalOption fight = new ConditionalOption(() => stage == 1,
-            MakeEventOption("Fight", "Fight the now floating Book, Recieve the Option to View a new Book",
+            MakeEventOption("Fight", "Fight the attacking Book",
             () => false,
                 MakeEventOptionOutcomeWithChance(100, "", delegate
                 {

@@ -6,25 +6,16 @@ using TMPro;
 
 public enum UISection
 {
-    Merchant,
-    Librarian,
-    Clothier,
-    ClothierReforge,
-    ClothierStrengthen,
-    ClothierBrowse,
-    Innkeeper,
     HP,
     Mana,
     Gold,
     Attack,
     Defense,
     Pelts,
-    CampfireUpgradeBook,
     CampfireRest,
+    CampfireUpgradeBook,
+    CampfireUpgradeEquipment,
     CampfireBrewPotions,
-    ApproachChest,
-    ApproachLecturn,
-    CampfireUpgradeSpell
 }
 
 public class SetTextAndImageColors : MonoBehaviour

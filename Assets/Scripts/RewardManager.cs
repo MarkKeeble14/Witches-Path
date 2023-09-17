@@ -149,9 +149,13 @@ public class RewardManager : MonoBehaviour
         // Debug.Log("Adding Choose Spell Reward: ");
         SpellChoiceRewardDisplay spawned = Instantiate(spellChoiceRewardDisplay, rewardList);
 
+        List<Spell> spellChoices = new List<Spell>();
         for (int i = 0; i < NumSpellsPerChoice; i++)
         {
-            spawned.AddSpellChoice(GameManager._Instance.GetRandomSpellWithConditions(viableRewardFunc));
+            Spell spellChoice = GameManager._Instance.GetRandomSpellWithConditions(spell => viableRewardFunc(spell)
+            && !Spell.SpellListContainSpell(spellChoices, spell.Label));
+            spellChoices.Add(spellChoice);
+            spawned.AddSpellChoice(spellChoice);
         }
 
         spawned.Set("Choose a Spell Tome", rewardTypeSpriteDict[RewardType.Spell],

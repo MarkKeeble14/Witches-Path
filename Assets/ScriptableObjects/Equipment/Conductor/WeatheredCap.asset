@@ -15,7 +15,7 @@ MonoBehaviour:
   name: Weathered Cap
   rarity: 1
   damageChange: 0
-  defenseChange: 1
+  defenseChange: 0
   manaChange: 1
   AfflictionKeywords: 
   GeneralKeywords: 
