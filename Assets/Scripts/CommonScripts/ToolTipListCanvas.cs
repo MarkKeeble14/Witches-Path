@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System;
 
-public class ToolTipList : MonoBehaviour
+public class ToolTipListCanvas : MonoBehaviour
 {
     [SerializeField] private VerticalLayoutGroup listPrefab;
     [SerializeField] private RectTransform rect;

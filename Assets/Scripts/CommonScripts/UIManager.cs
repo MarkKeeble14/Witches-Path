@@ -69,7 +69,10 @@ public enum ToolTipKeyword
     PotionTargeter,
     PotionPotency,
     PotionAugmenter,
-    Multiplier
+    Multiplier,
+    Ethereal,
+    Exhaust,
+    Retain
 }
 
 public enum TextDecorationLabel
@@ -89,7 +92,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Transform parentToolTipsTo;
 
     [Header("Prefabs")]
-    [SerializeField] private ToolTipList toolTipList;
+    [SerializeField] private ToolTipListCanvas toolTipList;
     [SerializeField] private ToolTip toolTipPrefab;
     [SerializeField] private ConfirmPotionToolTip confirmPotionToolTipPrefab;
     [SerializeField] private VisualSpellDisplay spellToolTipPrefab;
@@ -455,7 +458,7 @@ public class UIManager : MonoBehaviour
     public GameObject SpawnSpellToolTip(Spell spell, Transform spawningOn)
     {
         // Spawn the ToolTipList object that will house all of our other tooltips
-        ToolTipList list = SpawnToolTipList(spawningOn, 1, 1, true, spellToolTipWidth);
+        ToolTipListCanvas list = SpawnToolTipList(spawningOn, 1, 1, true, spellToolTipWidth);
         Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
         GameObject spawned = SpawnToolTip(spellToolTipPrefab.gameObject, vLayout, true, spellToolTipHeight);
         VisualSpellDisplay display = spawned.GetComponent<VisualSpellDisplay>();
@@ -468,7 +471,7 @@ public class UIManager : MonoBehaviour
     public GameObject SpawnConfirmPotionToolTip(Potion potion, Transform spawningOn)
     {
         // Spawn the ToolTipList object that will house all of our other tooltips
-        ToolTipList list = SpawnToolTipList(spawningOn, 1, 1, true, confirmPotionUseToolTipWidth);
+        ToolTipListCanvas list = SpawnToolTipList(spawningOn, 1, 1, true, confirmPotionUseToolTipWidth);
         Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
         GameObject spawned = SpawnToolTip(confirmPotionToolTipPrefab.gameObject, vLayout, true, confirmPotionUseToolTipHeight);
         spawned.GetComponent<ConfirmPotionToolTip>().Set(potion, spawningOn, list.gameObject);
@@ -483,7 +486,7 @@ public class UIManager : MonoBehaviour
         int numToolTips = generalKeywords.Count + afflictionKeywords.Count;
 
         // Spawn the ToolTipList object that will house all of our other tooltips
-        ToolTipList list = SpawnToolTipList(spawningOn, numToolTips, 1);
+        ToolTipListCanvas list = SpawnToolTipList(spawningOn, numToolTips, 1);
         Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
 
         // Spawn ToolTips for Affliction Keywords
@@ -521,7 +524,7 @@ public class UIManager : MonoBehaviour
     public GameObject SpawnEqualListingToolTips(List<ToolTippable> listings, Transform spawningOn)
     {
         // Spawn the ToolTipList object that will house all of our other tooltips
-        ToolTipList list = SpawnToolTipList(spawningOn, GetNumListings(listings), 1);
+        ToolTipListCanvas list = SpawnToolTipList(spawningOn, GetNumListings(listings), 1);
         Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
 
         // Spawn ToolTips for Additional ToolTippables
@@ -543,7 +546,7 @@ public class UIManager : MonoBehaviour
         int numToolTips = generalKeywords.Count + afflictionKeywords.Count + otherToolTippables.Count + 1;
 
         // Spawn the ToolTipList object that will house all of our other tooltips
-        ToolTipList list = SpawnToolTipList(spawningOn, numToolTips, 1);
+        ToolTipListCanvas list = SpawnToolTipList(spawningOn, numToolTips, 1);
         Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
         SpawnToolTip(spawningFor.GetToolTipLabel(), spawningFor.GetToolTipText(), vLayout);
 
@@ -587,7 +590,7 @@ public class UIManager : MonoBehaviour
         }
 
         // Spawn the ToolTipList object that will house all of our other tooltips
-        ToolTipList list = SpawnToolTipList(spawningOn, numToolTips, spawningFor.Length);
+        ToolTipListCanvas list = SpawnToolTipList(spawningOn, numToolTips, spawningFor.Length);
 
         for (int i = 0; i < spawningFor.Length; i++)
         {
@@ -623,7 +626,7 @@ public class UIManager : MonoBehaviour
         return list.gameObject;
     }
 
-    private ToolTipList SpawnToolTipList(Transform spawningFor, int numToolTips, int numLists, bool overrideWidth = false, float overridenWidth = 0)
+    private ToolTipListCanvas SpawnToolTipList(Transform spawningFor, int numToolTips, int numLists, bool overrideWidth = false, float overridenWidth = 0)
     {
         RectTransform spawningForRect = spawningFor.GetComponent<RectTransform>();
         float spawningForWidth = spawningForRect.sizeDelta.x;
@@ -664,7 +667,7 @@ public class UIManager : MonoBehaviour
         }
 
         // Spawn Tool Tip List
-        ToolTipList spawned = Instantiate(toolTipList, spawningFor);
+        ToolTipListCanvas spawned = Instantiate(toolTipList, spawningFor);
         numActiveToolTipCanvases++;
         spawned.Set(numActiveToolTipCanvases + baseToolTipCanvasSortOrder, () => numActiveToolTipCanvases--);
         RectTransform listRect = spawned.GetRect();

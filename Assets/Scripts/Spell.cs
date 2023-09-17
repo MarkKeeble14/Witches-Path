@@ -5,6 +5,20 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
+public enum SpellEndOfTurnDeckAction
+{
+    Discard,
+    Ethereal,
+    Retain,
+}
+
+public enum SpellQueueDeckAction
+{
+    None,
+    Discard,
+    Exhaust,
+}
+
 public enum SpellPrimaryFunction
 {
     Damage,
@@ -146,6 +160,8 @@ public abstract class Spell : ToolTippable
     public abstract SpellColor Color { get; }
     public abstract Rarity Rarity { get; }
     public abstract SpellPrimaryFunction PrimaryFunction { get; }
+    public virtual SpellEndOfTurnDeckAction EndOfTurnDeckAction => SpellEndOfTurnDeckAction.Discard;
+    public virtual SpellQueueDeckAction QueueDeckAction => SpellQueueDeckAction.None;
 
     // Data
     public string SpritePath => "Spells/" + Label.ToString().ToLower();
@@ -187,7 +203,15 @@ public abstract class Spell : ToolTippable
             {
                 s += "\n" + cc;
             }
-            return s;
+            if (QueueDeckAction != SpellQueueDeckAction.None)
+            {
+                s += ", " + QueueDeckAction.ToString() + " On Queue";
+            }
+            if (EndOfTurnDeckAction != SpellEndOfTurnDeckAction.Discard)
+            {
+                s += ", " + EndOfTurnDeckAction.ToString();
+            }
+            return UIManager._Instance.HighlightKeywords(s);
         }
     }
 
@@ -659,7 +683,35 @@ public abstract class Spell : ToolTippable
 
     public List<ToolTipKeyword> GetGeneralKeyWords()
     {
-        return GeneralKeywords;
+        List<ToolTipKeyword> toReturn = new List<ToolTipKeyword>();
+        toReturn.AddRange(GeneralKeywords);
+
+        switch (EndOfTurnDeckAction)
+        {
+            case SpellEndOfTurnDeckAction.Discard:
+                break;
+            case SpellEndOfTurnDeckAction.Ethereal:
+                toReturn.Add(ToolTipKeyword.Ethereal);
+                toReturn.Add(ToolTipKeyword.Exhaust);
+                break;
+            case SpellEndOfTurnDeckAction.Retain:
+                toReturn.Add(ToolTipKeyword.Retain);
+                break;
+        }
+
+        switch (QueueDeckAction)
+        {
+            case SpellQueueDeckAction.Discard:
+                break;
+            case SpellQueueDeckAction.Exhaust:
+                if (!toReturn.Contains(ToolTipKeyword.Exhaust))
+                    toReturn.Add(ToolTipKeyword.Exhaust);
+                break;
+            case SpellQueueDeckAction.None:
+                break;
+        }
+
+        return toReturn;
     }
 
     public List<ToolTippable> GetOtherToolTippables()
@@ -1017,6 +1069,11 @@ public class Plague : ReusableSpell
     public Plague(int stackAmount = 5) : base()
     {
         AddSpellStat(SpellStat.Aff1StackAmount, stackAmount);
+    }
+
+    protected override void SetPrepTime()
+    {
+        AddSpellStat(SpellStat.PrepTime, 1);
     }
 
     protected override void SetKeywords()

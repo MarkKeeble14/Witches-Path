@@ -400,10 +400,35 @@ public class Blight : Affliction
         "Blight is then increased by " + GetAfflictionSpec("PercentToIncreaseBy") + "%";
     public override AfflictionType Type => AfflictionType.Blight;
 
+    private float increaseBy;
+
     public override Sign Sign => Sign.Negative;
 
     protected override void SetKeywords()
     {
+    }
+
+    private void DealDamage()
+    {
+        CombatManager._Instance.AlterCombatentHP(-GetStacks(), GetOwner(), DamageType.Poison);
+        CombatManager._Instance.AddAffliction(AfflictionType.Blight, Mathf.CeilToInt(GetStacks() * increaseBy), GetOwner());
+        CombatManager._Instance.ShowAfflictionProc(AfflictionType.Blight, GetOwner());
+        CombatManager._Instance.UpdateHPBarAfflictions(GetOwner());
+    }
+
+    protected override void SetParameters()
+    {
+        increaseBy = (float)BalenceManager._Instance.GetValue(AfflictionType.Blight, "PercentToIncreaseBy") / 100;
+    }
+
+    public override void Apply()
+    {
+        CombatManager._Instance.CombatentBaseCallbackMap[GetOwner()][CombatBaseCallbackType.OnTurnStart] += DealDamage;
+    }
+
+    public override void Unapply()
+    {
+        CombatManager._Instance.CombatentBaseCallbackMap[GetOwner()][CombatBaseCallbackType.OnTurnStart] -= DealDamage;
     }
 
 }
@@ -417,10 +442,35 @@ public class Poison : Affliction
 
     public override AfflictionType Type => AfflictionType.Poison;
 
+    private float reduceBy;
+
     public override Sign Sign => Sign.Negative;
 
     protected override void SetKeywords()
     {
+    }
+
+    private void DealDamage()
+    {
+        CombatManager._Instance.AlterCombatentHP(-GetStacks(), GetOwner(), DamageType.Poison, false);
+        CombatManager._Instance.ConsumeAfflictionStack(AfflictionType.Poison, GetOwner(), Mathf.RoundToInt(GetStacks() * reduceBy));
+        CombatManager._Instance.ShowAfflictionProc(AfflictionType.Poison, GetOwner());
+        CombatManager._Instance.UpdateHPBarAfflictions(GetOwner());
+    }
+
+    protected override void SetParameters()
+    {
+        reduceBy = (float)BalenceManager._Instance.GetValue(AfflictionType.Poison, "PercentToReduceBy") / 100;
+    }
+
+    public override void Apply()
+    {
+        CombatManager._Instance.CombatentBaseCallbackMap[GetOwner()][CombatBaseCallbackType.OnTurnStart] += DealDamage;
+    }
+
+    public override void Unapply()
+    {
+        CombatManager._Instance.CombatentBaseCallbackMap[GetOwner()][CombatBaseCallbackType.OnTurnStart] -= DealDamage;
     }
 }
 
@@ -434,8 +484,33 @@ public class Burn : Affliction
 
     public override Sign Sign => Sign.Negative;
 
+    private int damageAmount;
+
     protected override void SetKeywords()
     {
+    }
+
+    private void DealDamage()
+    {
+        CombatManager._Instance.AlterCombatentHP(-damageAmount, GetOwner(), DamageType.Fire);
+        CombatManager._Instance.ConsumeAfflictionStack(AfflictionType.Burn, GetOwner());
+        CombatManager._Instance.ShowAfflictionProc(AfflictionType.Burn, GetOwner());
+        CombatManager._Instance.UpdateHPBarAfflictions(GetOwner());
+    }
+
+    protected override void SetParameters()
+    {
+        damageAmount = BalenceManager._Instance.GetValue(AfflictionType.Burn, "DamageAmount");
+    }
+
+    public override void Apply()
+    {
+        CombatManager._Instance.CombatentBaseCallbackMap[GetOwner()][CombatBaseCallbackType.OnBasicAttack] += DealDamage;
+    }
+
+    public override void Unapply()
+    {
+        CombatManager._Instance.CombatentBaseCallbackMap[GetOwner()][CombatBaseCallbackType.OnBasicAttack] -= DealDamage;
     }
 }
 

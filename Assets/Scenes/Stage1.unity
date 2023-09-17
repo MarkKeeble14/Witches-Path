@@ -3396,7 +3396,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1401774240133327167, guid: 7eb7b43615745b741a06bf6ebbedf4b4, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 35
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1401774240133327167, guid: 7eb7b43615745b741a06bf6ebbedf4b4, type: 3}
       propertyPath: m_SizeDelta.y
@@ -3928,7 +3928,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1734070783198472116, guid: 7eb7b43615745b741a06bf6ebbedf4b4, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 35
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1734070783198472116, guid: 7eb7b43615745b741a06bf6ebbedf4b4, type: 3}
       propertyPath: m_SizeDelta.y
@@ -8849,7 +8849,7 @@ PrefabInstance:
     - target: {fileID: 5388059309283002361, guid: 7eb7b43615745b741a06bf6ebbedf4b4, type: 3}
       propertyPath: playerCharacter
       value: 
-      objectReference: {fileID: 11400000, guid: a1cfa2fb063e4a24db447e8e6a4676f3, type: 2}
+      objectReference: {fileID: 11400000, guid: 9e08d35e00a2f9741a3bdbe563a704de, type: 2}
     - target: {fileID: 5388059309283002361, guid: 7eb7b43615745b741a06bf6ebbedf4b4, type: 3}
       propertyPath: unviableSpellRewards.Array.size
       value: 2
