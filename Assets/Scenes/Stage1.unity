@@ -471,11 +471,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[0].NumPaths
-      value: 7
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[1].NumPaths
-      value: 6
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[2].NumPaths
@@ -771,7 +771,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[0].ChanceToConnectPaths.y
-      value: 3
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[0].ShowSectionConnections
@@ -787,7 +787,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[1].ChanceToConnectPaths.y
-      value: 2
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[1].ShowSectionConnections
@@ -1219,7 +1219,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[0].ForcedNodeIndicies.dictionary.Array.size
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[1].ForcedNodeIndicies.dictionary.Array.size
@@ -1239,7 +1239,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[0].ForcedNodeIndicies.dictionary.Array.data[1].key
-      value: 9
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[0].ForcedNodeIndicies.dictionary.Array.data[2].key
@@ -1247,7 +1247,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[1].ForcedNodeIndicies.dictionary.Array.data[1].key
-      value: 9
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[2].ForcedNodeIndicies.dictionary.Array.data[1].key
@@ -1443,7 +1443,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.sectionNodeTypeOdds.dictionary.Array.data[0].value.percentageMap.Array.data[0].value
-      value: 35
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.sectionNodeTypeOdds.dictionary.Array.data[0].value.percentageMap.Array.data[1].value
@@ -1455,7 +1455,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.sectionNodeTypeOdds.dictionary.Array.data[0].value.percentageMap.Array.data[4].value
-      value: 10
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.sectionNodeTypeOdds.dictionary.Array.data[0].value.percentageMap.Array.data[5].value
@@ -11792,7 +11792,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7820009083912382829, guid: 7eb7b43615745b741a06bf6ebbedf4b4, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -389.99908
+      value: -389.99994
       objectReference: {fileID: 0}
     - target: {fileID: 7822827192670774857, guid: 7eb7b43615745b741a06bf6ebbedf4b4, type: 3}
       propertyPath: m_AnchorMax.y

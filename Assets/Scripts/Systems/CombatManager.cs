@@ -173,7 +173,6 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private CombatentHPBar enemyHPBar;
     [SerializeField] private SemicircleLayoutGroup enemyQueuedSpellsDisplay;
     [SerializeField] private TextMeshProUGUI enemyBasicAttackDamageText;
-    [SerializeField] private TextMeshProUGUI enemyNameText;
     [SerializeField] private Image enemyCombatSprite;
     [SerializeField] private CanvasGroup enemyCombatSpriteCV;
     [SerializeField] private EffectTextDisplay enemyEffectTextDisplay;
@@ -648,8 +647,14 @@ public partial class CombatManager : MonoBehaviour
             hand.Remove(spell);
             discardPile.Add(spell);
 
-            handLayoutGroup.RemoveTransformFromHand(spell.GetEquippedTo().transform);
-            StartCoroutine(DiscardCardAnimation(spell.GetEquippedTo(), delegate
+            SpellDisplay spellDisplay = spell.GetEquippedTo();
+            if (spellDisplay == null)
+            {
+                Debug.Log("Discard Spell Error: Paused Time");
+                Time.timeScale = 0;
+            }
+            handLayoutGroup.RemoveTransformFromHand(spellDisplay.transform);
+            StartCoroutine(DiscardCardAnimation(spellDisplay, delegate
             {
                 // Callback
                 spell.CallSpellCallback(SpellCallbackType.OnAnyDiscard);
@@ -847,8 +852,12 @@ public partial class CombatManager : MonoBehaviour
         hand.ActOnEachSpellInPile(spell =>
         {
             // Recalculate Key Bindings
-            ((VisualSpellDisplay)spell.GetEquippedTo()).SetKeyBinding(GetKeyBindingAtIndex(index));
-            index++;
+            VisualSpellDisplay spellDisplay = ((VisualSpellDisplay)spell.GetEquippedTo());
+            if (spellDisplay != null)
+            {
+                spellDisplay.SetKeyBinding(GetKeyBindingAtIndex(index));
+                index++;
+            }
         });
     }
 
@@ -889,7 +898,6 @@ public partial class CombatManager : MonoBehaviour
         currentEnemy = combat.SpawnedEnemy;
         maxEnemyHP = currentEnemy.GetMaxHP();
         enemyCombatSprite.sprite = currentEnemy.GetCombatSprite();
-        enemyNameText.text = currentEnemy.Name;
 
         foreach (GameObject obj in showOnCombat)
         {
@@ -1423,6 +1431,10 @@ public partial class CombatManager : MonoBehaviour
 
         // Clear active spell cooldowns
         ResetActiveSpellCooldowns();
+        foreach (GameObject obj in disableWhileCasting)
+        {
+            obj.SetActive(true);
+        }
 
         // Reset Player Mana
         GameManager._Instance.SetCurrentPlayerMana(GameManager._Instance.GetMaxPlayerMana());
@@ -2683,13 +2695,11 @@ public partial class CombatManager : MonoBehaviour
 
     private void ClearAfflictionMap(Dictionary<AfflictionType, Affliction> map, Combatent t)
     {
-        Dictionary<AfflictionType, Affliction>.KeyCollection keys = map.Keys;
-        Dictionary<AfflictionType, AfflictionIcon> displays = GetTargetAfflictionDisplays(t);
-        foreach (AfflictionType type in keys)
+        // Remove Afflictions
+        while (map.Count > 0)
         {
-            AfflictionIcon icon = displays[type];
-            displays.Remove(type);
-            Destroy(icon.gameObject);
+            AfflictionType removing = map.Keys.ElementAt(0);
+            RemoveAffliction(t, removing);
         }
         map.Clear();
     }
@@ -2727,6 +2737,7 @@ public partial class CombatManager : MonoBehaviour
     {
         // Only consumes a stack if there are stacks to be consumed
         Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(target);
+
         Affliction aff = map[type];
 
         // remove a stack

@@ -25,15 +25,6 @@ MonoBehaviour:
             Rarity: 0
             Numbers: {x: 1, y: 1}
           value: 100
-    - key: 0
-      value:
-        percentageMap:
-        - key:
-            NumericalType: 0
-            ForceRarity: 0
-            Rarity: 0
-            Numbers: {x: 1, y: 3}
-          value: 100
     - key: 5
       value:
         percentageMap:
@@ -43,26 +34,10 @@ MonoBehaviour:
             Rarity: 0
             Numbers: {x: 1, y: 2}
           value: 100
-    - key: 6
-      value:
-        percentageMap:
-        - key:
-            NumericalType: 0
-            ForceRarity: 0
-            Rarity: 0
-            Numbers: {x: 1, y: 5}
-          value: 100
   currencyRewards:
     dictionary:
     - key: 2
       value:
         percentageMap:
-        - key: {x: 30, y: 50}
+        - key: {x: 10, y: 25}
           value: 100
-    - key: 3
-      value:
-        percentageMap:
-        - key: {x: 0, y: 0}
-          value: 50
-        - key: {x: 1, y: 1}
-          value: 50

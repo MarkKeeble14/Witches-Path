@@ -377,6 +377,7 @@ MonoBehaviour:
   onHoverScaleTo: 2
   onHoverScaleDuration: 0.1
   onHoverToScale: {fileID: 320296754517506696}
+  delayBeforeSpawningToolTips: 0.5
 --- !u!225 &8778698248221803963
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -644,7 +645,7 @@ MonoBehaviour:
   radius: 25
   maxAngle: 360
   initialAngle: -90
-  reverseOrder: 0
+  reverseOrder: 1
   animate: 1
   animateSpeed: 5
 --- !u!1 &7635462273295763743
