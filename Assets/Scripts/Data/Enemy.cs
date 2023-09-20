@@ -530,7 +530,7 @@ public class SpiritOfContempt : Enemy
     {
         // Make Enemy Actions
         AddEnemyAction("AttackAndVulnerable", MakeEnemyAction(() => canBigAttack = true, new BrutalSmash(10, 2)));
-        AddEnemyAction("BigAttack", MakeEnemyAction(() => canBigAttack = false, new DoubleHit(13)));
+        AddEnemyAction("BigAttack", MakeEnemyAction(() => canBigAttack = false, new StrikeTwice(13)));
 
         // Add On Combat Start Actions
         AddOnCombatStartAction(MakeEnemyAction(null, new Ghost(1), new Ghost(1), new Ghost(1), new BattleTrance(1)));
@@ -562,7 +562,7 @@ public class SpiritOfPride : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        AddEnemyAction("AttackAndWard", MakeEnemyAction(() => canBuff = true, new DoubleHit(3), new DoubleHit(3)));
+        AddEnemyAction("AttackAndWard", MakeEnemyAction(() => canBuff = true, new StrikeTwice(3), new StrikeTwice(3)));
         AddEnemyAction("Power", MakeEnemyAction(() => canBuff = false, new StudyPower(1)));
         AddEnemyAction("PowerEmboldenAndWard", MakeEnemyAction(() => canBuff = false, new StudyPower(1), new Excite(3), new Protect(10)));
 

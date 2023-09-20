@@ -689,6 +689,12 @@ public class GameManager : MonoBehaviour
             Spellbook.Add(Spell.GetSpellOfType(label));
         }
 
+        // Equip starting artifacts
+        foreach (ArtifactLabel label in c.GetStartingArtifacts())
+        {
+            AddArtifact(label);
+        }
+
         // Equip character equipment
         EquipEquipment(c.GetStartingRobe());
         EquipEquipment(c.GetStartingHat());

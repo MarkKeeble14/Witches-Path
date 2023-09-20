@@ -31,7 +31,8 @@ public enum ArtifactLabel
     Crown,
     CockroachCarcass,
     EnchantedAura,
-    HarmonicChalice
+    HarmonicChalice,
+    AccursedBrand
 }
 
 public abstract class Artifact : PowerupItem
@@ -124,6 +125,8 @@ public abstract class Artifact : PowerupItem
                 return new EnchantedAura();
             case ArtifactLabel.HarmonicChalice:
                 return new HarmonicChalice();
+            case ArtifactLabel.AccursedBrand:
+                return new AccursedBrand();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -1131,5 +1134,40 @@ public class HarmonicChalice : Artifact
     public override string GetAdditionalText()
     {
         return tracker.ToString();
+    }
+}
+
+public class AccursedBrand : Artifact
+{
+    public override string Name => "Accursed Brand";
+    protected override ArtifactLabel Label => ArtifactLabel.AccursedBrand;
+    public override Rarity Rarity => Rarity.Basic;
+
+    public static int MinCards => 5;
+    protected override string toolTipText => "If there are more than " + MinCards + " Spells in your Deck at the end of your Turn, Choose a Spell to Exhaust";
+
+    protected override void SetKeywords()
+    {
+        GeneralKeywords.Add(ToolTipKeyword.Exhaust);
+    }
+
+    public override void OnEquip()
+    {
+        //
+    }
+
+    public override void OnUnequip()
+    {
+        //
+    }
+
+    protected override void Effect()
+    {
+        //
+    }
+
+    public override string GetAdditionalText()
+    {
+        return CombatManager._Instance.NumSpellsInDrawablePlaces.ToString();
     }
 }

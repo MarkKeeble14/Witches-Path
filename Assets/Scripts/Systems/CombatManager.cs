@@ -168,6 +168,8 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI alterHandInstructionText;
     [SerializeField] private GameObject alterHandBackground;
     public bool SpellPileScreenOpen => showSpellPileScreen.activeInHierarchy;
+    public int NumSpellsInDraw => drawPile == null ? 0 : drawPile.Count;
+    public int NumSpellsInDrawablePlaces => drawPile == null || discardPile == null || hand == null ? 0 : drawPile.Count + discardPile.Count + hand.Count;
 
     [Header("Enemy")]
     [SerializeField] private CombatentHPBar enemyHPBar;
@@ -619,6 +621,14 @@ public partial class CombatManager : MonoBehaviour
 
     private IEnumerator HandleHandAtEndOfTurn()
     {
+        if (GameManager._Instance.HasArtifact(ArtifactLabel.AccursedBrand))
+        {
+            if (NumSpellsInDrawablePlaces > AccursedBrand.MinCards && hand.Count > 0)
+            {
+                yield return StartCoroutine(ExhaustSpellSequence(1));
+            }
+        }
+
         List<Spell> toHandle = hand.GetEntriesMatching(spell => true);
         foreach (Spell spell in toHandle)
         {

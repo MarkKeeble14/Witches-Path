@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ca226392ff22ceb429a58fa99900c73d, type: 3}
-  m_Name: HotHead
+  m_Name: HellfireWitch
   m_EditorClassIdentifier: 
   combatSprite: {fileID: 21300000, guid: 3afe9266576aa4041b27d5775e70022c, type: 3}
   color: 3
@@ -19,6 +19,7 @@ MonoBehaviour:
   startingWand: {fileID: 11400000, guid: a794f23a6bced8a4f869c3618d2329a4, type: 2}
   startingBook: 0
   startingSpells: 1600000016000000160000001600000017000000170000001700000004000000
+  startingArtifacts: 1d000000
   startingCurrency: 100
   startingClothierCurrency: 1
   defaultActiveSpell: 22

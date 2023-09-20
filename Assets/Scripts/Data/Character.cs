@@ -15,6 +15,7 @@ public class Character : ScriptableObject
     [SerializeField] private Wand startingWand;
     [SerializeField] private BookLabel startingBook;
     [SerializeField] private SpellLabel[] startingSpells;
+    [SerializeField] private ArtifactLabel[] startingArtifacts;
 
     [SerializeField] private int startingCurrency;
     [SerializeField] private int startingClothierCurrency;
@@ -103,6 +104,11 @@ public class Character : ScriptableObject
     public SpellLabel[] GetStartingSpells()
     {
         return startingSpells;
+    }
+
+    public ArtifactLabel[] GetStartingArtifacts()
+    {
+        return startingArtifacts;
     }
 
     public Sprite GetCombatSprite()

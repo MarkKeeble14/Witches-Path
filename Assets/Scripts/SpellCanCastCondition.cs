@@ -81,3 +81,23 @@ public class NotOnCooldownSpellCanCastCondition : SpellCanCastCondition
         return "";
     }
 }
+
+public class MaximumSpellsInDrawPileSpellCanCastCondition : SpellCanCastCondition
+{
+    private int maxSpells;
+
+    public MaximumSpellsInDrawPileSpellCanCastCondition(Spell forSpell, int maxSpells) : base(forSpell)
+    {
+        this.maxSpells = maxSpells;
+    }
+
+    protected override bool Evaluate()
+    {
+        return CombatManager._Instance.NumSpellsInDraw < maxSpells;
+    }
+
+    public override string GetEvaluationString()
+    {
+        return "Can only be Cast if there are less than " + maxSpells + " in your Draw Pile.";
+    }
+}
