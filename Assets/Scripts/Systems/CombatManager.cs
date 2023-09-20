@@ -632,6 +632,23 @@ public partial class CombatManager : MonoBehaviour
         List<Spell> toHandle = hand.GetEntriesMatching(spell => true);
         foreach (Spell spell in toHandle)
         {
+            // if at the end of the turn, there are playable curses in hand, play them
+            if (spell.Color == SpellColor.Curse)
+            {
+                if (spell is ReusableSpell)
+                {
+                    if (!((ReusableSpell)spell).OnCooldown)
+                    {
+                        AddSpellToCastQueue(spell, Combatent.Character, Combatent.Enemy, false);
+                    }
+                }
+                else
+                {
+                    AddSpellToCastQueue(spell, Combatent.Character, Combatent.Enemy, false);
+                }
+            }
+
+            // Handle End of Turn Deck Action for each Spell
             switch (spell.EndOfTurnDeckAction)
             {
                 case SpellEndOfTurnDeckAction.Ethereal:
@@ -698,6 +715,11 @@ public partial class CombatManager : MonoBehaviour
             {
                 // Callback
                 spell.CallSpellCallback(SpellCallbackType.OnExhaust);
+
+                if (spell is ReusableSpell)
+                {
+                    ((ReusableSpell)spell).ResetCooldown();
+                }
 
                 // Callback
                 OnExhaustSpell?.Invoke();
@@ -812,7 +834,7 @@ public partial class CombatManager : MonoBehaviour
             while (alterHandSequenceSelectedSpells.Count < numToAlter)
             {
                 int numToGo = (numToAlter - alterHandSequenceSelectedSpells.Count);
-                alterHandInstructionText.text = "Select " + numToGo + " more " + (numToGo > 1 ? "Spells" : "Spell") + " (" + label + ")";
+                alterHandInstructionText.text = "Select " + numToGo + " more Spell" + (numToGo > 1 ? "s" : "") + " to " + label;
                 yield return null;
             }
         }

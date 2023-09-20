@@ -3974,6 +3974,10 @@ MonoBehaviour:
       value: 
     - key: Discard
       value: 
+    - key: Curse
+      value: Curse Spells are unique spells which will be automatically queued at
+        the end of your turn if they are not on Cooldown. They can also be queued
+        normally.
   multiTokenKeywords:
     dictionary:
     - key: Basic

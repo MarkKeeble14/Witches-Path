@@ -98,6 +98,6 @@ public class MaximumSpellsInDrawPileSpellCanCastCondition : SpellCanCastConditio
 
     public override string GetEvaluationString()
     {
-        return "Can only be Cast if there are less than " + maxSpells + " in your Draw Pile.";
+        return "Can only be Cast if there are less than " + maxSpells + " Spells in your Draw Pile.";
     }
 }
