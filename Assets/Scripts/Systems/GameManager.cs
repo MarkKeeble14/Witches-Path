@@ -54,12 +54,11 @@ public class GameManager : MonoBehaviour
     public int NumArtifacts => equippedArtifacts.Count;
 
     [Header("Books")]
-    [SerializeField] private Transform bookBar;
     [SerializeField] private PercentageMap<Rarity> bookRarityOdds = new PercentageMap<Rarity>();
-    private Dictionary<BookLabel, BookDisplay> bookDisplayTracker = new Dictionary<BookLabel, BookDisplay>();
-    private Dictionary<BookLabel, Book> equippedBooks = new Dictionary<BookLabel, Book>();
-    private List<BookLabel> awardableBooks = new List<BookLabel>();
     [SerializeField] private List<BookLabel> unawardableBooks = new List<BookLabel>();
+    [SerializeField] private BookDisplay bookDisplay;
+    private Book equippedBook;
+    private List<BookLabel> awardableBooks = new List<BookLabel>();
 
     [Header("Spells")]
     [SerializeField] private List<SpellLabel> unviableSpellRewards;
@@ -71,14 +70,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private VisualSpellDisplay visualSpellDisplayPrefab;
 
     [Header("Spell Book Screen")]
-    // [SerializeField] private GameObject spellBookScreen;
     [SerializeField] private Transform spellBookSpawnSpellDisplaysOn;
     private List<VisualSpellDisplay> spellBookSpawnedSpellDisplays = new List<VisualSpellDisplay>();
 
-    // [SerializeField] private GameObject spellPileScreen;
-
     [Header("Select Spell Screen")]
-    // [SerializeField] private GameObject selectSpellScreen;
     [SerializeField] private Transform spawnSelectSpellDisplaysOn;
 
     [Header("Potions")]
@@ -93,7 +88,6 @@ public class GameManager : MonoBehaviour
 
     [Header("Prefabs")]
     [SerializeField] private ArtifactDisplay artifactDisplay;
-    [SerializeField] private BookDisplay bookDisplay;
     [SerializeField] private PopupText popupTextPrefab;
 
     [Header("Test")]
@@ -213,6 +207,11 @@ public class GameManager : MonoBehaviour
         {
             AddSpellToSpellBook(GetRandomSpellWithConditions(spell => spell.Color == SpellColor.Curse));
         }
+    }
+
+    private bool HasBook(BookLabel label)
+    {
+        return equippedBook.GetLabel() == label;
     }
 
     public void CallOnGameStart()
@@ -449,12 +448,7 @@ public class GameManager : MonoBehaviour
 
                 if (Input.GetKeyDown(KeyCode.KeypadEnter))
                 {
-                    SwapBooks(bookDisplayTracker.Keys.First(), allBook[bookIndex]);
-                }
-
-                if (Input.GetKeyDown(KeyCode.KeypadPeriod))
-                {
-                    RemoveBook(allBook[bookIndex]);
+                    EquipBook(Book.GetBookOfType(allBook[bookIndex]));
                 }
 
                 break;
@@ -525,43 +519,21 @@ public class GameManager : MonoBehaviour
     #endregion
 
     #region Book
-    public void AlterAllBookCharge(int alterBy)
+    public void AlterBookCharge(int alterBy)
     {
         // Alter Book Charge by
-        foreach (KeyValuePair<BookLabel, Book> kvp in equippedBooks)
-        {
-            kvp.Value.AlterCharge(alterBy);
-        }
+        equippedBook.AlterCharge(alterBy);
     }
 
     [ContextMenu("Fill All Book Charges")]
-    public void FillAllBookCharges()
+    public void FillBookCharge()
     {
-        // Alter Book Charge by
-        foreach (KeyValuePair<BookLabel, Book> kvp in equippedBooks)
-        {
-            kvp.Value.AlterCharge(kvp.Value.MaxCharge);
-        }
+        equippedBook.AlterCharge(equippedBook.MaxCharge);
     }
 
-    public void AlterBookCharge(BookLabel label, int alterBy)
+    public Book GetEquippedBook(int index)
     {
-        equippedBooks[label].AlterCharge(alterBy);
-    }
-
-    public BookLabel GetRandomOwnedBook()
-    {
-        return RandomHelper.GetRandomFromList(equippedBooks.Keys.ToList());
-    }
-
-    public BookLabel GetOwnedBookLabel(int index)
-    {
-        return equippedBooks.Keys.ToList()[index];
-    }
-
-    public Book GetOwnedBook(int index)
-    {
-        return equippedBooks.Values.ToList()[index];
+        return equippedBook;
     }
 
     public BookLabel GetRandomBook(bool removeFromPool = true)
@@ -605,11 +577,6 @@ public class GameManager : MonoBehaviour
         }
 
         return RandomHelper.GetRandomFromList(options);
-    }
-
-    public void AddRandomBook()
-    {
-        AddBook(GetRandomBook());
     }
 
     #endregion
@@ -699,10 +666,10 @@ public class GameManager : MonoBehaviour
         EquipEquipment(c.GetStartingRobe());
         EquipEquipment(c.GetStartingHat());
         EquipEquipment(c.GetStartingWand());
-        AddBook(c.GetStartingBook());
+        EquipBook(Book.GetBookOfType(c.GetStartingBook()));
 
         // Remove Owned Book from Awardable Books
-        awardableBooks.Remove(GetOwnedBookLabel(0));
+        awardableBooks.Remove(equippedBook.GetLabel());
 
         // Set player stats
         maxPlayerHP = c.GetMaxHP();
@@ -842,40 +809,23 @@ public class GameManager : MonoBehaviour
         equippedArtifacts.Remove(artifact);
     }
 
-    public void AddBook(BookLabel type)
+    public void EquipBook(Book book)
     {
-        Book book = Book.GetBookOfType(type);
-
-        BookDisplay spawned = Instantiate(bookDisplay, bookBar);
-        spawned.SetItem(book);
-        spawned.name = "Book(" + type + ")";
-
-        bookDisplayTracker.Add(book.GetLabel(), spawned);
-        equippedBooks.Add(type, book);
-    }
-
-    public void RemoveBook(BookLabel type)
-    {
-        Destroy(bookDisplayTracker[type].gameObject);
-        bookDisplayTracker.Remove(type);
-
-        equippedBooks.Remove(type);
+        equippedBook = book;
+        bookDisplay.SetItem(book);
+        bookDisplay.name = "Book(" + book.GetLabel() + ")";
     }
 
     [ContextMenu("Upgrade Books")]
     public void UpgradeBooks()
     {
-        foreach (KeyValuePair<BookLabel, Book> b in equippedBooks)
-        {
-            b.Value.TryCallLevelUp(true);
-        }
+        equippedBook.TryCallLevelUp(true);
     }
 
-    public void SwapBooks(BookLabel swappingOut, BookLabel swappingTo)
+    public void SwapBooks(Book newBook)
     {
-        RemoveBook(swappingOut);
-        AddBook(swappingTo);
-        AnimateBook(swappingTo);
+        EquipBook(newBook);
+        AnimateBook();
     }
 
     public void AnimateArtifact(ArtifactLabel artifactLabel)
@@ -897,12 +847,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void AnimateBook(BookLabel label)
+    public void AnimateBook()
     {
-        if (bookDisplayTracker.ContainsKey(label))
-        {
-            bookDisplayTracker[label].AnimateScale();
-        }
+        bookDisplay.AnimateScale();
     }
 
     public bool AddPotionIngredient(PotionIngredientType ingredient)
@@ -1493,15 +1440,10 @@ public class GameManager : MonoBehaviour
         return false;
     }
 
-    public bool HasBook(BookLabel label)
-    {
-        return bookDisplayTracker.ContainsKey(label);
-    }
-
 
     #region UI
 
-    public bool CanUpgradeActiveBook => GetOwnedBook(0).CanLevelUp;
+    public bool CanUpgradeActiveBook => GetEquippedBook(0).CanLevelUp;
 
     public void PopManaText()
     {
@@ -1990,14 +1932,6 @@ public class GameManager : MonoBehaviour
         canUpgradeSpell = true;
     }
 
-    #region Merchant
-
-    #endregion
-
-    #region Innkeeper
-
-    #endregion
-
     #endregion
 
     #region Event 
@@ -2028,7 +1962,7 @@ public class GameManager : MonoBehaviour
             switch (singleCondition)
             {
                 case "BookCanBeUpgraded":
-                    return GetOwnedBook(0).CanLevelUp;
+                    return GetEquippedBook(0).CanLevelUp;
                 default:
                     throw new UnhandledSwitchCaseException(singleCondition);
             }

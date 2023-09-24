@@ -10,6 +10,20 @@ using TMPro;
 using DG.Tweening;
 using System.Linq;
 
+public enum SpellPileType
+{
+    Draw,
+    Hand,
+    Discard,
+    Exhaust
+}
+
+public enum AlterHandSequenceType
+{
+    Discard,
+    Exhaust
+}
+
 public enum Order
 {
     Unaltered,
@@ -104,11 +118,11 @@ public partial class CombatManager : MonoBehaviour
 
     private int handSize;
     public int MaxHandSize => 10;
-    private Pile<Spell> powerSpellPile;
-    private Pile<Spell> drawPile;
-    private Pile<Spell> discardPile;
-    private Pile<Spell> exhaustPile;
-    private Pile<Spell> hand;
+    public Pile<Spell> Hand;
+    public Pile<Spell> DrawPile;
+    public Pile<Spell> DiscardPile;
+    public Pile<Spell> ExhaustPile;
+    public Pile<Spell> PowerSpellPile;
 
     [Header("Deck Mechanics")]
     [SerializeField] private Transform discardPileMoveOnto;
@@ -122,9 +136,9 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private Transform spawnShowSpellPileDisplaysOn;
     [SerializeField] private VisualSpellDisplay visualSpellDisplayPrefab;
     [SerializeField] private float drawSpellDelay = .15f;
+    [SerializeField] private float forceLoseSpellDelay = .15f;
     [SerializeField] private float discardSpellDelay = .15f;
     private List<Spell> alterHandSequenceSelectedSpells = new List<Spell>();
-    private SpellDisplayState currentAlterHandSequenceState;
     [SerializeField] private VisualSpellDisplay cardDisplayPrefab;
     [SerializeField] private HandLayoutGroup handLayoutGroup;
     public HandLayoutGroup HandLayoutGroup => handLayoutGroup;
@@ -168,8 +182,8 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI alterHandInstructionText;
     [SerializeField] private GameObject alterHandBackground;
     public bool SpellPileScreenOpen => showSpellPileScreen.activeInHierarchy;
-    public int NumSpellsInDraw => drawPile == null ? 0 : drawPile.Count;
-    public int NumSpellsInDrawablePlaces => drawPile == null || discardPile == null || hand == null ? 0 : drawPile.Count + discardPile.Count + hand.Count;
+    public int NumSpellsInDraw => DrawPile == null ? 0 : DrawPile.Count;
+    public int NumSpellsInDrawablePlaces => DrawPile == null || DiscardPile == null || Hand == null ? 0 : DrawPile.Count + DiscardPile.Count + Hand.Count;
 
     [Header("Enemy")]
     [SerializeField] private CombatentHPBar enemyHPBar;
@@ -369,7 +383,7 @@ public partial class CombatManager : MonoBehaviour
         // 0 = 0%, 1 = 100%
         // .14 = 14%
         // etc
-        foreach (ReusableSpell activeSpell in hand.GetEntriesMatching(spell => spell.SpellCastType == SpellCastType.Reusable))
+        foreach (ReusableSpell activeSpell in Hand.GetEntriesMatching(spell => spell.SpellCastType == SpellCastType.Reusable))
         {
             if (activeSpell.OnCooldown)
             {
@@ -386,21 +400,20 @@ public partial class CombatManager : MonoBehaviour
     public void ShowExhaustPile()
     {
         showSpellPileTitleText.text = "Exhaust Pile";
-        StartCoroutine(ShowSpellPile(exhaustPile, spell => true, Order.Unaltered));
+        StartCoroutine(ShowSpellPile(ExhaustPile, spell => true, Order.Unaltered));
     }
 
     public void ShowDrawPile()
     {
         showSpellPileTitleText.text = "Draw Pile";
-        StartCoroutine(ShowSpellPile(drawPile, spell => true, Order.Shuffled));
+        StartCoroutine(ShowSpellPile(DrawPile, spell => true, Order.Shuffled));
     }
 
     public void ShowDiscardPile()
     {
         showSpellPileTitleText.text = "Discard Pile";
-        StartCoroutine(ShowSpellPile(discardPile, spell => true, Order.Unaltered));
+        StartCoroutine(ShowSpellPile(DiscardPile, spell => true, Order.Unaltered));
     }
-
 
     private IEnumerator ShowSpellPile(Pile<Spell> toShow, Func<Spell, bool> viableSpell, Order order)
     {
@@ -448,19 +461,19 @@ public partial class CombatManager : MonoBehaviour
 
     public void SetSpellPiles(Pile<Spell> spellbook)
     {
-        drawPile = new Pile<Spell>();
-        powerSpellPile = new Pile<Spell>();
-        discardPile = new Pile<Spell>();
-        hand = new Pile<Spell>();
-        exhaustPile = new Pile<Spell>();
+        DrawPile = new Pile<Spell>();
+        PowerSpellPile = new Pile<Spell>();
+        DiscardPile = new Pile<Spell>();
+        Hand = new Pile<Spell>();
+        ExhaustPile = new Pile<Spell>();
 
         foreach (Spell spell in spellbook.GetSpells())
         {
-            drawPile.Add(spell);
+            DrawPile.Add(spell);
         }
-        drawPile.Shuffle();
+        DrawPile.Shuffle();
 
-        drawPileCountText.text = drawPile.Count.ToString();
+        drawPileCountText.text = DrawPile.Count.ToString();
     }
 
     public void SetHandSize(int handSize)
@@ -473,23 +486,56 @@ public partial class CombatManager : MonoBehaviour
         yield return StartCoroutine(DrawSpells(handSize));
     }
 
-    public void CallDrawSpells(int num = 1)
+    private IEnumerator ForceDiscardSpells(int num = 1)
     {
-        StartCoroutine(DrawSpells(num));
+        for (int i = 0; i < num;)
+        {
+            // Empty hand
+            if (Hand.Count == 0)
+            {
+                CallPlayDialogue("I have no Spells to Discard...", Combatent.Character);
+                break;
+            }
+
+            yield return StartCoroutine(DiscardSpell(RandomHelper.GetRandomFromList(Hand.GetSpells())));
+
+            i++;
+
+            yield return new WaitForSeconds(forceLoseSpellDelay);
+        }
+    }
+
+    private IEnumerator ForceExhaustSpells(int num = 1)
+    {
+        for (int i = 0; i < num;)
+        {
+            // Empty hand
+            if (Hand.Count == 0)
+            {
+                CallPlayDialogue("I have no Spells to Exhaust...", Combatent.Character);
+                break;
+            }
+
+            yield return StartCoroutine(ExhaustSpell(RandomHelper.GetRandomFromList(Hand.GetSpells())));
+
+            i++;
+
+            yield return new WaitForSeconds(forceLoseSpellDelay);
+        }
     }
 
     private IEnumerator DrawSpells(int num = 1)
     {
         for (int i = 0; i < num;)
         {
-            if (hand.Count >= MaxHandSize)
+            if (Hand.Count >= MaxHandSize)
             {
                 CallPlayDialogue("I have no room in my Hand...", Combatent.Character);
                 break;
             }
 
             // There are absolutely no cards to draw remaining
-            if (drawPile.Count == 0 && discardPile.Count == 0)
+            if (DrawPile.Count == 0 && DiscardPile.Count == 0)
             {
                 CallPlayDialogue("I'm out of Spells...?", Combatent.Character);
                 break;
@@ -498,7 +544,7 @@ public partial class CombatManager : MonoBehaviour
             // Reshuffle discard pile into draw pile if needed
             yield return StartCoroutine(CheckForReshuffleDiscardIntoDraw());
 
-            DrawSpell();
+            yield return StartCoroutine(DrawSpell());
             i++;
 
             yield return new WaitForSeconds(drawSpellDelay);
@@ -507,19 +553,25 @@ public partial class CombatManager : MonoBehaviour
 
     private IEnumerator CheckForReshuffleDiscardIntoDraw()
     {
-        if (drawPile.Count == 0)
+        if (DrawPile.Count == 0)
         {
-            discardPile.TransferEntries(drawPile, true);
+            DiscardPile.TransferEntries(DrawPile, true);
 
             yield return new WaitForSeconds(1);
         }
     }
 
-    [ContextMenu("Test/DrawSpell")]
-    public void DrawSpell()
+    public IEnumerator DrawSpell(Action<Spell> doToDrawnSpell = null)
     {
-        Spell spell = drawPile.DrawTop();
-        hand.Add(spell);
+        yield return StartCoroutine(CheckForReshuffleDiscardIntoDraw());
+        if (DrawPile.Count == 0)
+        {
+            CallPlayDialogue("No more Spells...?", Combatent.Character);
+            yield break;
+        }
+
+        Spell spell = DrawPile.DrawTop();
+        Hand.Add(spell);
 
         // Spawn Card
         VisualSpellDisplay spawned = Instantiate(cardDisplayPrefab, null);
@@ -528,16 +580,18 @@ public partial class CombatManager : MonoBehaviour
         spawned.SetSpellDisplayState(SpellDisplayState.InHand);
 
         // Callback
-        spell.CallSpellCallback(SpellCallbackType.OnDraw);
+        yield return StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnDraw));
 
         // Callback
         OnDrawSpell?.Invoke();
 
+        if (doToDrawnSpell != null)
+            doToDrawnSpell(spell);
+
         CallRecalculateKeyBinds();
     }
 
-
-    private IEnumerator DiscardCardAnimation(SpellDisplay card, Action preDestroy)
+    private IEnumerator DiscardCardAnimation(SpellDisplay card)
     {
         RectTransform t = (RectTransform)card.transform;
         card.SetScaleLocked(true);
@@ -548,14 +602,9 @@ public partial class CombatManager : MonoBehaviour
 
         Tween posTween = t.DOAnchorPos(new Vector2(t.anchoredPosition.x, t.anchoredPosition.y + discardCardDownAmount), discardSlideDuration);
         yield return new WaitUntil(() => !posTween.active);
-
-        // Call any additional Actions
-        preDestroy?.Invoke();
-
-        Destroy(card.gameObject);
     }
 
-    private IEnumerator ExhaustCardAnimation(SpellDisplay card, Action preDestroy)
+    private IEnumerator ExhaustCardAnimation(SpellDisplay card)
     {
         RectTransform t = (RectTransform)card.transform;
         card.SetScaleLocked(true);
@@ -570,14 +619,9 @@ public partial class CombatManager : MonoBehaviour
 
         t.DOKill();
         card.DOKill();
-
-        // Call any additional Actions
-        preDestroy?.Invoke();
-
-        Destroy(card.gameObject);
     }
 
-    private IEnumerator PowerSpellAnimation(SpellDisplay card, Action preDestroy)
+    private IEnumerator PowerSpellAnimation(SpellDisplay card)
     {
         RectTransform t = (RectTransform)card.transform;
         card.SetScaleLocked(true);
@@ -586,29 +630,24 @@ public partial class CombatManager : MonoBehaviour
 
         Tween scaleTween = t.DOScale(Vector3.zero, powerSpellShrinkDuration);
         yield return new WaitUntil(() => !scaleTween.active);
-
-        // Call any additional Actions
-        preDestroy?.Invoke();
-
-        Destroy(card.gameObject);
     }
 
-    public void HandleSpellCast(Spell spell)
+    public IEnumerator HandleSpellCast(Spell spell)
     {
         if (spell.SpellCastType == SpellCastType.Power)
         {
             // Automatically remove Power Spells from Hand when Played
-            AddSpellToPowerSpellPile((PowerSpell)spell);
+            yield return StartCoroutine(AddSpellToPowerSpellPile((PowerSpell)spell));
         }
         else
         {
             switch (spell.QueueDeckAction)
             {
                 case SpellQueueDeckAction.Discard:
-                    DiscardSpell(spell);
+                    yield return StartCoroutine(DiscardSpell(spell));
                     break;
                 case SpellQueueDeckAction.Exhaust:
-                    ExhaustSpell(spell);
+                    yield return StartCoroutine(ExhaustSpell(spell));
                     break;
                 case SpellQueueDeckAction.None:
                     break;
@@ -618,18 +657,17 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-
     private IEnumerator HandleHandAtEndOfTurn()
     {
         if (GameManager._Instance.HasArtifact(ArtifactLabel.AccursedBrand))
         {
-            if (NumSpellsInDrawablePlaces > AccursedBrand.MinCards && hand.Count > 0)
+            if (NumSpellsInDrawablePlaces > AccursedBrand.MinCards && Hand.Count > 0)
             {
                 yield return StartCoroutine(ExhaustSpellSequence(1));
             }
         }
 
-        List<Spell> toHandle = hand.GetEntriesMatching(spell => true);
+        List<Spell> toHandle = Hand.GetEntriesMatching(spell => true);
         foreach (Spell spell in toHandle)
         {
             // if at the end of the turn, there are playable curses in hand, play them
@@ -639,12 +677,12 @@ public partial class CombatManager : MonoBehaviour
                 {
                     if (!((ReusableSpell)spell).OnCooldown)
                     {
-                        AddSpellToCastQueue(spell, Combatent.Character, Combatent.Enemy, false);
+                        yield return StartCoroutine(AddSpellToCastQueue(spell, Combatent.Character, Combatent.Enemy, false, false));
                     }
                 }
                 else
                 {
-                    AddSpellToCastQueue(spell, Combatent.Character, Combatent.Enemy, false);
+                    yield return StartCoroutine(AddSpellToCastQueue(spell, Combatent.Character, Combatent.Enemy, false, false));
                 }
             }
 
@@ -652,12 +690,12 @@ public partial class CombatManager : MonoBehaviour
             switch (spell.EndOfTurnDeckAction)
             {
                 case SpellEndOfTurnDeckAction.Ethereal:
-                    ExhaustSpell(spell);
+                    yield return StartCoroutine(ExhaustSpell(spell));
                     break;
                 case SpellEndOfTurnDeckAction.Retain:
                     break;
                 case SpellEndOfTurnDeckAction.Discard:
-                    DiscardSpell(spell, false);
+                    StartCoroutine(DiscardSpell(spell, false));
                     break;
                 default:
                     throw new UnhandledSwitchCaseException();
@@ -667,12 +705,12 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void DiscardSpell(Spell spell, bool recalculateKeybinds = true)
+    public IEnumerator DiscardSpell(Spell spell, bool recalculateKeybinds = true)
     {
-        if (hand.Contains(spell))
+        if (Hand.Contains(spell))
         {
-            hand.Remove(spell);
-            discardPile.Add(spell);
+            Hand.Remove(spell);
+            DiscardPile.Add(spell);
 
             SpellDisplay spellDisplay = spell.GetEquippedTo();
             if (spellDisplay == null)
@@ -681,71 +719,74 @@ public partial class CombatManager : MonoBehaviour
                 Time.timeScale = 0;
             }
             handLayoutGroup.RemoveTransformFromHand(spellDisplay.transform);
-            StartCoroutine(DiscardCardAnimation(spellDisplay, delegate
+
+            yield return StartCoroutine(DiscardCardAnimation(spellDisplay));
+
+            Destroy(spellDisplay.gameObject);
+
+            // Callback
+            yield return StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnAnyDiscard));
+
+            if (spell is ReusableSpell)
             {
-                // Callback
-                spell.CallSpellCallback(SpellCallbackType.OnAnyDiscard);
+                ((ReusableSpell)spell).ResetCooldown();
+            }
 
-                if (spell is ReusableSpell)
-                {
-                    ((ReusableSpell)spell).ResetCooldown();
-                }
-
-                if (recalculateKeybinds)
-                {
-                    CallRecalculateKeyBinds();
-                }
-            }));
+            if (recalculateKeybinds)
+            {
+                CallRecalculateKeyBinds();
+            }
         }
     }
 
-    public void ExhaustSpell(Spell spell)
+    public IEnumerator ExhaustSpell(Spell spell)
     {
-        if (hand.Contains(spell))
+        if (Hand.Contains(spell))
         {
-            Debug.Log("Exhasting: " + spell);
-            hand.Remove(spell);
-            exhaustPile.Add(spell);
+            Hand.Remove(spell);
+            ExhaustPile.Add(spell);
+
+            SpellDisplay spellDisplay = spell.GetEquippedTo();
+
+            handLayoutGroup.RemoveTransformFromHand(spellDisplay.transform);
+
+            spell.GetEquippedTo().SetSpellDisplayState(SpellDisplayState.Fading);
+
+            yield return StartCoroutine(ExhaustCardAnimation(spellDisplay));
+
+            Destroy(spellDisplay.gameObject);
+
+            // Callback
+            yield return StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnExhaust));
+
+            if (spell is ReusableSpell)
+            {
+                ((ReusableSpell)spell).ResetCooldown();
+            }
+
+            // Callback
+            OnExhaustSpell?.Invoke();
+
+            CallRecalculateKeyBinds();
+        }
+    }
+
+    public IEnumerator AddSpellToPowerSpellPile(PowerSpell spell)
+    {
+        if (Hand.Contains(spell))
+        {
+            Hand.Remove(spell);
+            PowerSpellPile.Add(spell);
 
             handLayoutGroup.RemoveTransformFromHand(spell.GetEquippedTo().transform);
 
             spell.GetEquippedTo().SetSpellDisplayState(SpellDisplayState.Fading);
 
-            StartCoroutine(ExhaustCardAnimation(spell.GetEquippedTo(), delegate
-            {
-                // Callback
-                spell.CallSpellCallback(SpellCallbackType.OnExhaust);
+            yield return StartCoroutine(PowerSpellAnimation(spell.GetEquippedTo()));
 
-                if (spell is ReusableSpell)
-                {
-                    ((ReusableSpell)spell).ResetCooldown();
-                }
+            Destroy(spell.GetEquippedTo().gameObject);
 
-                // Callback
-                OnExhaustSpell?.Invoke();
-
-                CallRecalculateKeyBinds();
-            }));
-        }
-    }
-
-    public void AddSpellToPowerSpellPile(PowerSpell spell)
-    {
-        if (hand.Contains(spell))
-        {
-            hand.Remove(spell);
-            powerSpellPile.Add(spell);
-
-            handLayoutGroup.RemoveTransformFromHand(spell.GetEquippedTo().transform);
-
-            spell.GetEquippedTo().SetSpellDisplayState(SpellDisplayState.Fading);
-
-            StartCoroutine(PowerSpellAnimation(spell.GetEquippedTo(), delegate
-            {
-                Destroy(spell.GetEquippedTo().gameObject);
-                CallRecalculateKeyBinds();
-            }));
-
+            CallRecalculateKeyBinds();
         }
     }
 
@@ -775,29 +816,19 @@ public partial class CombatManager : MonoBehaviour
     {
         if (alterHandSequenceSelectedSpells.Contains(spell))
         {
-            DeselectSpellForAlterHandSequence(spell);
+            alterHandSequenceSelectedSpells.Remove(spell);
+            spell.GetEquippedTo().SetSpellDisplayState(SpellDisplayState.InHand);
         }
         else
         {
-            SelectSpellForAlterHandSequence(spell);
+            alterHandSequenceSelectedSpells.Add(spell);
+            spell.GetEquippedTo().SetSpellDisplayState(SpellDisplayState.Selected);
         }
-    }
-
-    private void SelectSpellForAlterHandSequence(Spell spell)
-    {
-        alterHandSequenceSelectedSpells.Add(spell);
-        spell.GetEquippedTo().SetSpellDisplayState(SpellDisplayState.Selected);
-    }
-
-    private void DeselectSpellForAlterHandSequence(Spell spell)
-    {
-        alterHandSequenceSelectedSpells.Remove(spell);
-        spell.GetEquippedTo().SetSpellDisplayState(currentAlterHandSequenceState);
     }
 
     public void ReduceActiveSpellCooldowns(int reduceBy)
     {
-        foreach (ReusableSpell spell in hand.GetEntriesMatching(spell => spell.SpellCastType == SpellCastType.Reusable))
+        foreach (ReusableSpell spell in Hand.GetEntriesMatching(spell => spell.SpellCastType == SpellCastType.Reusable))
         {
             if (spell.OnCooldown)
             {
@@ -808,7 +839,7 @@ public partial class CombatManager : MonoBehaviour
 
     public void ResetActiveSpellCooldowns()
     {
-        foreach (ReusableSpell spell in hand.GetEntriesMatching(spell => spell.SpellCastType == SpellCastType.Reusable))
+        foreach (ReusableSpell spell in Hand.GetEntriesMatching(spell => spell.SpellCastType == SpellCastType.Reusable))
         {
             if (spell.OnCooldown)
             {
@@ -817,55 +848,69 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private IEnumerator AlterHandSequence(int numToAlter, Action<Spell> callOnSpell, string label, SpellDisplayState choosingState, Action onComplete)
+    public bool AwaitingAlterHandSequenceSelections = false;
+
+    private IEnumerator AlterHandSequence(int numToAlter, AlterHandSequenceType type, Action onComplete)
     {
-        if (hand.Count < numToAlter)
+        if (Hand.Count < numToAlter)
         {
-            hand.ActOnEachSpellInPile(spell => alterHandSequenceSelectedSpells.Add(spell));
+            Hand.ActOnEachSpellInPile(spell => alterHandSequenceSelectedSpells.Add(spell));
         }
         else
         {
-            currentAlterHandSequenceState = choosingState;
             alterHandInstructionText.gameObject.SetActive(true);
             alterHandInstructionContainer.SetActive(true);
             alterHandBackground.SetActive(true);
-            hand.ActOnEachSpellInPile(spell => spell.GetEquippedTo().SetSpellDisplayState(choosingState));
+
+            AwaitingAlterHandSequenceSelections = true;
 
             while (alterHandSequenceSelectedSpells.Count < numToAlter)
             {
                 int numToGo = (numToAlter - alterHandSequenceSelectedSpells.Count);
-                alterHandInstructionText.text = "Select " + numToGo + " more Spell" + (numToGo > 1 ? "s" : "") + " to " + label;
+                alterHandInstructionText.text = "Select " + numToGo + " Spell" + (numToGo > 1 ? "s" : "") + " to " + type.ToString();
                 yield return null;
             }
+
+            AwaitingAlterHandSequenceSelections = false;
         }
 
+        // Set Instruction Text inactive
         alterHandInstructionContainer.gameObject.SetActive(false);
+        alterHandBackground.SetActive(false);
+        alterHandInstructionText.gameObject.SetActive(false);
 
         while (alterHandSequenceSelectedSpells.Count > 0)
         {
             Spell spell = alterHandSequenceSelectedSpells[0];
             alterHandSequenceSelectedSpells.RemoveAt(0);
 
-            if (choosingState == SpellDisplayState.ChoosingDiscard)
+            if (type == AlterHandSequenceType.Discard)
             {
                 // "Callback"
-                spell.CallSpellCallback(SpellCallbackType.OnSpecificDiscard);
+                yield return StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnSpecificDiscard));
 
                 // Callback
                 OnSpecificDiscardSpell?.Invoke();
-            }
-            if (choosingState == SpellDisplayState.ChoosingExhaust)
-            {
-                //
-            }
 
-            callOnSpell(spell);
+                yield return StartCoroutine(DiscardSpell(spell));
+            }
+            if (type == AlterHandSequenceType.Exhaust)
+            {
+                // "Callback"
+                yield return StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnExhaust));
+
+                // Callback
+                OnExhaustSpell?.Invoke();
+
+                yield return StartCoroutine(ExhaustSpell(spell));
+            }
 
             yield return new WaitForSeconds(delayBetweenAlterHandCalls);
         }
 
+        // Reset
+
         CallRecalculateKeyBinds();
-        alterHandBackground.SetActive(false);
 
         onComplete?.Invoke();
     }
@@ -881,7 +926,7 @@ public partial class CombatManager : MonoBehaviour
         yield return new WaitForSeconds(.5f);
 
         int index = 0;
-        hand.ActOnEachSpellInPile(spell =>
+        Hand.ActOnEachSpellInPile(spell =>
         {
             // Recalculate Key Bindings
             VisualSpellDisplay spellDisplay = ((VisualSpellDisplay)spell.GetEquippedTo());
@@ -895,12 +940,12 @@ public partial class CombatManager : MonoBehaviour
 
     public IEnumerator ExhaustSpellSequence(int numToExhaust, Action onComplete = null)
     {
-        yield return StartCoroutine(AlterHandSequence(numToExhaust, spell => ExhaustSpell(spell), "Exhaust", SpellDisplayState.ChoosingExhaust, onComplete));
+        yield return StartCoroutine(AlterHandSequence(numToExhaust, AlterHandSequenceType.Exhaust, onComplete));
     }
 
     public IEnumerator DiscardSpellSequence(int numToDiscard, Action onComplete = null)
     {
-        yield return StartCoroutine(AlterHandSequence(numToDiscard, spell => DiscardSpell(spell), "Discard", SpellDisplayState.ChoosingDiscard, onComplete));
+        yield return StartCoroutine(AlterHandSequence(numToDiscard, AlterHandSequenceType.Discard, onComplete));
     }
 
     private void Awake()
@@ -1042,14 +1087,14 @@ public partial class CombatManager : MonoBehaviour
         {
             foreach (Spell spell in action.GetActionSpells())
             {
-                AddSpellToCastQueue(spell, Combatent.Enemy, Combatent.Character);
+                yield return StartCoroutine(AddSpellToCastQueue(spell, Combatent.Enemy, Combatent.Character, false, true));
             }
         }
 
-        // Call On Combat Start Spell Effects right Away
-        StartCoroutine(CallSpellEffects(currentEnemy.GetOnCombatStartSpellEffects(), null, Combatent.Enemy, Combatent.Character, false));
-
         StartCoroutine(UpdateDuringCombat());
+
+        // Call On Combat Start Spell Effects right Away
+        yield return StartCoroutine(CallSpellEffects(currentEnemy.GetOnCombatStartSpellEffects(), null, Combatent.Enemy, Combatent.Character, false));
 
         while (currentEnemyHP > 0 && GameManager._Instance.GetCurrentCharacterHP() > 0)
         {
@@ -1067,7 +1112,7 @@ public partial class CombatManager : MonoBehaviour
             currentEnemyAction = currentEnemy.GetViableEnemyAction();
             foreach (Spell spell in currentEnemyAction.GetActionSpells())
             {
-                AddSpellToCastQueue(spell, Combatent.Enemy, Combatent.Character);
+                yield return StartCoroutine(AddSpellToCastQueue(spell, Combatent.Enemy, Combatent.Character, false, true));
             }
 
             yield return StartCoroutine(DrawHand());
@@ -1169,7 +1214,7 @@ public partial class CombatManager : MonoBehaviour
         // Callback
         foreach (Spell spell in spellCastThisTurn)
         {
-            spell.CallSpellCallback(SpellCallbackType.OnPlayerTurnEnd);
+            yield return StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnPlayerTurnEnd));
         }
 
         Debug.Log("Player Turn Ended");
@@ -1178,7 +1223,7 @@ public partial class CombatManager : MonoBehaviour
     public void TickHandCooldowns(Spell exclude)
     {
         // Tick other active spell cooldowns
-        foreach (ReusableSpell activeSpell in hand.GetEntriesMatching(spell => spell.SpellCastType == SpellCastType.Reusable))
+        foreach (ReusableSpell activeSpell in Hand.GetEntriesMatching(spell => spell.SpellCastType == SpellCastType.Reusable))
         {
             if (activeSpell == exclude) continue;
             if (!activeSpell.OnCooldown) continue;
@@ -1186,14 +1231,35 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void AddSpellToCastQueue(Spell spell, Combatent adder, Combatent other, bool canEcho = true)
+    public void TickRandomQueuedSpell(List<QueuedSpell> castQueue)
+    {
+        List<QueuedSpellDisplay> options = new List<QueuedSpellDisplay>();
+
+        foreach (QueuedSpell spell in castQueue)
+        {
+            if (spell.Spell.SpellCastType == SpellCastType.Power) continue;
+            if (spell.SpellQueueDisplay.GetPrepTime() > 1)
+            {
+                options.Add(spell.SpellQueueDisplay);
+            }
+        }
+
+        if (options.Count > 0)
+        {
+            // spell.SpellQueueDisplay.SetPrepTime(currentPrepTime - 1);
+            QueuedSpellDisplay selected = RandomHelper.GetRandomFromList(options);
+            selected.AlterPrepTime(-1);
+        }
+    }
+
+    public IEnumerator AddSpellToCastQueue(Spell spell, Combatent adder, Combatent other, bool useMana, bool canEcho, Action<Spell> actOnSpell = null)
     {
         // Echo Effect
         if (TargetHasAffliction(AfflictionType.Echo, adder) && canEcho)
         {
             ConsumeAfflictionStack(AfflictionType.Echo, adder);
             ShowAfflictionProc(AfflictionType.Echo, adder);
-            AddSpellToCastQueue(spell, adder, other, false);
+            yield return StartCoroutine(AddSpellToCastQueue(spell, adder, other, useMana, false));
         }
 
         // Spawn new display
@@ -1217,13 +1283,18 @@ public partial class CombatManager : MonoBehaviour
             }
             else
             {
+                // Set Cooldown
                 if (spell.SpellCastType == SpellCastType.Reusable)
                 {
                     // Set Cooldown
                     ((ReusableSpell)spell).SetOnCooldown();
                 }
+
                 // Consume Mana
-                GameManager._Instance.AlterPlayerCurrentMana(-spell.ManaCost);
+                if (useMana)
+                {
+                    GameManager._Instance.AlterPlayerCurrentMana(-spell.ManaCost);
+                }
             }
         }
 
@@ -1239,7 +1310,10 @@ public partial class CombatManager : MonoBehaviour
         }
 
         // Callback
-        spell.CallSpellCallback(SpellCallbackType.OnQueue);
+        yield return StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnQueue));
+
+        if (actOnSpell != null)
+            actOnSpell(spell);
     }
 
     private SemicircleLayoutGroup GetQueuedSpellDisplayForTarget(Combatent t)
@@ -1267,10 +1341,9 @@ public partial class CombatManager : MonoBehaviour
         {
             // Get Spell from Queue
             QueuedSpell spell = castQueue[i];
-            int currentPrepTime = spell.SpellQueueDisplay.GetPrepTime();
-            spell.SpellQueueDisplay.SetPrepTime(currentPrepTime - 1);
+            spell.SpellQueueDisplay.AlterPrepTime(-1);
 
-            if (currentPrepTime - 1 > 0)
+            if (spell.SpellQueueDisplay.GetPrepTime() > 0)
             {
                 i++;
                 yield return new WaitForSeconds(delayBetweenSpellPrepTimeTicks);
@@ -1279,12 +1352,6 @@ public partial class CombatManager : MonoBehaviour
 
             // Can proceed to Cast
             spell.SpellQueueDisplay.SetAllowScale(true);
-
-            // Show next up spell cast
-            if (castQueue.Count > i + 1)
-            {
-                castQueue[i + 1].SpellQueueDisplay.SetOutlineColor(Color.red);
-            }
 
             // Remove Spell from Queue
             castQueue.RemoveAt(i);
@@ -1356,7 +1423,7 @@ public partial class CombatManager : MonoBehaviour
         {
             foreach (Spell spell in action.GetActionSpells())
             {
-                AddSpellToCastQueue(spell, Combatent.Enemy, Combatent.Character);
+                yield return StartCoroutine(AddSpellToCastQueue(spell, Combatent.Enemy, Combatent.Character, false, true));
             }
         }
 
@@ -1382,7 +1449,7 @@ public partial class CombatManager : MonoBehaviour
         {
             foreach (Spell spell in action.GetActionSpells())
             {
-                AddSpellToCastQueue(spell, Combatent.Enemy, Combatent.Character);
+                yield return StartCoroutine(AddSpellToCastQueue(spell, Combatent.Enemy, Combatent.Character, false, true));
             }
         }
 
@@ -1409,9 +1476,9 @@ public partial class CombatManager : MonoBehaviour
             // Set mana Texts
             nextTurnManaChangeText.text = "+" + GameManager._Instance.GetManaPerTurn();
 
-            drawPileCountText.text = drawPile.Count.ToString();
-            discardPileCountText.text = discardPile.Count.ToString();
-            exhaustPileCountText.text = exhaustPile.Count.ToString();
+            drawPileCountText.text = DrawPile.Count.ToString();
+            discardPileCountText.text = DiscardPile.Count.ToString();
+            exhaustPileCountText.text = ExhaustPile.Count.ToString();
 
             // Change the text of the cast Button depending on what's happening
             if (currentTurn == Turn.Enemy)
@@ -1480,12 +1547,12 @@ public partial class CombatManager : MonoBehaviour
         effectivenessMultiplierText.text = "x" + Utils.RoundTo(currentSpellEffectivenessMultiplier, 2).ToString();
 
         // Reset Spells
-        hand.TransferEntries(discardPile, false);
-        discardPile.TransferEntries(exhaustPile, false);
-        exhaustPile.TransferEntries(powerSpellPile, false);
-        powerSpellPile.TransferEntries(drawPile, false);
-        drawPile.ActOnEachSpellInPile(spell => spell.CallSpellCallback(SpellCallbackType.OnCombatReset));
-        drawPile.Clear();
+        Hand.TransferEntries(DiscardPile, false);
+        DiscardPile.TransferEntries(ExhaustPile, false);
+        ExhaustPile.TransferEntries(PowerSpellPile, false);
+        PowerSpellPile.TransferEntries(DrawPile, false);
+        DrawPile.ActOnEachSpellInPile(spell => StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnCombatReset)));
+        DrawPile.Clear();
 
         musicSource.Stop();
         musicSource.time = 0;
@@ -1529,30 +1596,14 @@ public partial class CombatManager : MonoBehaviour
         return currentEnemyHP <= 0 || GameManager._Instance.GetCurrentCharacterHP() <= 0;
     }
 
-    public void ReplaceCurrentEnemyAction(EnemyAction newAction)
-    {
-        ClearCastQueue(enemyCastQueue);
-
-        currentEnemyAction = newAction;
-        foreach (Spell spell in currentEnemyAction.GetActionSpells())
-        {
-            AddSpellToCastQueue(spell, Combatent.Enemy, Combatent.Character);
-        }
-    }
-
-    public void ReplaceCurrentEnemyAction()
-    {
-        ReplaceCurrentEnemyAction(currentEnemy.GetEnemyAction(new List<EnemyAction>() { currentEnemyAction }));
-    }
-
-    // Used for Jumpy (Affliction)
+    // Used for Jumpy (Affliction) - Scares me a bit due to not being a Coroutine
     public void RandomizeSpell(Combatent combatent)
     {
         switch (combatent)
         {
             case Combatent.Character:
 
-                if (playerCastQueue.Count > 0 && drawPile.Count > 0)
+                if (playerCastQueue.Count > 0 && DrawPile.Count > 0)
                 {
                     // Get Random Spell
                     QueuedSpell replacingSpell = RandomHelper.GetRandomFromList(playerCastQueue);
@@ -1560,11 +1611,11 @@ public partial class CombatManager : MonoBehaviour
                     playerCastQueue.Remove(replacingSpell);
                     Destroy(replacingSpell.SpellQueueDisplay.gameObject);
 
-                    Spell newSpell = RandomHelper.GetRandomFromList(drawPile.GetSpells());
-                    drawPile.Remove(newSpell);
-                    discardPile.Add(newSpell);
+                    Spell newSpell = RandomHelper.GetRandomFromList(DrawPile.GetSpells());
+                    DrawPile.Remove(newSpell);
+                    DiscardPile.Add(newSpell);
 
-                    AddSpellToCastQueue(newSpell, Combatent.Character, Combatent.Enemy, false);
+                    StartCoroutine(AddSpellToCastQueue(newSpell, Combatent.Character, Combatent.Enemy, false, false));
                 }
 
                 break;
@@ -1580,7 +1631,7 @@ public partial class CombatManager : MonoBehaviour
 
                     Spell newSpell = RandomHelper.GetRandomFromList(CurrentEnemy.GetAnyEnemyAction().GetActionSpells());
 
-                    AddSpellToCastQueue(newSpell, Combatent.Character, Combatent.Enemy, false);
+                    StartCoroutine(AddSpellToCastQueue(newSpell, Combatent.Character, Combatent.Enemy, false, false));
                 }
 
                 break;
@@ -1645,19 +1696,16 @@ public partial class CombatManager : MonoBehaviour
 
         yield return new WaitForSeconds(delayAfterNoteSequence);
 
-        // Apply effects
-        yield return StartCoroutine(CallSpellEffects(spell.GetSpellEffects(), null, caster, other));
+        // Callback
+        yield return StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnCast));
 
         // Callback
         CombatentBaseCallbackMap[Combatent.Character][CombatBaseCallbackType.OnSpellCast]?.Invoke();
 
         // Callback
-        spell.CallSpellCallback(SpellCallbackType.OnCast);
-
-        // Callback
         if (CheckForCombatOver() && currentEnemyHP <= 0)
         {
-            spell.CallSpellCallback(SpellCallbackType.OnKill);
+            yield return StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnKill));
         }
     }
 
@@ -1979,6 +2027,13 @@ public partial class CombatManager : MonoBehaviour
 
     private Dictionary<SpellStat, List<QueuedSpell>> GetQueuedSpellsWithStats(Combatent caster, List<SpellStat> statTypes)
     {
+        // Freakshow
+        if (statTypes.Contains(SpellStat.AnyAffStackAmount))
+        {
+            statTypes.Add(SpellStat.Aff1StackAmount);
+            statTypes.Add(SpellStat.Aff2StackAmount);
+        }
+
         Dictionary<SpellStat, List<QueuedSpell>> applicableSpells = new Dictionary<SpellStat, List<QueuedSpell>>();
         foreach (QueuedSpell spell in GetTargetSpellQueue(caster))
         {
@@ -2000,15 +2055,58 @@ public partial class CombatManager : MonoBehaviour
         return applicableSpells;
     }
 
-    private void HandleQueueSpellEffect(SpellQueueSpellEffect queueSpell, Combatent target, Combatent caster)
+    private IEnumerator HandleQueueSpellEffect(SpellQueueSpellEffect queueSpell, Combatent target, Combatent caster)
     {
         if (queueSpell.Target == Target.Other || queueSpell.Target == Target.Both)
         {
-            AddSpellToCastQueue(queueSpell.ToQueue, target, caster);
+            yield return StartCoroutine(AddSpellToCastQueue(queueSpell.ToQueue, target, caster, false, true));
         }
         if (queueSpell.Target == Target.Self || queueSpell.Target == Target.Both)
         {
-            AddSpellToCastQueue(queueSpell.ToQueue, caster, target);
+            yield return StartCoroutine(AddSpellToCastQueue(queueSpell.ToQueue, caster, target, false, true));
+        }
+    }
+
+    private IEnumerator HandlePlayerDrawSpellsSpellEffect(PlayerDrawSpellsSpellEffect draw)
+    {
+        yield return StartCoroutine(DrawSpells(draw.NumSpells));
+    }
+
+    private IEnumerator HandlePlayerDiscardSpellsSpellEffect(PlayerDiscardSpellsSpellEffect discard)
+    {
+        if (discard.LetChoose)
+        {
+            //
+            yield return StartCoroutine(DiscardSpellSequence(discard.NumSpells));
+        }
+        else
+        {
+            yield return StartCoroutine(ForceDiscardSpells(discard.NumSpells));
+        }
+    }
+
+    private IEnumerator HandlePlayerExhaustSpellsSpellEffect(PlayerExhaustSpellsSpellEffect exhaust)
+    {
+        if (exhaust.LetChoose)
+        {
+            //
+            yield return StartCoroutine(ExhaustSpellSequence(exhaust.NumSpells));
+        }
+        else
+        {
+            yield return StartCoroutine(ForceExhaustSpells(exhaust.NumSpells));
+        }
+    }
+
+    private void HandleTickPrepTimeSpellEffect(SpellTickPrepTimeEffect tick, Combatent target, Combatent caster)
+    {
+        if (tick.Target == Target.Other || tick.Target == Target.Both)
+        {
+            TickRandomQueuedSpell(caster == Combatent.Character ? enemyCastQueue : playerCastQueue);
+        }
+        if (tick.Target == Target.Self || tick.Target == Target.Both)
+        {
+            TickRandomQueuedSpell(caster == Combatent.Character ? playerCastQueue : enemyCastQueue);
         }
     }
 
@@ -2086,7 +2184,19 @@ public partial class CombatManager : MonoBehaviour
                     HandleAlterQueuedSpellEffect(alterQueuedSpell, target, caster);
                     break;
                 case SpellQueueSpellEffect queueSpell:
-                    HandleQueueSpellEffect(queueSpell, target, caster);
+                    yield return StartCoroutine(HandleQueueSpellEffect(queueSpell, target, caster));
+                    break;
+                case PlayerDrawSpellsSpellEffect draw:
+                    yield return StartCoroutine(HandlePlayerDrawSpellsSpellEffect(draw));
+                    break;
+                case PlayerDiscardSpellsSpellEffect discard:
+                    yield return StartCoroutine(HandlePlayerDiscardSpellsSpellEffect(discard));
+                    break;
+                case PlayerExhaustSpellsSpellEffect exhaust:
+                    yield return StartCoroutine(HandlePlayerExhaustSpellsSpellEffect(exhaust));
+                    break;
+                case SpellTickPrepTimeEffect tick:
+                    HandleTickPrepTimeSpellEffect(tick, target, caster);
                     break;
                 default:
                     throw new UnhandledSwitchCaseException();

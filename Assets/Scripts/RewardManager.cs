@@ -205,7 +205,7 @@ public class RewardManager : MonoBehaviour
         spawned.Set(book.Name, rewardTypeSpriteDict[RewardType.Book],
             delegate
             {
-                GameManager._Instance.SwapBooks(GameManager._Instance.GetOwnedBookLabel(0), label);
+                GameManager._Instance.SwapBooks(book);
                 spawnedRewards.Remove(spawned);
                 Destroy(spawned.gameObject);
             }, delegate

@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.EventSystems;
+using DG.Tweening;
 
 public class ItemDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
@@ -11,32 +12,16 @@ public class ItemDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private TextMeshProUGUI additionalText;
 
     [Header("Animations")]
-    [SerializeField] private float regularScale;
-    [SerializeField] private float maxScale;
-    private float targetScale;
-    [SerializeField] private float changeScaleSpeed = 1f;
+    [SerializeField] private float onActivateTweenTo;
+    [SerializeField] private float onActivateTweenDuration;
+    [SerializeField] private float returnScaleSpeed;
+    private Tween scaleTween;
 
     private PowerupItem setTo;
     private GameObject spawnedToolTip;
 
-    private void Awake()
-    {
-        // Set Target Scale Initially
-        targetScale = regularScale;
-
-    }
-
     protected void Update()
     {
-        // Allow target scale to fall back to regular scale
-        if (targetScale != regularScale)
-        {
-            targetScale = Mathf.MoveTowards(targetScale, regularScale, changeScaleSpeed * Time.deltaTime);
-        }
-
-        // Set Transforms Actual Scale Scale
-        image.transform.localScale = targetScale * Vector3.one;
-
         // Update additional text if neccessary
         string itemAdditionalText = setTo.GetAdditionalText();
         if (itemAdditionalText.Length > 0)
@@ -47,11 +32,16 @@ public class ItemDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         {
             additionalText.gameObject.SetActive(false);
         }
+
+        if (scaleTween != null && !scaleTween.active)
+        {
+            transform.localScale = Vector3.MoveTowards(transform.localScale, Vector3.one, Time.deltaTime * returnScaleSpeed);
+        }
     }
 
     public void AnimateScale()
     {
-        targetScale = maxScale;
+        scaleTween = transform.DOScale(onActivateTweenTo, onActivateTweenDuration);
     }
 
     public virtual void SetItem(PowerupItem i)

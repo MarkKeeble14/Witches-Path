@@ -181,6 +181,6 @@ public abstract class Combat : GameOccurance
     protected virtual void AdditionalOnResolveActions()
     {
         //
-        GameManager._Instance.AlterAllBookCharge(1);
+        GameManager._Instance.AlterBookCharge(1);
     }
 }

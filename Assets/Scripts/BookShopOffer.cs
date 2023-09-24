@@ -18,7 +18,7 @@ public class BookShopOffer : ShopOffer
 
     protected override void Purchase()
     {
-        GameManager._Instance.AddBook(book.GetLabel());
+        GameManager._Instance.EquipBook(Book.GetBookOfType(book.GetLabel()));
         DestroyToolTip();
     }
 }

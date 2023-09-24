@@ -370,6 +370,7 @@ MonoBehaviour:
   mainImage: {fileID: 905951403279523795}
   text: {fileID: 6244816588848446114}
   showSpellStatChangePrefab: {fileID: 5177134254542220905, guid: 39e9996f206b1314f95cb8ad27f14e83, type: 3}
+  showQueuedSpellPrepTimeTickPrefab: {fileID: -8047098369182106570, guid: f3199d08012f46643b407299ca581e79, type: 3}
   prepTimeText: {fileID: 6959543090731440406}
   spellEffects: {fileID: 2074269489773873004}
   spellEffectPrefab: {fileID: 4665765622561193700, guid: fa79718441c799546bdeef8215645935, type: 3}

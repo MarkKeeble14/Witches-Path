@@ -21,7 +21,23 @@ public enum SpellEffectType
     CleanseAfflictions,
     Draw,
     AlterQueuedSpell,
-    QueueSpell
+    QueueSpell,
+    PlayerDrawSpells,
+    PlayerDiscardSpells,
+    PlayerExhaustSpells,
+    TickPrepTime
+}
+
+public struct LabeledSpellStat
+{
+    public SpellStat Stat { get; private set; }
+    public string Label { get; private set; }
+
+    public LabeledSpellStat(SpellStat stat, string name)
+    {
+        Stat = stat;
+        Label = name;
+    }
 }
 
 public abstract class SpellEffect : ToolTippable
@@ -29,6 +45,7 @@ public abstract class SpellEffect : ToolTippable
     public abstract SpellEffectType Type { get; }
     protected abstract string name { get; }
     protected abstract string toolTipText { get; }
+    private string additionalText = "";
     public abstract string NumText { get; }
     public Sprite Sprite => UIManager._Instance.GetSpellEffectIcon(Type);
     protected Target target;
@@ -70,7 +87,13 @@ public abstract class SpellEffect : ToolTippable
 
     public string GetToolTipText()
     {
-        return toolTipText;
+        return toolTipText + (additionalText.Length > 0 ? " - " + additionalText : "");
+    }
+
+    public void AddAdditionalText(string toAdd)
+    {
+        if (additionalText.Length > 0) additionalText += ", ";
+        additionalText += toAdd;
     }
 }
 
@@ -314,7 +337,6 @@ public class SpellCleanseAfflictionsEffect : SpellEffect
         }
     }
 }
-//
 
 
 // Alter HP
@@ -378,7 +400,7 @@ public class SpellAlterQueuedSpellEffect : SpellEffect
 {
     public override SpellEffectType Type => SpellEffectType.AlterQueuedSpell;
 
-    protected override string name => "Alter Queued Spell";
+    protected override string name => "Alter Spell";
 
     protected override string toolTipText
     {
@@ -386,29 +408,29 @@ public class SpellAlterQueuedSpellEffect : SpellEffect
         {
             string res = "Alter the ";
 
-            if (ApplicableStats.Count == 1)
+            if (labeledStats.Count == 1)
             {
-                res += ApplicableStats[0].ToString();
+                res += GetSpellStatString(labeledStats[0]);
             }
-            else if (ApplicableStats.Count == 2)
+            else if (labeledStats.Count == 2)
             {
-                res += ApplicableStats[0].ToString() + " or " + ApplicableStats[1];
+                res += GetSpellStatString(labeledStats[0]) + " or " + GetSpellStatString(labeledStats[1]);
             }
             else
             {
-                for (int i = 0; i < ApplicableStats.Count; i++)
+                for (int i = 0; i < labeledStats.Count; i++)
                 {
-                    if (i < ApplicableStats.Count - 2)
+                    if (i < labeledStats.Count - 2)
                     {
-                        res += ApplicableStats[i].ToString() + ", ";
+                        res += GetSpellStatString(labeledStats[i]) + ", ";
                     }
-                    else if (i == ApplicableStats.Count - 1)
+                    else if (i == labeledStats.Count - 1)
                     {
-                        res += "or " + ApplicableStats[i].ToString();
+                        res += "or " + GetSpellStatString(labeledStats[i]);
                     }
                 }
             }
-            res += " of a Queued Spell by " + AlterBy;
+            res += " of a Spell by " + AlterBy;
             switch (AlteredStatDuration)
             {
                 case SpellAlterStatDuration.Combat:
@@ -427,18 +449,63 @@ public class SpellAlterQueuedSpellEffect : SpellEffect
         }
     }
 
+    public string GetSpellStatString(LabeledSpellStat stat)
+    {
+        switch (stat.Stat)
+        {
+            case SpellStat.DrawAmount:
+                return "Number of Spells Drawn";
+            case SpellStat.ExhaustAmount:
+                return "Number of Spells Exhaust";
+            case SpellStat.HealAmount:
+                return "Healing";
+            case SpellStat.HitAmount:
+                return "Number of Hits";
+            case SpellStat.OtherDamageAmount:
+                return "Damage Dealt to Opponant";
+            case SpellStat.OtherWardAmount:
+                return "Ward Given to Opponant";
+            case SpellStat.SelfDamageAmount:
+                return "Damage Dealt to Self";
+            case SpellStat.SelfWardAmount:
+                return "Ward Given to Self";
+            case SpellStat.TickPrepTimeAmount:
+                return "Tick By";
+            case SpellStat.AnyAffStackAmount:
+                return "Affliction Stacks to Apply";
+            case SpellStat.Aff1StackAmount:
+                return stat.Label + " Stacks to Apply";
+            case SpellStat.Aff2StackAmount:
+                return stat.Label + " Stacks to Apply";
+            default:
+                return Utils.SplitOnCapitalLetters(stat.ToString());
+        }
+    }
+
     public override string NumText => AlterBy.ToString();
 
     private Func<int> alterBy { get; set; }
     public int AlterBy => alterBy();
     public SpellAlterStatDuration AlteredStatDuration { get; private set; }
-    public List<SpellStat> ApplicableStats { get; private set; }
+    private List<LabeledSpellStat> labeledStats;
+    public List<SpellStat> ApplicableStats
+    {
+        get
+        {
+            List<SpellStat> stats = new List<SpellStat>();
+            foreach (LabeledSpellStat stat in labeledStats)
+            {
+                stats.Add(stat.Stat);
+            }
+            return stats;
+        }
+    }
 
-    public SpellAlterQueuedSpellEffect(Func<int> alterBy, SpellAlterStatDuration alteredStatDuration, Target target, params SpellStat[] applicableStats) : base(target)
+    public SpellAlterQueuedSpellEffect(Func<int> alterBy, SpellAlterStatDuration alteredStatDuration, Target target, params LabeledSpellStat[] applicableStats) : base(target)
     {
         this.alterBy = alterBy;
         AlteredStatDuration = alteredStatDuration;
-        ApplicableStats = applicableStats.ToList();
+        labeledStats = applicableStats.ToList();
     }
 }
 
@@ -460,5 +527,121 @@ public class SpellQueueSpellEffect : SpellEffect
     {
         ToQueue = toQueue;
         QueuePosition = queuePosition;
+    }
+}
+
+public class PlayerDrawSpellsSpellEffect : SpellEffect
+{
+    public override SpellEffectType Type => SpellEffectType.PlayerDrawSpells;
+
+    protected override string name => "Draw Spells";
+
+    protected override string toolTipText => "Draw " + NumSpells + " " + (NumSpells > 1 ? "Spells" : "Spell");
+
+    public override string NumText => NumSpells.ToString();
+    private Func<int> numSpells { get; set; }
+    public int NumSpells => numSpells();
+    public PlayerDrawSpellsSpellEffect(Func<int> numSpells) : base(Target.Self)
+    {
+        this.numSpells = numSpells;
+    }
+}
+
+public class PlayerDiscardSpellsSpellEffect : SpellEffect
+{
+    public override SpellEffectType Type => SpellEffectType.PlayerDiscardSpells;
+
+    protected override string name => "Discard Spells";
+
+    protected override string toolTipText
+    {
+        get
+        {
+            if (LetChoose)
+            {
+                return "Choose " + NumSpells + " " + (NumSpells > 1 ? "Spells" : "Spell") + " to Discard";
+            }
+            else
+            {
+                return "Discard " + NumSpells + " Random " + (NumSpells > 1 ? "Spells" : "Spell");
+            }
+        }
+    }
+
+    public override string NumText => NumSpells.ToString();
+    private Func<int> numSpells { get; set; }
+    public int NumSpells => numSpells();
+    public bool LetChoose { get; private set; }
+
+
+    public PlayerDiscardSpellsSpellEffect(Func<int> numSpells, bool letChoose) : base(Target.Self)
+    {
+        this.numSpells = numSpells;
+        LetChoose = letChoose;
+    }
+}
+
+public class PlayerExhaustSpellsSpellEffect : SpellEffect
+{
+    public override SpellEffectType Type => SpellEffectType.PlayerExhaustSpells;
+
+    protected override string name => "Exhaust Spells";
+
+    protected override string toolTipText
+    {
+        get
+        {
+            if (LetChoose)
+            {
+                return "Choose " + NumSpells + " " + (NumSpells > 1 ? "Spells" : "Spell") + " to Exhaust";
+            }
+            else
+            {
+                return "Exhaust " + NumSpells + " Random " + (NumSpells > 1 ? "Spells" : "Spell");
+            }
+        }
+    }
+
+    public override string NumText => NumSpells.ToString();
+    private Func<int> numSpells { get; set; }
+    public int NumSpells => numSpells();
+    public bool LetChoose { get; private set; }
+    public PlayerExhaustSpellsSpellEffect(Func<int> numSpells, bool letChoose) : base(Target.Self)
+    {
+        this.numSpells = numSpells;
+        LetChoose = letChoose;
+    }
+}
+
+public class SpellTickPrepTimeEffect : SpellEffect
+{
+    public override SpellEffectType Type => SpellEffectType.TickPrepTime;
+    protected override string name => "Ticking Prep Time";
+
+    protected Func<int> tickAmount { get; private set; }
+    public int TickAmount => tickAmount();
+    protected override string toolTipText
+    {
+        get
+        {
+            switch (Target)
+            {
+                case Target.Both:
+                    return "All Combatents Tick one of their Queued Spells by " + TickAmount;
+                case Target.Self:
+                    return "The Caster Ticks one of their Queued Spells by " + TickAmount;
+                case Target.Other:
+                    return "The Opponant Ticks one of their Queued Spells by " + TickAmount;
+                default:
+                    throw new UnhandledSwitchCaseException();
+            }
+        }
+    }
+
+    public override string NumText => TickAmount.ToString();
+
+    public SpellTickPrepTimeEffect(Func<int> tickAmount, Target target) : base(target)
+    {
+        this.tickAmount = tickAmount;
     }
 }

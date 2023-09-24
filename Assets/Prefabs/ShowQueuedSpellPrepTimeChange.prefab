@@ -102,10 +102,10 @@ GameObject:
   m_Component:
   - component: {fileID: 1149252562533742957}
   - component: {fileID: 3581076252985263517}
-  - component: {fileID: 5177134254542220905}
   - component: {fileID: 5441297346964003491}
+  - component: {fileID: -8047098369182106570}
   m_Layer: 0
-  m_Name: ShowSpellStatChangeDisplay
+  m_Name: ShowQueuedSpellPrepTimeChange
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -120,7 +120,7 @@ RectTransform:
   m_GameObject: {fileID: 7915291379585696026}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.75, y: 0.75, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 819544909659729228}
@@ -141,25 +141,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7915291379585696026}
   m_CullTransparentMesh: 1
---- !u!114 &5177134254542220905
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7915291379585696026}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a85abb7c105e8e84392e2587eb4ac169, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  statIcon: {fileID: 6429030339390880545}
-  signIcon: {fileID: 6303526069776561649}
-  cv: {fileID: 5441297346964003491}
-  fadeSpeed: 1
-  moveSpeed: 10
-  moveVector: {x: 0, y: 1, z: 0}
-  waitDuration: 2.5
 --- !u!225 &5441297346964003491
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -172,6 +153,24 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &-8047098369182106570
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7915291379585696026}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51112ea277cd0cc488583ff40358fa36, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  signIcon: {fileID: 6303526069776561649}
+  cv: {fileID: 5441297346964003491}
+  fadeSpeed: 2.5
+  moveSpeed: 15
+  moveVector: {x: 0, y: 1, z: 0}
+  waitDuration: 1
 --- !u!1 &7974881854665172520
 GameObject:
   m_ObjectHideFlags: 0
@@ -186,7 +185,7 @@ GameObject:
   - component: {fileID: 3895068776175390337}
   - component: {fileID: 4829178076467411788}
   m_Layer: 0
-  m_Name: SpellStatIcon
+  m_Name: Icon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -233,14 +232,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.76862746, g: 0.76862746, b: 0.76862746, a: 0.5019608}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 48ce93021fa8ceb4fb178fadad24710d, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 4548d792499d42a4480119032b485a08, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1

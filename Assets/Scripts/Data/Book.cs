@@ -93,7 +93,7 @@ public abstract class Book : PowerupItem
             ShowBookProc();
 
             // Remove Charge
-            GameManager._Instance.AlterBookCharge(Label, -MaxCharge);
+            GameManager._Instance.AlterBookCharge(-MaxCharge);
             return true;
         }
         return false;
@@ -117,18 +117,18 @@ public abstract class Book : PowerupItem
     // Animations
     protected void ShowBookReady()
     {
-        GameManager._Instance.AnimateBook(Label);
+        GameManager._Instance.AnimateBook();
     }
 
     protected void ShowBookProc()
     {
-        GameManager._Instance.AnimateBook(Label);
+        GameManager._Instance.AnimateBook();
         CombatManager._Instance.SpawnEffectIcon(EffectIconStyle.FadeAndGrow, GetSprite(), Combatent.Character);
     }
 
     protected void ShowBookLevelUp()
     {
-        GameManager._Instance.AnimateBook(Label);
+        GameManager._Instance.AnimateBook();
     }
 
     // Getters From Balence Manager

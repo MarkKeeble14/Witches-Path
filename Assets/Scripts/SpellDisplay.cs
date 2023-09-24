@@ -12,8 +12,6 @@ public enum SpellDisplayState
     Normal,
     Selected,
     Locked,
-    ChoosingExhaust,
-    ChoosingDiscard,
     InHand,
     ToolTip,
     DraggingWontCast,
@@ -113,14 +111,13 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
         if (shakeTweener == null) return;
         shakeTweener.Kill();
     }
-
-    bool isInHand => currentSpellDisplayState == SpellDisplayState.ChoosingDiscard || currentSpellDisplayState == SpellDisplayState.ChoosingExhaust || currentSpellDisplayState == SpellDisplayState.InHand;
+    public bool IsInHand => currentSpellDisplayState == SpellDisplayState.InHand;
 
     protected virtual void Update()
     {
         if (!cvLocked)
         {
-            bool hide = (MapManager._Instance.MapOpen || GameManager._Instance.OverlaidUIOpen || CombatManager._Instance.SpellPileScreenOpen) && isInHand;
+            bool hide = (MapManager._Instance.MapOpen || GameManager._Instance.OverlaidUIOpen || CombatManager._Instance.SpellPileScreenOpen) && IsInHand;
             mainCV.blocksRaycasts = !hide;
             mainCV.alpha = hide ? 0 : 1;
         }

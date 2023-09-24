@@ -27,14 +27,21 @@ public class HandLayoutGroup : MonoBehaviour
         AddTransformToHand(t);
     }
 
-    public void AddTransformToHand(Transform t)
+    private void AddTransformToHand(Transform t)
     {
+        if (inHand.Contains(t)) return;
         inHand.Add(t);
     }
 
     public void RemoveTransformFromHand(Transform t)
     {
         inHand.Remove(t);
+    }
+
+    public void InsertTransformToHand(Transform t, int index)
+    {
+        if (inHand.Contains(t)) return;
+        inHand.Insert(index, t);
     }
 
     private void SetPos(RectTransform rect, Vector2 targetPos)
@@ -64,11 +71,6 @@ public class HandLayoutGroup : MonoBehaviour
         {
             rect.rotation = Quaternion.Euler(targetEuler);
         }
-    }
-
-    public void InsertTransformToHand(Transform t, int index)
-    {
-        inHand.Insert(index, t);
     }
 
     // Update is called once per frame

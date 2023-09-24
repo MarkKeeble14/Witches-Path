@@ -72,7 +72,8 @@ public enum ToolTipKeyword
     Multiplier,
     Ethereal,
     Exhaust,
-    Retain
+    Retain,
+    Curse
 }
 
 public enum TextDecorationLabel

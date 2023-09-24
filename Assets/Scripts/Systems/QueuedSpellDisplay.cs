@@ -24,6 +24,7 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
     [SerializeField] private Image mainImage;
     [SerializeField] private TextMeshProUGUI text;
     [SerializeField] private ShowSpellStatChangeDisplay showSpellStatChangePrefab;
+    [SerializeField] private ShowQueuedSpellPrepTimeTick showQueuedSpellPrepTimeTickPrefab;
     [SerializeField] private TextMeshProUGUI prepTimeText;
 
     [SerializeField] private SemicircleLayoutGroup spellEffects;
@@ -47,7 +48,7 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
         SetMainColor(UIManager._Instance.GetSpellPrimaryFunctionColor(spell.PrimaryFunction));
         text.text = spell.Name;
 
-        foreach (SpellEffect effect in spell.GetSpellEffects())
+        foreach (SpellEffect effect in spell.GetSpellEffects(SpellCallbackType.OnCast))
         {
             QueuedSpellEffectDisplay effectDisplay = Instantiate(spellEffectPrefab, spellEffects.transform);
             effectDisplay.Set(effect);
@@ -58,20 +59,20 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
 
     public void ShowStatChange(SpellStat type, Sign sign)
     {
-        // Debug.Log(name + ": Changed - " + type);
         ShowSpellStatChangeDisplay spawned = Instantiate(showSpellStatChangePrefab, transform);
         spawned.Set(type, sign, null);
+    }
+
+    public void ShowAlterPrepTime(Sign sign)
+    {
+        ShowQueuedSpellPrepTimeTick spawned = Instantiate(showQueuedSpellPrepTimeTickPrefab, transform);
+        spawned.Set(sign, null);
     }
 
     public void SetMainColor(SpellColorInfo colorInfo)
     {
         mainImage.color = colorInfo.Color;
         prepTimeText.color = colorInfo.TextColor;
-    }
-
-    public void SetOutlineColor(Color color)
-    {
-        outline.effectColor = color;
     }
 
     public void SetAllowScale(bool allowScale)
@@ -88,6 +89,13 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
     public int GetPrepTime()
     {
         return prepTime;
+    }
+
+    public void AlterPrepTime(int alterBy)
+    {
+        prepTime += alterBy;
+        prepTimeText.text = prepTime.ToString();
+        ShowAlterPrepTime(alterBy > 0 ? Sign.Positive : Sign.Negative);
     }
 
     private void Update()

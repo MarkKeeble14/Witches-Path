@@ -87,11 +87,6 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
         transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(Vector3.zero), rotateSpeed * Time.deltaTime);
     }
 
-    private bool IsDisplayStateInHand(SpellDisplayState displayState)
-    {
-        return displayState == SpellDisplayState.ChoosingDiscard || displayState == SpellDisplayState.ChoosingExhaust || displayState == SpellDisplayState.InHand;
-    }
-
     public void SetKeyBinding(KeyCode keyCode)
     {
         this.keyCode = keyCode;
@@ -108,20 +103,6 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
 
         // Set Rarity Image Color
         rarityImage.color = UIManager._Instance.GetRarityColor(spell.Rarity);
-    }
-
-    public override void OnPointerClick(PointerEventData eventData)
-    {
-        base.OnPointerClick(eventData);
-
-        if (currentSpellDisplayState == SpellDisplayState.InHand && !isDragging)
-        {
-            TryCast();
-        }
-        else if (currentSpellDisplayState == SpellDisplayState.ChoosingDiscard || currentSpellDisplayState == SpellDisplayState.ChoosingExhaust)
-        {
-            CombatManager._Instance.ClickedSpellForAlterHandSequence(Spell);
-        }
     }
 
     protected override void Update()
@@ -142,16 +123,14 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
             cooldownInfo.Text.text = GetCooldown().ToString();
         }
 
-        if (currentSpellDisplayState == SpellDisplayState.InHand)
+        // Activate On KeyBindPressed
+        if (Input.GetKeyDown(keyCode))
         {
-            // Activate On KeyBindPressed
-            if (Input.GetKeyDown(keyCode))
-            {
-                TryCast();
-            }
+            TryActivate();
         }
 
-        if (IsDisplayStateInHand(currentSpellDisplayState))
+        // Update
+        if (IsInHand)
         {
             InHandUpdate();
         }
@@ -169,24 +148,52 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
         }
     }
 
+    private void TryActivate()
+    {
+        // if is sitting in hand or is being dragged & will cast
+        if (CombatManager._Instance.AwaitingAlterHandSequenceSelections)
+        {
+            CombatManager._Instance.ClickedSpellForAlterHandSequence(Spell);
+        }
+        else if ((currentSpellDisplayState == SpellDisplayState.InHand && !isDragging) || currentSpellDisplayState == SpellDisplayState.DraggingWillCast)
+        {
+            StartCoroutine(TryCast());
+        }
+    }
 
-    public void TryCast()
+    public override void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData.dragging)
+        {
+            return;
+        }
+
+        base.OnPointerClick(eventData);
+
+        TryActivate();
+    }
+
+    private IEnumerator TryCast()
     {
         // Only allow for spell casts while in combat
         if (CombatManager._Instance.CanCastSpells)
         {
             if (!Spell.CanCast)
             {
+                CombatManager._Instance.HandLayoutGroup.RemoveTransformFromHand(transform);
                 onFailCast.DoShakeAnchorPos(rect);
-                return;
+                CombatManager._Instance.HandLayoutGroup.InsertTransformToHand(transform, transform.GetSiblingIndex());
+
+                yield break;
             }
+
+            yield return StartCoroutine(CombatManager._Instance.AddSpellToCastQueue(Spell, Combatent.Character, Combatent.Enemy, true, true));
 
             // Tick Cooldowns
             CombatManager._Instance.TickHandCooldowns(Spell);
 
-            CombatManager._Instance.AddSpellToCastQueue(Spell, Combatent.Character, Combatent.Enemy);
-
-            CombatManager._Instance.HandleSpellCast(Spell);
+            // Handle Spell Cast (Discard, Exhaust, Etc)
+            yield return StartCoroutine(CombatManager._Instance.HandleSpellCast(Spell));
         }
     }
 
@@ -237,13 +244,7 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (!IsDisplayStateInHand(currentSpellDisplayState)) return;
-
-        if (!Spell.CanCast)
-        {
-            onFailCast.DoShakeAnchorPos(rect);
-            return;
-        }
+        if (!IsInHand) return;
 
         isDragging = true;
         CombatManager._Instance.HandLayoutGroup.RemoveTransformFromHand(transform);
@@ -258,11 +259,7 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
     {
         if (!isDragging) return;
 
-        // Check if should play
-        if (currentSpellDisplayState == SpellDisplayState.DraggingWillCast)
-        {
-            TryCast();
-        }
+        TryActivate();
 
         if (currentSpellDisplayState == SpellDisplayState.Fading) return;
 

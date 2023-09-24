@@ -888,7 +888,7 @@ public class LifeForReward : OptionEvent
 
         // 1: Offer
         ConditionalOption giveHand = new ConditionalOption(() => true,
-            MakeEventOption("Give Hand", "Upgrade " + GameManager._Instance.GetOwnedBook(0).Name + ", Lose " + loseMaxHP + " Max HP",
+            MakeEventOption("Give Hand", "Upgrade " + GameManager._Instance.GetEquippedBook(0).Name + ", Lose " + loseMaxHP + " Max HP",
             () => false,
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate
                 {
