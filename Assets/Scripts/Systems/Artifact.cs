@@ -698,12 +698,17 @@ public class VoodooDoll : Artifact
 
     public override void OnEquip()
     {
-        CombatManager._Instance.CombatentBaseCallbackMap[Combatent.Character][CombatBaseCallbackType.OnGainAffliction] += Effect;
+        CombatManager._Instance.CombatentAfflictionCallbackMap[Combatent.Character][CombatAfflictionCallbackType.OnGain] += Activate;
     }
 
     public override void OnUnequip()
     {
-        CombatManager._Instance.CombatentBaseCallbackMap[Combatent.Character][CombatBaseCallbackType.OnGainAffliction] -= Effect;
+        CombatManager._Instance.CombatentAfflictionCallbackMap[Combatent.Character][CombatAfflictionCallbackType.OnGain] -= Activate;
+    }
+
+    private void Activate(Affliction aff)
+    {
+        Effect();
     }
 
     protected override void Effect()

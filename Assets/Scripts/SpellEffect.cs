@@ -25,7 +25,9 @@ public enum SpellEffectType
     PlayerDrawSpells,
     PlayerDiscardSpells,
     PlayerExhaustSpells,
-    TickPrepTime
+    TickPrepTime,
+    AlterCurrentMana,
+    AddSpellToDeck
 }
 
 public struct LabeledSpellStat
@@ -557,14 +559,18 @@ public class PlayerDiscardSpellsSpellEffect : SpellEffect
     {
         get
         {
+            string res = "";
             if (LetChoose)
             {
-                return "Choose " + NumSpells + " " + (NumSpells > 1 ? "Spells" : "Spell") + " to Discard";
+                res += "Choose " + NumSpells + " " + (NumSpells > 1 ? "Spells" : "Spell") + " to Discard";
             }
             else
             {
-                return "Discard " + NumSpells + " Random " + (NumSpells > 1 ? "Spells" : "Spell");
+                res += "Discard " + NumSpells + " Random " + (NumSpells > 1 ? "Spells" : "Spell");
             }
+            if (additionalInfo?.Invoke().Length > 0)
+                res += ", " + additionalInfo();
+            return res;
         }
     }
 
@@ -572,12 +578,14 @@ public class PlayerDiscardSpellsSpellEffect : SpellEffect
     private Func<int> numSpells { get; set; }
     public int NumSpells => numSpells();
     public bool LetChoose { get; private set; }
-
-
-    public PlayerDiscardSpellsSpellEffect(Func<int> numSpells, bool letChoose) : base(Target.Self)
+    public Action<Spell> DoToSelected { get; private set; }
+    private Func<string> additionalInfo;
+    public PlayerDiscardSpellsSpellEffect(Func<int> numSpells, bool letChoose, Action<Spell> doToSelected = null, Func<string> additionalInfo = null) : base(Target.Self)
     {
         this.numSpells = numSpells;
         LetChoose = letChoose;
+        DoToSelected = doToSelected;
+        this.additionalInfo = additionalInfo;
     }
 }
 
@@ -591,14 +599,18 @@ public class PlayerExhaustSpellsSpellEffect : SpellEffect
     {
         get
         {
+            string res = "";
             if (LetChoose)
             {
-                return "Choose " + NumSpells + " " + (NumSpells > 1 ? "Spells" : "Spell") + " to Exhaust";
+                res += "Choose " + NumSpells + " " + (NumSpells > 1 ? "Spells" : "Spell") + " to Exhaust";
             }
             else
             {
-                return "Exhaust " + NumSpells + " Random " + (NumSpells > 1 ? "Spells" : "Spell");
+                res += "Exhaust " + NumSpells + " Random " + (NumSpells > 1 ? "Spells" : "Spell");
             }
+            if (additionalInfo?.Invoke().Length > 0)
+                res += ", " + additionalInfo();
+            return res;
         }
     }
 
@@ -606,10 +618,14 @@ public class PlayerExhaustSpellsSpellEffect : SpellEffect
     private Func<int> numSpells { get; set; }
     public int NumSpells => numSpells();
     public bool LetChoose { get; private set; }
-    public PlayerExhaustSpellsSpellEffect(Func<int> numSpells, bool letChoose) : base(Target.Self)
+    public Action<Spell> DoToSelected { get; private set; }
+    private Func<string> additionalInfo;
+    public PlayerExhaustSpellsSpellEffect(Func<int> numSpells, bool letChoose, Action<Spell> doToSelected = null, Func<string> additionalInfo = null) : base(Target.Self)
     {
         this.numSpells = numSpells;
         LetChoose = letChoose;
+        DoToSelected = doToSelected;
+        this.additionalInfo = additionalInfo;
     }
 }
 
@@ -643,5 +659,53 @@ public class SpellTickPrepTimeEffect : SpellEffect
     public SpellTickPrepTimeEffect(Func<int> tickAmount, Target target) : base(target)
     {
         this.tickAmount = tickAmount;
+    }
+}
+
+public class AlterCurrentManaSpellEffect : SpellEffect
+{
+    public override SpellEffectType Type => SpellEffectType.AlterCurrentMana;
+    protected override string name => "Alter Current Mana";
+
+    protected Func<int> alterBy { get; private set; }
+    public int AlterBy => alterBy();
+    protected override string toolTipText
+    {
+        get
+        {
+            if (AlterBy < 0)
+            {
+                return "Lose " + AlterBy + " Mana";
+            }
+            else
+            {
+                return "Restore " + AlterBy + " Mana";
+            }
+        }
+    }
+
+    public override string NumText => AlterBy.ToString();
+
+    public AlterCurrentManaSpellEffect(Func<int> alterBy) : base(Target.Self)
+    {
+        this.alterBy = alterBy;
+    }
+}
+
+public class AddSpellToDeckEffect : SpellEffect
+{
+    public override SpellEffectType Type => SpellEffectType.AddSpellToDeck;
+    protected override string name => "Add Spell to Deck";
+
+    public Spell ToAdd { get; private set; }
+    public SpellPileType AddTo { get; private set; }
+    protected override string toolTipText => "Add a " + ToAdd.Name + " to your " + (AddTo == SpellPileType.Hand ? "Hand" : AddTo.ToString() + " Pile");
+
+    public override string NumText => "";
+
+    public AddSpellToDeckEffect(Spell toAdd, SpellPileType addTo) : base(Target.Self)
+    {
+        ToAdd = toAdd;
+        AddTo = addTo;
     }
 }

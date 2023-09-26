@@ -150,6 +150,8 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
 
     private void TryActivate()
     {
+        if (currentSpellDisplayState == SpellDisplayState.Fading) return;
+
         // if is sitting in hand or is being dragged & will cast
         if (CombatManager._Instance.AwaitingAlterHandSequenceSelections)
         {
@@ -260,8 +262,6 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
         if (!isDragging) return;
 
         TryActivate();
-
-        if (currentSpellDisplayState == SpellDisplayState.Fading) return;
 
         // Reset
         CombatManager._Instance.HandLayoutGroup.InsertTransformToHand(transform, transform.GetSiblingIndex());

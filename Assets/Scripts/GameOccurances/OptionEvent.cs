@@ -841,7 +841,7 @@ public class GoldAtACost : OptionEvent
 
         // 1: Offer
         ConditionalOption determined = new ConditionalOption(() => true,
-            MakeEventOption("Be Determined", "Gain " + gainGoldAmount + " Gold, Become Cursed - Hurt",
+            MakeEventOption("Be Determined", "Gain " + gainGoldAmount + " Gold, Become Cursed - Injure",
             () => false,
             t => spawnedToolTip = UIManager._Instance.SpawnSpellToolTip(injure, t), () => GameObject.Destroy(spawnedToolTip),
                 MakeEventOptionOutcomeWithChance(100, "Outcome Text", delegate

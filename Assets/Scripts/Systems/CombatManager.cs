@@ -75,14 +75,26 @@ public enum CombatBaseCallbackType
     OnTurnEnd,
     OnSpellQueued,
     OnSpellCast,
-    OnGainAffliction,
-    OnLoseAffliction,
     OnAttack,
 }
 
 public enum CombatIntCallbackType
 {
     OnTakeDamage
+}
+
+public enum CombatSpellCallbackType
+{
+    OnDraw,
+    OnExhaust,
+    OnSpecificDiscard,
+}
+
+public enum CombatAfflictionCallbackType
+{
+    OnGain,
+    OnApply,
+    OnRemove
 }
 
 public partial class CombatManager : MonoBehaviour
@@ -184,6 +196,8 @@ public partial class CombatManager : MonoBehaviour
     public bool SpellPileScreenOpen => showSpellPileScreen.activeInHierarchy;
     public int NumSpellsInDraw => DrawPile == null ? 0 : DrawPile.Count;
     public int NumSpellsInDrawablePlaces => DrawPile == null || DiscardPile == null || Hand == null ? 0 : DrawPile.Count + DiscardPile.Count + Hand.Count;
+
+    public int PlayerCastQueueSize => playerCastQueue.Count;
 
     [Header("Enemy")]
     [SerializeField] private CombatentHPBar enemyHPBar;
@@ -295,6 +309,18 @@ public partial class CombatManager : MonoBehaviour
     // Take Damage
     public Dictionary<Combatent, Dictionary<CombatIntCallbackType, Action<int>>> CombatentIntCallbackMap = new Dictionary<Combatent, Dictionary<CombatIntCallbackType, Action<int>>>();
 
+    // Should Contain -
+    // On Draw
+    // On Exhaust
+    // On Specific Discard
+    public Dictionary<Combatent, Dictionary<CombatSpellCallbackType, Action<Spell>>> CombatentSpellCallbackMap = new Dictionary<Combatent, Dictionary<CombatSpellCallbackType, Action<Spell>>>();
+
+    // Should Contain -
+    // On Gain
+    // On Apply
+    public Dictionary<Combatent, Dictionary<CombatAfflictionCallbackType, Action<Affliction>>> CombatentAfflictionCallbackMap
+        = new Dictionary<Combatent, Dictionary<CombatAfflictionCallbackType, Action<Affliction>>>();
+
     private void SetupCombatentBaseCallbackMap(Combatent combatent)
     {
         Dictionary<CombatBaseCallbackType, Action> callbackMap = new Dictionary<CombatBaseCallbackType, Action>();
@@ -302,8 +328,6 @@ public partial class CombatManager : MonoBehaviour
         callbackMap.Add(CombatBaseCallbackType.OnSpellCast, null);
         callbackMap.Add(CombatBaseCallbackType.OnAttack, null);
         callbackMap.Add(CombatBaseCallbackType.OnBasicAttack, null);
-        callbackMap.Add(CombatBaseCallbackType.OnGainAffliction, null);
-        callbackMap.Add(CombatBaseCallbackType.OnLoseAffliction, null);
         callbackMap.Add(CombatBaseCallbackType.OnTurnEnd, null);
         callbackMap.Add(CombatBaseCallbackType.OnTurnStart, null);
         CombatentBaseCallbackMap.Add(combatent, callbackMap);
@@ -316,12 +340,35 @@ public partial class CombatManager : MonoBehaviour
         CombatentIntCallbackMap.Add(combatent, callbackMap);
     }
 
+    private void SetupCombatentSpellCallbackMap(Combatent combatent)
+    {
+        Dictionary<CombatSpellCallbackType, Action<Spell>> callbackMap = new Dictionary<CombatSpellCallbackType, Action<Spell>>();
+        callbackMap.Add(CombatSpellCallbackType.OnDraw, null);
+        callbackMap.Add(CombatSpellCallbackType.OnExhaust, null);
+        callbackMap.Add(CombatSpellCallbackType.OnSpecificDiscard, null);
+        CombatentSpellCallbackMap.Add(combatent, callbackMap);
+    }
+
+    private void SetupCombatentAfflictionCallbackMap(Combatent combatent)
+    {
+        Dictionary<CombatAfflictionCallbackType, Action<Affliction>> callbackMap = new Dictionary<CombatAfflictionCallbackType, Action<Affliction>>();
+        callbackMap.Add(CombatAfflictionCallbackType.OnApply, null);
+        callbackMap.Add(CombatAfflictionCallbackType.OnGain, null);
+        callbackMap.Add(CombatAfflictionCallbackType.OnRemove, null);
+        CombatentAfflictionCallbackMap.Add(combatent, callbackMap);
+    }
+
     private void SetupCombatCallbackMaps()
     {
         SetupCombatentBaseCallbackMap(Combatent.Character);
         SetupCombatentIntCallbackMap(Combatent.Character);
+        SetupCombatentSpellCallbackMap(Combatent.Character);
+        SetupCombatentAfflictionCallbackMap(Combatent.Character);
+
         SetupCombatentBaseCallbackMap(Combatent.Enemy);
         SetupCombatentIntCallbackMap(Combatent.Enemy);
+        SetupCombatentSpellCallbackMap(Combatent.Enemy);
+        SetupCombatentAfflictionCallbackMap(Combatent.Enemy);
     }
 
     private Dictionary<Combatent, List<Tween>> combatentShakeTweenDict = new Dictionary<Combatent, List<Tween>>();
@@ -486,7 +533,7 @@ public partial class CombatManager : MonoBehaviour
         yield return StartCoroutine(DrawSpells(handSize));
     }
 
-    private IEnumerator ForceDiscardSpells(int num = 1)
+    private IEnumerator ForceDiscardSpells(int num = 1, Action<Spell> doToSelected = null)
     {
         for (int i = 0; i < num;)
         {
@@ -497,7 +544,9 @@ public partial class CombatManager : MonoBehaviour
                 break;
             }
 
-            yield return StartCoroutine(DiscardSpell(RandomHelper.GetRandomFromList(Hand.GetSpells())));
+            Spell toDiscard = RandomHelper.GetRandomFromList(Hand.GetSpells());
+            doToSelected?.Invoke(toDiscard);
+            StartCoroutine(DiscardSpell(toDiscard));
 
             i++;
 
@@ -505,7 +554,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private IEnumerator ForceExhaustSpells(int num = 1)
+    private IEnumerator ForceExhaustSpells(int num = 1, Action<Spell> doToSelected = null)
     {
         for (int i = 0; i < num;)
         {
@@ -516,7 +565,9 @@ public partial class CombatManager : MonoBehaviour
                 break;
             }
 
-            yield return StartCoroutine(ExhaustSpell(RandomHelper.GetRandomFromList(Hand.GetSpells())));
+            Spell toDiscard = RandomHelper.GetRandomFromList(Hand.GetSpells());
+            doToSelected?.Invoke(toDiscard);
+            StartCoroutine(ExhaustSpell(toDiscard));
 
             i++;
 
@@ -559,36 +610,6 @@ public partial class CombatManager : MonoBehaviour
 
             yield return new WaitForSeconds(1);
         }
-    }
-
-    public IEnumerator DrawSpell(Action<Spell> doToDrawnSpell = null)
-    {
-        yield return StartCoroutine(CheckForReshuffleDiscardIntoDraw());
-        if (DrawPile.Count == 0)
-        {
-            CallPlayDialogue("No more Spells...?", Combatent.Character);
-            yield break;
-        }
-
-        Spell spell = DrawPile.DrawTop();
-        Hand.Add(spell);
-
-        // Spawn Card
-        VisualSpellDisplay spawned = Instantiate(cardDisplayPrefab, null);
-        handLayoutGroup.AddChild(spawned.transform);
-        spawned.SetSpell(spell);
-        spawned.SetSpellDisplayState(SpellDisplayState.InHand);
-
-        // Callback
-        yield return StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnDraw));
-
-        // Callback
-        OnDrawSpell?.Invoke();
-
-        if (doToDrawnSpell != null)
-            doToDrawnSpell(spell);
-
-        CallRecalculateKeyBinds();
     }
 
     private IEnumerator DiscardCardAnimation(SpellDisplay card)
@@ -663,7 +684,7 @@ public partial class CombatManager : MonoBehaviour
         {
             if (NumSpellsInDrawablePlaces > AccursedBrand.MinCards && Hand.Count > 0)
             {
-                yield return StartCoroutine(ExhaustSpellSequence(1));
+                yield return StartCoroutine(ExhaustSpellSequence(1, null, null));
             }
         }
 
@@ -690,7 +711,22 @@ public partial class CombatManager : MonoBehaviour
             switch (spell.EndOfTurnDeckAction)
             {
                 case SpellEndOfTurnDeckAction.Ethereal:
-                    yield return StartCoroutine(ExhaustSpell(spell));
+                    // Exhaust Reusable Spells if they are not on Cooldown and Exhaust all Spells otherwise
+                    if (spell is ReusableSpell)
+                    {
+                        if (!((ReusableSpell)spell).OnCooldown)
+                        {
+                            yield return StartCoroutine(ExhaustSpell(spell));
+                        }
+                        else
+                        {
+                            StartCoroutine(DiscardSpell(spell, false));
+                        }
+                    }
+                    else
+                    {
+                        yield return StartCoroutine(ExhaustSpell(spell));
+                    }
                     break;
                 case SpellEndOfTurnDeckAction.Retain:
                     break;
@@ -705,11 +741,48 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
+    public IEnumerator DrawSpell(Action<Spell> doToDrawnSpell = null)
+    {
+        yield return StartCoroutine(CheckForReshuffleDiscardIntoDraw());
+        if (DrawPile.Count == 0)
+        {
+            CallPlayDialogue("No more Spells...?", Combatent.Character);
+            yield break;
+        }
+
+        Spell spell = DrawPile.DrawTop();
+        Hand.Add(spell);
+
+        // Spawn Card
+        VisualSpellDisplay spawned = Instantiate(cardDisplayPrefab, null);
+        handLayoutGroup.AddChild(spawned.transform);
+        spawned.SetSpell(spell);
+        spawned.SetSpellDisplayState(SpellDisplayState.InHand);
+
+        // Callback
+        yield return StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnDraw));
+
+        // Callback
+        OnDrawSpell?.Invoke();
+
+        // Callback
+        CombatentSpellCallbackMap[Combatent.Character][CombatSpellCallbackType.OnDraw]?.Invoke(spell);
+
+        if (doToDrawnSpell != null)
+            doToDrawnSpell(spell);
+
+        RecalculateKeyBinds();
+    }
+
     public IEnumerator DiscardSpell(Spell spell, bool recalculateKeybinds = true)
     {
         if (Hand.Contains(spell))
         {
             Hand.Remove(spell);
+            if (recalculateKeybinds)
+            {
+                RecalculateKeyBinds();
+            }
             DiscardPile.Add(spell);
 
             SpellDisplay spellDisplay = spell.GetEquippedTo();
@@ -731,11 +804,6 @@ public partial class CombatManager : MonoBehaviour
             {
                 ((ReusableSpell)spell).ResetCooldown();
             }
-
-            if (recalculateKeybinds)
-            {
-                CallRecalculateKeyBinds();
-            }
         }
     }
 
@@ -744,6 +812,7 @@ public partial class CombatManager : MonoBehaviour
         if (Hand.Contains(spell))
         {
             Hand.Remove(spell);
+            RecalculateKeyBinds();
             ExhaustPile.Add(spell);
 
             SpellDisplay spellDisplay = spell.GetEquippedTo();
@@ -759,15 +828,16 @@ public partial class CombatManager : MonoBehaviour
             // Callback
             yield return StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnExhaust));
 
+            // Callback
+            OnExhaustSpell?.Invoke();
+
+            // Callback
+            CombatentSpellCallbackMap[Combatent.Character][CombatSpellCallbackType.OnExhaust]?.Invoke(spell);
+
             if (spell is ReusableSpell)
             {
                 ((ReusableSpell)spell).ResetCooldown();
             }
-
-            // Callback
-            OnExhaustSpell?.Invoke();
-
-            CallRecalculateKeyBinds();
         }
     }
 
@@ -776,6 +846,7 @@ public partial class CombatManager : MonoBehaviour
         if (Hand.Contains(spell))
         {
             Hand.Remove(spell);
+            RecalculateKeyBinds();
             PowerSpellPile.Add(spell);
 
             handLayoutGroup.RemoveTransformFromHand(spell.GetEquippedTo().transform);
@@ -785,31 +856,29 @@ public partial class CombatManager : MonoBehaviour
             yield return StartCoroutine(PowerSpellAnimation(spell.GetEquippedTo()));
 
             Destroy(spell.GetEquippedTo().gameObject);
-
-            CallRecalculateKeyBinds();
         }
     }
 
     [ContextMenu("Test/ExhaustSequence")]
     public void TestExhaustSpellSequence()
     {
-        CallExhaustSpellSequence(1);
+        CallExhaustSpellSequence(1, null, null);
     }
 
     [ContextMenu("Test/DiscardSequence")]
     public void TestDiscardSpellSequence()
     {
-        CallDiscardSpellSequence(1);
+        CallDiscardSpellSequence(1, null, null);
     }
 
-    public void CallExhaustSpellSequence(int numToExhaust, Action onComplete = null)
+    public void CallExhaustSpellSequence(int numToExhaust, Action<Spell> doToSpell, Action onComplete)
     {
-        StartCoroutine(ExhaustSpellSequence(numToExhaust, onComplete));
+        StartCoroutine(ExhaustSpellSequence(numToExhaust, doToSpell, onComplete));
     }
 
-    public void CallDiscardSpellSequence(int numToDiscard, Action onComplete = null)
+    public void CallDiscardSpellSequence(int numToDiscard, Action<Spell> doToSpell, Action onComplete)
     {
-        StartCoroutine(DiscardSpellSequence(numToDiscard, onComplete));
+        StartCoroutine(DiscardSpellSequence(numToDiscard, doToSpell, onComplete));
     }
 
     public void ClickedSpellForAlterHandSequence(Spell spell)
@@ -850,7 +919,7 @@ public partial class CombatManager : MonoBehaviour
 
     public bool AwaitingAlterHandSequenceSelections = false;
 
-    private IEnumerator AlterHandSequence(int numToAlter, AlterHandSequenceType type, Action onComplete)
+    private IEnumerator AlterHandSequence(int numToAlter, AlterHandSequenceType type, Action<Spell> doToSpell, Action onComplete)
     {
         if (Hand.Count < numToAlter)
         {
@@ -884,6 +953,8 @@ public partial class CombatManager : MonoBehaviour
             Spell spell = alterHandSequenceSelectedSpells[0];
             alterHandSequenceSelectedSpells.RemoveAt(0);
 
+            doToSpell?.Invoke(spell);
+
             if (type == AlterHandSequenceType.Discard)
             {
                 // "Callback"
@@ -892,60 +963,47 @@ public partial class CombatManager : MonoBehaviour
                 // Callback
                 OnSpecificDiscardSpell?.Invoke();
 
-                yield return StartCoroutine(DiscardSpell(spell));
+                // Callback
+                CombatentSpellCallbackMap[Combatent.Character][CombatSpellCallbackType.OnSpecificDiscard]?.Invoke(spell);
+
+                StartCoroutine(DiscardSpell(spell));
             }
             if (type == AlterHandSequenceType.Exhaust)
             {
-                // "Callback"
-                yield return StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnExhaust));
-
-                // Callback
-                OnExhaustSpell?.Invoke();
-
-                yield return StartCoroutine(ExhaustSpell(spell));
+                StartCoroutine(ExhaustSpell(spell));
             }
 
             yield return new WaitForSeconds(delayBetweenAlterHandCalls);
         }
 
         // Reset
-
-        CallRecalculateKeyBinds();
+        RecalculateKeyBinds();
 
         onComplete?.Invoke();
     }
 
-    private void CallRecalculateKeyBinds()
+    private void RecalculateKeyBinds()
     {
-        if (recalculateKeyBindsCoroutine != null) StopCoroutine(recalculateKeyBindsCoroutine);
-        recalculateKeyBindsCoroutine = StartCoroutine(RecalculateKeyBinds());
-    }
-
-    private IEnumerator RecalculateKeyBinds()
-    {
-        yield return new WaitForSeconds(.5f);
-
-        int index = 0;
-        Hand.ActOnEachSpellInPile(spell =>
+        List<Spell> inHand = Hand.GetSpells();
+        for (int i = 0; i < inHand.Count; i++)
         {
             // Recalculate Key Bindings
-            VisualSpellDisplay spellDisplay = ((VisualSpellDisplay)spell.GetEquippedTo());
+            VisualSpellDisplay spellDisplay = ((VisualSpellDisplay)inHand[i].GetEquippedTo());
             if (spellDisplay != null)
             {
-                spellDisplay.SetKeyBinding(GetKeyBindingAtIndex(index));
-                index++;
+                spellDisplay.SetKeyBinding(GetKeyBindingAtIndex(i));
             }
-        });
+        }
     }
 
-    public IEnumerator ExhaustSpellSequence(int numToExhaust, Action onComplete = null)
+    public IEnumerator ExhaustSpellSequence(int numToExhaust, Action<Spell> doToSpell, Action onComplete)
     {
-        yield return StartCoroutine(AlterHandSequence(numToExhaust, AlterHandSequenceType.Exhaust, onComplete));
+        yield return StartCoroutine(AlterHandSequence(numToExhaust, AlterHandSequenceType.Exhaust, doToSpell, onComplete));
     }
 
-    public IEnumerator DiscardSpellSequence(int numToDiscard, Action onComplete = null)
+    public IEnumerator DiscardSpellSequence(int numToDiscard, Action<Spell> doToSpell, Action onComplete)
     {
-        yield return StartCoroutine(AlterHandSequence(numToDiscard, AlterHandSequenceType.Discard, onComplete));
+        yield return StartCoroutine(AlterHandSequence(numToDiscard, AlterHandSequenceType.Discard, doToSpell, onComplete));
     }
 
     private void Awake()
@@ -2077,11 +2135,11 @@ public partial class CombatManager : MonoBehaviour
         if (discard.LetChoose)
         {
             //
-            yield return StartCoroutine(DiscardSpellSequence(discard.NumSpells));
+            yield return StartCoroutine(DiscardSpellSequence(discard.NumSpells, discard.DoToSelected, null));
         }
         else
         {
-            yield return StartCoroutine(ForceDiscardSpells(discard.NumSpells));
+            yield return StartCoroutine(ForceDiscardSpells(discard.NumSpells, discard.DoToSelected));
         }
     }
 
@@ -2090,7 +2148,7 @@ public partial class CombatManager : MonoBehaviour
         if (exhaust.LetChoose)
         {
             //
-            yield return StartCoroutine(ExhaustSpellSequence(exhaust.NumSpells));
+            yield return StartCoroutine(ExhaustSpellSequence(exhaust.NumSpells, exhaust.DoToSelected, null));
         }
         else
         {
@@ -2107,6 +2165,38 @@ public partial class CombatManager : MonoBehaviour
         if (tick.Target == Target.Self || tick.Target == Target.Both)
         {
             TickRandomQueuedSpell(caster == Combatent.Character ? playerCastQueue : enemyCastQueue);
+        }
+    }
+
+    private void HandlePlayerRestoreManaSpellEffect(AlterCurrentManaSpellEffect mana)
+    {
+        GameManager._Instance.AlterPlayerCurrentMana(mana.AlterBy);
+    }
+
+    private void HandlePlayerAddSpellToDeckEffect(AddSpellToDeckEffect deck)
+    {
+        StartCoroutine(GameManager._Instance.ShowAddSpellSequence(deck.ToAdd));
+
+        switch (deck.AddTo)
+        {
+            case SpellPileType.Discard:
+                DiscardPile.Add(deck.ToAdd);
+                break;
+            case SpellPileType.Draw:
+                DrawPile.Add(deck.ToAdd);
+                break;
+            case SpellPileType.Exhaust:
+                ExhaustPile.Add(deck.ToAdd);
+                break;
+            case SpellPileType.Hand:
+                Hand.Add(deck.ToAdd);
+                VisualSpellDisplay spawned = Instantiate(cardDisplayPrefab, null);
+                handLayoutGroup.AddChild(spawned.transform);
+                spawned.SetSpell(deck.ToAdd);
+                spawned.SetSpellDisplayState(SpellDisplayState.InHand);
+                break;
+            default:
+                throw new UnhandledSwitchCaseException();
         }
     }
 
@@ -2197,6 +2287,12 @@ public partial class CombatManager : MonoBehaviour
                     break;
                 case SpellTickPrepTimeEffect tick:
                     HandleTickPrepTimeSpellEffect(tick, target, caster);
+                    break;
+                case AlterCurrentManaSpellEffect mana:
+                    HandlePlayerRestoreManaSpellEffect(mana);
+                    break;
+                case AddSpellToDeckEffect deck:
+                    HandlePlayerAddSpellToDeckEffect(deck);
                     break;
                 default:
                     throw new UnhandledSwitchCaseException();
@@ -2318,7 +2414,7 @@ public partial class CombatManager : MonoBehaviour
                 else if (currentEnemyHP + amount < 0) // tried to damage past 0
                 {
                     // Callback
-                    CombatentIntCallbackMap[Combatent.Character][CombatIntCallbackType.OnTakeDamage]?.Invoke(amount * -1);
+                    CombatentIntCallbackMap[Combatent.Enemy][CombatIntCallbackType.OnTakeDamage]?.Invoke(amount * -1);
 
                     ShakeCombatent(Combatent.Enemy);
 
@@ -2331,7 +2427,7 @@ public partial class CombatManager : MonoBehaviour
                     currentEnemyHP += amount;
 
                     // Callback
-                    CombatentIntCallbackMap[Combatent.Character][CombatIntCallbackType.OnTakeDamage]?.Invoke(amount * -1);
+                    CombatentIntCallbackMap[Combatent.Enemy][CombatIntCallbackType.OnTakeDamage]?.Invoke(amount * -1);
 
                     ShakeCombatent(Combatent.Enemy);
                 }
@@ -2549,6 +2645,27 @@ public partial class CombatManager : MonoBehaviour
     public void GiveCombatentWard(int wardAmount, Combatent target)
     {
         wardAmount = CalculateWard(wardAmount, target);
+
+        // Target is afflicted with ward negation
+        if (TargetHasAffliction(AfflictionType.WardNegation, target))
+        {
+            // Determine how many stacks there are
+            int numStacks = GetTargetAffliction(AfflictionType.WardNegation, target).GetStacks();
+            // negate that amount off of the wardAmount
+            if (numStacks > wardAmount)
+            {
+                ConsumeAfflictionStack(AfflictionType.WardNegation, target, wardAmount);
+                wardAmount = 0;
+            }
+            else
+            {
+                ConsumeAfflictionStack(AfflictionType.WardNegation, target, numStacks);
+                wardAmount -= numStacks;
+            }
+            if (wardAmount < 0) wardAmount = 0;
+        }
+        if (wardAmount == 0) return;
+
         CallDamageTypeAnimation(DamageType.Ward, target);
         switch (target)
         {
@@ -2678,36 +2795,21 @@ public partial class CombatManager : MonoBehaviour
 
     public void AddAffliction(AfflictionType type, int num, Combatent target)
     {
-        switch (target)
+        if (target == Combatent.Character)
         {
-            case Combatent.Character:
+            if (type == AfflictionType.Weak && GameManager._Instance.HasArtifact(ArtifactLabel.SpecialSpinich))
+            {
+                GameManager._Instance.AnimateArtifact(ArtifactLabel.SpecialSpinich);
+                return;
+            }
 
-                if (type == AfflictionType.Weak && GameManager._Instance.HasArtifact(ArtifactLabel.SpecialSpinich))
-                {
-                    GameManager._Instance.AnimateArtifact(ArtifactLabel.SpecialSpinich);
-                    return;
-                }
-
-                if (type == AfflictionType.Vulnerable && GameManager._Instance.HasArtifact(ArtifactLabel.HolyShield))
-                {
-                    GameManager._Instance.AnimateArtifact(ArtifactLabel.HolyShield);
-                    return;
-                }
-
-                if (SetAffliction(type, num, target))
-                {
-                    // Callback
-                    CombatentBaseCallbackMap[Combatent.Character][CombatBaseCallbackType.OnGainAffliction]?.Invoke();
-                }
-                break;
-            case Combatent.Enemy:
-                if (SetAffliction(type, num, target))
-                {
-                    // Callback
-                    CombatentBaseCallbackMap[Combatent.Enemy][CombatBaseCallbackType.OnGainAffliction]?.Invoke();
-                }
-                break;
+            if (type == AfflictionType.Vulnerable && GameManager._Instance.HasArtifact(ArtifactLabel.HolyShield))
+            {
+                GameManager._Instance.AnimateArtifact(ArtifactLabel.HolyShield);
+                return;
+            }
         }
+        SetAffliction(type, num, target);
     }
 
     public Affliction GetAffliction(AfflictionType type, Combatent owner)
@@ -2731,17 +2833,18 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private bool SetAffliction(AfflictionType type, int numStacks, Combatent target)
+    private void SetAffliction(AfflictionType type, int numStacks, Combatent target)
     {
         Dictionary<AfflictionType, Affliction> map = GetTargetAfflictionMap(target);
         Transform parentTo = GetTargetParentAfflictionTo(target);
 
         bool isNewInstance;
+        Affliction aff;
 
         // Affliction Map already contains
         if (map.ContainsKey(type))
         {
-            Affliction aff = map[type];
+            aff = map[type];
             aff.AlterStacks(numStacks);
 
             ShowAfflictionProc(type, target);
@@ -2759,7 +2862,7 @@ public partial class CombatManager : MonoBehaviour
         }
         else
         {
-            Affliction aff = Affliction.GetAfflictionOfType(type);
+            aff = Affliction.GetAfflictionOfType(type);
 
             // Nullify Effect
             if (TargetHasAffliction(AfflictionType.Nullify, target) && aff.Sign == Sign.Negative)
@@ -2772,7 +2875,7 @@ public partial class CombatManager : MonoBehaviour
                 {
                     ShowAfflictionProc(AfflictionType.Nullify, target);
                 }
-                return false;
+                return;
             }
 
             aff.SetOwner(target);
@@ -2791,7 +2894,7 @@ public partial class CombatManager : MonoBehaviour
             aff.SetStacks(numStacks);
             if (aff.CanBeCleared)
             {
-                return false;
+                return;
             }
 
             map.Add(type, aff);
@@ -2810,10 +2913,31 @@ public partial class CombatManager : MonoBehaviour
             aff.Apply();
         }
 
+        // Callbacks
+        switch (target)
+        {
+            case Combatent.Character:
+                // Enemy is Setting
+                CombatentAfflictionCallbackMap[Combatent.Enemy][CombatAfflictionCallbackType.OnApply]?.Invoke(aff);
+                if (isNewInstance)
+                {
+                    CombatentAfflictionCallbackMap[Combatent.Character][CombatAfflictionCallbackType.OnGain]?.Invoke(aff);
+                }
+                break;
+            case Combatent.Enemy:
+                CombatentAfflictionCallbackMap[Combatent.Character][CombatAfflictionCallbackType.OnApply]?.Invoke(aff);
+                // Character is Setting
+                if (isNewInstance)
+                {
+                    CombatentAfflictionCallbackMap[Combatent.Character][CombatAfflictionCallbackType.OnGain]?.Invoke(aff);
+                }
+                break;
+        }
+
         // Update hp bar
         UpdateHPBarAfflictions(target);
 
-        return isNewInstance;
+        return;
     }
 
     public void UpdateHPBarAfflictions(Combatent target)
@@ -2922,7 +3046,7 @@ public partial class CombatManager : MonoBehaviour
             UIManager._Instance.GetAfflictionIcon(removingAff.Type));
 
         // Callback
-        CombatentBaseCallbackMap[target][CombatBaseCallbackType.OnLoseAffliction]?.Invoke();
+        CombatentAfflictionCallbackMap[target][CombatAfflictionCallbackType.OnRemove]?.Invoke(removingAff);
     }
 
     private int GetTargetAfflictionStacks(AfflictionType type, Combatent target)

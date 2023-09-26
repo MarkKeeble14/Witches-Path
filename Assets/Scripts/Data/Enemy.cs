@@ -253,10 +253,10 @@ public class PossessedTome : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        AddEnemyAction("Levitating", MakeEnemyAction(null, new Levitate(), new Protect(10)));
-        AddEnemyAction("Power", MakeEnemyAction(null, new StudyPower(), new StudyPower(), new StudyPower()));
-        AddEnemyAction("SingleAttack", MakeEnemyAction(null, new GhastlyGrasp(8), new Protect(4)));
-        AddEnemyAction("MultiAttack", MakeEnemyAction(null, new GhoulishAssault(3, 3), new Protect(4)));
+        AddEnemyAction("Levitating", MakeEnemyAction(null, new Spells.Levitate(), new Spells.Protect(10)));
+        AddEnemyAction("Power", MakeEnemyAction(null, new Spells.StudyPower(), new Spells.StudyPower(), new Spells.StudyPower()));
+        AddEnemyAction("SingleAttack", MakeEnemyAction(null, new Spells.GhastlyGrasp(8), new Spells.Protect(4)));
+        AddEnemyAction("MultiAttack", MakeEnemyAction(null, new Spells.GhoulishAssault(3, 3), new Spells.Protect(4)));
 
         // Add On Combat Start Actions
         AddOnCombatStartSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Levitating, () => 1, Target.Self));
@@ -286,9 +286,9 @@ public class HauntedClock : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        StudyPower studyPower = new StudyPower();
-        AddEnemyAction("PowerAndWard", MakeEnemyAction(null, studyPower, new Protect(5)));
-        GhoulishAssault ghoulishAssault = new GhoulishAssault(2, 2);
+        Spells.StudyPower studyPower = new Spells.StudyPower();
+        AddEnemyAction("PowerAndWard", MakeEnemyAction(null, studyPower, new Spells.Protect(5)));
+        Spells.GhoulishAssault ghoulishAssault = new Spells.GhoulishAssault(2, 2);
         AddEnemyAction("MultiAttack",
             MakeEnemyAction(delegate
             {
@@ -326,10 +326,10 @@ public class FamilyPet : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        AddEnemyAction("SingleAttack", MakeEnemyAction(() => willBuff = true, new Tackle(5)));
-        AddEnemyAction("Ward", MakeEnemyAction(() => willBuff = true, new Protect(7)));
-        AddEnemyAction("Protection", MakeEnemyAction(() => willBuff = false, new Harden(1)));
-        AddEnemyAction("Power", MakeEnemyAction(() => willBuff = false, new StudyPower(1), new Protect(5)));
+        AddEnemyAction("SingleAttack", MakeEnemyAction(() => willBuff = true, new Spells.Tackle(5)));
+        AddEnemyAction("Ward", MakeEnemyAction(() => willBuff = true, new Spells.Protect(7)));
+        AddEnemyAction("Protection", MakeEnemyAction(() => willBuff = false, new Spells.Harden(1)));
+        AddEnemyAction("Power", MakeEnemyAction(() => willBuff = false, new Spells.StudyPower(1), new Spells.Protect(5)));
 
         // Make Map
         PercentageMap<string> actionMap = new PercentageMap<string>();
@@ -356,10 +356,10 @@ public class LivingCandle : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        AddEnemyAction("SingleAttackAndBurn", MakeEnemyAction(null, new Fireball(3, 2)));
-        AddEnemyAction("MultiAttackAndBurn", MakeEnemyAction(null, new FlamingLashes(2, 2, 2)));
-        AddEnemyAction("EmboldenAndPower", MakeEnemyAction(null, new Excite(1), new StudyPower(1), new Excite(1)));
-        AddEnemyAction("IntangibleAndEmbolden", MakeEnemyAction(null, new Ghost(1), new Overexcite(3, 2)));
+        AddEnemyAction("SingleAttackAndBurn", MakeEnemyAction(null, new Spells.Fireball(3, 2)));
+        AddEnemyAction("MultiAttackAndBurn", MakeEnemyAction(null, new Spells.FlamingLashes(2, 2, 2)));
+        AddEnemyAction("EmboldenAndPower", MakeEnemyAction(null, new Spells.Excite(1), new Spells.StudyPower(1), new Spells.Excite(1)));
+        AddEnemyAction("IntangibleAndEmbolden", MakeEnemyAction(null, new Spells.Ghost(1), new Spells.Overexcite(3, 2)));
 
         // Make Map
         PercentageMap<string> actionMap = new PercentageMap<string>();
@@ -383,11 +383,11 @@ public class HolyGrail : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        AddEnemyAction("AttackAndWard", MakeEnemyAction(null, new ScaldingSplash(6, 1), new Protect(6)));
-        AddEnemyAction("Attack", MakeEnemyAction(null, new ScaldingSplash(10, 2)));
-        AddEnemyAction("WardAndProtection", MakeEnemyAction(null, new Protect(6), new StudyProtection(1)));
-        AddEnemyAction("Regeneration", MakeEnemyAction(null, new Blessed(5)));
-        AddEnemyAction("Heal", MakeEnemyAction(null, new Recouperate(10)));
+        AddEnemyAction("AttackAndWard", MakeEnemyAction(null, new Spells.ScaldingSplash(6, 1), new Spells.Protect(6)));
+        AddEnemyAction("Attack", MakeEnemyAction(null, new Spells.ScaldingSplash(10, 2)));
+        AddEnemyAction("WardAndProtection", MakeEnemyAction(null, new Spells.Protect(6), new Spells.StudyProtection(1)));
+        AddEnemyAction("Regeneration", MakeEnemyAction(null, new Spells.Blessed(5)));
+        AddEnemyAction("Heal", MakeEnemyAction(null, new Spells.Recouperate(10)));
 
         // Make Map
         PercentageMap<string> actionMap = new PercentageMap<string>();
@@ -412,12 +412,12 @@ public class EnchantedMace : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        AddEnemyAction("AttackAndVulnerable", MakeEnemyAction(null, new BrutalSmash(8, 2)));
-        AddEnemyAction("Attack", MakeEnemyAction(null, new Bash(15)));
-        AddEnemyAction("PowerAndWard", MakeEnemyAction(null, new StudyPower(3), new Protect(10)));
+        AddEnemyAction("AttackAndVulnerable", MakeEnemyAction(null, new Spells.BrutalSmash(8, 2)));
+        AddEnemyAction("Attack", MakeEnemyAction(null, new Spells.Bash(15)));
+        AddEnemyAction("PowerAndWard", MakeEnemyAction(null, new Spells.StudyPower(3), new Spells.Protect(10)));
 
         // Add On Combat Start Actions
-        AddOnCombatStartAction(MakeEnemyAction(null, new EnterFrenzy(1)));
+        AddOnCombatStartAction(MakeEnemyAction(null, new Spells.EnterFrenzy(1)));
 
         // Turn 1
         PercentageMap<string> turn1sMap = new PercentageMap<string>();
@@ -444,18 +444,18 @@ public class AncientDaggerSet : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        Flurry flurry = new Flurry(2, 3);
+        Spells.Flurry flurry = new Spells.Flurry(2, 3);
 
         AddEnemyAction("Flurry", MakeEnemyAction(null, flurry));
-        AddEnemyAction("PoisonCoated", MakeEnemyAction(null, new CoatEdges(1)));
+        AddEnemyAction("PoisonCoated", MakeEnemyAction(null, new Spells.CoatEdges(1)));
         AddEnemyAction("ExtraAttack", MakeEnemyAction(delegate
         {
             flurry.AlterSpellStat(SpellStat.HitAmount, 1, SpellAlterStatDuration.Combat);
-            AddToEnemyAction("Power", new Protect(2));
-        }, new Protect(2), new Protect(2), new Protect(2)));
+            AddToEnemyAction("Power", new Spells.Protect(2));
+        }, new Spells.Protect(2), new Spells.Protect(2), new Spells.Protect(2)));
 
         // Add On Combat Start Actions
-        AddOnCombatStartAction(MakeEnemyAction(null, new CoatEdges(1)));
+        AddOnCombatStartAction(MakeEnemyAction(null, new Spells.CoatEdges(1)));
 
         // Turn 1 & 3
         PercentageMap<string> turn1And3sMap = new PercentageMap<string>();
@@ -485,11 +485,11 @@ public class SpiritsTombGolem : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        AddEnemyAction("WeakVulnerableAndWard", MakeEnemyAction(null, new BreakSpirit(5, 5), new Protect(2)));
-        AddEnemyAction("ElectricAttack", MakeEnemyAction(null, new Shock(3, 3), new Shock(3, 3), new Protect(4)));
-        AddEnemyAction("FireAttack", MakeEnemyAction(null, new Electrifry(6, 3), new Protect(6)));
-        AddEnemyAction("EvilAttack", MakeEnemyAction(null, new GhastlyGrasp(10), new Protect(8)));
-        AddEnemyAction("ProtectionPowerAndWard", MakeEnemyAction(null, new Bash(25)));
+        AddEnemyAction("WeakVulnerableAndWard", MakeEnemyAction(null, new Spells.BreakSpirit(5, 5), new Spells.Protect(2)));
+        AddEnemyAction("ElectricAttack", MakeEnemyAction(null, new Spells.Shock(3, 3), new Spells.Shock(3, 3), new Spells.Protect(4)));
+        AddEnemyAction("FireAttack", MakeEnemyAction(null, new Spells.Electrifry(6, 3), new Spells.Protect(6)));
+        AddEnemyAction("EvilAttack", MakeEnemyAction(null, new Spells.GhastlyGrasp(10), new Spells.Protect(8)));
+        AddEnemyAction("ProtectionPowerAndWard", MakeEnemyAction(null, new Spells.Bash(25)));
 
         // Make Maps
         // Turn 1s
@@ -529,11 +529,11 @@ public class SpiritOfContempt : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        AddEnemyAction("AttackAndVulnerable", MakeEnemyAction(() => canBigAttack = true, new BrutalSmash(10, 2)));
-        AddEnemyAction("BigAttack", MakeEnemyAction(() => canBigAttack = false, new StrikeTwice(13)));
+        AddEnemyAction("AttackAndVulnerable", MakeEnemyAction(() => canBigAttack = true, new Spells.BrutalSmash(10, 2)));
+        AddEnemyAction("BigAttack", MakeEnemyAction(() => canBigAttack = false, new Spells.StrikeTwice(13)));
 
         // Add On Combat Start Actions
-        AddOnCombatStartAction(MakeEnemyAction(null, new Ghost(1), new Ghost(1), new Ghost(1), new BattleTrance(1)));
+        AddOnCombatStartAction(MakeEnemyAction(null, new Spells.Ghost(1), new Spells.Ghost(1), new Spells.Ghost(1)));
 
         // Make Maps
         PercentageMap<string> nonBigAttackMap = new PercentageMap<string>();
@@ -562,12 +562,12 @@ public class SpiritOfPride : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        AddEnemyAction("AttackAndWard", MakeEnemyAction(() => canBuff = true, new StrikeTwice(3), new StrikeTwice(3)));
-        AddEnemyAction("Power", MakeEnemyAction(() => canBuff = false, new StudyPower(1)));
-        AddEnemyAction("PowerEmboldenAndWard", MakeEnemyAction(() => canBuff = false, new StudyPower(1), new Excite(3), new Protect(10)));
+        AddEnemyAction("AttackAndWard", MakeEnemyAction(() => canBuff = true, new Spells.StrikeTwice(3), new Spells.StrikeTwice(3)));
+        AddEnemyAction("Power", MakeEnemyAction(() => canBuff = false, new Spells.StudyPower(1)));
+        AddEnemyAction("PowerEmboldenAndWard", MakeEnemyAction(() => canBuff = false, new Spells.StudyPower(1), new Spells.Excite(3), new Spells.Protect(10)));
 
         // Add On Combat Start Actions
-        AddOnCombatStartAction(MakeEnemyAction(null, new Ghost(1), new Ghost(1), new BattleTrance(1)));
+        AddOnCombatStartAction(MakeEnemyAction(null, new Spells.Ghost(1)));
 
         // Make Maps
         PercentageMap<string> canBuffMap = new PercentageMap<string>();
@@ -596,14 +596,14 @@ public class SpiritOfDebilitation : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        AddEnemyAction("Blight", MakeEnemyAction(null, new Belch(1)));
-        AddEnemyAction("AttackAndWeak", MakeEnemyAction(() => turnsSinceDebuff++, new Cripple(6, 3)));
-        AddEnemyAction("AttackAndWard", MakeEnemyAction(() => turnsSinceDebuff++, new Cripple(3, 3), new Protect(8)));
-        AddEnemyAction("VulnerableAndWeak", MakeEnemyAction(() => turnsSinceDebuff = 0, new BreakSpirit(1, 1), new BreakSpirit(1, 1), new BreakSpirit(1, 1)));
-        AddEnemyAction("NegativePowerAndProtection", MakeEnemyAction(() => turnsSinceDebuff = 0, new Protect(5), new Sap(2), new Protect(5)));
+        AddEnemyAction("Blight", MakeEnemyAction(null, new Spells.Belch(1)));
+        AddEnemyAction("AttackAndWeak", MakeEnemyAction(() => turnsSinceDebuff++, new Spells.Cripple(6, 3)));
+        AddEnemyAction("AttackAndWard", MakeEnemyAction(() => turnsSinceDebuff++, new Spells.Cripple(3, 3), new Spells.Protect(8)));
+        AddEnemyAction("VulnerableAndWeak", MakeEnemyAction(() => turnsSinceDebuff = 0, new Spells.BreakSpirit(1, 1), new Spells.BreakSpirit(1, 1), new Spells.BreakSpirit(1, 1)));
+        AddEnemyAction("NegativePowerAndProtection", MakeEnemyAction(() => turnsSinceDebuff = 0, new Spells.Protect(5), new Spells.Sap(2), new Spells.Protect(5)));
 
         // Add On Combat Start Actions
-        AddOnCombatStartAction(MakeEnemyAction(null, new Ghost(1), new BattleTrance(1)));
+        AddOnCombatStartAction(MakeEnemyAction(null, new Spells.Ghost(1), new Spells.Ghost(1)));
 
         // Make Maps
         PercentageMap<string> turn1Map = new PercentageMap<string>();
@@ -647,13 +647,13 @@ public class TheScienceExperiment : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        AddEnemyAction("Ward", MakeEnemyAction(null, new Protect(10)));
-        AddEnemyAction("WardAndAttack", MakeEnemyAction(null, new Tackle(20), new Protect(5)));
-        AddEnemyAction("Thorns", MakeEnemyAction(null, new GrowSpikes(1)));
-        AddEnemyAction("MoreWard", MakeEnemyAction(null, new Harden(1)));
+        AddEnemyAction("Ward", MakeEnemyAction(null, new Spells.Protect(10)));
+        AddEnemyAction("WardAndAttack", MakeEnemyAction(null, new Spells.Tackle(20), new Spells.Protect(5)));
+        AddEnemyAction("Thorns", MakeEnemyAction(null, new Spells.GrowSpikes(1)));
+        AddEnemyAction("MoreWard", MakeEnemyAction(null, new Spells.Harden(1)));
 
         // Add On Combat Start Actions
-        AddOnTurnEndAction(MakeEnemyAction(null, new GrowSpikes(1)));
+        AddOnTurnEndAction(MakeEnemyAction(null, new Spells.GrowSpikes(1)));
 
         // Turn 1s
         PercentageMap<string> turn1Map = new PercentageMap<string>();
@@ -683,13 +683,14 @@ public class PanickedWizard : Enemy
     protected override void SetUpBehaviour()
     {
         // Add Callback
-        AddOnCombatStartAction(MakeEnemyAction(null, new LoseResolve(3)));
+        AddOnCombatStartAction(MakeEnemyAction(null, new Spells.LoseResolve(3)));
 
         // Make Enemy Actions
-        AddEnemyAction("SingleAttackAndWard", MakeEnemyAction(() => canUseRandomMap = true, new Fireball(5, 2), new Shock(5, 2), new Toxify(5, 2)));
-        AddEnemyAction("SingleAttackBurnAndWard", MakeEnemyAction(() => canUseRandomMap = true, new Fireball(3, 2), new Singe(2), new Protect(10)));
-        AddEnemyAction("MultiAttack", MakeEnemyAction(() => canUseRandomMap = true, new GhoulishAssault(4, 2)));
-        AddEnemyAction("Buff", MakeEnemyAction(() => canUseRandomMap = true, new Protect(10), new StudyPower(1), new StudyProtection(1), new StudyPower(1), new StudyProtection(1)));
+        AddEnemyAction("SingleAttackAndWard", MakeEnemyAction(() => canUseRandomMap = true, new Spells.Fireball(5, 2), new Spells.Shock(5, 2), new Spells.Toxify(5, 2)));
+        AddEnemyAction("SingleAttackBurnAndWard", MakeEnemyAction(() => canUseRandomMap = true, new Spells.Fireball(3, 2), new Spells.Singe(2), new Spells.Protect(10)));
+        AddEnemyAction("MultiAttack", MakeEnemyAction(() => canUseRandomMap = true, new Spells.GhoulishAssault(4, 2)));
+        AddEnemyAction("Buff", MakeEnemyAction(() => canUseRandomMap = true, new Spells.Protect(10), new Spells.StudyPower(1), new Spells.StudyProtection(1),
+            new Spells.StudyPower(1), new Spells.StudyProtection(1)));
 
         AddEnemyAction("Random1", MakeEnemyAction(() => canUseRandomMap = false, Spell.GetSpellOfType(RandomHelper.GetRandomEnumValue<SpellLabel>())));
         AddEnemyAction("Random2", MakeEnemyAction(() => canUseRandomMap = false, Spell.GetSpellOfType(RandomHelper.GetRandomEnumValue<SpellLabel>())));
@@ -726,9 +727,9 @@ public class EnthralledServant : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        AddEnemyAction("SingleAttack", MakeEnemyAction(() => canBuff = true, new Tackle(5), new Tackle(5), new Protect(5), new Protect(5)));
-        AddEnemyAction("MultiAttack", MakeEnemyAction(() => canBuff = true, new GhoulishAssault(4, 2)));
-        AddEnemyAction("WardPowerAndProtection", MakeEnemyAction(() => canBuff = false, new StudyPower(2), new StudyProtection(1), new Protect(10)));
+        AddEnemyAction("SingleAttack", MakeEnemyAction(() => canBuff = true, new Spells.Tackle(5), new Spells.Tackle(5), new Spells.Protect(5), new Spells.Protect(5)));
+        AddEnemyAction("MultiAttack", MakeEnemyAction(() => canBuff = true, new Spells.GhoulishAssault(4, 2)));
+        AddEnemyAction("WardPowerAndProtection", MakeEnemyAction(() => canBuff = false, new Spells.StudyPower(2), new Spells.StudyProtection(1), new Spells.Protect(10)));
 
         // Make Maps
         PercentageMap<string> cannotBuffMap = new PercentageMap<string>();
@@ -758,20 +759,20 @@ public class InfestedRatPack : Enemy
     protected override void SetUpBehaviour()
     {
         // Make Enemy Actions
-        AddEnemyAction("BlightVulnerableAndWeak", MakeEnemyAction(null, new ViralChomp(7, 1, 3)));
-        AddEnemyAction("MultiAttack", MakeEnemyAction(() => canBuff = true, new Claw(3), new Claw(3), new Claw(3)));
-        AddEnemyAction("SingleAttackAndWeak", MakeEnemyAction(() => canBuff = true, new Cripple(5, 5)));
-        AddEnemyAction("PoisonCoatedAndWard", MakeEnemyAction(() => canBuff = false, new CoatEdges(1), new Protect(3), new Protect(3), new Protect(3)));
+        AddEnemyAction("BlightVulnerableAndWeak", MakeEnemyAction(null, new Spells.ViralChomp(7, 1, 3)));
+        AddEnemyAction("MultiAttack", MakeEnemyAction(() => canBuff = true, new Spells.Claw(3), new Spells.Claw(3), new Spells.Claw(3)));
+        AddEnemyAction("SingleAttackAndWeak", MakeEnemyAction(() => canBuff = true, new Spells.Cripple(5, 5)));
+        AddEnemyAction("PoisonCoatedAndWard", MakeEnemyAction(() => canBuff = false, new Spells.CoatEdges(1), new Spells.Protect(3), new Spells.Protect(3), new Spells.Protect(3)));
         AddEnemyAction("PowerAndNumAttacksUp", MakeEnemyAction(delegate
         {
-            AddToEnemyAction("MultiAttack", new Claw(2));
-            AddToEnemyAction("PoisonCoatedAndWard", new Protect(3));
-            AddToEnemyAction("PowerAndNumAttacksUp", new Excite(1));
+            AddToEnemyAction("MultiAttack", new Spells.Claw(2));
+            AddToEnemyAction("PoisonCoatedAndWard", new Spells.Protect(3));
+            AddToEnemyAction("PowerAndNumAttacksUp", new Spells.Excite(1));
             canBuff = false;
-        }, new Excite(2)));
+        }, new Spells.Excite(2)));
 
         // Add On Combat Start Actions
-        AddOnCombatStartAction(MakeEnemyAction(null, new CoatEdges(1)));
+        AddOnCombatStartAction(MakeEnemyAction(null, new Spells.CoatEdges(1)));
 
         // Make Maps
         PercentageMap<string> firstTurnMap = new PercentageMap<string>();
@@ -809,12 +810,12 @@ public class PrisonerOfTheMansion : Enemy
     private int defaultMaxCanRemove = 3;
     private int finalMaxCanRemove;
 
-    private Struggle struggle;
+    private Spells.Struggle struggle;
 
     private void SetShackledCanRemove()
     {
         // Allow for removing either the default set number or alternatively simply the number of stacks the Enemy still has
-        Shackled currentShackled = (Shackled)CombatManager._Instance.GetTargetAffliction(AfflictionType.Shackled, Combatent.Enemy);
+        Afflictions.Shackled currentShackled = (Afflictions.Shackled)CombatManager._Instance.GetTargetAffliction(AfflictionType.Shackled, Combatent.Enemy);
 
         // Technically we could remove the Callback here, but it's cleaner to allow the OnDeath Call to handle that imo
         if (currentShackled == null)
@@ -851,9 +852,9 @@ public class PrisonerOfTheMansion : Enemy
             new SpellApplyAfflictionEffect(AfflictionType.Vulnerable, () => 5, Target.Self));
 
         // Make Enemy Actions
-        AddEnemyAction("BufferTurn", MakeEnemyAction(() => bufferTurn = false, new Overexcite(3, 3), new BattleTrance(1), new Protect(10)));
+        AddEnemyAction("BufferTurn", MakeEnemyAction(() => bufferTurn = false, new Spells.Overexcite(3, 3), new Spells.BattleFrenzy(1), new Spells.Protect(10)));
 
-        struggle = new Struggle(-numShackledToRemove, -3);
+        struggle = new Spells.Struggle(-numShackledToRemove, -3);
         AddEnemyAction("Struggle", MakeEnemyAction(delegate
         {
             // Check if this enemy is no longer afflicted by Shackled
@@ -863,26 +864,26 @@ public class PrisonerOfTheMansion : Enemy
                 cleansing = true;
                 isShackled = false;
             }
-        }, new HateFilledStrike(10), new Protect(20), struggle));
+        }, new Spells.HateFilledStrike(10), new Spells.Protect(20), struggle));
 
-        AddEnemyAction("Cleanse", MakeEnemyAction(() => cleansing = false, new Unleash(), new EnterFrenzy(1)));
+        AddEnemyAction("Cleanse", MakeEnemyAction(() => cleansing = false, new Spells.Unleash(), new Spells.EnterFrenzy(1)));
 
         AddEnemyAction("MultiAttack", MakeEnemyAction(delegate
         {
             canAttack = false;
             canMultiAttack = false;
-        }, new HateFilledStrike(3), new HateFilledStrike(3), new HateFilledStrike(3)));
+        }, new Spells.HateFilledStrike(3), new Spells.HateFilledStrike(3), new Spells.HateFilledStrike(3)));
 
         AddEnemyAction("SingleAttack", MakeEnemyAction(delegate
         {
             canAttack = false;
             canMultiAttack = true;
-        }, new Cripple(3, 2), new GhoulishAssault(5, 2), new Protect(5), new Protect(5)));
+        }, new Spells.Cripple(3, 2), new Spells.GhoulishAssault(5, 2), new Spells.Protect(5), new Spells.Protect(5)));
 
         AddEnemyAction("Debuff", MakeEnemyAction(() => canAttack = true,
-            new BreakSpirit(1, 1), new Sap(-1), new BreakSpirit(1, 1), new Sap(-1), new BreakSpirit(1, 1)));
+            new Spells.BreakSpirit(1, 1), new Spells.Sap(-1), new Spells.BreakSpirit(1, 1), new Spells.Sap(-1), new Spells.BreakSpirit(1, 1)));
 
-        AddEnemyAction("BuffAndWard", MakeEnemyAction(() => canAttack = true, new Unleash()));
+        AddEnemyAction("BuffAndWard", MakeEnemyAction(() => canAttack = true, new Spells.Unleash()));
 
         // Make Maps
         PercentageMap<string> bufferTurnMap = new PercentageMap<string>();

@@ -73,7 +73,8 @@ public enum ToolTipKeyword
     Ethereal,
     Exhaust,
     Retain,
-    Curse
+    Curse,
+    Status
 }
 
 public enum TextDecorationLabel

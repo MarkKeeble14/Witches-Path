@@ -101,3 +101,21 @@ public class MaximumSpellsInDrawPileSpellCanCastCondition : SpellCanCastConditio
         return "Can only be Cast if there are less than " + maxSpells + " Spells in your Draw Pile.";
     }
 }
+
+public class StatusBlockerCanCastCondition : SpellCanCastCondition
+{
+    public StatusBlockerCanCastCondition(Spell forSpell) : base(forSpell)
+    {
+        // 
+    }
+
+    public override string GetEvaluationString()
+    {
+        return "Unplayable";
+    }
+
+    protected override bool Evaluate()
+    {
+        return false;
+    }
+}

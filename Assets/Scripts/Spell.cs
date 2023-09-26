@@ -63,7 +63,9 @@ public enum SpellStat
     TickPrepTimeAmount,
     Aff1StackAmount,
     Aff2StackAmount,
-    AnyAffStackAmount
+    AnyAffStackAmount,
+    AlterManaAmount,
+    AlterHPAmount
 }
 
 public enum SpellLabel
@@ -71,7 +73,6 @@ public enum SpellLabel
     PoisonTips,
     StaticField,
     Inferno,
-    BattleTrance,
     Fireball,
     Shock,
     Singe,
@@ -143,7 +144,31 @@ public enum SpellLabel
     Combust,
     FeedOnFlames,
     DevilishPeek,
-    Bide
+    Bide,
+    Inflame,
+    BattleFrenzy,
+    WardOff,
+    HellspawnsAid,
+    BurnOut,
+    DarkDefense,
+    SmolderingStrike,
+    Refuel,
+    Hex,
+    UnrelentingBlaze,
+    AmpUp,
+    DemonsDeal,
+    RecklessCast,
+    NegativeGains,
+    SpatteringFlames,
+    WorrisomeBargain,
+    FieryEmbrace,
+    KeenBlaze,
+    BloodPact,
+    AbandonConcern,
+    BurningFaintly,
+    Overheat,
+    Sacrifice,
+    Bonfire
 }
 
 public enum SpellColor
@@ -195,6 +220,7 @@ public abstract class Spell : ToolTippable
     // Data
     protected List<ToolTipKeyword> GeneralKeywords = new List<ToolTipKeyword>();
     protected List<AfflictionType> AfflictionKeywords = new List<AfflictionType>();
+    protected List<ToolTippable> OtherToolTippables = new List<ToolTippable>();
 
     // Mana Cost
     public int PrepTime => GetSpellStat(SpellStat.PrepTime);
@@ -326,7 +352,7 @@ public abstract class Spell : ToolTippable
 
     protected virtual void SetPrepTime()
     {
-        AddSpellStat(SpellStat.PrepTime, 2);
+        AddSpellStat(SpellStat.PrepTime, 1);
     }
 
     protected void AddSpellStat(SpellStat stat, int value)
@@ -506,10 +532,8 @@ public abstract class Spell : ToolTippable
                 }
             }
         }
-
         return final;
     }
-
 
     private string GetSpellCallbackStrings()
     {
@@ -631,6 +655,11 @@ public abstract class Spell : ToolTippable
         if (Color == SpellColor.Curse)
         {
             GeneralKeywords.Add(ToolTipKeyword.Curse);
+        }
+        else if (Color == SpellColor.Status)
+        {
+            GeneralKeywords.Add(ToolTipKeyword.Status);
+            AddCanCastCondition(new StatusBlockerCanCastCondition(this));
         }
     }
 
@@ -769,7 +798,7 @@ public abstract class Spell : ToolTippable
 
     public List<ToolTippable> GetOtherToolTippables()
     {
-        return new List<ToolTippable>();
+        return OtherToolTippables;
     }
 
     public virtual string GetToolTipLabel()
@@ -828,158 +857,204 @@ public abstract class Spell : ToolTippable
     {
         switch (label)
         {
-            case SpellLabel.BattleTrance:
-                return new BattleTrance();
             case SpellLabel.TradeBlood:
-                return new TradeBlood();
+                return new Spells.TradeBlood();
             case SpellLabel.Cripple:
-                return new Cripple();
+                return new Spells.Cripple();
             case SpellLabel.CrushJoints:
-                return new CrushJoints();
+                return new Spells.CrushJoints();
             case SpellLabel.Electrifry:
-                return new Electrifry();
+                return new Spells.Electrifry();
             case SpellLabel.Excite:
-                return new Excite();
+                return new Spells.Excite();
             case SpellLabel.ExposeFlesh:
-                return new ExposeFlesh();
+                return new Spells.ExposeFlesh();
             case SpellLabel.Fireball:
-                return new Fireball();
+                return new Spells.Fireball();
             case SpellLabel.Flurry:
-                return new Flurry();
+                return new Spells.Flurry();
             case SpellLabel.Ghost:
-                return new Ghost();
+                return new Spells.Ghost();
             case SpellLabel.ImpartialAid:
-                return new ImpartialAid();
+                return new Spells.ImpartialAid();
             case SpellLabel.Inferno:
-                return new Inferno();
+                return new Spells.Inferno();
             case SpellLabel.StrikeTwice:
-                return new StrikeTwice();
+                return new Spells.StrikeTwice();
             case SpellLabel.MagicRain:
-                return new MagicRain();
+                return new Spells.MagicRain();
             case SpellLabel.Overexcite:
-                return new Overexcite();
+                return new Spells.Overexcite();
             case SpellLabel.Plague:
-                return new Plague();
+                return new Spells.Plague();
             case SpellLabel.PoisonTips:
-                return new PoisonTips();
+                return new Spells.PoisonTips();
             case SpellLabel.Reverberate:
-                return new Reverberate();
+                return new Spells.Reverberate();
             case SpellLabel.Shock:
-                return new Shock();
+                return new Spells.Shock();
             case SpellLabel.Singe:
-                return new Singe();
+                return new Spells.Singe();
             case SpellLabel.StaticField:
-                return new StaticField();
+                return new Spells.StaticField();
             case SpellLabel.Toxify:
-                return new Toxify();
+                return new Spells.Toxify();
             case SpellLabel.WitchesWill:
-                return new WitchesWill();
+                return new Spells.WitchesWill();
             case SpellLabel.WitchesWard:
-                return new WitchesWard();
+                return new Spells.WitchesWard();
             case SpellLabel.TeslaCoil:
-                return new TeslaCoil();
+                return new Spells.TeslaCoil();
             case SpellLabel.Injure:
-                return new Injure();
+                return new Spells.Injure();
             case SpellLabel.Greed:
-                return new Greed();
+                return new Spells.Greed();
             case SpellLabel.Anger:
-                return new Anger();
+                return new Spells.Anger();
             case SpellLabel.Worry:
-                return new Worry();
+                return new Spells.Worry();
             case SpellLabel.Frusteration:
-                return new Frusteration();
+                return new Spells.Frusteration();
             case SpellLabel.ChannelCurrent:
-                return new ChannelCurrent();
+                return new Spells.ChannelCurrent();
             case SpellLabel.QuickCast:
-                return new QuickCast();
+                return new Spells.QuickCast();
             case SpellLabel.Levitate:
-                return new Levitate();
+                return new Spells.Levitate();
             case SpellLabel.StudyPower:
-                return new StudyPower();
+                return new Spells.StudyPower();
             case SpellLabel.StudyProtection:
-                return new StudyProtection();
+                return new Spells.StudyProtection();
             case SpellLabel.GhastlyGrasp:
-                return new GhastlyGrasp();
+                return new Spells.GhastlyGrasp();
             case SpellLabel.GhoulishAssault:
-                return new GhoulishAssault();
+                return new Spells.GhoulishAssault();
             case SpellLabel.Protect:
-                return new Protect();
+                return new Spells.Protect();
             case SpellLabel.FlamingLashes:
-                return new FlamingLashes();
+                return new Spells.FlamingLashes();
             case SpellLabel.ScaldingSplash:
-                return new ScaldingSplash();
+                return new Spells.ScaldingSplash();
             case SpellLabel.CallUntoBlessing:
-                return new Blessed();
+                return new Spells.Blessed();
             case SpellLabel.Recouperate:
-                return new Recouperate();
+                return new Spells.Recouperate();
             case SpellLabel.BrutalSmash:
-                return new BrutalSmash();
+                return new Spells.BrutalSmash();
             case SpellLabel.Bash:
-                return new Bash();
+                return new Spells.Bash();
             case SpellLabel.EnterFrenzy:
-                return new EnterFrenzy();
+                return new Spells.EnterFrenzy();
             case SpellLabel.CoatEdges:
-                return new CoatEdges();
+                return new Spells.CoatEdges();
             case SpellLabel.BreakSpirit:
-                return new BreakSpirit();
+                return new Spells.BreakSpirit();
             case SpellLabel.Belch:
-                return new Belch();
+                return new Spells.Belch();
             case SpellLabel.Phase:
-                return new Phase();
+                return new Spells.Phase();
             case SpellLabel.Sap:
-                return new Sap();
+                return new Spells.Sap();
             case SpellLabel.Tackle:
-                return new Tackle();
+                return new Spells.Tackle();
             case SpellLabel.GrowSpikes:
-                return new GrowSpikes();
+                return new Spells.GrowSpikes();
             case SpellLabel.LoseResolve:
-                return new LoseResolve();
+                return new Spells.LoseResolve();
             case SpellLabel.Harden:
-                return new Harden();
+                return new Spells.Harden();
             case SpellLabel.ViralChomp:
-                return new ViralChomp();
+                return new Spells.ViralChomp();
             case SpellLabel.Claw:
-                return new Claw();
+                return new Spells.Claw();
             case SpellLabel.HateFilledStrike:
-                return new HateFilledStrike();
+                return new Spells.HateFilledStrike();
             case SpellLabel.Struggle:
-                return new Struggle();
+                return new Spells.Struggle();
             case SpellLabel.Unleash:
-                return new Unleash();
+                return new Spells.Unleash();
             case SpellLabel.BurnBrighter:
-                return new BrighterBurn();
+                return new Spells.BrighterBurn();
             case SpellLabel.Melt:
-                return new Melt();
+                return new Spells.Melt();
             case SpellLabel.GasUp:
-                return new GasUp();
+                return new Spells.GasUp();
             case SpellLabel.FuelTheFire:
-                return new FuelTheFire();
+                return new Spells.FuelTheFire();
             case SpellLabel.FifthRing:
-                return new FifthRing();
+                return new Spells.FifthRing();
             case SpellLabel.FlashFlame:
-                return new FlashFlame();
+                return new Spells.FlashFlame();
             case SpellLabel.WeakeningBlow:
-                return new WeakeningBlow();
+                return new Spells.WeakeningBlow();
             case SpellLabel.GetExcited:
-                return new GetExcited();
+                return new Spells.GetExcited();
             case SpellLabel.BurnDown:
-                return new BurnDown();
+                return new Spells.BurnDown();
             case SpellLabel.SteadyFlame:
-                return new SteadyFlame();
+                return new Spells.SteadyFlame();
             case SpellLabel.BurningBarrage:
-                return new BurningBarrage();
+                return new Spells.BurningBarrage();
             case SpellLabel.MatchstickDefense:
-                return new MatchstickDefense();
+                return new Spells.MatchstickDefense();
             case SpellLabel.Intensify:
-                return new Intensify();
+                return new Spells.Intensify();
             case SpellLabel.Combust:
-                return new Combust();
+                return new Spells.Combust();
             case SpellLabel.FeedOnFlames:
-                return new FeedOnFlames();
+                return new Spells.FeedOnFlames();
             case SpellLabel.DevilishPeek:
-                return new DevilishPeek();
+                return new Spells.DevilishPeek();
             case SpellLabel.Bide:
-                return new Bide();
+                return new Spells.Bide();
+            case SpellLabel.Inflame:
+                return new Spells.Inflame();
+            case SpellLabel.BattleFrenzy:
+                return new Spells.BattleFrenzy();
+            case SpellLabel.WardOff:
+                return new Spells.WardOff();
+            case SpellLabel.AmpUp:
+                return new Spells.AmpUp();
+            case SpellLabel.HellspawnsAid:
+                return new Spells.HellspawnsAid();
+            case SpellLabel.BurnOut:
+                return new Spells.BurnOut();
+            case SpellLabel.DarkDefense:
+                return new Spells.DarkDefense();
+            case SpellLabel.SmolderingStrike:
+                return new Spells.SmolderingStrike();
+            case SpellLabel.Refuel:
+                return new Spells.Refuel();
+            case SpellLabel.Hex:
+                return new Spells.Hex();
+            case SpellLabel.UnrelentingBlaze:
+                return new Spells.UnrelentingBlaze();
+            case SpellLabel.DemonsDeal:
+                return new Spells.DemonsDeal();
+            case SpellLabel.RecklessCast:
+                return new Spells.RecklessCast();
+            case SpellLabel.NegativeGains:
+                return new Spells.NegativeGains();
+            case SpellLabel.SpatteringFlames:
+                return new Spells.SpatteringFlames();
+            case SpellLabel.WorrisomeBargain:
+                return new Spells.WorrisomeBargain();
+            case SpellLabel.FieryEmbrace:
+                return new Spells.FieryEmbrace();
+            case SpellLabel.KeenBlaze:
+                return new Spells.KeenBlaze();
+            case SpellLabel.BloodPact:
+                return new Spells.BloodPact();
+            case SpellLabel.AbandonConcern:
+                return new Spells.AbandonConcern();
+            case SpellLabel.BurningFaintly:
+                return new Spells.BurningFaintly();
+            case SpellLabel.Overheat:
+                return new Spells.Overheat();
+            case SpellLabel.Sacrifice:
+                return new Spells.Sacrifice();
+            case SpellLabel.Bonfire:
+                return new Spells.Bonfire();
             default:
                 throw new UnhandledSwitchCaseException(label.ToString());
         }

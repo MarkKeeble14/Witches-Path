@@ -68,7 +68,7 @@ MonoBehaviour:
   regularScale: 1
   maxScale: 2
   isMousedOverTargetScale: 2.5
-  changeScaleSpeed: 15
+  changeScaleSpeed: 2.5
   toScale: {fileID: 2228286589220871348}
 --- !u!114 &1297481055899340396
 MonoBehaviour:

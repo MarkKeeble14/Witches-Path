@@ -158,9 +158,10 @@ public class GameManager : MonoBehaviour
     public bool CanSetCurrentGameOccurance { get; set; }
 
     // Spell Reward Offers
-    public Func<Spell, bool> AcceptSpellRewardFunc => spell => !spellRewardsMustMatchCharacterColor
-    || (spellRewardsMustMatchCharacterColor && spell.Color == GetCharacterColor());
     private bool spellRewardsMustMatchCharacterColor = true;
+    public Func<Spell, bool> AcceptSpellRewardFunc =>
+        spell => (!spellRewardsMustMatchCharacterColor || (spellRewardsMustMatchCharacterColor && spell.Color == GetCharacterColor()))
+            && (spell.Rarity == Rarity.Common || spell.Rarity == Rarity.Uncommon || spell.Rarity == Rarity.Rare);
 
     private List<PotionIngredientListEntry> spawnedPotionIngredientListEntries = new List<PotionIngredientListEntry>();
 
