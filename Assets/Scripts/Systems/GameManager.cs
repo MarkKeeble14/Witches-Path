@@ -533,7 +533,7 @@ public class GameManager : MonoBehaviour
         equippedBook.AlterCharge(equippedBook.MaxCharge);
     }
 
-    public Book GetEquippedBook(int index)
+    public Book GetEquippedBook()
     {
         return equippedBook;
     }
@@ -1445,7 +1445,7 @@ public class GameManager : MonoBehaviour
 
     #region UI
 
-    public bool CanUpgradeActiveBook => GetEquippedBook(0).CanLevelUp;
+    public bool CanUpgradeActiveBook => GetEquippedBook().CanLevelUp;
 
     public void PopManaText()
     {
@@ -1964,7 +1964,7 @@ public class GameManager : MonoBehaviour
             switch (singleCondition)
             {
                 case "BookCanBeUpgraded":
-                    return GetEquippedBook(0).CanLevelUp;
+                    return GetEquippedBook().CanLevelUp;
                 default:
                     throw new UnhandledSwitchCaseException(singleCondition);
             }

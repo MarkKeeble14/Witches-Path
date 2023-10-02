@@ -11,7 +11,7 @@ public class UpgradeBookButton : MonoBehaviour
 
     public void CheckIfShouldBeActive()
     {
-        Book currentBook = GameManager._Instance.GetEquippedBook(0);
+        Book currentBook = GameManager._Instance.GetEquippedBook();
 
         if (!currentBook.CanLevelUp)
         {
@@ -26,7 +26,7 @@ public class UpgradeBookButton : MonoBehaviour
         if (!GameManager._Instance.CanUpgradeActiveBook) return;
 
         // Get current book
-        Book currentBook = GameManager._Instance.GetEquippedBook(0);
+        Book currentBook = GameManager._Instance.GetEquippedBook();
 
         // Get a new book of the same type
         Book upgradedBook = Book.GetBookOfType(currentBook.GetLabel());

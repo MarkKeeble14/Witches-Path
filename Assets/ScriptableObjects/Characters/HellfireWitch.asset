@@ -20,13 +20,13 @@ MonoBehaviour:
   startingBook: 0
   startingSpells: 150000001500000015000000160000001600000016000000030000000500000047000000
   startingArtifacts: 1d000000
-  startingCurrency: 100
+  startingCurrency: 99
   startingClothierCurrency: 1
-  defaultActiveSpell: 22
-  maxHP: 74
-  startingHP: 74
+  defaultActiveSpell: 21
+  maxHP: 99
+  startingHP: 99
   basicAttackDamage: 0
   startingCombatPileSize: 10
   startingHandSize: 5
-  maxMana: 25
+  maxMana: 5
   manaPerTurnSubFromMax: 0
