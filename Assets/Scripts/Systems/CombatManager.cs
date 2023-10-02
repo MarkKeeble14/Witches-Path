@@ -786,14 +786,15 @@ public partial class CombatManager : MonoBehaviour
             DiscardPile.Add(spell);
 
             SpellDisplay spellDisplay = spell.GetEquippedTo();
+            handLayoutGroup.RemoveTransformFromHand(spellDisplay.transform);
+
+            yield return StartCoroutine(DiscardCardAnimation(spellDisplay));
+
             if (spellDisplay == null)
             {
                 Debug.Log("Discard Spell Error: Paused Time");
                 Time.timeScale = 0;
             }
-            handLayoutGroup.RemoveTransformFromHand(spellDisplay.transform);
-
-            yield return StartCoroutine(DiscardCardAnimation(spellDisplay));
 
             Destroy(spellDisplay.gameObject);
 
@@ -1318,6 +1319,12 @@ public partial class CombatManager : MonoBehaviour
             ConsumeAfflictionStack(AfflictionType.Echo, adder);
             ShowAfflictionProc(AfflictionType.Echo, adder);
             yield return StartCoroutine(AddSpellToCastQueue(spell, adder, other, useMana, false));
+        }
+
+        // Overwealming Blaze Effect
+        if (TargetHasAffliction(AfflictionType.OverwealmingBlaze, adder) && spell.DoesApplyAfflictionOfType(AfflictionType.Burn) && canEcho)
+        {
+            yield return StartCoroutine(AddSpellToCastQueue(spell, adder, other, false, false));
         }
 
         // Spawn new display
@@ -1998,6 +2005,20 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
+    private void HandleSpellLeechingAttackEffect(SpellLeechingAttackEffect leechingAttack, Combatent target, Combatent caster)
+    {
+        int damageDealt = 0;
+        if (leechingAttack.Target == Target.Other || leechingAttack.Target == Target.Both)
+        {
+            damageDealt += AttackCombatent(leechingAttack.DamageAmount, target, caster, leechingAttack.DamageType, DamageSource.Spell);
+        }
+        if (leechingAttack.Target == Target.Self || leechingAttack.Target == Target.Both)
+        {
+            damageDealt += AttackCombatent(leechingAttack.DamageAmount, caster, caster, leechingAttack.DamageType, DamageSource.Spell);
+        }
+        AlterCombatentHP(-damageDealt, caster, DamageType.Heal);
+    }
+
     private void HandleSpellMultiAttackEffect(SpellMultiAttackEffect multiAttack, Combatent target, Combatent caster)
     {
         if (multiAttack.Target == Target.Other || multiAttack.Target == Target.Both)
@@ -2056,6 +2077,11 @@ public partial class CombatManager : MonoBehaviour
         {
             AlterCombatentHP(alterHP.HPAmount, caster, alterHP.DamageType);
         }
+    }
+
+    private void HandleAlterMaxHPEffect(SpellAlterPlayerMaxHPEffect alterHP)
+    {
+        GameManager._Instance.AlterPlayerMaxHP(alterHP.HPAmount);
     }
 
     private void HandleAlterQueuedSpellEffect(SpellAlterQueuedSpellEffect alterQueuedSpell, Combatent target, Combatent caster)
@@ -2234,6 +2260,17 @@ public partial class CombatManager : MonoBehaviour
                     HandleSpellSingleAttackEffect(singleAttack, target, caster);
 
                     break;
+                case SpellLeechingAttackEffect leechingAttack:
+                    // Animation
+                    if (allowAnimations && leechingAttack.AttackAnimationStyle != AttackAnimationStyle.None)
+                    {
+                        yield return StartCoroutine(AnimateSpriteAttack(caster));
+                        hasAnimatedSprite = true;
+                    }
+
+                    HandleSpellLeechingAttackEffect(leechingAttack, target, caster);
+
+                    break;
                 case SpellMultiAttackEffect multiAttack:
                     for (int i = 0; i < multiAttack.NumAttacks; i++)
                     {
@@ -2294,6 +2331,9 @@ public partial class CombatManager : MonoBehaviour
                 case AddSpellToDeckEffect deck:
                     HandlePlayerAddSpellToDeckEffect(deck);
                     break;
+                case SpellAlterPlayerMaxHPEffect maxHp:
+                    HandleAlterMaxHPEffect(maxHp);
+                    break;
                 default:
                     throw new UnhandledSwitchCaseException();
             }
@@ -2325,7 +2365,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public void AlterCombatentHP(int amount, Combatent target, DamageType damageType, bool allowUseWard = true)
+    public int AlterCombatentHP(int amount, Combatent target, DamageType damageType, bool allowUseWard = true)
     {
         if (amount < 0)
         {
@@ -2380,7 +2420,7 @@ public partial class CombatManager : MonoBehaviour
                 GameManager._Instance.AlterPlayerCurrentHP(amount, damageType, false);
                 characterHPBar.SetCurrentHP(GameManager._Instance.GetCurrentCharacterHP());
 
-                break;
+                return amount;
             case Combatent.Enemy:
 
                 // Use Ward
@@ -2438,13 +2478,13 @@ public partial class CombatManager : MonoBehaviour
                 }
                 // Update HP Bar
                 enemyHPBar.SetCurrentHP(currentEnemyHP);
-                break;
+                return amount;
             default:
                 throw new UnhandledSwitchCaseException();
         }
     }
 
-    public void AttackCombatent(int amount, Combatent target, Combatent attacker, DamageType damageType, DamageSource damageSource)
+    public int AttackCombatent(int amount, Combatent target, Combatent attacker, DamageType damageType, DamageSource damageSource)
     {
         // Thorns Effect
         if (TargetHasAffliction(AfflictionType.Thorns, target))
@@ -2457,8 +2497,7 @@ public partial class CombatManager : MonoBehaviour
         // Attempted to Basic Attack for less than 0 (i.e., a Heal)
         if (damageSource == DamageSource.BasicAttack && amount < 0)
         {
-            AlterCombatentHP(0, target, damageType);
-            return;
+            return AlterCombatentHP(0, target, damageType);
         }
 
         int damage = CalculateDamage(amount, attacker, target, damageType, damageSource, true);
@@ -2472,7 +2511,7 @@ public partial class CombatManager : MonoBehaviour
         // Callback
         CombatentBaseCallbackMap[attacker][CombatBaseCallbackType.OnAttack]?.Invoke();
 
-        AlterCombatentHP(-damage, target, damageType);
+        return AlterCombatentHP(-damage, target, damageType);
     }
 
     // Calculation Function
@@ -2711,11 +2750,27 @@ public partial class CombatManager : MonoBehaviour
         switch (target)
         {
             case Combatent.Character:
-                characterWard = 0;
+                if (TargetHasAffliction(AfflictionType.LingeringFlame, target))
+                {
+                    characterWard -= GetTargetAffliction(AfflictionType.LingeringFlame, target).GetStacks();
+                    if (characterWard < 0) characterWard = 0;
+                }
+                else
+                {
+                    characterWard = 0;
+                }
                 characterHPBar.SetWard(characterWard);
                 break;
             case Combatent.Enemy:
-                enemyWard = 0;
+                if (TargetHasAffliction(AfflictionType.LingeringFlame, target))
+                {
+                    enemyWard -= GetTargetAffliction(AfflictionType.LingeringFlame, target).GetStacks();
+                    if (enemyWard < 0) enemyWard = 0;
+                }
+                else
+                {
+                    enemyWard = 0;
+                }
                 enemyHPBar.SetWard(enemyWard);
                 break;
         }

@@ -65,7 +65,8 @@ public enum SpellStat
     Aff2StackAmount,
     AnyAffStackAmount,
     AlterManaAmount,
-    AlterHPAmount
+    AlterHPAmount,
+    AlterMaxHPAmount
 }
 
 public enum SpellLabel
@@ -128,7 +129,7 @@ public enum SpellLabel
     HateFilledStrike,
     Struggle,
     Unleash,
-    BurnBrighter,
+    BrighterBurn,
     GasUp,
     Melt,
     FuelTheFire,
@@ -168,7 +169,18 @@ public enum SpellLabel
     BurningFaintly,
     Overheat,
     Sacrifice,
-    Bonfire
+    Bonfire,
+    LingeringFlame,
+    FireBlast,
+    FuelSupplement,
+    BolsteringEmbers,
+    Shadowed,
+    Consume,
+    Rage,
+    FlameBarrier,
+    MorbidResolution,
+    LeechingStrike,
+    OverwealmingBlaze
 }
 
 public enum SpellColor
@@ -278,7 +290,6 @@ public abstract class Spell : ToolTippable
         }
     }
 
-    // TODO
     public Combatent Caster
     {
         get; private set;
@@ -297,6 +308,22 @@ public abstract class Spell : ToolTippable
     private Dictionary<SpellStat, List<int>> untilCastAlterSpellStatValueHistory = new Dictionary<SpellStat, List<int>>();
 
     private SpellCanCastData canCastData = new SpellCanCastData();
+
+    public bool DoesApplyAfflictionOfType(AfflictionType type)
+    {
+        foreach (KeyValuePair<SpellCallbackType, SpellCallbackData> kvp in spellCallbackMap)
+        {
+            foreach (SpellEffect effect in kvp.Value.SpellEffects)
+            {
+                if (effect.Type == SpellEffectType.ApplyAffliction)
+                {
+                    SpellApplyAfflictionEffect aff = (SpellApplyAfflictionEffect)effect;
+                    if (aff.AfflictionType == type) return true;
+                }
+            }
+        }
+        return false;
+    }
 
     public class SpellCallbackData
     {
@@ -973,7 +1000,7 @@ public abstract class Spell : ToolTippable
                 return new Spells.Struggle();
             case SpellLabel.Unleash:
                 return new Spells.Unleash();
-            case SpellLabel.BurnBrighter:
+            case SpellLabel.BrighterBurn:
                 return new Spells.BrighterBurn();
             case SpellLabel.Melt:
                 return new Spells.Melt();
@@ -1055,6 +1082,28 @@ public abstract class Spell : ToolTippable
                 return new Spells.Sacrifice();
             case SpellLabel.Bonfire:
                 return new Spells.Bonfire();
+            case SpellLabel.LingeringFlame:
+                return new Spells.LingeringFlame();
+            case SpellLabel.FireBlast:
+                return new Spells.FireBlast();
+            case SpellLabel.FuelSupplement:
+                return new Spells.FuelSupplement();
+            case SpellLabel.BolsteringEmbers:
+                return new Spells.BolsteringEmbers();
+            case SpellLabel.Shadowed:
+                return new Spells.Shadowed();
+            case SpellLabel.Consume:
+                return new Spells.Consume();
+            case SpellLabel.Rage:
+                return new Spells.Rage();
+            case SpellLabel.FlameBarrier:
+                return new Spells.FlameBarrier();
+            case SpellLabel.MorbidResolution:
+                return new Spells.MorbidResolution();
+            case SpellLabel.LeechingStrike:
+                return new Spells.LeechingStrike();
+            case SpellLabel.OverwealmingBlaze:
+                return new Spells.OverwealmingBlaze();
             default:
                 throw new UnhandledSwitchCaseException(label.ToString());
         }

@@ -11720,7 +11720,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb77ddde7098c454ab706b2ad1e15741, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerCharacter: {fileID: 11400000, guid: 9e08d35e00a2f9741a3bdbe563a704de, type: 2}
+  playerCharacter: {fileID: 11400000, guid: a1cfa2fb063e4a24db447e8e6a4676f3, type: 2}
   artifactBar: {fileID: 4051814926895347577}
   artifactRarityOdds:
     percentageMap:
@@ -11742,6 +11742,14 @@ MonoBehaviour:
   unawardableBooks: 00000000
   bookDisplay: {fileID: 983092905513152667}
   unviableSpellRewards: 1600000015000000
+  spellRarityOdds:
+    percentageMap:
+    - key: 0
+      value: 65
+    - key: 2
+      value: 25
+    - key: 3
+      value: 10
   visualSpellDisplayPrefab: {fileID: 3016801165644695351, guid: 5d38b31714106554aa1820b2a650d4a2, type: 3}
   spellBookSpawnSpellDisplaysOn: {fileID: 6955322805371274886}
   spawnSelectSpellDisplaysOn: {fileID: 8981895237226556205}

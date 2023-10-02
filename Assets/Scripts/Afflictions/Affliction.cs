@@ -42,7 +42,12 @@ public enum AfflictionType
     FieryEmbrace,
     KeenBlaze,
     BloodPact,
-    Sacrifice
+    Sacrifice,
+    LingeringFlame,
+    FuelSupplement,
+    BolsteringEmbers,
+    MorbidResolution,
+    OverwealmingBlaze
 }
 
 public enum Sign
@@ -306,6 +311,16 @@ public abstract class Affliction : ToolTippable
                 return new Afflictions.BloodPact();
             case AfflictionType.Sacrifice:
                 return new Afflictions.Sacrifice();
+            case AfflictionType.LingeringFlame:
+                return new Afflictions.LingeringFlame();
+            case AfflictionType.FuelSupplement:
+                return new Afflictions.FuelSupplement();
+            case AfflictionType.BolsteringEmbers:
+                return new Afflictions.BolsteringEmbers();
+            case AfflictionType.MorbidResolution:
+                return new Afflictions.MorbidResolution();
+            case AfflictionType.OverwealmingBlaze:
+                return new Afflictions.OverwealmingBlaze();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -1396,6 +1411,138 @@ namespace Afflictions
             base.Unapply();
 
             CombatManager._Instance.CombatentSpellCallbackMap[GetOwner()][CombatSpellCallbackType.OnExhaust] -= Activate;
+        }
+    }
+
+    public class LingeringFlame : Affliction
+    {
+        protected override string specificToolTipText => "Ward is Reduced by " + GetStacks() + " rather than being Reset to 0 at the Beginning of the Turn";
+        protected override string genericToolTipText => "Ward is Reduced by the number of Stacks of Lingering Flame rather than being Reset to 0 at the Beginning of the Turn";
+
+        public override AfflictionType Type => AfflictionType.LingeringFlame;
+
+        public override Sign Sign => Sign.Positive;
+
+        protected override void SetKeywords()
+        {
+            // 
+        }
+    }
+
+    public class FuelSupplement : Affliction
+    {
+        protected override string specificToolTipText => "At the Beginning on the Turn, Gain " + GetStacks() + " Mana (Can exceed Mana Cap)";
+        protected override string genericToolTipText => "At the Beginning on the Turn, Gain Mana equal to the number of Stacks (Can exceed Mana Cap)";
+
+        public override AfflictionType Type => AfflictionType.FuelSupplement;
+
+        public override Sign Sign => Sign.Positive;
+
+        protected override void SetKeywords()
+        {
+            // 
+        }
+
+        private void Activate()
+        {
+            GameManager._Instance.AlterPlayerCurrentMana(GetStacks(), true);
+        }
+
+        public override void Apply()
+        {
+            base.Apply();
+
+            CombatManager._Instance.CombatentBaseCallbackMap[GetOwner()][CombatBaseCallbackType.OnTurnStart] += Activate;
+        }
+
+        public override void Unapply()
+        {
+            base.Unapply();
+
+            CombatManager._Instance.CombatentBaseCallbackMap[GetOwner()][CombatBaseCallbackType.OnTurnStart] -= Activate;
+        }
+    }
+
+    public class BolsteringEmbers : Affliction
+    {
+        protected override string specificToolTipText => "At the Beginning on the Turn, Apply " + GetStacks() + " Burn to the Opponant";
+        protected override string genericToolTipText => "At the Beginning on the Turn, Apply Burn equal to the number of Stacks to the Opponant";
+
+        public override AfflictionType Type => AfflictionType.BolsteringEmbers;
+
+        public override Sign Sign => Sign.Positive;
+
+        protected override void SetKeywords()
+        {
+            // 
+        }
+
+        private void Activate()
+        {
+            CombatManager._Instance.AddAffliction(AfflictionType.Burn, GetStacks(), GetNonOwner());
+        }
+
+        public override void Apply()
+        {
+            base.Apply();
+
+            CombatManager._Instance.CombatentBaseCallbackMap[GetOwner()][CombatBaseCallbackType.OnTurnStart] += Activate;
+        }
+
+        public override void Unapply()
+        {
+            base.Unapply();
+
+            CombatManager._Instance.CombatentBaseCallbackMap[GetOwner()][CombatBaseCallbackType.OnTurnStart] -= Activate;
+        }
+    }
+
+    public class MorbidResolution : Affliction
+    {
+        protected override string specificToolTipText => "Gain " + GetStacks() + " Power Upon being Attacked";
+        protected override string genericToolTipText => "Gain Power Upon being Attacked";
+
+        public override AfflictionType Type => AfflictionType.MorbidResolution;
+
+        public override Sign Sign => Sign.Positive;
+
+        protected override void SetKeywords()
+        {
+            // 
+        }
+
+        private void Activate(int damageTaken)
+        {
+            CombatManager._Instance.AddAffliction(AfflictionType.Power, GetStacks(), GetOwner());
+        }
+
+        public override void Apply()
+        {
+            base.Apply();
+
+            CombatManager._Instance.CombatentIntCallbackMap[GetOwner()][CombatIntCallbackType.OnTakeDamage] += Activate;
+        }
+
+        public override void Unapply()
+        {
+            base.Unapply();
+
+            CombatManager._Instance.CombatentIntCallbackMap[GetOwner()][CombatIntCallbackType.OnTakeDamage] -= Activate;
+        }
+    }
+
+    public class OverwealmingBlaze : Affliction
+    {
+        protected override string specificToolTipText => "Any Spells that Apply Burn are Queued Twice";
+        protected override string genericToolTipText => "Any Spells that Apply Burn are Queued Twice";
+
+        public override AfflictionType Type => AfflictionType.OverwealmingBlaze;
+
+        public override Sign Sign => Sign.Positive;
+
+        protected override void SetKeywords()
+        {
+            // 
         }
     }
 }

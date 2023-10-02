@@ -28,6 +28,8 @@ public class CombatentHPBar : MonoBehaviour
     private float betweenSegmentDelayTimer;
     private int shownCurrentHealth;
 
+    public bool Empty => shownCurrentHealth == 0;
+
     private int damageFromPoison;
     private int damageFromBurn;
     private int damageFromBlight;
@@ -140,8 +142,6 @@ public class CombatentHPBar : MonoBehaviour
 
         ShowAfflictionStacks();
     }
-
-    public bool Empty => shownCurrentHealth == 0;
 
     public void SetWard(int wardAmount)
     {

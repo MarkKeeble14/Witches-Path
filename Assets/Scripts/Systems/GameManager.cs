@@ -62,6 +62,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Spells")]
     [SerializeField] private List<SpellLabel> unviableSpellRewards;
+    [SerializeField] private PercentageMap<Rarity> spellRarityOdds = new PercentageMap<Rarity>();
     private List<SpellLabel> viableSpellRewards = new List<SpellLabel>();
     private int equippableSpellIndex;
     public Pile<Spell> Spellbook { get; private set; }
@@ -161,7 +162,7 @@ public class GameManager : MonoBehaviour
     private bool spellRewardsMustMatchCharacterColor = true;
     public Func<Spell, bool> AcceptSpellRewardFunc =>
         spell => (!spellRewardsMustMatchCharacterColor || (spellRewardsMustMatchCharacterColor && spell.Color == GetCharacterColor()))
-            && (spell.Rarity == Rarity.Common || spell.Rarity == Rarity.Uncommon || spell.Rarity == Rarity.Rare);
+            && (spell.Rarity == spellRarityOdds.GetOption());
 
     private List<PotionIngredientListEntry> spawnedPotionIngredientListEntries = new List<PotionIngredientListEntry>();
 
@@ -1379,9 +1380,9 @@ public class GameManager : MonoBehaviour
         return maxPlayerMana;
     }
 
-    public void AlterPlayerCurrentMana(int amount)
+    public void AlterPlayerCurrentMana(int amount, bool canExceedCap = false)
     {
-        if (currentPlayerMana + amount > maxPlayerMana)
+        if (!canExceedCap && currentPlayerMana + amount > maxPlayerMana)
         {
             currentPlayerMana = maxPlayerMana;
         }

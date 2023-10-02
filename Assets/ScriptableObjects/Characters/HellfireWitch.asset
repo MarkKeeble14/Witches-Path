@@ -18,7 +18,7 @@ MonoBehaviour:
   startingHat: {fileID: 11400000, guid: a707352352167154381b4d14c6832951, type: 2}
   startingWand: {fileID: 11400000, guid: a794f23a6bced8a4f869c3618d2329a4, type: 2}
   startingBook: 0
-  startingSpells: 600000006000000060000000
+  startingSpells: 150000001500000015000000160000001600000016000000030000000500000047000000
   startingArtifacts: 1d000000
   startingCurrency: 100
   startingClothierCurrency: 1

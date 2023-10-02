@@ -27,7 +27,9 @@ public enum SpellEffectType
     PlayerExhaustSpells,
     TickPrepTime,
     AlterCurrentMana,
-    AddSpellToDeck
+    AddSpellToDeck,
+    AlterMaxHP,
+    LeechingAttack
 }
 
 public struct LabeledSpellStat
@@ -147,6 +149,36 @@ public class SpellSingleAttackEffect : SpellAttackEffect
     public override string NumText => DamageAmount.ToString();
 
     public SpellSingleAttackEffect(Func<int> damageAmount, DamageType damageType, Target target) : base(damageAmount, damageType, AttackAnimationStyle.Once, target)
+    {
+    }
+}
+
+public class SpellLeechingAttackEffect : SpellAttackEffect
+{
+    public override SpellEffectType Type => SpellEffectType.LeechingAttack;
+    protected override string name => "Leeching";
+
+    protected override string toolTipText
+    {
+        get
+        {
+            switch (Target)
+            {
+                case Target.Both:
+                    return "Attack Both Combatents for " + DamageAmount + " Damage, Heal for the total amount of Damage Dealt";
+                case Target.Self:
+                    return "Attack Self for " + DamageAmount + " Damage, Heal for the total amount of Damage Dealt";
+                case Target.Other:
+                    return "Attack Opponent for " + DamageAmount + " Damage, Heal for the total amount of Damage Dealt";
+                default:
+                    throw new UnhandledSwitchCaseException();
+            }
+        }
+    }
+
+    public override string NumText => DamageAmount.ToString();
+
+    public SpellLeechingAttackEffect(Func<int> damageAmount, DamageType damageType, Target target) : base(damageAmount, damageType, AttackAnimationStyle.Once, target)
     {
     }
 }
@@ -397,6 +429,37 @@ public class SpellAlterHPEffect : SpellEffect
         this.hpAmount = hpAmount;
     }
 }
+
+// Alter Max HP
+public class SpellAlterPlayerMaxHPEffect : SpellEffect
+{
+    private Func<int> hpAmount { get; set; }
+    public int HPAmount => hpAmount();
+    protected override string name => "Altering Max HP";
+    protected override string toolTipText
+    {
+        get
+        {
+            if (HPAmount >= 0)
+            {
+                return "Gain " + HPAmount + " Max HP";
+            }
+            else
+            {
+                return "Lose " + (HPAmount * -1) + " Max HP";
+            }
+        }
+    }
+
+    public override string NumText => HPAmount.ToString();
+    public override SpellEffectType Type => SpellEffectType.AlterMaxHP;
+
+    public SpellAlterPlayerMaxHPEffect(Func<int> hpAmount) : base(Target.Self)
+    {
+        this.hpAmount = hpAmount;
+    }
+}
+
 
 public class SpellAlterQueuedSpellEffect : SpellEffect
 {
