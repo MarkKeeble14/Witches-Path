@@ -16,6 +16,9 @@ public class MapManager : MonoBehaviour
 
     [SerializeField] private SerializableDictionary<string, GameOccurance> uniqueGameOccurances = new SerializableDictionary<string, GameOccurance>();
 
+    public bool MapOpen => mapCV.alpha > 0;
+    private ScrollRect mapScrollRect;
+
     public GameOccurance GetUniqueGameOccurance(string key)
     {
         return uniqueGameOccurances[key];
@@ -48,8 +51,6 @@ public class MapManager : MonoBehaviour
             Show();
         }
     }
-
-    public bool MapOpen => mapCV.alpha > 0;
 
     public void Hide()
     {
@@ -86,12 +87,15 @@ public class MapManager : MonoBehaviour
         _Instance = this;
 
         // Get & Set Variables
-        ScrollRect mapScrollRect = FindObjectOfType<MapScrollRect>();
+        mapScrollRect = FindObjectOfType<MapScrollRect>();
         mapCV = FindObjectOfType<MapCanvasGroup>().GetComponent<CanvasGroup>();
 
         // Show the Map CV
         Show();
+    }
 
+    private void Start()
+    {
         // Generate the Map
         map.SetSpawnOn(FindObjectOfType<MapContent>().transform);
         map.Generate();

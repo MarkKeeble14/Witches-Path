@@ -380,7 +380,7 @@ public abstract class Spell : ToolTippable
 
     protected virtual void SetPrepTime()
     {
-        AddSpellStat(SpellStat.PrepTime, 1);
+        AddSpellStat(SpellStat.PrepTime, 2);
     }
 
     protected void AddSpellStat(SpellStat stat, int value)
@@ -695,41 +695,59 @@ public abstract class Spell : ToolTippable
     protected virtual void SetNoteBatches()
     {
         /*
-         * Examples
-        Batches.Add(new SpellNoteBatch(new List<SpellNote>()
-        {
-            new SpellNote(.5f, ScreenQuadrant.TopLeft),
-            new SpellNote(.45f, ScreenQuadrant.TopRight),
-            new SpellNote(.4f, ScreenQuadrant.BottomLeft),
-            new SpellNote(.35f, ScreenQuadrant.BottomRight),
-        }, 0));
+         *  Examples
+            Batches.Add(new SpellNoteBatch(new List<SpellNote>()
+            {
+                new SpellNote(.5f, ScreenQuadrant.TopLeft),
+                new SpellNote(.45f, ScreenQuadrant.TopRight),
+                new SpellNote(.4f, ScreenQuadrant.BottomLeft),
+                new SpellNote(.35f, ScreenQuadrant.BottomRight),
+            }, 0));
 
-        Batches.Add(new SpellNoteBatch(new List<SpellNote>()
-        {
-            new SpellNote(.5f, ScreenQuadrant.TopLeft),
-            new SpellNote(.25f, ScreenQuadrant.BottomRight),
-        }, 0));
+            Batches.Add(new SpellNoteBatch(new List<SpellNote>()
+            {
+                new SpellNote(.5f, ScreenQuadrant.TopLeft),
+                new SpellNote(.25f, ScreenQuadrant.BottomRight),
+            }, 0));
 
-        Batches.Add(new SpellNoteBatch(new List<SpellNote>()
-        {
-            new SpellNote(.5f),
-            new SpellNote(.25f),
-        }, .25f));
+            Batches.Add(new SpellNoteBatch(new List<SpellNote>()
+            {
+                new SpellNote(.5f),
+                new SpellNote(.25f),
+            }, .25f));
+
+            Batches.Add(new SpellNoteBatch(2, .5f, .5f));
+            Batches.Add(new SpellNoteBatch(3, .5f, .5f));
         */
 
+        int minBatches;
+        int maxBatches;
+        switch (Rarity)
+        {
+            case Rarity.Uncommon:
+                minBatches = 2;
+                maxBatches = 3;
+                break;
+            case Rarity.Rare:
+                minBatches = 2;
+                maxBatches = 4;
+                break;
+            default:
+                minBatches = 1;
+                maxBatches = 2;
+                break;
+        }
+
         // Random Batches
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < maxBatches; i++)
         {
             Batches.Add(new SpellNoteBatch(RandomHelper.RandomIntInclusive(1, 3), RandomHelper.RandomFloat(0.3f, .6f),
-                RandomHelper.RandomFloat(0.25f, .5f), RandomHelper.RandomFloat(.95f, 1.05f)));
-            if (RandomHelper.RandomBool())
+                RandomHelper.RandomFloat(0.25f, .5f), RandomHelper.RandomFloat(.95f, 1.05f), RandomHelper.RandomFloat(.9f, 1.15f)));
+            if (i >= minBatches && RandomHelper.RandomBool())
             {
                 break;
             }
         }
-
-        // Batches.Add(new SpellNoteBatch(2, .5f, .5f));
-        // Batches.Add(new SpellNoteBatch(3, .5f, .5f));
     }
 
     public int GetNumNotes()

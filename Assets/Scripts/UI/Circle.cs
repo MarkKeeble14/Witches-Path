@@ -93,6 +93,7 @@ public class Circle : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         active = true;
         main.color = c;
         approachScaleRateMultiplier = noteInfo.ApproachRateMultiplier;
+        transform.localScale = Vector3.one * noteInfo.ScaleMultiplier;
     }
 
     // Main Update

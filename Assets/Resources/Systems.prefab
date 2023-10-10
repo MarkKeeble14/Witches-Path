@@ -501,6 +501,7 @@ GameObject:
   - component: {fileID: 4420896130027370077}
   - component: {fileID: 6241050430314270160}
   - component: {fileID: 447442616542083936}
+  - component: {fileID: 8801696765711158698}
   m_Layer: 6
   m_Name: SpellNotes
   m_TagString: Untagged
@@ -517,17 +518,17 @@ RectTransform:
   m_GameObject: {fileID: 270318508731027458}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 3854288427585472049}
-  m_RootOrder: 11
+  m_Father: {fileID: 2461664163193000547}
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 0, y: 0}
 --- !u!223 &6241050430314270160
 Canvas:
   m_ObjectHideFlags: 0
@@ -537,7 +538,7 @@ Canvas:
   m_GameObject: {fileID: 270318508731027458}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 2
+  m_RenderMode: 0
   m_Camera: {fileID: 0}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
@@ -566,6 +567,29 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &8801696765711158698
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 270318508731027458}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_UiScaleMode: 1
+  m_ReferencePixelsPerUnit: 100
+  m_ScaleFactor: 1
+  m_ReferenceResolution: {x: 1920, y: 1080}
+  m_ScreenMatchMode: 0
+  m_MatchWidthOrHeight: 1
+  m_PhysicalUnit: 3
+  m_FallbackScreenDPI: 96
+  m_DefaultSpriteDPI: 96
+  m_DynamicPixelsPerUnit: 1
+  m_PresetInfoIsWorld: 0
 --- !u!1 &496106019859873768
 GameObject:
   m_ObjectHideFlags: 0
@@ -2654,7 +2678,7 @@ RectTransform:
   m_Children:
   - {fileID: 7114416822134374371}
   m_Father: {fileID: 3854288427585472049}
-  m_RootOrder: 14
+  m_RootOrder: 13
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -3828,6 +3852,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3854288427585472049}
+  - {fileID: 4420896130027370077}
   m_Father: {fileID: 5388059310207229131}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -4027,7 +4052,43 @@ MonoBehaviour:
     - key: SpellCallbackType
       value: {r: 1, g: 0.89411765, b: 0, a: 1}
   combatEffectIconDict:
-    dictionary: []
+    dictionary:
+    - key: 0
+      value: {fileID: 21300000, guid: 04453f3cba9509f4daca96a1562b468c, type: 3}
+    - key: 1
+      value: {fileID: 21300000, guid: 326e61d12849d504babcaf9d5eb1b70c, type: 3}
+    - key: 2
+      value: {fileID: 21300000, guid: 18d09a3e287d521488ab658dd050fc40, type: 3}
+    - key: 3
+      value: {fileID: 0}
+    - key: 4
+      value: {fileID: 21300000, guid: 04453f3cba9509f4daca96a1562b468c, type: 3}
+    - key: 5
+      value: {fileID: 21300000, guid: 18d09a3e287d521488ab658dd050fc40, type: 3}
+    - key: 6
+      value: {fileID: 21300000, guid: 1b089476ac82da14b989f88f8bc03739, type: 3}
+    - key: 7
+      value: {fileID: 21300000, guid: ba038db07e1c04444898548638ca6d04, type: 3}
+    - key: 8
+      value: {fileID: 21300000, guid: e70ed8632d1587444b133b23efc8f9be, type: 3}
+    - key: 9
+      value: {fileID: 21300000, guid: facf84a24968c1049b13b216c88bd561, type: 3}
+    - key: 10
+      value: {fileID: 21300000, guid: ba038db07e1c04444898548638ca6d04, type: 3}
+    - key: 11
+      value: {fileID: 21300000, guid: ba038db07e1c04444898548638ca6d04, type: 3}
+    - key: 12
+      value: {fileID: 21300000, guid: 3afe9266576aa4041b27d5775e70022c, type: 3}
+    - key: 13
+      value: {fileID: 21300000, guid: 4548d792499d42a4480119032b485a08, type: 3}
+    - key: 14
+      value: {fileID: 21300000, guid: 10ce2f84e407e72439b33812ac4d3944, type: 3}
+    - key: 15
+      value: {fileID: 21300000, guid: a9350431373065247b0f167e7be9be20, type: 3}
+    - key: 16
+      value: {fileID: 21300000, guid: 18d09a3e287d521488ab658dd050fc40, type: 3}
+    - key: 17
+      value: {fileID: 21300000, guid: 04453f3cba9509f4daca96a1562b468c, type: 3}
   damageTypeColorMap:
     dictionary:
     - key: 0
@@ -4396,7 +4457,7 @@ RectTransform:
   m_Children:
   - {fileID: 6100742759738369718}
   m_Father: {fileID: 3854288427585472049}
-  m_RootOrder: 13
+  m_RootOrder: 12
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -4701,7 +4762,7 @@ RectTransform:
   m_Children:
   - {fileID: 8913954152727385214}
   m_Father: {fileID: 3854288427585472049}
-  m_RootOrder: 16
+  m_RootOrder: 15
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -12892,7 +12953,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3854288427585472049}
-  m_RootOrder: 12
+  m_RootOrder: 11
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -19248,7 +19309,7 @@ RectTransform:
   - {fileID: 3851219599333365875}
   - {fileID: 4276250661363497017}
   m_Father: {fileID: 3854288427585472049}
-  m_RootOrder: 15
+  m_RootOrder: 14
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}

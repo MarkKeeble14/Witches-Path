@@ -354,7 +354,7 @@ namespace Spells
         protected override int startCooldown => 1;
         protected override int startManaCost => 1;
 
-        public WitchesWill(int damageAmount = 400) : base()
+        public WitchesWill(int damageAmount = 5) : base()
         {
             AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
         }

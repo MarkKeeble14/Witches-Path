@@ -37,5 +37,5 @@ MonoBehaviour:
   basicAttackDamage: 0
   startingCombatPileSize: 10
   startingHandSize: 5
-  maxMana: 5
+  maxMana: 4
   manaPerTurnSubFromMax: 0

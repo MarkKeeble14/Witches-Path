@@ -387,8 +387,8 @@ MonoBehaviour:
   prepTimeText: {fileID: 6959543090731440406}
   spellEffects: {fileID: 2074269489773873004}
   spellEffectPrefab: {fileID: 4665765622561193700, guid: fa79718441c799546bdeef8215645935, type: 3}
-  spellEffectRadiusRatio: 25
-  onHoverScaleTo: 2
+  spellEffectRadiusRatio: 50
+  onHoverScaleTo: 1.25
   onHoverScaleDuration: 0.1
   onHoverToScale: {fileID: 320296754517506696}
   delayBeforeSpawningToolTips: 0.5
