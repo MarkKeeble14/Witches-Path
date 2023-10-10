@@ -48,7 +48,7 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
         SetMainColor(UIManager._Instance.GetSpellPrimaryFunctionColor(spell.PrimaryFunction));
         text.text = spell.Name;
 
-        foreach (SpellEffect effect in spell.GetSpellEffects(SpellCallbackType.OnCast))
+        foreach (CombatEffect effect in spell.GetSpellEffects(SpellCallbackType.OnCast))
         {
             QueuedSpellEffectDisplay effectDisplay = Instantiate(spellEffectPrefab, spellEffects.transform);
             effectDisplay.Set(effect);

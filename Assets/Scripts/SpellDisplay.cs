@@ -93,6 +93,8 @@ public abstract class SpellDisplay : MonoBehaviour, IPointerClickHandler, IPoint
     {
         isMouseOver = true;
         onEnter?.Invoke();
+
+        AudioManager._Instance.PlayFromSFXDict("Card_OnHover");
     }
 
     public void OnPointerExit(PointerEventData eventData)

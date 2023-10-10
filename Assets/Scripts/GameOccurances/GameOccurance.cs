@@ -17,7 +17,10 @@ public abstract class GameOccurance : ScriptableObject
     public IEnumerator RunOccurance()
     {
         Debug.Log(name + ": Beginning to Run");
+        yield return GameManager._Instance.StartCoroutine(OnInit());
+
         GameOccuranceUIManager._Instance.StartGameOccurance(Type);
+
         yield return GameManager._Instance.StartCoroutine(OnStart());
 
         Debug.Log(name + ": Waiting to Resolve");
@@ -31,6 +34,11 @@ public abstract class GameOccurance : ScriptableObject
     }
 
     protected abstract IEnumerator OnStart();
+
+    protected virtual IEnumerator OnInit()
+    {
+        yield return null;
+    }
 
     protected abstract IEnumerator OnResolve();
 }

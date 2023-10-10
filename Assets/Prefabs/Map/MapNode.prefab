@@ -96,15 +96,15 @@ MonoBehaviour:
   nodeStateColors:
     dictionary:
     - key: 0
-      value: {r: 0.76862746, g: 0.76862746, b: 0.76862746, a: 0.5019608}
+      value: {r: 0.76862746, g: 0.5019608, b: 0.5019608, a: 0.76862746}
     - key: 1
-      value: {r: 1, g: 0.76862746, b: 1, a: 1}
+      value: {r: 0.627451, g: 0.627451, b: 0.627451, a: 1}
     - key: 2
-      value: {r: 0.76862746, g: 0, b: 1, a: 1}
+      value: {r: 0.1882353, g: 0.0627451, b: 0.0627451, a: 1}
     - key: 3
-      value: {r: 0.5019608, g: 0.3764706, b: 1, a: 1}
+      value: {r: 1, g: 0.3764706, b: 0.5019608, a: 1}
     - key: 4
-      value: {r: 1, g: 0.76862746, b: 1, a: 0.76862746}
+      value: {r: 0.2509804, g: 0.1254902, b: 0.1882353, a: 0.76862746}
   connectorStateColors:
     dictionary:
     - key: 0
@@ -465,7 +465,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.5019608, g: 0, b: 0.76862746, a: 1}
+  m_Color: {r: 1, g: 0.3764706, b: 0.5019608, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

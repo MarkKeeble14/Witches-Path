@@ -736,7 +736,7 @@ namespace Afflictions
     public class BattleFrenzied : Affliction
     {
         protected override string specificToolTipText => "Upon Dealing at or Above " + damageToActivate + " Damage, Gain " + GetStacks() + " Embolden";
-        protected override string genericToolTipText => "Gain Embolden equal to the number of BattleFrenzied Stacks Upon dealing Damage equal to or Above " + damageToActivate;
+        protected override string genericToolTipText => "Gain Embolden equal to the number of Stacks Upon dealing Damage equal to or Above " + damageToActivate;
 
         public override AfflictionType Type => AfflictionType.BattleFrenzied;
 
@@ -1378,13 +1378,13 @@ namespace Afflictions
 
         public override Sign Sign => Sign.Positive;
 
-        private SpellAlterQueuedSpellEffect spellEffect;
+        private AlterQueuedSpellEffect spellEffect;
 
         protected override void SetParameters()
         {
             base.SetParameters();
 
-            spellEffect = new SpellAlterQueuedSpellEffect(() => GetStacks(), SpellAlterStatDuration.Combat, Target.Self,
+            spellEffect = new AlterQueuedSpellEffect(() => GetStacks(), SpellAlterStatDuration.Combat, Target.Self,
                 new LabeledSpellStat(SpellStat.OtherDamageAmount, "Damage"));
         }
 
@@ -1396,7 +1396,7 @@ namespace Afflictions
         private void Activate(Spell spell)
         {
             if (spell.Color != SpellColor.Curse) return;
-            CombatManager._Instance.StartCoroutine(CombatManager._Instance.CallSpellEffects(new List<SpellEffect>() { spellEffect }, null, GetOwner(), GetNonOwner()));
+            CombatManager._Instance.StartCoroutine(CombatManager._Instance.CallSpellEffects(new List<CombatEffect>() { spellEffect }, null, GetOwner(), GetNonOwner()));
         }
 
         public override void Apply()

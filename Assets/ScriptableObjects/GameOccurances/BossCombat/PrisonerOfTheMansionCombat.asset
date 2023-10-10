@@ -31,7 +31,7 @@ MonoBehaviour:
         - key:
             NumericalType: 1
             ForceRarity: 1
-            Rarity: 2
+            Rarity: 3
             Numbers: {x: 1, y: 1}
           value: 100
   currencyRewards:
@@ -46,10 +46,4 @@ MonoBehaviour:
         percentageMap:
         - key: {x: 3, y: 4}
           value: 100
-    - key: 6
-      value:
-        percentageMap:
-        - key: {x: 1, y: 1}
-          value: 100
   mapSprite: {fileID: 21300000, guid: 869ad85ac10d0174b9ab99d81f8d260f, type: 3}
-  alterCombatPileSizeBy: 3

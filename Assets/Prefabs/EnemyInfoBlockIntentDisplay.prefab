@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 7500441258520925490}
   - component: {fileID: 4087224445805325179}
   - component: {fileID: 8117642271045136492}
+  - component: {fileID: 3881586683667995274}
   m_Layer: 0
   m_Name: EnemyInfoBlockIntentDisplay
   m_TagString: Untagged
@@ -149,3 +150,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   text: {fileID: 4087224445805325179}
+--- !u!114 &3881586683667995274
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8251510430650804057}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca41ef21d4305f478acf7e1b96bf485, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

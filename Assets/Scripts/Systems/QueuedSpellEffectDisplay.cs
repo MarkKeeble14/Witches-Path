@@ -8,13 +8,13 @@ public class QueuedSpellEffectDisplay : MonoBehaviour
     [SerializeField] private Image icon;
     [SerializeField] private TextMeshProUGUI text;
 
-    private SpellEffect repEffect;
+    private CombatEffect repEffect;
 
-    public void Set(SpellEffect effect)
+    public void Set(CombatEffect effect)
     {
         switch (effect)
         {
-            case SpellApplyAfflictionEffect applyAff:
+            case ApplyAfflictionEffect applyAff:
                 icon.sprite = UIManager._Instance.GetAfflictionIcon(applyAff.AfflictionType);
                 break;
             default:

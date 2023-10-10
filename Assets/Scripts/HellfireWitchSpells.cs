@@ -11,7 +11,7 @@ namespace Spells
         public override SpellLabel Label => SpellLabel.Combust;
         public override SpellColor Color => SpellColor.Red;
         public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
-        public override Rarity Rarity => Rarity.Basic;
+        public override Rarity Rarity => Rarity.Uncommon;
         public override string Name => "Combust";
         protected override int startCooldown => 4;
         protected override int startManaCost => 2;
@@ -73,7 +73,7 @@ namespace Spells
         public override DamageType MainDamageType => DamageType.Fire;
         public override SpellColor Color => SpellColor.Red;
         public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Afflict;
-        public override Rarity Rarity => Rarity.Basic;
+        public override Rarity Rarity => Rarity.Common;
         public override string Name => "Singe";
         protected override int startCooldown => 2;
         protected override int startManaCost => 2;
@@ -91,7 +91,7 @@ namespace Spells
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnCast, new SpellApplyAfflictionEffect(AfflictionType.Burn, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
+            AddSpellEffectCallback(SpellCallbackType.OnCast, new ApplyAfflictionEffect(AfflictionType.Burn, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
         }
     }
 
@@ -124,8 +124,8 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
-                new SpellApplyAfflictionEffect(AfflictionType.Vulnerable, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
+                new SingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+                new ApplyAfflictionEffect(AfflictionType.Vulnerable, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
         }
     }
 
@@ -153,7 +153,7 @@ namespace Spells
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnCast, new SpellAlterQueuedSpellEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.BuffAmount)),
+            AddSpellEffectCallback(SpellCallbackType.OnCast, new AlterQueuedSpellEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.BuffAmount)),
                 SpellAlterStatDuration.UntilCast, Target.Self, new LabeledSpellStat(SpellStat.OtherDamageAmount, "")));
         }
     }
@@ -187,7 +187,7 @@ namespace Spells
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnCast, new SpellApplyAfflictionEffect(AfflictionType.TorchTipped, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+            AddSpellEffectCallback(SpellCallbackType.OnCast, new ApplyAfflictionEffect(AfflictionType.TorchTipped, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
         }
     }
 
@@ -211,8 +211,8 @@ namespace Spells
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnQueue, new PlayerExhaustSpellsSpellEffect(() => GetSpellStat(SpellStat.ExhaustAmount), false, null));
-            AddSpellEffectCallback(SpellCallbackType.OnCast, new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
+            AddSpellEffectCallback(SpellCallbackType.OnQueue, new PlayerExhaustSpellsEffect(() => GetSpellStat(SpellStat.ExhaustAmount), false, null));
+            AddSpellEffectCallback(SpellCallbackType.OnCast, new SingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
         }
     }
 
@@ -257,7 +257,7 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
+                new SingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
         }
     }
 
@@ -286,9 +286,9 @@ namespace Spells
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnQueue, new PlayerDrawSpellsSpellEffect(() => GetSpellStat(SpellStat.DrawAmount)));
+            AddSpellEffectCallback(SpellCallbackType.OnQueue, new PlayerDrawSpellsEffect(() => GetSpellStat(SpellStat.DrawAmount)));
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
+                new SingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
         }
     }
 
@@ -299,7 +299,7 @@ namespace Spells
         public override SpellLabel Label => SpellLabel.Fireball;
         public override SpellColor Color => SpellColor.Red;
         public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
-        public override Rarity Rarity => Rarity.Common;
+        public override Rarity Rarity => Rarity.Basic;
         public override string Name => "Fireball";
         protected override int startCooldown => 3;
         protected override int startManaCost => 2;
@@ -319,8 +319,8 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
-                new SpellApplyAfflictionEffect(AfflictionType.Burn, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
+                new SingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+                new ApplyAfflictionEffect(AfflictionType.Burn, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
         }
     }
     public class BrighterBurn : ReusableSpell
@@ -348,8 +348,8 @@ namespace Spells
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnCast, new SpellApplyAfflictionEffect(AfflictionType.Power, () => 2, Target.Self));
-            AddSpellEffectCallback(SpellCallbackType.OnPlayerTurnEnd, new SpellApplyAfflictionEffect(AfflictionType.Power, () => -2, Target.Self));
+            AddSpellEffectCallback(SpellCallbackType.OnCast, new ApplyAfflictionEffect(AfflictionType.Power, () => 2, Target.Self));
+            AddSpellEffectCallback(SpellCallbackType.OnPlayerTurnEnd, new ApplyAfflictionEffect(AfflictionType.Power, () => -2, Target.Self));
         }
     }
 
@@ -372,7 +372,7 @@ namespace Spells
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnCast, new SpellMultiAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), () => 2, MainDamageType, Target.Other));
+            AddSpellEffectCallback(SpellCallbackType.OnCast, new MultiAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), () => 2, MainDamageType, Target.Other));
         }
     }
 
@@ -403,8 +403,8 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
-                new SpellApplyAfflictionEffect(AfflictionType.Weak, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
+                new SingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+                new ApplyAfflictionEffect(AfflictionType.Weak, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other));
         }
     }
 
@@ -478,8 +478,8 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
-                new SpellApplyAfflictionEffect(AfflictionType.Embolden, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+                new SingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+                new ApplyAfflictionEffect(AfflictionType.Embolden, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
         }
     }
 
@@ -548,8 +548,8 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             //
-            AddSpellEffectCallback(SpellCallbackType.OnQueue, new PlayerDrawSpellsSpellEffect(() => GetSpellStat(SpellStat.DrawAmount)),
-                new PlayerExhaustSpellsSpellEffect(() => GetSpellStat(SpellStat.ExhaustAmount), true, null));
+            AddSpellEffectCallback(SpellCallbackType.OnQueue, new PlayerDrawSpellsEffect(() => GetSpellStat(SpellStat.DrawAmount)),
+                new PlayerExhaustSpellsEffect(() => GetSpellStat(SpellStat.ExhaustAmount), true, null));
         }
     }
 
@@ -578,9 +578,9 @@ namespace Spells
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnQueue, new PlayerDrawSpellsSpellEffect(() => GetSpellStat(SpellStat.DrawAmount)));
+            AddSpellEffectCallback(SpellCallbackType.OnQueue, new PlayerDrawSpellsEffect(() => GetSpellStat(SpellStat.DrawAmount)));
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellWardEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.SelfWardAmount)), Target.Self));
+                new WardEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.SelfWardAmount)), Target.Self));
         }
     }
 
@@ -605,9 +605,9 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellMultiAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)),
+                new MultiAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)),
                 () => GetSpellStat(SpellStat.HitAmount), MainDamageType, Target.Other),
-                new SpellApplyAfflictionEffect(AfflictionType.Burn, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.HitAmount)), Target.Other));
+                new ApplyAfflictionEffect(AfflictionType.Burn, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.HitAmount)), Target.Other));
         }
     }
 
@@ -631,9 +631,9 @@ namespace Spells
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnQueue, new PlayerExhaustSpellsSpellEffect(() => GetSpellStat(SpellStat.ExhaustAmount), true, null));
+            AddSpellEffectCallback(SpellCallbackType.OnQueue, new PlayerExhaustSpellsEffect(() => GetSpellStat(SpellStat.ExhaustAmount), true, null));
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellWardEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.SelfWardAmount)), Target.Self));
+                new WardEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.SelfWardAmount)), Target.Self));
         }
     }
 
@@ -658,8 +658,8 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellWardEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.SelfWardAmount)), Target.Self),
-                new SpellTickPrepTimeEffect(() => GetSpellStat(SpellStat.TickPrepTimeAmount), Target.Self));
+                new WardEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.SelfWardAmount)), Target.Self),
+                new TickPrepTimeEffect(() => GetSpellStat(SpellStat.TickPrepTimeAmount), Target.Self));
         }
     }
 
@@ -688,7 +688,7 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellAlterQueuedSpellEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.BuffAmount)), SpellAlterStatDuration.UntilCast,
+                new AlterQueuedSpellEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.BuffAmount)), SpellAlterStatDuration.UntilCast,
                 Target.Self, new LabeledSpellStat(SpellStat.AnyAffStackAmount, "AnyAff")));
         }
     }
@@ -725,8 +725,8 @@ namespace Spells
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnCast, new SpellApplyAfflictionEffect(AfflictionType.Embolden, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self),
-                new SpellApplyAfflictionEffect(AfflictionType.Burn, () => GetSpellStat(SpellStat.Aff2StackAmount), Target.Self));
+            AddSpellEffectCallback(SpellCallbackType.OnCast, new ApplyAfflictionEffect(AfflictionType.Embolden, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self),
+                new ApplyAfflictionEffect(AfflictionType.Burn, () => GetSpellStat(SpellStat.Aff2StackAmount), Target.Self));
         }
     }
 
@@ -790,7 +790,7 @@ namespace Spells
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnCast, new SpellApplyAfflictionEffect(AfflictionType.BattleFrenzied, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+            AddSpellEffectCallback(SpellCallbackType.OnCast, new ApplyAfflictionEffect(AfflictionType.BattleFrenzied, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
         }
     }
 
@@ -820,8 +820,8 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             //
-            SpellSingleAttackEffect attack = new SpellSingleAttackEffect(() => CombatManager._Instance.GetCombatentWard(Caster), MainDamageType, Target.Other);
-            attack.AddAdditionalText(" - Base Damage is equal to the Amount of Ward the Caster has");
+            SingleAttackEffect attack = new SingleAttackEffect(() => CombatManager._Instance.GetCombatentWard(Caster), MainDamageType, Target.Other);
+            attack.AddAdditionalText("Base Damage is equal to the Amount of Ward the Caster has");
             AddSpellEffectCallback(SpellCallbackType.OnCast, attack);
         }
     }
@@ -851,7 +851,7 @@ namespace Spells
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnCast, new SpellApplyAfflictionEffect(AfflictionType.AmpUp, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
+            AddSpellEffectCallback(SpellCallbackType.OnCast, new ApplyAfflictionEffect(AfflictionType.AmpUp, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Self));
         }
     }
 
@@ -918,8 +918,8 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellWardEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.SelfWardAmount)), Target.Self),
-                new SpellApplyAfflictionEffect(AfflictionType.WardNegation, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+                new WardEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.SelfWardAmount)), Target.Self),
+                new ApplyAfflictionEffect(AfflictionType.WardNegation, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
         }
     }
 
@@ -944,8 +944,8 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
-                new SpellAlterHPEffect(() => GetSpellStat(SpellStat.AlterHPAmount), MainDamageType, Target.Self));
+                new SingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+                new AlterCurrentHPEffect(() => GetSpellStat(SpellStat.AlterHPAmount), MainDamageType, Target.Self));
         }
     }
 
@@ -956,7 +956,7 @@ namespace Spells
         public override SpellColor Color => SpellColor.Red;
         public override Rarity Rarity => Rarity.Uncommon;
         public override SpellPrimaryFunction PrimaryFunction => SpellPrimaryFunction.Damage;
-        public override string Name => "Rekless Cast";
+        public override string Name => "Reckless Cast";
         public override SpellLabel Label => SpellLabel.RecklessCast;
         protected override int startCooldown => 2;
         protected override int startManaCost => 2;
@@ -977,7 +977,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnQueue,
-                new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+                new SingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
                 new AddSpellToDeckEffect(new Injure(), SpellPileType.Draw));
         }
     }
@@ -1007,7 +1007,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellApplyAfflictionEffect(AfflictionType.NegativeGains, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+                new ApplyAfflictionEffect(AfflictionType.NegativeGains, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
         }
     }
 
@@ -1036,7 +1036,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellApplyAfflictionEffect(AfflictionType.Sacrifice, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+                new ApplyAfflictionEffect(AfflictionType.Sacrifice, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
         }
     }
 
@@ -1063,7 +1063,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnQueue,
-                new PlayerExhaustSpellsSpellEffect(() => GetSpellStat(SpellStat.ExhaustAmount), true, spell =>
+                new PlayerExhaustSpellsEffect(() => GetSpellStat(SpellStat.ExhaustAmount), true, spell =>
                 {
                     CombatManager._Instance.AlterCombatentHP(PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.HealAmount)), Caster, MainDamageType);
                 }, () => "Heal " + GetSpellStat(SpellStat.HealAmount) + " HP for every Spell Exhausted"));
@@ -1095,7 +1095,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellApplyAfflictionEffect(AfflictionType.SpatteringFlames, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+                new ApplyAfflictionEffect(AfflictionType.SpatteringFlames, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
         }
     }
 
@@ -1124,7 +1124,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellApplyAfflictionEffect(AfflictionType.WorrisomeBargain, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+                new ApplyAfflictionEffect(AfflictionType.WorrisomeBargain, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
         }
     }
 
@@ -1153,7 +1153,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellApplyAfflictionEffect(AfflictionType.FieryEmbrace, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+                new ApplyAfflictionEffect(AfflictionType.FieryEmbrace, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
         }
     }
 
@@ -1183,7 +1183,7 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
+                new SingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other),
                 new AddSpellToDeckEffect(Spell.GetSpellOfType(SpellLabel.BurningFaintly), SpellPileType.Draw));
         }
     }
@@ -1213,7 +1213,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellApplyAfflictionEffect(AfflictionType.KeenBlaze, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+                new ApplyAfflictionEffect(AfflictionType.KeenBlaze, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
         }
     }
 
@@ -1242,7 +1242,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellApplyAfflictionEffect(AfflictionType.BloodPact, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+                new ApplyAfflictionEffect(AfflictionType.BloodPact, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
         }
     }
 
@@ -1268,7 +1268,7 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellWardEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.SelfWardAmount)), Target.Self));
+                new WardEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.SelfWardAmount)), Target.Self));
         }
     }
 
@@ -1292,7 +1292,7 @@ namespace Spells
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnCast, new SpellMultiAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)),
+            AddSpellEffectCallback(SpellCallbackType.OnCast, new MultiAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)),
                 () => GetSpellStat(SpellStat.HitAmount), MainDamageType, Target.Other));
         }
     }
@@ -1315,13 +1315,13 @@ namespace Spells
             AddSpellStat(SpellStat.OtherDamageAmount, damageAmount);
             this.increaseDamageBy = increaseDamageBy;
 
-            AddNamedActionCallback(SpellCallbackType.OnCast, () => "Increase the Damage of this Spell by " + increaseDamageBy,
+            AddNamedActionCallback(SpellCallbackType.OnCast, () => ", Increase the Damage of this Spell by " + increaseDamageBy + " this Combat",
                 () => AlterSpellStat(SpellStat.OtherDamageAmount, increaseDamageBy, SpellAlterStatDuration.Combat));
         }
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnCast, new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)),
+            AddSpellEffectCallback(SpellCallbackType.OnCast, new SingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)),
                MainDamageType, Target.Other));
         }
     }
@@ -1346,7 +1346,7 @@ namespace Spells
 
         protected override void SetSpellEffects()
         {
-            AddSpellEffectCallback(SpellCallbackType.OnQueue, new AlterCurrentManaSpellEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.AlterManaAmount))));
+            AddSpellEffectCallback(SpellCallbackType.OnQueue, new AlterPlayerCurrentManaEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.AlterManaAmount))));
         }
     }
 
@@ -1416,8 +1416,8 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellApplyAfflictionEffect(AfflictionType.Vulnerable, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other),
-                new SpellApplyAfflictionEffect(AfflictionType.Weak, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff2StackAmount)), Target.Other));
+                new ApplyAfflictionEffect(AfflictionType.Vulnerable, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff1StackAmount)), Target.Other),
+                new ApplyAfflictionEffect(AfflictionType.Weak, () => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.Aff2StackAmount)), Target.Other));
         }
     }
 
@@ -1475,7 +1475,7 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             //
-            AddSpellEffectCallback(SpellCallbackType.OnDraw, new AlterCurrentManaSpellEffect(() => GetSpellStat(SpellStat.AlterManaAmount)));
+            AddSpellEffectCallback(SpellCallbackType.OnDraw, new AlterPlayerCurrentManaEffect(() => GetSpellStat(SpellStat.AlterManaAmount)));
         }
     }
 
@@ -1504,7 +1504,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellApplyAfflictionEffect(AfflictionType.LingeringFlame, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+                new ApplyAfflictionEffect(AfflictionType.LingeringFlame, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
         }
     }
 
@@ -1528,7 +1528,7 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             //
-            AddSpellEffectCallback(SpellCallbackType.OnCast, new SpellSingleAttackEffect(() => GetSpellStat(SpellStat.OtherDamageAmount), MainDamageType, Target.Other));
+            AddSpellEffectCallback(SpellCallbackType.OnCast, new SingleAttackEffect(() => GetSpellStat(SpellStat.OtherDamageAmount), MainDamageType, Target.Other));
         }
     }
 
@@ -1557,7 +1557,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellApplyAfflictionEffect(AfflictionType.FuelSupplement, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+                new ApplyAfflictionEffect(AfflictionType.FuelSupplement, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
         }
     }
 
@@ -1587,7 +1587,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellApplyAfflictionEffect(AfflictionType.BolsteringEmbers, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+                new ApplyAfflictionEffect(AfflictionType.BolsteringEmbers, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
         }
     }
 
@@ -1618,7 +1618,7 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             //
-            AddSpellEffectCallback(SpellCallbackType.OnCast, new SpellApplyAfflictionEffect(AfflictionType.Echo, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+            AddSpellEffectCallback(SpellCallbackType.OnCast, new ApplyAfflictionEffect(AfflictionType.Echo, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
         }
     }
 
@@ -1645,9 +1645,9 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellSingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
+                new SingleAttackEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.OtherDamageAmount)), MainDamageType, Target.Other));
             AddSpellEffectCallback(SpellCallbackType.OnKill,
-                new SpellAlterPlayerMaxHPEffect(() => GetSpellStat(SpellStat.AlterMaxHPAmount)));
+                new AlterPlayerMaxHPEffect(() => GetSpellStat(SpellStat.AlterMaxHPAmount)));
         }
     }
 
@@ -1677,7 +1677,7 @@ namespace Spells
         protected override void SetSpellEffects()
         {
             //
-            AddSpellEffectCallback(SpellCallbackType.OnCast, new SpellSingleAttackEffect(() => GetSpellStat(SpellStat.OtherDamageAmount), MainDamageType, Target.Other),
+            AddSpellEffectCallback(SpellCallbackType.OnCast, new SingleAttackEffect(() => GetSpellStat(SpellStat.OtherDamageAmount), MainDamageType, Target.Other),
                 new AddSpellToDeckEffect(GetSpellOfType(SpellLabel.Anger), SpellPileType.Draw));
         }
     }
@@ -1707,7 +1707,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellApplyAfflictionEffect(AfflictionType.MorbidResolution, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+                new ApplyAfflictionEffect(AfflictionType.MorbidResolution, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
         }
     }
 
@@ -1739,8 +1739,8 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellApplyAfflictionEffect(AfflictionType.Thorns, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self),
-                new SpellWardEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.SelfWardAmount)), Target.Self));
+                new ApplyAfflictionEffect(AfflictionType.Thorns, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self),
+                new WardEffect(() => PassValueThroughEffectivenessMultiplier(GetSpellStat(SpellStat.SelfWardAmount)), Target.Self));
         }
     }
 
@@ -1769,7 +1769,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellApplyAfflictionEffect(AfflictionType.OverwealmingBlaze, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
+                new ApplyAfflictionEffect(AfflictionType.OverwealmingBlaze, () => GetSpellStat(SpellStat.Aff1StackAmount), Target.Self));
         }
     }
 
@@ -1795,7 +1795,7 @@ namespace Spells
         {
             //
             AddSpellEffectCallback(SpellCallbackType.OnCast,
-                new SpellLeechingAttackEffect(() => GetSpellStat(SpellStat.OtherDamageAmount), MainDamageType, Target.Other));
+                new LeechingAttackEffect(() => GetSpellStat(SpellStat.OtherDamageAmount), MainDamageType, Target.Other));
         }
     }
 }

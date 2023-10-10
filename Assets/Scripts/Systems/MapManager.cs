@@ -39,10 +39,12 @@ public class MapManager : MonoBehaviour
     {
         if (shown)
         {
+            AudioManager._Instance.PlayFromSFXDict("UI_MapClose");
             Hide();
         }
         else
         {
+            AudioManager._Instance.PlayFromSFXDict("UI_MapOpen");
             Show();
         }
     }

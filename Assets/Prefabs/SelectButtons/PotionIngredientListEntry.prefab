@@ -77,6 +77,7 @@ GameObject:
   - component: {fileID: 5634426205094963134}
   - component: {fileID: 8666554479416727874}
   - component: {fileID: 274841045851056737}
+  - component: {fileID: 3562859297210658833}
   m_Layer: 0
   m_Name: Name
   m_TagString: Untagged
@@ -201,6 +202,18 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &3562859297210658833
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2030078917565736831}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca41ef21d4305f478acf7e1b96bf485, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2574350745688617331
 GameObject:
   m_ObjectHideFlags: 0
@@ -313,16 +326,7 @@ MonoBehaviour:
   quantityText: {fileID: 7813717229870302775}
   icon: {fileID: 5758162007269368987}
   cv: {fileID: 4943620174359730282}
-  potionIngredientCategorySpriteMap:
-    dictionary:
-    - key: 0
-      value: {fileID: 21300000, guid: f66d2574dba4a6445a494796543f27e8, type: 3}
-    - key: 1
-      value: {fileID: 21300000, guid: d29ce8c1d52ef934c8d34ca8ba7c3ca8, type: 3}
-    - key: 2
-      value: {fileID: 21300000, guid: 48ce93021fa8ceb4fb178fadad24710d, type: 3}
-    - key: 3
-      value: {fileID: 21300000, guid: abd97406dfc97ea4599bc91608927e0c, type: 3}
+  spawnToolTipDelay: 0.25
 --- !u!114 &3950168351011666793
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -402,6 +406,7 @@ GameObject:
   - component: {fileID: 426250126611374776}
   - component: {fileID: 2019239875081075394}
   - component: {fileID: 7813717229870302775}
+  - component: {fileID: 5419578924926216700}
   m_Layer: 0
   m_Name: Quantity
   m_TagString: Untagged
@@ -526,6 +531,18 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &5419578924926216700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4832222492194313896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca41ef21d4305f478acf7e1b96bf485, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &4986336692491290453
 GameObject:
   m_ObjectHideFlags: 0

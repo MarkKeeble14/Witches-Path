@@ -42,6 +42,8 @@ public class PotionDisplay : MonoBehaviour, IPointerClickHandler, IPointerEnterH
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        AudioManager._Instance.PlayFromSFXDict("Potion_OnHoverPotion");
+
         if (!useToolTipActive)
         {
             infoToolTip = UIManager._Instance.SpawnGenericToolTips(representingPotion, transform);

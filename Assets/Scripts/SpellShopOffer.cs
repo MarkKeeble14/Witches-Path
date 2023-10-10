@@ -28,8 +28,16 @@ public class SpellShopOffer : ShopOffer
 
     private void Update()
     {
-        bool hide = GameManager._Instance.OverlaidUIOpen || MapManager._Instance.MapOpen;
-        cv.blocksRaycasts = !hide;
-        cv.alpha = hide ? 0 : 1;
+        if (purchased)
+        {
+            cv.blocksRaycasts = false;
+            cv.alpha = 0;
+        }
+        else
+        {
+            bool hide = GameManager._Instance.OverlaidUIOpen || MapManager._Instance.MapOpen;
+            cv.blocksRaycasts = !hide;
+            cv.alpha = hide ? 0 : 1;
+        }
     }
 }

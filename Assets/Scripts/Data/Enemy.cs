@@ -21,14 +21,15 @@ public enum EnemyType
     SpiritsTombGolem,
     SpiritOfPride,
     SpritOfDebilitation,
-    FamilyPet
+    TheFamilyPet,
+    Slimer
 }
 
 public abstract class Enemy
 {
     public abstract string Name { get; }
     public abstract EnemyType EnemyType { get; }
-    public Sprite CombatSprite => Resources.Load<Sprite>("EnemySprites/" + EnemyType.ToString());
+    public Sprite[] CombatSprites => Resources.LoadAll<Sprite>("EnemySprites/" + EnemyType.ToString());
     private int maxHP;
     protected abstract Vector2Int minMaxHPAmount { get; }
     protected abstract int basicAttackDamage { get; }
@@ -39,7 +40,7 @@ public abstract class Enemy
     private List<EnemyAction> onTurnEndActions = new List<EnemyAction>();
     private Dictionary<string, EnemyAction> enemyActionDict = new Dictionary<string, EnemyAction>();
 
-    private List<SpellEffect> onCombatStartSpellEffects = new List<SpellEffect>();
+    private List<CombatEffect> onCombatStartSpellEffects = new List<CombatEffect>();
 
     public virtual string AdditionalInfoText => "";
 
@@ -94,12 +95,12 @@ public abstract class Enemy
         return onTurnEndActions;
     }
 
-    protected void AddOnCombatStartSpellEffects(params SpellEffect[] spellEffects)
+    protected void AddOnCombatStartSpellEffects(params CombatEffect[] spellEffects)
     {
         onCombatStartSpellEffects.AddRange(spellEffects);
     }
 
-    public List<SpellEffect> GetOnCombatStartSpellEffects()
+    public List<CombatEffect> GetOnCombatStartSpellEffects()
     {
         return onCombatStartSpellEffects;
     }
@@ -129,9 +130,9 @@ public abstract class Enemy
         return basicAttackDamage;
     }
 
-    public Sprite GetCombatSprite()
+    public Sprite[] GetCombatSprite()
     {
-        return CombatSprite;
+        return CombatSprites;
     }
 
     public EnemyAction GetAnyEnemyAction()
@@ -233,8 +234,10 @@ public abstract class Enemy
                 return new SpiritOfPride();
             case EnemyType.SpritOfDebilitation:
                 return new SpiritOfDebilitation();
-            case EnemyType.FamilyPet:
-                return new FamilyPet();
+            case EnemyType.TheFamilyPet:
+                return new TheFamilyPet();
+            case EnemyType.Slimer:
+                return new Slimer();
             default:
                 throw new UnhandledSwitchCaseException();
         }
@@ -246,7 +249,7 @@ public class PossessedTome : Enemy
     public override string Name => "Possessed Tome";
     public override EnemyType EnemyType => EnemyType.PossessedTome;
     protected override Vector2Int minMaxHPAmount => new Vector2Int(200, 210);
-    protected override int basicAttackDamage => 4;
+    protected override int basicAttackDamage => 3;
 
     private bool levitating => CombatManager._Instance.TargetHasAffliction(AfflictionType.Levitating, Combatent.Enemy);
 
@@ -259,7 +262,7 @@ public class PossessedTome : Enemy
         AddEnemyAction("MultiAttack", MakeEnemyAction(null, new Spells.GhoulishAssault(3, 3), new Spells.Protect(4)));
 
         // Add On Combat Start Actions
-        AddOnCombatStartSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Levitating, () => 1, Target.Self));
+        AddOnCombatStartSpellEffects(new ApplyAfflictionEffect(AfflictionType.Levitating, () => 1, Target.Self));
 
         // Make Maps
         PercentageMap<string> notLevitatingMap = new PercentageMap<string>();
@@ -273,103 +276,6 @@ public class PossessedTome : Enemy
         // Apply Behaviour
         AddEnemyBehaviour(() => !levitating, notLevitatingMap);
         AddEnemyBehaviour(() => levitating, levitatingMap);
-    }
-}
-
-public class HauntedClock : Enemy
-{
-    public override string Name => "Haunted Clock";
-    public override EnemyType EnemyType => EnemyType.HauntedClock;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(115, 125);
-    protected override int basicAttackDamage => 2;
-
-    protected override void SetUpBehaviour()
-    {
-        // Make Enemy Actions
-        Spells.StudyPower studyPower = new Spells.StudyPower();
-        AddEnemyAction("PowerAndWard", MakeEnemyAction(null, studyPower, new Spells.Protect(5)));
-        Spells.GhoulishAssault ghoulishAssault = new Spells.GhoulishAssault(2, 2);
-        AddEnemyAction("MultiAttack",
-            MakeEnemyAction(delegate
-            {
-                AddToEnemyAction("PowerAndWard", studyPower);
-            }, ghoulishAssault));
-
-        // Turn 1s
-        PercentageMap<string> turn1sMap = new PercentageMap<string>();
-        turn1sMap.AddOption(MakeOption(100, "PowerAndWard"));
-
-        // Turn 2s
-        PercentageMap<string> turn2sMap = new PercentageMap<string>();
-        turn2sMap.AddOption(MakeOption(100, "PowerAndWard"));
-
-        // Turn 3s
-        PercentageMap<string> turn3sMap = new PercentageMap<string>();
-        turn3sMap.AddOption(MakeOption(100, "MultiAttack"));
-
-        // Apply Behaviour
-        AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 3 == 1, turn1sMap);
-        AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 3 == 2, turn2sMap);
-        AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 3 == 0, turn3sMap);
-    }
-}
-
-public class FamilyPet : Enemy
-{
-    public override string Name => "The Family Pet";
-    public override EnemyType EnemyType => EnemyType.FamilyPet;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(80, 90);
-    protected override int basicAttackDamage => 2;
-
-    private bool willBuff = false;
-
-    protected override void SetUpBehaviour()
-    {
-        // Make Enemy Actions
-        AddEnemyAction("SingleAttack", MakeEnemyAction(() => willBuff = true, new Spells.Tackle(5)));
-        AddEnemyAction("Ward", MakeEnemyAction(() => willBuff = true, new Spells.Protect(7)));
-        AddEnemyAction("Protection", MakeEnemyAction(() => willBuff = false, new Spells.Harden(1)));
-        AddEnemyAction("Power", MakeEnemyAction(() => willBuff = false, new Spells.StudyPower(1), new Spells.Protect(5)));
-
-        // Make Map
-        PercentageMap<string> actionMap = new PercentageMap<string>();
-        actionMap.AddOption(MakeOption(75, "SingleAttack"));
-        actionMap.AddOption(MakeOption(25, "Ward"));
-
-        PercentageMap<string> buffMap = new PercentageMap<string>();
-        buffMap.AddOption(MakeOption(75, "Protection"));
-        buffMap.AddOption(MakeOption(25, "Power"));
-
-        // Apply Behaviour
-        AddEnemyBehaviour(() => !willBuff, actionMap);
-        AddEnemyBehaviour(() => willBuff, buffMap);
-    }
-}
-
-public class LivingCandle : Enemy
-{
-    public override string Name => "Living Candle";
-    public override EnemyType EnemyType => EnemyType.LivingCandle;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(90, 100);
-    protected override int basicAttackDamage => 2;
-
-    protected override void SetUpBehaviour()
-    {
-        // Make Enemy Actions
-        AddEnemyAction("SingleAttackAndBurn", MakeEnemyAction(null, new Spells.Fireball(3, 2)));
-        AddEnemyAction("MultiAttackAndBurn", MakeEnemyAction(null, new Spells.FlamingLashes(2, 2, 2)));
-        AddEnemyAction("EmboldenAndPower", MakeEnemyAction(null, new Spells.Excite(1), new Spells.StudyPower(1), new Spells.Excite(1)));
-        AddEnemyAction("IntangibleAndEmbolden", MakeEnemyAction(null, new Spells.Ghost(1), new Spells.Overexcite(3, 2)));
-
-        // Make Map
-        PercentageMap<string> actionMap = new PercentageMap<string>();
-        actionMap.AddOption(MakeOption(50, "SingleAttackAndBurn"));
-        actionMap.AddOption(MakeOption(30, "MultiAttackAndBurn"));
-        actionMap.AddOption(MakeOption(10, "EmboldenAndPower"));
-        actionMap.AddOption(MakeOption(10, "IntangibleAndEmbolden"));
-
-        // Apply Behaviour
-        AddEnemyBehaviour(() => true, actionMap);
     }
 }
 
@@ -402,11 +308,112 @@ public class HolyGrail : Enemy
     }
 }
 
+public class TheFamilyPet : Enemy
+{
+    public override string Name => "The Family Pet";
+    public override EnemyType EnemyType => EnemyType.TheFamilyPet;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(80, 90);
+    protected override int basicAttackDamage => 2;
+
+    private bool willBuff = false;
+    private bool canMultiAttack = false;
+
+    protected override void SetUpBehaviour()
+    {
+        // Make Enemy Actions
+        AddEnemyAction("SingleAttack", MakeEnemyAction(delegate
+        {
+            willBuff = RandomHelper.RandomBool();
+            canMultiAttack = true;
+        }, new Spells.Tackle(6)));
+        AddEnemyAction("MultiAttack", MakeEnemyAction(delegate
+        {
+            willBuff = RandomHelper.RandomBool();
+            canMultiAttack = false;
+        }, new Spells.Assault(3, 2)));
+        AddEnemyAction("Power", MakeEnemyAction(() => willBuff = false, new Spells.Tackle(3), new Spells.StudyPower(1)));
+
+        // Make Map
+        PercentageMap<string> singleAttackMap = new PercentageMap<string>();
+        singleAttackMap.AddOption(MakeOption(100, "SingleAttack"));
+
+        PercentageMap<string> multiAttackMap = new PercentageMap<string>();
+        multiAttackMap.AddOption(MakeOption(100, "MultiAttack"));
+
+        PercentageMap<string> buffMap = new PercentageMap<string>();
+        buffMap.AddOption(MakeOption(100, "Power"));
+
+        // Apply Behaviour
+        AddEnemyBehaviour(() => !willBuff && !canMultiAttack, singleAttackMap);
+        AddEnemyBehaviour(() => !willBuff && canMultiAttack, multiAttackMap);
+        AddEnemyBehaviour(() => willBuff, buffMap);
+    }
+}
+
+public class LivingCandle : Enemy
+{
+    public override string Name => "Living Candle";
+    public override EnemyType EnemyType => EnemyType.LivingCandle;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(90, 100);
+    protected override int basicAttackDamage => 2;
+
+    protected override void SetUpBehaviour()
+    {
+        // Make Enemy Actions
+        AddEnemyAction("SingleAttackAndBurn", MakeEnemyAction(null, new Spells.Fireball(3, 2)));
+        AddEnemyAction("MultiAttackAndBurn", MakeEnemyAction(null, new Spells.FlamingLashes(2, 2, 2)));
+        AddEnemyAction("EmboldenAndPower", MakeEnemyAction(null, new Spells.Excite(1), new Spells.StudyPower(1), new Spells.Excite(1)));
+        AddEnemyAction("Embolden", MakeEnemyAction(null, new Spells.Overexcite(5, 2)));
+
+        // Make Map
+        PercentageMap<string> actionMap = new PercentageMap<string>();
+        actionMap.AddOption(MakeOption(50, "SingleAttackAndBurn"));
+        actionMap.AddOption(MakeOption(30, "MultiAttackAndBurn"));
+        actionMap.AddOption(MakeOption(10, "EmboldenAndPower"));
+        actionMap.AddOption(MakeOption(10, "Embolden"));
+
+        // Apply Behaviour
+        AddEnemyBehaviour(() => true, actionMap);
+    }
+}
+
+public class Slimer : Enemy
+{
+    public override string Name => "Slimer";
+    public override EnemyType EnemyType => EnemyType.Slimer;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(100, 110);
+    protected override int basicAttackDamage => 2;
+
+    private bool willWard;
+
+    protected override void SetUpBehaviour()
+    {
+        // Make Enemy Actions
+        AddEnemyAction("SingleAttack", MakeEnemyAction(() => willWard = true, new Spells.Tackle(7)));
+        AddEnemyAction("SingleAttackAndWeak", MakeEnemyAction(() => willWard = true, new Spells.WeakeningBlow(5, 2)));
+        AddEnemyAction("SingleAttackAndVulnerable", MakeEnemyAction(null, new Spells.BrutalSmash(7, 2)));
+        AddEnemyAction("Ward", MakeEnemyAction(() => willWard = false, new Spells.Protect(7)));
+
+        // Make Map
+        PercentageMap<string> actionMap = new PercentageMap<string>();
+        actionMap.AddOption(MakeOption(30, "SingleAttack"));
+        actionMap.AddOption(MakeOption(35, "SingleAttackAndWeak"));
+        actionMap.AddOption(MakeOption(35, "SingleAttackAndVulnerable"));
+
+        PercentageMap<string> wardMap = new PercentageMap<string>();
+        wardMap.AddOption(MakeOption(100, "Ward"));
+
+        // Apply Behaviour
+        AddEnemyBehaviour(() => !willWard, actionMap);
+        AddEnemyBehaviour(() => willWard, wardMap);
+    }
+}
+
 public class EnchantedMace : Enemy
 {
     public override string Name => "Enchanted Mace";
     public override EnemyType EnemyType => EnemyType.EnchantedMace;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(135, 140);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(135, 145);
     protected override int basicAttackDamage => 4;
 
     protected override void SetUpBehaviour()
@@ -438,8 +445,8 @@ public class AncientDaggerSet : Enemy
 {
     public override string Name => "Ancient Dagger Set";
     public override EnemyType EnemyType => EnemyType.AncientDaggerSet;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(160, 175);
-    protected override int basicAttackDamage => 4;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(120, 130);
+    protected override int basicAttackDamage => 3;
 
     protected override void SetUpBehaviour()
     {
@@ -475,11 +482,83 @@ public class AncientDaggerSet : Enemy
         AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 4 == 0, turn4sMap);
     }
 }
+public class SpiritOfPride : Enemy
+{
+    public override string Name => "Spirit of Contempt";
+    public override EnemyType EnemyType => EnemyType.SpiritOfPride;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(110, 125);
+    protected override int basicAttackDamage => 3;
+
+    private bool canBuff;
+
+    protected override void SetUpBehaviour()
+    {
+        // Make Enemy Actions
+        AddEnemyAction("AttackAndWard", MakeEnemyAction(() => canBuff = true, new Spells.StrikeTwice(3), new Spells.StrikeTwice(3)));
+        AddEnemyAction("Power", MakeEnemyAction(() => canBuff = false, new Spells.StudyPower(1)));
+        AddEnemyAction("PowerEmboldenAndWard", MakeEnemyAction(() => canBuff = false, new Spells.StudyPower(1), new Spells.Excite(3), new Spells.Protect(10)));
+
+        // Add On Combat Start Actions
+        AddOnCombatStartAction(MakeEnemyAction(null, new Spells.Ghost(1)));
+
+        // Make Maps
+        PercentageMap<string> canBuffMap = new PercentageMap<string>();
+        canBuffMap.AddOption(MakeOption(60, "AttackAndWard"));
+        canBuffMap.AddOption(MakeOption(10, "Power"));
+        canBuffMap.AddOption(MakeOption(30, "PowerEmboldenAndWard"));
+
+        PercentageMap<string> cannotBuffMap = new PercentageMap<string>();
+        cannotBuffMap.AddOption(MakeOption(100, "AttackAndWard"));
+
+        // Apply Behaviours
+        AddEnemyBehaviour(() => canBuff, canBuffMap);
+        AddEnemyBehaviour(() => !canBuff, cannotBuffMap);
+    }
+}
+
+public class HauntedClock : Enemy
+{
+    public override string Name => "Haunted Clock";
+    public override EnemyType EnemyType => EnemyType.HauntedClock;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(150, 160);
+    protected override int basicAttackDamage => 3;
+
+    protected override void SetUpBehaviour()
+    {
+        // Make Enemy Actions
+        Spells.StudyPower studyPower = new Spells.StudyPower(2);
+        AddEnemyAction("PowerAndWard", MakeEnemyAction(null, studyPower, new Spells.Protect(10)));
+        Spells.GhoulishAssault ghoulishAssault = new Spells.GhoulishAssault(4, 2);
+        AddEnemyAction("MultiAttack",
+            MakeEnemyAction(delegate
+            {
+                AddToEnemyAction("PowerAndWard", studyPower);
+            }, ghoulishAssault));
+
+        // Turn 1s
+        PercentageMap<string> turn1sMap = new PercentageMap<string>();
+        turn1sMap.AddOption(MakeOption(100, "PowerAndWard"));
+
+        // Turn 2s
+        PercentageMap<string> turn2sMap = new PercentageMap<string>();
+        turn2sMap.AddOption(MakeOption(100, "PowerAndWard"));
+
+        // Turn 3s
+        PercentageMap<string> turn3sMap = new PercentageMap<string>();
+        turn3sMap.AddOption(MakeOption(100, "MultiAttack"));
+
+        // Apply Behaviour
+        AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 3 == 1, turn1sMap);
+        AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 3 == 2, turn2sMap);
+        AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 3 == 0, turn3sMap);
+    }
+}
+
 public class SpiritsTombGolem : Enemy
 {
     public override string Name => "Spirits Tomb Golem";
     public override EnemyType EnemyType => EnemyType.SpiritsTombGolem;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(250, 275);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(225, 250);
     protected override int basicAttackDamage => 4;
 
     protected override void SetUpBehaviour()
@@ -521,7 +600,7 @@ public class SpiritOfContempt : Enemy
 {
     public override string Name => "Spirit of Contempt";
     public override EnemyType EnemyType => EnemyType.SpiritOfContempt;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(150, 175);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(175, 200);
     protected override int basicAttackDamage => 4;
 
     private bool canBigAttack;
@@ -546,41 +625,6 @@ public class SpiritOfContempt : Enemy
         // Apply Behaviours
         AddEnemyBehaviour(() => !canBigAttack, nonBigAttackMap);
         AddEnemyBehaviour(() => canBigAttack, bigAttackActionMap);
-    }
-}
-
-
-public class SpiritOfPride : Enemy
-{
-    public override string Name => "Spirit of Contempt";
-    public override EnemyType EnemyType => EnemyType.SpiritOfPride;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(150, 175);
-    protected override int basicAttackDamage => 4;
-
-    private bool canBuff;
-
-    protected override void SetUpBehaviour()
-    {
-        // Make Enemy Actions
-        AddEnemyAction("AttackAndWard", MakeEnemyAction(() => canBuff = true, new Spells.StrikeTwice(3), new Spells.StrikeTwice(3)));
-        AddEnemyAction("Power", MakeEnemyAction(() => canBuff = false, new Spells.StudyPower(1)));
-        AddEnemyAction("PowerEmboldenAndWard", MakeEnemyAction(() => canBuff = false, new Spells.StudyPower(1), new Spells.Excite(3), new Spells.Protect(10)));
-
-        // Add On Combat Start Actions
-        AddOnCombatStartAction(MakeEnemyAction(null, new Spells.Ghost(1)));
-
-        // Make Maps
-        PercentageMap<string> canBuffMap = new PercentageMap<string>();
-        canBuffMap.AddOption(MakeOption(60, "AttackAndWard"));
-        canBuffMap.AddOption(MakeOption(10, "Power"));
-        canBuffMap.AddOption(MakeOption(30, "PowerEmboldenAndWard"));
-
-        PercentageMap<string> cannotBuffMap = new PercentageMap<string>();
-        cannotBuffMap.AddOption(MakeOption(100, "AttackAndWard"));
-
-        // Apply Behaviours
-        AddEnemyBehaviour(() => canBuff, canBuffMap);
-        AddEnemyBehaviour(() => !canBuff, cannotBuffMap);
     }
 }
 
@@ -641,8 +685,8 @@ public class TheScienceExperiment : Enemy
 {
     public override string Name => "The Science Experiment";
     public override EnemyType EnemyType => EnemyType.TheScienceExperiment;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(350, 400);
-    protected override int basicAttackDamage => 2;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(225, 250);
+    protected override int basicAttackDamage => 5;
 
     protected override void SetUpBehaviour()
     {
@@ -675,7 +719,7 @@ public class PanickedWizard : Enemy
 {
     public override string Name => "Panicked Wizard";
     public override EnemyType EnemyType => EnemyType.PanickedWizard;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(300, 350);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(200, 225);
     protected override int basicAttackDamage => 5;
 
     private bool canUseRandomMap = true;
@@ -719,7 +763,7 @@ public class EnthralledServant : Enemy
 {
     public override string Name => "Enthralled Servant";
     public override EnemyType EnemyType => EnemyType.EnthralledServant;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(340, 350);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(225, 230);
     protected override int basicAttackDamage => 5;
 
     private bool canBuff = true;
@@ -751,8 +795,8 @@ public class InfestedRatPack : Enemy
 {
     public override string Name => "Infested Rat Pack";
     public override EnemyType EnemyType => EnemyType.InfestedRatPack;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(300, 325);
-    protected override int basicAttackDamage => 3;
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(225, 250);
+    protected override int basicAttackDamage => 5;
 
     private bool canBuff = true;
 
@@ -797,7 +841,7 @@ public class PrisonerOfTheMansion : Enemy
 {
     public override string Name => "Prisoner of the Mansion";
     public override EnemyType EnemyType => EnemyType.PrisonerOfTheMansion;
-    protected override Vector2Int minMaxHPAmount => new Vector2Int(475, 499);
+    protected override Vector2Int minMaxHPAmount => new Vector2Int(375, 400);
     protected override int basicAttackDamage => 6;
 
     private bool bufferTurn = true;
@@ -848,8 +892,8 @@ public class PrisonerOfTheMansion : Enemy
         CombatManager._Instance.OnTurnStart += SetShackledCanRemove;
 
         // Add Shackled and Other Afflictions on Start
-        AddOnCombatStartSpellEffects(new SpellApplyAfflictionEffect(AfflictionType.Shackled, () => 8, Target.Self), new SpellApplyAfflictionEffect(AfflictionType.Weak, () => 5, Target.Self),
-            new SpellApplyAfflictionEffect(AfflictionType.Vulnerable, () => 5, Target.Self));
+        AddOnCombatStartSpellEffects(new ApplyAfflictionEffect(AfflictionType.Shackled, () => 8, Target.Self), new ApplyAfflictionEffect(AfflictionType.Weak, () => 5, Target.Self),
+            new ApplyAfflictionEffect(AfflictionType.Vulnerable, () => 5, Target.Self));
 
         // Make Enemy Actions
         AddEnemyAction("BufferTurn", MakeEnemyAction(() => bufferTurn = false, new Spells.Overexcite(3, 3), new Spells.BattleFrenzy(1), new Spells.Protect(10)));

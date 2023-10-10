@@ -138,7 +138,7 @@ public abstract class OptionEvent
     /// <param name="combat"></param>
     /// <param name="isChain"></param>
     /// <param name="onWin"></param>
-    protected void StartFight(Combat combat, bool isChain, Action onWin, bool allowSpellSelection)
+    protected void StartFight(Combat combat, bool isChain, Action onWin)
     {
         if (isChain)
         {
@@ -149,6 +149,8 @@ public abstract class OptionEvent
         // Swap around UI
         GameOccuranceUIManager._Instance.ForceChangeGameOccurance(MapNodeType.MinorFight, true);
         GameOccuranceUIManager._Instance.ForceChangeGameOccurance(MapNodeType.Options, false);
+
+        CombatManager._Instance.PreStartCombat(combat);
 
         CombatManager._Instance.StartCoroutine(CombatManager._Instance.StartCombat(combat, delegate
         {
@@ -167,7 +169,7 @@ public abstract class OptionEvent
             {
                 GameManager._Instance.StartCoroutine(GameManager._Instance.GameOverSequence());
             }
-        }, allowSpellSelection));
+        }));
     }
 
     public static OptionEvent GetOptionEventOfType(EventLabel eventLabel)
@@ -902,7 +904,7 @@ public class LifeForReward : OptionEvent
                 "The creature skitters away. As quickly as he appeared, he was gone.", delegate
                 {
                     GameManager._Instance.AlterPlayerMaxHP(-loseMaxHP);
-                    GameManager._Instance.UpgradeBooks();
+                    GameManager._Instance.UpgradeBook();
                 })));
 
         // 2: Leave
@@ -1311,7 +1313,7 @@ public class ASuspiciousTome : OptionEvent
                     {
                         stage = 2;
                         EventManager._Instance.SetWait(false);
-                    }, false);
+                    });
                 })));
 
         // 3: View Reward
@@ -1364,7 +1366,7 @@ public class TakeASip : OptionEvent
                         RewardManager._Instance.AddReward(Potion.GetRandomPotion(false));
                         EventManager._Instance.StartCoroutine(RewardManager._Instance.ShowRewardScreen(() => EventManager._Instance.SetWait(false)));
 
-                    }, false);
+                    });
                 })));
 
         //

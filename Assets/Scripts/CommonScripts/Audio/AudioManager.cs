@@ -12,6 +12,7 @@ public class AudioManager : MonoBehaviour
     [Header("References")]
     [SerializeField] private AudioMixer mixer;
     private List<AudioSource> audioSourceArray;
+    [SerializeField] private Transform audioSourceHolder;
     [SerializeField] private Transform parentSpawnedTo;
     [SerializeField] private AudioSource audioSourcePrefab;
 
@@ -19,10 +20,16 @@ public class AudioManager : MonoBehaviour
 
     private void Awake()
     {
+        if (_Instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         _Instance = this;
 
         audioSourceArray = new List<AudioSource>();
-        audioSourceArray.AddRange(GetComponentsInChildren<AudioSource>());
+        audioSourceArray.AddRange(audioSourceHolder.GetComponentsInChildren<AudioSource>());
     }
 
     private AudioSource GetAudioSource()
@@ -35,7 +42,7 @@ public class AudioManager : MonoBehaviour
         return audioSourceArray[0];
     }
 
-    private IEnumerator PlayFromSourceUninterrupted(SimpleAudioClipContainer clip, float pitchAdjustment)
+    private IEnumerator PlayFromSourceUninterrupted(SimpleAudioClipContainer clip)
     {
         AudioSource source = GetAudioSource();
 
@@ -43,7 +50,7 @@ public class AudioManager : MonoBehaviour
         clip.Source = source;
         source.volume = clip.Volume;
 
-        clip.PlayWithPitchAdjustment(pitchAdjustment);
+        clip.Play();
 
         yield return new WaitUntil(() => !source.isPlaying);
 
@@ -52,11 +59,6 @@ public class AudioManager : MonoBehaviour
 
     public void PlayFromSFXDict(string key)
     {
-        StartCoroutine(PlayFromSourceUninterrupted(sfxDict[key], 0.0f));
-    }
-
-    public void PlayFromSFXDict(string key, float pitchAdjustment)
-    {
-        StartCoroutine(PlayFromSourceUninterrupted(sfxDict[key], pitchAdjustment));
+        StartCoroutine(PlayFromSourceUninterrupted(sfxDict[key]));
     }
 }

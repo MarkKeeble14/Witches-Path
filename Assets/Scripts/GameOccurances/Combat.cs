@@ -171,6 +171,12 @@ public abstract class Combat : GameOccurance
         yield return RewardManager._Instance.ShowRewardScreen();
     }
 
+    protected override IEnumerator OnInit()
+    {
+        CombatManager._Instance.PreStartCombat(this);
+        yield return base.OnInit();
+    }
+
     protected override IEnumerator OnStart()
     {
         // Debug.Log(name + ": OnStart");

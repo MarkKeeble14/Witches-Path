@@ -166,6 +166,7 @@ GameObject:
   - component: {fileID: 8614651942384901619}
   - component: {fileID: 758789534793415336}
   - component: {fileID: 3068344871855979412}
+  - component: {fileID: 2823562902755164093}
   m_Layer: 0
   m_Name: HPText
   m_TagString: Untagged
@@ -318,6 +319,18 @@ MonoBehaviour:
   animationSpeed: 25
   gracePeriod: 0.25
   graceRange: 6
+--- !u!114 &2823562902755164093
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2318666516277080836}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca41ef21d4305f478acf7e1b96bf485, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &3047788110360380565
 GameObject:
   m_ObjectHideFlags: 0
@@ -331,6 +344,7 @@ GameObject:
   - component: {fileID: 2723882772074919520}
   - component: {fileID: 4138273364758170187}
   - component: {fileID: 2971921456439418013}
+  - component: {fileID: 9090957660416944384}
   m_Layer: 0
   m_Name: HPBar
   m_TagString: Untagged
@@ -437,6 +451,18 @@ MonoBehaviour:
   m_EffectColor: {r: 0, g: 0, b: 0, a: 0.5}
   m_EffectDistance: {x: 1, y: -1}
   m_UseGraphicAlpha: 1
+--- !u!225 &9090957660416944384
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3047788110360380565}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &5563934452123230670
 GameObject:
   m_ObjectHideFlags: 0
@@ -553,6 +579,7 @@ GameObject:
   - component: {fileID: 7211912558538219002}
   - component: {fileID: 7124680898177626239}
   - component: {fileID: 2902925480444905896}
+  - component: {fileID: 7767590567093373807}
   m_Layer: 0
   m_Name: WardText
   m_TagString: Untagged
@@ -578,7 +605,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: -15, y: -15}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6535776032850704058
 CanvasRenderer:
@@ -635,7 +662,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 41.1
+  m_fontSize: 30.8
   m_fontSizeBase: 12
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -705,3 +732,15 @@ MonoBehaviour:
   animationSpeed: 25
   gracePeriod: 0.25
   graceRange: 6
+--- !u!114 &7767590567093373807
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6816947238726562667}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca41ef21d4305f478acf7e1b96bf485, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

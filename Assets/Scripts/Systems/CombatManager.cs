@@ -203,12 +203,14 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private CombatentHPBar enemyHPBar;
     [SerializeField] private SemicircleLayoutGroup enemyQueuedSpellsDisplay;
     [SerializeField] private TextMeshProUGUI enemyBasicAttackDamageText;
+    [SerializeField] private AnimateUISprite enemyCombatSpriteAnimator;
     [SerializeField] private Image enemyCombatSprite;
     [SerializeField] private CanvasGroup enemyCombatSpriteCV;
     [SerializeField] private EffectTextDisplay enemyEffectTextDisplay;
 
     [Header("Character")]
     [SerializeField] private CombatentHPBar characterHPBar;
+    [SerializeField] private AnimateUISprite characterCombatSpriteAnimator;
     [SerializeField] private Image characterCombatSprite;
     [SerializeField] private TextMeshProUGUI characterBasicAttackDamageText;
     [SerializeField] private CanvasGroup characterCombatSpriteCV;
@@ -284,6 +286,21 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private GameObject[] showOnCombat;
     private List<Spell> spellCastThisTurn = new List<Spell>();
 
+    private Dictionary<Combatent, List<Tween>> combatentShakeTweenDict = new Dictionary<Combatent, List<Tween>>();
+
+    private EnemyAction currentEnemyAction;
+
+    [Header("Dialogue")]
+    [SerializeField] private SpeechBubbleDataContainer speechBubblePrefab;
+    [SerializeField] private SerializableDictionary<Combatent, Transform> speechBubbleContainers = new SerializableDictionary<Combatent, Transform>();
+    [SerializeField] private float dialogueBubbleFadeInRate = 1;
+    [SerializeField] private float dialogueBubbleFadeOutRate = 1;
+    [SerializeField] private float defaultDialogueDuration = 2.5f;
+    [SerializeField] private float defaultDialogueDelay = 0f;
+
+    private KeyCode[] handHotKeyBindings = new KeyCode[] { KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4,
+        KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9, KeyCode.Alpha0 };
+
     // Callbacks
     public Action OnTurnStart;
     public Action OnExhaustSpell;
@@ -292,7 +309,6 @@ public partial class CombatManager : MonoBehaviour
     public Action OnCombatStart;
     public Action OnCombatEnd;
     public Action OnResetCombat;
-
 
     // Should Contain -
     // Basic Attack
@@ -371,29 +387,11 @@ public partial class CombatManager : MonoBehaviour
         SetupCombatentAfflictionCallbackMap(Combatent.Enemy);
     }
 
-    private Dictionary<Combatent, List<Tween>> combatentShakeTweenDict = new Dictionary<Combatent, List<Tween>>();
-
-    private Coroutine recalculateKeyBindsCoroutine;
-
-    private EnemyAction currentEnemyAction;
-
-    [System.Serializable]
-    public class SpeechBubbleDataContainer
+    public void SetBackground(Sprite s)
     {
-        [SerializeField] private TextMeshProUGUI dialogueText;
-        public TextMeshProUGUI Text => dialogueText;
-        [SerializeField] private CanvasGroup cv;
-        public CanvasGroup CV => cv;
-        public Coroutine CurrentCoroutine;
+        background.sprite = s;
     }
 
-    [SerializeField] private SerializableDictionary<Combatent, SpeechBubbleDataContainer> speechBubbles = new SerializableDictionary<Combatent, SpeechBubbleDataContainer>();
-    [SerializeField] private float dialogueBubbleFadeInRate = 1;
-    [SerializeField] private float dialogueBubbleFadeOutRate = 1;
-    [SerializeField] private float defaultDialogueDuration = 2.5f;
-
-    private KeyCode[] handHotKeyBindings = new KeyCode[] { KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4,
-        KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9, KeyCode.Alpha0 };
     private KeyCode GetKeyBindingAtIndex(int index)
     {
         return handHotKeyBindings[index];
@@ -401,20 +399,19 @@ public partial class CombatManager : MonoBehaviour
 
     public void CallPlayDialogue(string s, Combatent target)
     {
-        CallPlayDialogue(s, defaultDialogueDuration, target);
+        CallPlayDialogue(s, target, defaultDialogueDuration, defaultDialogueDelay);
     }
 
-    public void CallPlayDialogue(string s, float duration, Combatent target)
+    private void CallPlayDialogue(string s, Combatent target, float duration, float delay)
     {
-        if (speechBubbles[target].CurrentCoroutine != null) StopCoroutine(speechBubbles[target].CurrentCoroutine);
-        speechBubbles[target].CurrentCoroutine = StartCoroutine(PlayDialogue(s, duration, target));
+        StartCoroutine(PlayDialogue(s, target, duration, delay));
     }
 
-    private IEnumerator PlayDialogue(string s, float duration, Combatent target)
+    private IEnumerator PlayDialogue(string s, Combatent target, float duration, float delay)
     {
-        Debug.Log("Playing Dialogue");
-        SpeechBubbleDataContainer data = speechBubbles[target];
+        yield return new WaitForSeconds(delay);
 
+        SpeechBubbleDataContainer data = Instantiate(speechBubblePrefab, speechBubbleContainers[target]);
         data.Text.text = s;
 
         yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(data.CV, 1, dialogueBubbleFadeInRate));
@@ -464,6 +461,8 @@ public partial class CombatManager : MonoBehaviour
 
     private IEnumerator ShowSpellPile(Pile<Spell> toShow, Func<Spell, bool> viableSpell, Order order)
     {
+        AudioManager._Instance.PlayFromSFXDict("UI_SpellbookOpen");
+
         showSpellPileScreen.SetActive(true);
 
         List<Spell> showing = new List<Spell>();
@@ -496,6 +495,8 @@ public partial class CombatManager : MonoBehaviour
         closeCurrentlyDisplayedSpellPile = false;
 
         showSpellPileScreen.SetActive(false);
+
+        AudioManager._Instance.PlayFromSFXDict("UI_SpellbookClose");
 
         // Closing
         while (spawnedDisplays.Count > 0)
@@ -606,6 +607,8 @@ public partial class CombatManager : MonoBehaviour
     {
         if (DrawPile.Count == 0)
         {
+            AudioManager._Instance.PlayFromSFXDict("Deck_Shuffle");
+
             DiscardPile.TransferEntries(DrawPile, true);
 
             yield return new WaitForSeconds(1);
@@ -822,6 +825,8 @@ public partial class CombatManager : MonoBehaviour
 
             spell.GetEquippedTo().SetSpellDisplayState(SpellDisplayState.Fading);
 
+            AudioManager._Instance.PlayFromSFXDict("Card_Exhaust");
+
             yield return StartCoroutine(ExhaustCardAnimation(spellDisplay));
 
             Destroy(spellDisplay.gameObject);
@@ -1020,11 +1025,8 @@ public partial class CombatManager : MonoBehaviour
 
     #region Combat Loop
 
-
-    public IEnumerator StartCombat(Combat combat, Action onEndAction, bool allowSpellSlection = true)
+    public void PreStartCombat(Combat combat)
     {
-        Debug.Log("Combat Started: " + combat);
-
         foreach (GameObject obj in showOnCombat)
         {
             obj.SetActive(false);
@@ -1033,7 +1035,16 @@ public partial class CombatManager : MonoBehaviour
         // Set Current Variables
         currentEnemy = combat.SpawnedEnemy;
         maxEnemyHP = currentEnemy.GetMaxHP();
-        enemyCombatSprite.sprite = currentEnemy.GetCombatSprite();
+
+        if (currentEnemy.GetCombatSprite().Length > 0)
+        {
+            enemyCombatSpriteAnimator.AddAnimation("Default", currentEnemy.GetCombatSprite());
+            StartCoroutine(enemyCombatSpriteAnimator.Animate("Default", true));
+        }
+        else
+        {
+            enemyCombatSprite.sprite = null;
+        }
 
         foreach (GameObject obj in showOnCombat)
         {
@@ -1062,7 +1073,9 @@ public partial class CombatManager : MonoBehaviour
         enemyHPBar.Set(currentEnemyHP, maxEnemyHP);
 
         // Player Stuff
-        characterCombatSprite.sprite = GameManager._Instance.GetCharacter().GetCombatSprite();
+        characterCombatSpriteAnimator.AddAnimation("Default", GameManager._Instance.GetCharacter().GetCombatSprites());
+        StartCoroutine(characterCombatSpriteAnimator.Animate("Default", true));
+
         characterHPBar.Set(GameManager._Instance.GetCurrentCharacterHP(), GameManager._Instance.GetMaxPlayerHP());
 
         // Combat stuff
@@ -1074,6 +1087,11 @@ public partial class CombatManager : MonoBehaviour
         // Set Miss Sound
         musicSource.clip = combat.MainMusic;
         musicSource.Play();
+    }
+
+    public IEnumerator StartCombat(Combat combat, Action onEndAction)
+    {
+        Debug.Log("Combat Started: " + combat);
 
         yield return StartCoroutine(CombatLoop());
 
@@ -1132,6 +1150,8 @@ public partial class CombatManager : MonoBehaviour
         // Allow player to cast spells
         CanCastSpells = true;
 
+        AudioManager._Instance.PlayFromSFXDict("Combat_CombatStart");
+
         // Show Turn Display
         yield return StartCoroutine(turnDisplay.Show("Combat Start", ""));
 
@@ -1166,6 +1186,8 @@ public partial class CombatManager : MonoBehaviour
 
             // Call OnTurnStart
             OnTurnStart?.Invoke();
+
+            AudioManager._Instance.PlayFromSFXDict("Combat_RoundStart");
 
             // Queue all Spells of Given Action
             currentEnemyAction = currentEnemy.GetViableEnemyAction();
@@ -1251,6 +1273,7 @@ public partial class CombatManager : MonoBehaviour
         }
 
         CanCastSpells = false;
+        AudioManager._Instance.PlayFromSFXDict("Combat_PlayerBeginCastQueue");
         yield return StartCoroutine(CastSpellQueue(playerCastQueue, Combatent.Character, Combatent.Enemy));
 
         if (CheckForCombatOver())
@@ -1318,7 +1341,7 @@ public partial class CombatManager : MonoBehaviour
         {
             ConsumeAfflictionStack(AfflictionType.Echo, adder);
             ShowAfflictionProc(AfflictionType.Echo, adder);
-            yield return StartCoroutine(AddSpellToCastQueue(spell, adder, other, useMana, false));
+            yield return StartCoroutine(AddSpellToCastQueue(spell, adder, other, false, false));
         }
 
         // Overwealming Blaze Effect
@@ -1461,7 +1484,6 @@ public partial class CombatManager : MonoBehaviour
 
         // Set effectiveness multiplier text to be at zero
         effectivenessMultiplierTextRect.anchoredPosition = Vector2.zero;
-
 
         // Play Sequence
         yield return StartCoroutine(PlaySpell(spell, queuedSpell.SpellQueueDisplay, caster, other));
@@ -1629,6 +1651,10 @@ public partial class CombatManager : MonoBehaviour
         // Destroy Circles
         ClearCircleList();
 
+        // Reset Animation
+        enemyCombatSpriteAnimator.EndSpriteMachine();
+        characterCombatSpriteAnimator.EndSpriteMachine();
+
         // Set effectiveness multiplier text to be at zero
         effectivenessMultiplierTextRect.anchoredPosition = Vector2.zero;
 
@@ -1658,7 +1684,17 @@ public partial class CombatManager : MonoBehaviour
 
     private bool CheckForCombatOver()
     {
-        return currentEnemyHP <= 0 || GameManager._Instance.GetCurrentCharacterHP() <= 0;
+        if (currentEnemyHP <= 0)
+        {
+            AudioManager._Instance.PlayFromSFXDict("Combat_EnemyDead");
+            return true;
+        }
+        if (GameManager._Instance.GetCurrentCharacterHP() <= 0)
+        {
+            AudioManager._Instance.PlayFromSFXDict("Combat_PlayerDead");
+            return true;
+        }
+        return false;
     }
 
     // Used for Jumpy (Affliction) - Scares me a bit due to not being a Coroutine
@@ -1993,7 +2029,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void HandleSpellSingleAttackEffect(SpellSingleAttackEffect singleAttack, Combatent target, Combatent caster)
+    private void HandleSpellSingleAttackEffect(SingleAttackEffect singleAttack, Combatent target, Combatent caster)
     {
         if (singleAttack.Target == Target.Other || singleAttack.Target == Target.Both)
         {
@@ -2005,7 +2041,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void HandleSpellLeechingAttackEffect(SpellLeechingAttackEffect leechingAttack, Combatent target, Combatent caster)
+    private void HandleSpellLeechingAttackEffect(LeechingAttackEffect leechingAttack, Combatent target, Combatent caster)
     {
         int damageDealt = 0;
         if (leechingAttack.Target == Target.Other || leechingAttack.Target == Target.Both)
@@ -2019,7 +2055,7 @@ public partial class CombatManager : MonoBehaviour
         AlterCombatentHP(-damageDealt, caster, DamageType.Heal);
     }
 
-    private void HandleSpellMultiAttackEffect(SpellMultiAttackEffect multiAttack, Combatent target, Combatent caster)
+    private void HandleSpellMultiAttackEffect(MultiAttackEffect multiAttack, Combatent target, Combatent caster)
     {
         if (multiAttack.Target == Target.Other || multiAttack.Target == Target.Both)
         {
@@ -2031,7 +2067,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void HandleWardEffect(SpellWardEffect ward, Combatent target, Combatent caster)
+    private void HandleWardEffect(WardEffect ward, Combatent target, Combatent caster)
     {
         if (ward.Target == Target.Other || ward.Target == Target.Both)
         {
@@ -2043,7 +2079,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void HandleApplyAfflictionEffect(SpellApplyAfflictionEffect apply, Combatent target, Combatent caster)
+    private void HandleApplyAfflictionEffect(ApplyAfflictionEffect apply, Combatent target, Combatent caster)
     {
         if (apply.Target == Target.Other || apply.Target == Target.Both)
         {
@@ -2055,7 +2091,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void HandleCleanseAfflictionEffect(SpellCleanseAfflictionsEffect cleanse, Combatent target, Combatent caster)
+    private void HandleCleanseAfflictionEffect(CleanseAfflictionsEffect cleanse, Combatent target, Combatent caster)
     {
         if (cleanse.Target == Target.Other || cleanse.Target == Target.Both)
         {
@@ -2067,7 +2103,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void HandleAlterHPEffect(SpellAlterHPEffect alterHP, Combatent target, Combatent caster)
+    private void HandleAlterHPEffect(AlterCurrentHPEffect alterHP, Combatent target, Combatent caster)
     {
         if (alterHP.Target == Target.Other || alterHP.Target == Target.Both)
         {
@@ -2079,12 +2115,12 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void HandleAlterMaxHPEffect(SpellAlterPlayerMaxHPEffect alterHP)
+    private void HandleAlterMaxHPEffect(AlterPlayerMaxHPEffect alterHP)
     {
         GameManager._Instance.AlterPlayerMaxHP(alterHP.HPAmount);
     }
 
-    private void HandleAlterQueuedSpellEffect(SpellAlterQueuedSpellEffect alterQueuedSpell, Combatent target, Combatent caster)
+    private void HandleAlterQueuedSpellEffect(AlterQueuedSpellEffect alterQueuedSpell, Combatent target, Combatent caster)
     {
         if (alterQueuedSpell.Target == Target.Other || alterQueuedSpell.Target == Target.Both)
         {
@@ -2096,7 +2132,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void AlterQueuedSpellEffect(SpellAlterQueuedSpellEffect alterQueuedSpell, Combatent caster)
+    private void AlterQueuedSpellEffect(AlterQueuedSpellEffect alterQueuedSpell, Combatent caster)
     {
         Dictionary<SpellStat, List<QueuedSpell>> applicableSpells = GetQueuedSpellsWithStats(caster, alterQueuedSpell.ApplicableStats);
         if (applicableSpells.Count > 0)
@@ -2139,7 +2175,7 @@ public partial class CombatManager : MonoBehaviour
         return applicableSpells;
     }
 
-    private IEnumerator HandleQueueSpellEffect(SpellQueueSpellEffect queueSpell, Combatent target, Combatent caster)
+    private IEnumerator HandleQueueSpellEffect(QueueSpellEffect queueSpell, Combatent target, Combatent caster)
     {
         if (queueSpell.Target == Target.Other || queueSpell.Target == Target.Both)
         {
@@ -2151,12 +2187,12 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private IEnumerator HandlePlayerDrawSpellsSpellEffect(PlayerDrawSpellsSpellEffect draw)
+    private IEnumerator HandlePlayerDrawSpellsSpellEffect(PlayerDrawSpellsEffect draw)
     {
         yield return StartCoroutine(DrawSpells(draw.NumSpells));
     }
 
-    private IEnumerator HandlePlayerDiscardSpellsSpellEffect(PlayerDiscardSpellsSpellEffect discard)
+    private IEnumerator HandlePlayerDiscardSpellsSpellEffect(PlayerDiscardSpellsEffect discard)
     {
         if (discard.LetChoose)
         {
@@ -2169,7 +2205,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private IEnumerator HandlePlayerExhaustSpellsSpellEffect(PlayerExhaustSpellsSpellEffect exhaust)
+    private IEnumerator HandlePlayerExhaustSpellsSpellEffect(PlayerExhaustSpellsEffect exhaust)
     {
         if (exhaust.LetChoose)
         {
@@ -2182,7 +2218,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void HandleTickPrepTimeSpellEffect(SpellTickPrepTimeEffect tick, Combatent target, Combatent caster)
+    private void HandleTickPrepTimeSpellEffect(TickPrepTimeEffect tick, Combatent target, Combatent caster)
     {
         if (tick.Target == Target.Other || tick.Target == Target.Both)
         {
@@ -2194,7 +2230,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    private void HandlePlayerRestoreManaSpellEffect(AlterCurrentManaSpellEffect mana)
+    private void HandlePlayerRestoreManaSpellEffect(AlterPlayerCurrentManaEffect mana)
     {
         GameManager._Instance.AlterPlayerCurrentMana(mana.AlterBy);
     }
@@ -2226,7 +2262,7 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
-    public IEnumerator CallSpellEffects(List<SpellEffect> spellEffects, Action callOnFinish, Combatent caster, Combatent target, bool allowAnimations = true)
+    public IEnumerator CallSpellEffects(List<CombatEffect> spellEffects, Action callOnFinish, Combatent caster, Combatent target, bool allowAnimations = true)
     {
         // if there's an activate tween on the caster, wait until it's finished
         if (combatentShakeTweenDict.ContainsKey(caster))
@@ -2245,11 +2281,11 @@ public partial class CombatManager : MonoBehaviour
 
         // Go Ahead with Attack
         bool hasAnimatedSprite = false;
-        foreach (SpellEffect spellEffect in spellEffects)
+        foreach (CombatEffect spellEffect in spellEffects)
         {
             switch (spellEffect)
             {
-                case SpellSingleAttackEffect singleAttack:
+                case SingleAttackEffect singleAttack:
                     // Animation
                     if (allowAnimations && singleAttack.AttackAnimationStyle != AttackAnimationStyle.None)
                     {
@@ -2260,7 +2296,7 @@ public partial class CombatManager : MonoBehaviour
                     HandleSpellSingleAttackEffect(singleAttack, target, caster);
 
                     break;
-                case SpellLeechingAttackEffect leechingAttack:
+                case LeechingAttackEffect leechingAttack:
                     // Animation
                     if (allowAnimations && leechingAttack.AttackAnimationStyle != AttackAnimationStyle.None)
                     {
@@ -2271,7 +2307,7 @@ public partial class CombatManager : MonoBehaviour
                     HandleSpellLeechingAttackEffect(leechingAttack, target, caster);
 
                     break;
-                case SpellMultiAttackEffect multiAttack:
+                case MultiAttackEffect multiAttack:
                     for (int i = 0; i < multiAttack.NumAttacks; i++)
                     {
                         // Either animate every attack or only the first attack depending on what is set
@@ -2288,10 +2324,10 @@ public partial class CombatManager : MonoBehaviour
                         yield return new WaitForSeconds(multiAttack.TimeBetweenAttacks);
                     }
                     break;
-                case SpellWardEffect ward:
+                case WardEffect ward:
                     HandleWardEffect(ward, target, caster);
                     break;
-                case SpellApplyAfflictionEffect apply:
+                case ApplyAfflictionEffect apply:
                     // Animation
                     if (apply.Target == Target.Other && allowAnimations && !hasAnimatedSprite)
                     {
@@ -2301,37 +2337,37 @@ public partial class CombatManager : MonoBehaviour
 
                     HandleApplyAfflictionEffect(apply, target, caster);
                     break;
-                case SpellCleanseAfflictionsEffect cleanse:
+                case CleanseAfflictionsEffect cleanse:
                     HandleCleanseAfflictionEffect(cleanse, target, caster);
                     break;
-                case SpellAlterHPEffect alterHP:
+                case AlterCurrentHPEffect alterHP:
                     HandleAlterHPEffect(alterHP, target, caster);
                     break;
-                case SpellAlterQueuedSpellEffect alterQueuedSpell:
+                case AlterQueuedSpellEffect alterQueuedSpell:
                     HandleAlterQueuedSpellEffect(alterQueuedSpell, target, caster);
                     break;
-                case SpellQueueSpellEffect queueSpell:
+                case QueueSpellEffect queueSpell:
                     yield return StartCoroutine(HandleQueueSpellEffect(queueSpell, target, caster));
                     break;
-                case PlayerDrawSpellsSpellEffect draw:
+                case PlayerDrawSpellsEffect draw:
                     yield return StartCoroutine(HandlePlayerDrawSpellsSpellEffect(draw));
                     break;
-                case PlayerDiscardSpellsSpellEffect discard:
+                case PlayerDiscardSpellsEffect discard:
                     yield return StartCoroutine(HandlePlayerDiscardSpellsSpellEffect(discard));
                     break;
-                case PlayerExhaustSpellsSpellEffect exhaust:
+                case PlayerExhaustSpellsEffect exhaust:
                     yield return StartCoroutine(HandlePlayerExhaustSpellsSpellEffect(exhaust));
                     break;
-                case SpellTickPrepTimeEffect tick:
+                case TickPrepTimeEffect tick:
                     HandleTickPrepTimeSpellEffect(tick, target, caster);
                     break;
-                case AlterCurrentManaSpellEffect mana:
+                case AlterPlayerCurrentManaEffect mana:
                     HandlePlayerRestoreManaSpellEffect(mana);
                     break;
                 case AddSpellToDeckEffect deck:
                     HandlePlayerAddSpellToDeckEffect(deck);
                     break;
-                case SpellAlterPlayerMaxHPEffect maxHp:
+                case AlterPlayerMaxHPEffect maxHp:
                     HandleAlterMaxHPEffect(maxHp);
                     break;
                 default:
@@ -2390,19 +2426,15 @@ public partial class CombatManager : MonoBehaviour
                     int wardUsed = UseWard(amount, Combatent.Character, () => characterWard, i => characterWard += i);
                     amount += wardUsed;
 
-                    // Only Spawn Text if Amount is still < 0 after using Ward
-                    if (amount < 0)
-                    {
-                        // Spawn popup Text
-                        text = Instantiate(popupTextPrefab, characterCombatSprite.transform);
-                        text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
-                    }
+                    // Spawn popup Text
+                    text = Instantiate(popupTextPrefab, characterCombatSpriteAnimator.transform);
+                    text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
                 }
                 else
                 {
                     // No Ward to Complicate things
                     // Spawn popup Text
-                    text = Instantiate(popupTextPrefab, characterCombatSprite.transform);
+                    text = Instantiate(popupTextPrefab, characterCombatSpriteAnimator.transform);
                     text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
                 }
 
@@ -2410,6 +2442,8 @@ public partial class CombatManager : MonoBehaviour
 
                 if (amount < 0)
                 {
+                    AudioManager._Instance.PlayFromSFXDict("Combat_PlayerHurt");
+
                     // Callback
                     CombatentIntCallbackMap[Combatent.Character][CombatIntCallbackType.OnTakeDamage]?.Invoke(amount * -1);
 
@@ -2429,18 +2463,14 @@ public partial class CombatManager : MonoBehaviour
                     int wardUsed = UseWard(amount, Combatent.Enemy, () => enemyWard, i => enemyWard += i);
                     amount += wardUsed;
 
-                    // Only Spawn Text if Amount is still < 0 after using Ward
-                    if (amount < 0)
-                    {
-                        // Spawn popup Text
-                        text = Instantiate(popupTextPrefab, enemyCombatSprite.transform);
-                        text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
-                    }
+                    // Spawn popup Text
+                    text = Instantiate(popupTextPrefab, enemyCombatSpriteAnimator.transform);
+                    text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
                 }
                 else
                 {
                     // Spawn Popup text
-                    text = Instantiate(popupTextPrefab, enemyCombatSprite.transform);
+                    text = Instantiate(popupTextPrefab, enemyCombatSpriteAnimator.transform);
                     text.Set(Utils.RoundTo(amount, 1).ToString(), UIManager._Instance.GetDamageTypeColor(damageType));
                 }
 
@@ -2453,18 +2483,22 @@ public partial class CombatManager : MonoBehaviour
                 }
                 else if (currentEnemyHP + amount < 0) // tried to damage past 0
                 {
+                    currentEnemyHP = 0;
+
                     // Callback
                     CombatentIntCallbackMap[Combatent.Enemy][CombatIntCallbackType.OnTakeDamage]?.Invoke(amount * -1);
 
-                    ShakeCombatent(Combatent.Enemy);
+                    AudioManager._Instance.PlayFromSFXDict("Combat_EnemyHurt");
 
-                    currentEnemyHP = 0;
+                    ShakeCombatent(Combatent.Enemy);
                 }
                 else if (amount < 0)
                 {
                     // is Damage
                     // Apply amount
                     currentEnemyHP += amount;
+
+                    AudioManager._Instance.PlayFromSFXDict("Combat_EnemyHurt");
 
                     // Callback
                     CombatentIntCallbackMap[Combatent.Enemy][CombatIntCallbackType.OnTakeDamage]?.Invoke(amount * -1);
@@ -2670,6 +2704,8 @@ public partial class CombatManager : MonoBehaviour
 
             // Spawn Text
             SpawnEffectText(EffectTextStyle.UpAndFade, "Warded", UIManager._Instance.GetDamageTypeColor(DamageType.Ward), target);
+
+            AudioManager._Instance.PlayFromSFXDict("Combat_HitWard");
 
             // return the amount ward used;
             return wardUsed;

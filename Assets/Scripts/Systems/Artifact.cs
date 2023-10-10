@@ -1000,7 +1000,6 @@ public class Boulder : Artifact
         tracker += 1;
         if (tracker >= procAfter)
         {
-            Debug.Log(damageAmount);
             CombatManager._Instance.AlterCombatentHP(-damageAmount, Combatent.Enemy, DamageType.Physical);
             ShowArtifactProc();
             tracker = 0;

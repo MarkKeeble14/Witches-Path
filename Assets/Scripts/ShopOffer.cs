@@ -10,6 +10,7 @@ using DG.Tweening;
 public abstract class ShopOffer : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     protected int cost;
+    protected bool purchased;
 
     [Header("References")]
     [SerializeField] protected TextMeshProUGUI costText;
@@ -49,6 +50,8 @@ public abstract class ShopOffer : MonoBehaviour, IPointerClickHandler, IPointerE
         {
             Purchase();
             GameManager._Instance.AlterGold(-cost);
+
+            purchased = true;
 
             // Make Offer Uninteractable
             cv.blocksRaycasts = false;

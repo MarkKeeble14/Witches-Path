@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -127,7 +128,7 @@ public class UIManager : MonoBehaviour
     private List<string> numericalSuffixes => new List<string>() { "st", "nd", "rd", "th" };
 
     [Header("Spell Maps")]
-    [SerializeField] private SerializableDictionary<SpellEffectType, Sprite> spellEffectIconDict = new SerializableDictionary<SpellEffectType, Sprite>();
+    [SerializeField] private SerializableDictionary<CombatEffectType, Sprite> combatEffectIconDict = new SerializableDictionary<CombatEffectType, Sprite>();
     [SerializeField] private SerializableDictionary<DamageType, Color> damageTypeColorMap = new SerializableDictionary<DamageType, Color>();
     [SerializeField] private SerializableDictionary<SpellColor, SpellColorInfo> spellColorMap = new SerializableDictionary<SpellColor, SpellColorInfo>();
     [SerializeField] private SerializableDictionary<SpellPrimaryFunction, SpellColorInfo> spellPrimaryFunctionColorMap = new SerializableDictionary<SpellPrimaryFunction, SpellColorInfo>();
@@ -146,6 +147,9 @@ public class UIManager : MonoBehaviour
 
     [SerializeField] private Transform canvas;
     public Transform Canvas => canvas;
+
+    [SerializeField] private TMP_FontAsset defaultFont;
+    public TMP_FontAsset DefaultFont => defaultFont;
 
     public Sprite GetSpellStatIcon(SpellStat stat)
     {
@@ -381,15 +385,7 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    public void Restart()
-    {
-        TransitionManager._Instance.FadeOut(delegate
-        {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-        });
-    }
-
-    private void TogglePauseState()
+    public void TogglePauseState()
     {
         if (paused)
         {
@@ -419,34 +415,44 @@ public class UIManager : MonoBehaviour
         pauseScreen.SetActive(false);
     }
 
-    public void GoToMainMenu()
-    {
-        GoToLevel(0);
-    }
-
     public void Exit()
     {
-        TransitionManager._Instance.FadeOut(() => Application.Quit());
+        // TransitionManager._Instance.FadeOut(() => Application.Quit());
+        Application.Quit();
     }
 
     public void GoToLevel(int buildIndex)
     {
+        /*
         TransitionManager._Instance.FadeOut(delegate
         {
             if (paused)
                 Unpause();
-            SceneManager.LoadScene(buildIndex);
+            RestartGameHelper._Instance.LoadScene(buildIndex);
         });
+        */
+
+        if (paused)
+            Unpause();
+        RestartGameHelper._Instance.LoadScene(buildIndex);
     }
 
     public void GoToLevel(string sceneName)
     {
+        /*
         TransitionManager._Instance.FadeOut(delegate
         {
             if (paused)
                 Unpause();
-            SceneManager.LoadScene(sceneName);
+
+            RestartGameHelper._Instance.LoadScene(sceneName);
         });
+        */
+
+        if (paused)
+            Unpause();
+
+        RestartGameHelper._Instance.LoadScene(sceneName);
     }
 
     private void Update()
@@ -455,6 +461,30 @@ public class UIManager : MonoBehaviour
         {
             TogglePauseState();
         }
+    }
+
+    private int GetNumListings(List<ToolTippable> listings)
+    {
+        if (listings.Count == 0) return 0;
+
+        int num = 0;
+        foreach (ToolTippable tt in listings)
+        {
+            num += 1;
+            num += tt.GetAfflictionKeyWords().Count;
+            num += tt.GetGeneralKeyWords().Count;
+            num += GetNumListings(tt.GetOtherToolTippables());
+        }
+        return num;
+    }
+    private bool canPlayToolTipOpen = true;
+    private IEnumerator PlayToolTipOpenSound()
+    {
+        if (!canPlayToolTipOpen) yield break;
+        AudioManager._Instance.PlayFromSFXDict("ToolTips_Open");
+        canPlayToolTipOpen = false;
+        yield return new WaitForEndOfFrame();
+        canPlayToolTipOpen = true;
     }
 
     public GameObject SpawnSpellToolTip(Spell spell, Transform spawningOn)
@@ -506,21 +536,6 @@ public class UIManager : MonoBehaviour
         }
 
         return list.gameObject;
-    }
-
-    private int GetNumListings(List<ToolTippable> listings)
-    {
-        if (listings.Count == 0) return 0;
-
-        int num = 0;
-        foreach (ToolTippable tt in listings)
-        {
-            num += 1;
-            num += tt.GetAfflictionKeyWords().Count;
-            num += tt.GetGeneralKeyWords().Count;
-            num += GetNumListings(tt.GetOtherToolTippables());
-        }
-        return num;
     }
 
     public GameObject SpawnEqualListingToolTips(List<ToolTippable> listings, Transform spawningOn)
@@ -775,6 +790,8 @@ public class UIManager : MonoBehaviour
             currentRect.sizeDelta = new Vector2(toolTipWidth, currentSizeDelta.y);
         }
 
+        StartCoroutine(PlayToolTipOpenSound());
+
         return spawned;
     }
 
@@ -860,8 +877,8 @@ public class UIManager : MonoBehaviour
         return spellPrimaryFunctionColorMap[primaryFunction];
     }
 
-    public Sprite GetSpellEffectIcon(SpellEffectType type)
+    public Sprite GetCombatEffectIcon(CombatEffectType type)
     {
-        return spellEffectIconDict[type];
+        return combatEffectIconDict[type];
     }
 }

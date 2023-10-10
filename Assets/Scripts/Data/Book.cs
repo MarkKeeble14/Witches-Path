@@ -66,7 +66,7 @@ public abstract class Book : PowerupItem
 
     // Level Up
 
-    public bool TryCallLevelUp(bool animate)
+    public bool TryCallLevelUp(bool tangible)
     {
         // Can only level up if not at max level
         if (currentLevel >= MaxLevel)
@@ -76,8 +76,10 @@ public abstract class Book : PowerupItem
 
         LevelUp();
         currentLevel++;
-        if (animate)
+        if (tangible)
+        {
             ShowBookLevelUp();
+        }
         return true;
     }
 
@@ -91,6 +93,8 @@ public abstract class Book : PowerupItem
             // Call Effect
             Effect();
             ShowBookProc();
+
+            AudioManager._Instance.PlayFromSFXDict("Book_Activate");
 
             // Remove Charge
             GameManager._Instance.AlterBookCharge(-MaxCharge);

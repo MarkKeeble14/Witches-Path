@@ -165,13 +165,18 @@ public class MapNodeUI : MonoBehaviour
             StartCoroutine(SwirlAnimation(delegate
             {
                 SetMapNodeState(MapNodeState.ONGOING);
+
                 StartCoroutine(GameManager._Instance.SetCurrentGameOccurance(this));
+
+                AudioManager._Instance.PlayFromSFXDict("Map_OnClick");
             }));
         }
     }
 
     private IEnumerator SwirlAnimation(Action onEnd)
     {
+        AudioManager._Instance.PlayFromSFXDict("Map_Swirl");
+
         while (swirl.fillAmount < 1)
         {
             if (swirl.fillAmount < switchToMoveTowardsAt)

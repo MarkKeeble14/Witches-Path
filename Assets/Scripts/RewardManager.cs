@@ -314,12 +314,16 @@ public class RewardManager : MonoBehaviour
 
     public IEnumerator ShowRewardScreen(Action onEndAction = null)
     {
+        AudioManager._Instance.PlayFromSFXDict("UI_RewardOpen");
+
         rewardScreen.gameObject.SetActive(true);
 
         yield return new WaitUntil(() => resolved);
         resolved = false;
 
         rewardScreen.SetActive(false);
+
+        AudioManager._Instance.PlayFromSFXDict("UI_RewardClose");
 
         // Call any Actions on End if Specified to
         onEndAction?.Invoke();

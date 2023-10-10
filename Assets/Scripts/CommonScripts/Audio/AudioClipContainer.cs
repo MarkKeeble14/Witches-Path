@@ -44,17 +44,6 @@ public abstract class AudioClipContainer
         source.PlayOneShot(Clip, volume);
     }
 
-    public void PlayWithPitchAdjustment(float pitchChange)
-    {
-        if (!source) return;
-        if (!Clip) return;
-
-        float defaultPitch = source.pitch;
-        source.pitch += pitchChange;
-        source.PlayOneShot(Clip, volume);
-        source.pitch = defaultPitch;
-    }
-
     public void Play()
     {
         if (!source) return;

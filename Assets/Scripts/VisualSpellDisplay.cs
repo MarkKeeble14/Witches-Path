@@ -152,6 +152,8 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
     {
         if (currentSpellDisplayState == SpellDisplayState.Fading) return;
 
+        AudioManager._Instance.PlayFromSFXDict("Card_OnUse");
+
         // if is sitting in hand or is being dragged & will cast
         if (CombatManager._Instance.AwaitingAlterHandSequenceSelections)
         {
@@ -185,6 +187,8 @@ public class VisualSpellDisplay : SpellDisplay, IDragHandler, IBeginDragHandler,
                 CombatManager._Instance.HandLayoutGroup.RemoveTransformFromHand(transform);
                 onFailCast.DoShakeAnchorPos(rect);
                 CombatManager._Instance.HandLayoutGroup.InsertTransformToHand(transform, transform.GetSiblingIndex());
+
+                AudioManager._Instance.PlayFromSFXDict("Card_FailCast");
 
                 yield break;
             }

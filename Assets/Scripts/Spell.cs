@@ -180,7 +180,8 @@ public enum SpellLabel
     FlameBarrier,
     MorbidResolution,
     LeechingStrike,
-    OverwealmingBlaze
+    OverwealmingBlaze,
+    Assault
 }
 
 public enum SpellColor
@@ -313,11 +314,11 @@ public abstract class Spell : ToolTippable
     {
         foreach (KeyValuePair<SpellCallbackType, SpellCallbackData> kvp in spellCallbackMap)
         {
-            foreach (SpellEffect effect in kvp.Value.SpellEffects)
+            foreach (CombatEffect effect in kvp.Value.SpellEffects)
             {
-                if (effect.Type == SpellEffectType.ApplyAffliction)
+                if (effect.Type == CombatEffectType.ApplyAffliction)
                 {
-                    SpellApplyAfflictionEffect aff = (SpellApplyAfflictionEffect)effect;
+                    ApplyAfflictionEffect aff = (ApplyAfflictionEffect)effect;
                     if (aff.AfflictionType == type) return true;
                 }
             }
@@ -327,7 +328,7 @@ public abstract class Spell : ToolTippable
 
     public class SpellCallbackData
     {
-        public List<SpellEffect> SpellEffects = new List<SpellEffect>();
+        public List<CombatEffect> SpellEffects = new List<CombatEffect>();
         public Func<string> FuncCallbackString = null;
         public Action Callback = null;
     }
@@ -477,7 +478,7 @@ public abstract class Spell : ToolTippable
         spellStatDict[stat] += alterBy;
     }
 
-    protected void AddSpellEffectCallback(SpellCallbackType callbackOn, params SpellEffect[] effects)
+    protected void AddSpellEffectCallback(SpellCallbackType callbackOn, params CombatEffect[] effects)
     {
         // Add callback type if not already added
         if (!spellCallbackMap.ContainsKey(callbackOn))
@@ -638,7 +639,7 @@ public abstract class Spell : ToolTippable
         return res + "</color>";
     }
 
-    private string GetSpellEffectString(List<SpellEffect> spellEffects)
+    private string GetSpellEffectString(List<CombatEffect> spellEffects)
     {
         string result = "";
         for (int i = 0; i < spellEffects.Count; i++)
@@ -757,21 +758,21 @@ public abstract class Spell : ToolTippable
     // Overriden to determine what the spell will do when cast
     protected abstract void SetSpellEffects();
 
-    public List<SpellEffect> GetSpellEffects(SpellCallbackType callbackOn)
+    public List<CombatEffect> GetSpellEffects(SpellCallbackType callbackOn)
     {
-        if (!spellCallbackMap.ContainsKey(callbackOn)) return new List<SpellEffect>();
+        if (!spellCallbackMap.ContainsKey(callbackOn)) return new List<CombatEffect>();
         return spellCallbackMap[callbackOn].SpellEffects;
     }
 
-    public bool HasSpellEffectType(SpellCallbackType callbackOn, SpellEffectType spellEffectType)
+    public bool HasSpellEffectType(SpellCallbackType callbackOn, CombatEffectType spellEffectType)
     {
         return GetSpellEffectOfType(callbackOn, spellEffectType) != null;
     }
 
-    public SpellEffect GetSpellEffectOfType(SpellCallbackType callbackOn, SpellEffectType spellEffectType)
+    public CombatEffect GetSpellEffectOfType(SpellCallbackType callbackOn, CombatEffectType spellEffectType)
     {
         if (spellCallbackMap.ContainsKey(callbackOn)) return null;
-        foreach (SpellEffect spellEffect in spellCallbackMap[callbackOn].SpellEffects)
+        foreach (CombatEffect spellEffect in spellCallbackMap[callbackOn].SpellEffects)
         {
             if (spellEffect.Type == spellEffectType) return spellEffect;
         }
@@ -1104,6 +1105,8 @@ public abstract class Spell : ToolTippable
                 return new Spells.LeechingStrike();
             case SpellLabel.OverwealmingBlaze:
                 return new Spells.OverwealmingBlaze();
+            case SpellLabel.Assault:
+                return new Spells.Assault();
             default:
                 throw new UnhandledSwitchCaseException(label.ToString());
         }

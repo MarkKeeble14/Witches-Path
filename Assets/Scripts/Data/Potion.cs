@@ -294,6 +294,8 @@ public class Potion : ToolTippable
 
     public void Use()
     {
+        AudioManager._Instance.PlayFromSFXDict("Potion_OnUsePotion");
+
         onUse?.Invoke();
     }
 

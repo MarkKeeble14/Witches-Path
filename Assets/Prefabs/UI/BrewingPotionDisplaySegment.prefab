@@ -76,6 +76,7 @@ GameObject:
   - component: {fileID: 182268605284120498}
   - component: {fileID: 4075767806056519837}
   - component: {fileID: 1844510806643942930}
+  - component: {fileID: 6577231952308947672}
   m_Layer: 0
   m_Name: Text
   m_TagString: Untagged
@@ -200,6 +201,18 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &6577231952308947672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1680310482334926145}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca41ef21d4305f478acf7e1b96bf485, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &3680779482877963955
 GameObject:
   m_ObjectHideFlags: 0
@@ -211,6 +224,7 @@ GameObject:
   - component: {fileID: 2861387125304265718}
   - component: {fileID: 4040663071801813146}
   - component: {fileID: 5534861515881498711}
+  - component: {fileID: 1284720235955036989}
   m_Layer: 0
   m_Name: Label
   m_TagString: Untagged
@@ -335,6 +349,18 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1284720235955036989
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3680779482877963955}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca41ef21d4305f478acf7e1b96bf485, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &4299796804398971095
 GameObject:
   m_ObjectHideFlags: 0
@@ -346,6 +372,7 @@ GameObject:
   - component: {fileID: 3564630646755999650}
   - component: {fileID: 3943507229274536084}
   - component: {fileID: 1027119133793796374}
+  - component: {fileID: 9078148378462587233}
   m_Layer: 0
   m_Name: ClearText (TMP)
   m_TagString: Untagged
@@ -470,6 +497,18 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &9078148378462587233
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4299796804398971095}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca41ef21d4305f478acf7e1b96bf485, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &4341271236424617319
 GameObject:
   m_ObjectHideFlags: 0
@@ -582,6 +621,7 @@ GameObject:
   - component: {fileID: 3540850643038201568}
   - component: {fileID: 2986723147560718094}
   - component: {fileID: 9041434291017002502}
+  - component: {fileID: 8745820497066077118}
   m_Layer: 0
   m_Name: Clear
   m_TagString: Untagged
@@ -691,7 +731,32 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2986723147560718094}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 8745820497066077118}
+        m_TargetAssemblyTypeName: AudioCaller, Assembly-CSharp
+        m_MethodName: Play
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &8745820497066077118
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5018720199550289767}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac35d19f339ee6241aa2f514ef983adf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  key: Button_Press
 --- !u!1 &6040234003490489090
 GameObject:
   m_ObjectHideFlags: 0

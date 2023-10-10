@@ -110,6 +110,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI spellbookSizeText;
     [SerializeField] private OnTextChangedEventCaller manaTextEventCaller;
+    private float timer;
 
     [Header("Delays")]
     [SerializeField] private float delayOnReachNode = 0.5f;
@@ -193,6 +194,7 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         _Instance = this;
+        timer = 0;
     }
 
     private void Start()
@@ -297,9 +299,10 @@ public class GameManager : MonoBehaviour
         UpgradeSpellButton.interactable = canUpgradeSpell;
 
         // Set Timer Text
-        int hours = TimeSpan.FromSeconds(Time.realtimeSinceStartup).Hours;
-        int minutes = TimeSpan.FromSeconds(Time.realtimeSinceStartup).Minutes;
-        int seconds = TimeSpan.FromSeconds(Time.realtimeSinceStartup).Seconds;
+        timer += Time.unscaledDeltaTime;
+        int hours = TimeSpan.FromSeconds(timer).Hours;
+        int minutes = TimeSpan.FromSeconds(timer).Minutes;
+        int seconds = TimeSpan.FromSeconds(timer).Seconds;
         if (hours > 0)
         {
             timerText.text = string.Format("{0:0}:{0:0}:{1:00}", hours, minutes, seconds);
@@ -819,7 +822,7 @@ public class GameManager : MonoBehaviour
     }
 
     [ContextMenu("Upgrade Books")]
-    public void UpgradeBooks()
+    public void UpgradeBook()
     {
         equippedBook.TryCallLevelUp(true);
     }
@@ -1055,6 +1058,8 @@ public class GameManager : MonoBehaviour
         {
             CloseOverlayUI(OverlaidUIType.SpellbookScreen);
 
+            AudioManager._Instance.PlayFromSFXDict("UI_SpellbookClose");
+
             // Closing
             while (spellBookSpawnedSpellDisplays.Count > 0)
             {
@@ -1066,6 +1071,8 @@ public class GameManager : MonoBehaviour
         else // Opening 
         {
             OpenOverlayUI(OverlaidUIType.SpellbookScreen);
+
+            AudioManager._Instance.PlayFromSFXDict("UI_SpellbookOpen");
 
             foreach (Spell spell in Spellbook.GetSpells())
             {
@@ -1137,8 +1144,17 @@ public class GameManager : MonoBehaviour
         {
             return;
         }
-        StartCoroutine(RemoveSpellSequence(spell => true, 1, () => AlterGold(-costToRemoveSpell), true));
-        costToRemoveSpell += increaseCostToRemoveSpellOnPurchase;
+
+        StartCoroutine(RemoveSpellSequence(spell => true, 1, delegate
+        {
+            if (costToRemoveSpell > GetPlayerCurrency())
+            {
+                return;
+            }
+
+            AlterGold(-costToRemoveSpell);
+            costToRemoveSpell += increaseCostToRemoveSpellOnPurchase;
+        }, true));
     }
 
     public void TavernUpgradeSpellSequence()
@@ -1161,7 +1177,7 @@ public class GameManager : MonoBehaviour
         yield return StartCoroutine(SelectSpellSequence(spell =>
         {
             RemoveSpellFromSpellBook(spell);
-            AddSpellToSpellBook(GetRandomSpellWithConditions(newSpell => AcceptSpellRewardFunc(newSpell) && newSpell.Rarity == spell.Rarity));
+            AddSpellToSpellBook(GetRandomSpellWithConditions(newSpell => AcceptSpellRewardFunc(newSpell)));
         }, numSpells, viableSpellFunc, onCompleteAction));
     }
 
@@ -1169,7 +1185,7 @@ public class GameManager : MonoBehaviour
     {
         yield return StartCoroutine(SelectSpellSequence(spell =>
         {
-            AddSpellToSpellBook(spell);
+            AddSpellToSpellBook(Spell.GetSpellOfType(spell.Label));
         }, numSpells, viableSpellFunc, onCompleteAction));
     }
 
@@ -1279,6 +1295,15 @@ public class GameManager : MonoBehaviour
 
     public void AlterGold(int amount)
     {
+        if (amount > 0)
+        {
+            AudioManager._Instance.PlayFromSFXDict("Gold_GainGold");
+        }
+        else if (amount < 0)
+        {
+            AudioManager._Instance.PlayFromSFXDict("Gold_LoseGold");
+        }
+
         // Spawn Popup Text
         PopupText spawned = Instantiate(popupTextPrefab, currencyText.transform);
         spawned.Set((amount > 0 ? "+" : "") + Utils.RoundTo(amount, 1).ToString(), Color.yellow);
@@ -1447,6 +1472,7 @@ public class GameManager : MonoBehaviour
 
     public bool CanUpgradeActiveBook => GetEquippedBook().CanLevelUp;
 
+
     public void PopManaText()
     {
         manaTextEventCaller.Force();
@@ -1481,9 +1507,11 @@ public class GameManager : MonoBehaviour
         endGameScoreCV.blocksRaycasts = true;
 
         int finalScore = 0;
+        endGameFinalScoreText.text = "Score: " + finalScore.ToString();
         foreach (EndGameScoreData data in ScoreManager._Instance.GetFinalScoreData())
         {
             if (data.Num == 0) continue;
+
             EndGameScoreDisplay spawned = Instantiate(endGameScoreDisplay, endGameSpawnScoreDisplaysOn);
             spawned.Set(data);
             finalScore += data.Score;
@@ -1503,16 +1531,13 @@ public class GameManager : MonoBehaviour
         yield return StartCoroutine(Utils.ChangeCanvasGroupAlpha(gameWonCV, 1, Time.deltaTime * changeGameWonCVAlphaRate));
     }
 
-    public void RestartGame()
-    {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-    }
-
     public void TogglePotionIngredientListScreen()
     {
         if (overlaidUIDict[OverlaidUIType.PotionIngredientScreen].activeInHierarchy)
         {
             CloseOverlayUI(OverlaidUIType.PotionIngredientScreen);
+
+            AudioManager._Instance.PlayFromSFXDict("UI_PotionIngredientsClose");
 
             // Closing
             while (spawnedPotionIngredientListEntries.Count > 0)
@@ -1525,6 +1550,8 @@ public class GameManager : MonoBehaviour
         else // Opening 
         {
             OpenOverlayUI(OverlaidUIType.PotionIngredientScreen);
+
+            AudioManager._Instance.PlayFromSFXDict("UI_PotionIngredientsOpen");
 
             foreach (KeyValuePair<PotionIngredientType, int> kvp in potionIngredientMap)
             {
@@ -1636,9 +1663,18 @@ public class GameManager : MonoBehaviour
 
     public void RestAtCampfire()
     {
+        AudioManager._Instance.PlayFromSFXDict("Campfire_Rest");
+
         float value = BalenceManager._Instance.GetValue(MapNodeType.Campfire, "HealPercent");
         float percentHP = value / 100;
         AlterPlayerCurrentHP(Mathf.CeilToInt(maxPlayerHP * percentHP), DamageType.Heal);
+    }
+
+    public void StudyAtCampfire()
+    {
+        AudioManager._Instance.PlayFromSFXDict("Campfire_Study");
+
+        UpgradeBook();
     }
 
     public void ReSpawnPotionIngredientToBrewList(PotionIngredientType type)
@@ -1670,6 +1706,8 @@ public class GameManager : MonoBehaviour
 
             // Add the ingredient to the potion
             currentPotion.AddIngredient(ingredient);
+
+            AudioManager._Instance.PlayFromSFXDict("Campfire_AddToBrew");
 
             // Remove it from the players inventory
             if (RemovePotionIngredient(type))
@@ -2254,6 +2292,8 @@ public class GameManager : MonoBehaviour
                     hasSelectedStat = false;
                     continue;
                 }
+
+                AudioManager._Instance.PlayFromSFXDict("Campfire_StrengthenEquipment");
 
                 // Use Currency
                 AlterPelts(-cost);

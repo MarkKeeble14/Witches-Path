@@ -40,6 +40,7 @@ public struct MapSectionInfo
     public bool ShowSectionConnections;
     public int MaxNumSectionConnections;
     public SerializableDictionary<MapNodeType, List<GameOccurance>> SpecificMapNodes;
+    public Sprite CombatBackground;
 }
 
 [System.Serializable]
@@ -585,6 +586,9 @@ public class Map
 
     private void SetNode(MapNodeUI node, MapSectionInfo sectionInfo, int rowIndex)
     {
+        // Set background
+        CombatManager._Instance.SetBackground(sectionInfo.CombatBackground);
+
         MapNodeType nodeType;
         if (sectionInfo.ForcedNodeIndicies.ContainsKey(rowIndex))
         {

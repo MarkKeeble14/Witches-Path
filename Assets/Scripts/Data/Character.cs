@@ -6,7 +6,7 @@ using UnityEngine;
 public class Character : ScriptableObject
 {
     [Header("UI")]
-    [SerializeField] private Sprite combatSprite;
+    [SerializeField] private Sprite[] combatSprites;
     [SerializeField] private SpellColor color;
 
     [Header("Starting Stats")]
@@ -111,9 +111,9 @@ public class Character : ScriptableObject
         return startingArtifacts;
     }
 
-    public Sprite GetCombatSprite()
+    public Sprite[] GetCombatSprites()
     {
-        return combatSprite;
+        return combatSprites;
     }
 
     public SpellLabel GetDefaultSpell()

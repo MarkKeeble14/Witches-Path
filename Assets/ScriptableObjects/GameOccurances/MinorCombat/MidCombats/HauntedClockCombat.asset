@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c66d2c9f0d014844bd55af72da36e53, type: 3}
+  m_Name: HauntedClockCombat
+  m_EditorClassIdentifier: 
+  mainMusic: {fileID: 8300000, guid: e49f32c5ee5e97e46a07afc612edc93c, type: 3}
+  enemyType: 4
+  itemRewards:
+    dictionary:
+    - key: 4
+      value:
+        percentageMap:
+        - key:
+            NumericalType: 0
+            ForceRarity: 0
+            Rarity: 0
+            Numbers: {x: 1, y: 1}
+          value: 100
+    - key: 0
+      value:
+        percentageMap:
+        - key:
+            NumericalType: 0
+            ForceRarity: 0
+            Rarity: 0
+            Numbers: {x: 1, y: 5}
+          value: 100
+    - key: 5
+      value:
+        percentageMap:
+        - key:
+            NumericalType: 1
+            ForceRarity: 0
+            Rarity: 0
+            Numbers: {x: 1, y: 3}
+          value: 100
+  currencyRewards:
+    dictionary:
+    - key: 2
+      value:
+        percentageMap:
+        - key: {x: 30, y: 40}
+          value: 100
+    - key: 3
+      value:
+        percentageMap:
+        - key: {x: 0, y: 1}
+          value: 100
