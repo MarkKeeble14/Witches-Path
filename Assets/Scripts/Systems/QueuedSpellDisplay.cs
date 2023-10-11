@@ -30,7 +30,6 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
     [SerializeField] private SemicircleLayoutGroup spellEffects;
     [SerializeField] private QueuedSpellEffectDisplay spellEffectPrefab;
 
-    [SerializeField] private float spellEffectRadiusRatio = 5;
     [SerializeField] private float onHoverScaleTo;
     [SerializeField] private float onHoverScaleDuration;
     [SerializeField] private RectTransform onHoverToScale;
@@ -105,8 +104,6 @@ public class QueuedSpellDisplay : MonoBehaviour, IPointerEnterHandler, IPointerE
         {
             DestroyToolTip();
         }
-
-        spellEffects.SetRadius(transform.localScale.x * spellEffectRadiusRatio);
 
         // Update Scale
         if (allowScale)

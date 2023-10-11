@@ -4,7 +4,7 @@ using UnityEngine;
 public class SpellShopOffer : ShopOffer
 {
     [SerializeField] private Spell spell;
-    [SerializeField] private VisualSpellDisplay visualSpellDisplay;
+    [SerializeField] private SpellDisplay visualSpellDisplay;
 
     protected override ToolTippable toolTippable => spell;
 

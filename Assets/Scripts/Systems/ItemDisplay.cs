@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.EventSystems;
 using DG.Tweening;
+using System.Collections;
 
 public class ItemDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
@@ -12,13 +13,20 @@ public class ItemDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private TextMeshProUGUI additionalText;
 
     [Header("Animations")]
-    [SerializeField] private float onActivateTweenTo;
-    [SerializeField] private float onActivateTweenDuration;
-    [SerializeField] private float returnScaleSpeed;
-    private Tween scaleTween;
+    [SerializeField] private float maxScale;
+    [SerializeField] private float minScale;
+    [SerializeField] private float scaleSpeed;
+    private float scaleTo;
+    private bool poppingScale;
+    private bool isMousedOver;
 
     private PowerupItem setTo;
     private GameObject spawnedToolTip;
+
+    private void Start()
+    {
+        scaleTo = minScale;
+    }
 
     protected void Update()
     {
@@ -33,15 +41,32 @@ public class ItemDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             additionalText.gameObject.SetActive(false);
         }
 
-        if (scaleTween != null && !scaleTween.active)
+        if (isMousedOver)
         {
-            transform.localScale = Vector3.MoveTowards(transform.localScale, Vector3.one, Time.deltaTime * returnScaleSpeed);
+            scaleTo = maxScale;
+        }
+        else
+        {
+            if (!poppingScale &&
+                scaleTo > minScale)
+            {
+                scaleTo -= Time.deltaTime * scaleSpeed;
+                if (scaleTo < minScale)
+                    scaleTo = minScale;
+            }
+        }
+        Vector3 targetScale = Vector3.one * scaleTo;
+        transform.localScale = Vector3.MoveTowards(transform.localScale, targetScale, Time.deltaTime * scaleSpeed);
+        if (poppingScale && transform.localScale == targetScale)
+        {
+            poppingScale = false;
         }
     }
 
     public void AnimateScale()
     {
-        scaleTween = transform.DOScale(onActivateTweenTo, onActivateTweenDuration);
+        scaleTo = maxScale;
+        poppingScale = true;
     }
 
     public virtual void SetItem(PowerupItem i)
@@ -78,10 +103,14 @@ public class ItemDisplay : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void OnPointerEnter(PointerEventData eventData)
     {
         SpawnToolTip();
+
+        isMousedOver = true;
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
         DestroyToolTip();
+
+        isMousedOver = false;
     }
 }

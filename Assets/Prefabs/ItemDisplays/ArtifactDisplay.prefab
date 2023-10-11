@@ -78,7 +78,6 @@ GameObject:
   - component: {fileID: 5580262284394836984}
   - component: {fileID: 2173110063882864699}
   - component: {fileID: 2401528642472653293}
-  - component: {fileID: 5647782856274449709}
   - component: {fileID: 5996088037670002633}
   - component: {fileID: 4503065959942000338}
   - component: {fileID: 5416930693647991758}
@@ -178,24 +177,9 @@ MonoBehaviour:
   image: {fileID: 5580262284394836984}
   text: {fileID: 8067086164780007113}
   additionalText: {fileID: 1831501965138361569}
-  onActivateTweenTo: 1.25
-  onActivateTweenDuration: 0.1
-  returnScaleSpeed: 5
---- !u!114 &5647782856274449709
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3439924000247369284}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fc9644c4bfa79740ad56a3d02f5d1aa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  tweenScaleOnExit: 1
-  tweenScaleOnHover: 1.5
-  tweenScaleDuration: 0.1
+  maxScale: 1.25
+  minScale: 1
+  scaleSpeed: 5
 --- !u!114 &5996088037670002633
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -230,7 +214,7 @@ Canvas:
   m_SortingBucketNormalizedSize: 0
   m_AdditionalShaderChannelsFlag: 25
   m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_TargetDisplay: 0
 --- !u!114 &5416930693647991758
 MonoBehaviour:

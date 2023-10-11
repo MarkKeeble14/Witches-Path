@@ -68,11 +68,11 @@ public class GameManager : MonoBehaviour
     public Pile<Spell> Spellbook { get; private set; }
     public int NumSpells => Spellbook.Count;
 
-    [SerializeField] private VisualSpellDisplay visualSpellDisplayPrefab;
+    [SerializeField] private SpellDisplay spellDisplayPrefab;
 
     [Header("Spell Book Screen")]
     [SerializeField] private Transform spellBookSpawnSpellDisplaysOn;
-    private List<VisualSpellDisplay> spellBookSpawnedSpellDisplays = new List<VisualSpellDisplay>();
+    private List<SpellDisplay> spellBookSpawnedSpellDisplays = new List<SpellDisplay>();
 
     [Header("Select Spell Screen")]
     [SerializeField] private Transform spawnSelectSpellDisplaysOn;
@@ -220,7 +220,7 @@ public class GameManager : MonoBehaviour
 
     public void CallOnGameStart()
     {
-        // Get List of all Books & Artifacts for Testing
+        // Get List of all Books & Artifacts
         allBook = new List<BookLabel>((BookLabel[])Enum.GetValues(typeof(BookLabel)));
         allArtifact = new List<ArtifactLabel>((ArtifactLabel[])Enum.GetValues(typeof(ArtifactLabel)));
 
@@ -334,129 +334,6 @@ public class GameManager : MonoBehaviour
         else
         {
             defenseText.text = 0.ToString();
-        }
-
-        if (Input.GetKeyDown(KeyCode.Tab))
-        {
-            int v = (int)currentlyTesting;
-            if (v + 1 >= Enum.GetNames(typeof(ContentType)).Length)
-            {
-                v = 0;
-            }
-            else
-            {
-                v += 1;
-            }
-            currentlyTesting = (ContentType)v;
-            Debug.Log("Now Testing: " + currentlyTesting);
-        }
-
-        // Testing
-        switch (currentlyTesting)
-        {
-            case ContentType.Spell:
-
-                // Active Spells
-                // Equip new spell
-                if (Input.GetKeyDown(KeyCode.RightArrow))
-                {
-                    equippableSpellIndex++;
-
-                    if (equippableSpellIndex > viableSpellRewards.Count - 1)
-                        equippableSpellIndex = 0;
-
-                    Debug.Log("Selected: " + viableSpellRewards[equippableSpellIndex]);
-                }
-
-                // Equip new spell
-                if (Input.GetKeyDown(KeyCode.LeftArrow))
-                {
-                    equippableSpellIndex--;
-
-                    if (equippableSpellIndex < 0)
-                        equippableSpellIndex = viableSpellRewards.Count - 1;
-
-                    Debug.Log("Selected: " + viableSpellRewards[equippableSpellIndex]);
-                }
-
-                if (Input.GetKeyDown(KeyCode.KeypadEnter))
-                {
-                    // 
-                    AddSpellToSpellBook(viableSpellRewards[equippableSpellIndex]);
-                }
-                if (Input.GetKeyDown(KeyCode.KeypadPeriod))
-                {
-                    //
-                }
-
-                break;
-            case ContentType.Artifact:
-
-                // Artifacts
-                // Equip new Artifact
-                if (Input.GetKeyDown(KeyCode.RightArrow))
-                {
-                    artifactIndex++;
-
-                    if (artifactIndex > allArtifact.Count - 1)
-                        artifactIndex = 0;
-
-                    Debug.Log("Selected: " + allArtifact[artifactIndex]);
-                }
-
-                // Equip new artifact
-                if (Input.GetKeyDown(KeyCode.LeftArrow))
-                {
-                    artifactIndex--;
-
-                    if (artifactIndex < 0)
-                        artifactIndex = allArtifact.Count - 1;
-
-                    Debug.Log("Selected: " + allArtifact[artifactIndex]);
-                }
-
-                if (Input.GetKeyDown(KeyCode.KeypadEnter))
-                {
-                    AddArtifact(allArtifact[artifactIndex]);
-                }
-
-                if (Input.GetKeyDown(KeyCode.KeypadPeriod))
-                {
-                    // RemoveArtifact(allArtifact[artifactIndex]);
-                }
-
-                break;
-            case ContentType.Book:
-
-                // Books
-                // Equip new Book
-                if (Input.GetKeyDown(KeyCode.RightArrow))
-                {
-                    bookIndex++;
-
-                    if (bookIndex > allBook.Count - 1)
-                        bookIndex = 0;
-
-                    Debug.Log("Selected: " + allBook[bookIndex]);
-                }
-
-                // Equip new book
-                if (Input.GetKeyDown(KeyCode.LeftArrow))
-                {
-                    bookIndex--;
-
-                    if (bookIndex < 0)
-                        bookIndex = allBook.Count - 1;
-
-                    Debug.Log("Selected: " + allBook[bookIndex]);
-                }
-
-                if (Input.GetKeyDown(KeyCode.KeypadEnter))
-                {
-                    EquipBook(Book.GetBookOfType(allBook[bookIndex]));
-                }
-
-                break;
         }
     }
 
@@ -1063,7 +940,7 @@ public class GameManager : MonoBehaviour
             // Closing
             while (spellBookSpawnedSpellDisplays.Count > 0)
             {
-                VisualSpellDisplay cur = spellBookSpawnedSpellDisplays[0];
+                SpellDisplay cur = spellBookSpawnedSpellDisplays[0];
                 spellBookSpawnedSpellDisplays.RemoveAt(0);
                 Destroy(cur.gameObject);
             }
@@ -1076,7 +953,7 @@ public class GameManager : MonoBehaviour
 
             foreach (Spell spell in Spellbook.GetSpells())
             {
-                VisualSpellDisplay spawned = Instantiate(visualSpellDisplayPrefab, spellBookSpawnSpellDisplaysOn);
+                SpellDisplay spawned = Instantiate(spellDisplayPrefab, spellBookSpawnSpellDisplaysOn);
                 spawned.SetSpell(spell);
                 spellBookSpawnedSpellDisplays.Add(spawned);
             }
@@ -1212,7 +1089,7 @@ public class GameManager : MonoBehaviour
 
         OpenOverlayUI(OverlaidUIType.SelectSpellScreen);
 
-        List<VisualSpellDisplay> spawnedDisplays = new List<VisualSpellDisplay>();
+        List<SpellDisplay> spawnedDisplays = new List<SpellDisplay>();
 
         List<Spell> selectedSpells = new List<Spell>();
 
@@ -1224,7 +1101,7 @@ public class GameManager : MonoBehaviour
                 continue;
             }
 
-            VisualSpellDisplay spawned = Instantiate(visualSpellDisplayPrefab, spawnSelectSpellDisplaysOn);
+            SpellDisplay spawned = Instantiate(spellDisplayPrefab, spawnSelectSpellDisplaysOn);
             spawned.SetSpell(spell);
             spawnedDisplays.Add(spawned);
             spawned.AddOnClick(delegate
@@ -1258,7 +1135,7 @@ public class GameManager : MonoBehaviour
         // Closing
         while (spawnedDisplays.Count > 0)
         {
-            VisualSpellDisplay cur = spawnedDisplays[0];
+            SpellDisplay cur = spawnedDisplays[0];
             spawnedDisplays.RemoveAt(0);
             Destroy(cur.gameObject);
         }
@@ -1577,7 +1454,7 @@ public class GameManager : MonoBehaviour
     public IEnumerator ShowAddSpellSequence(Spell spell)
     {
         // Spawn Visual
-        VisualSpellDisplay spellDisplay = Instantiate(visualSpellDisplayPrefab, spellBookChangeDisplayContainer);
+        SpellDisplay spellDisplay = Instantiate(spellDisplayPrefab, spellBookChangeDisplayContainer);
         spellDisplay.SetSpell(spell);
         RectTransform spellDisplayRect = spellDisplay.transform as RectTransform;
         spellDisplayRect.sizeDelta = addSpellDisplaySizeDelta;
@@ -1610,7 +1487,7 @@ public class GameManager : MonoBehaviour
     public IEnumerator ShowRemoveSpellSequence(Spell spell)
     {
         // Spawn Visual
-        VisualSpellDisplay spellDisplay = Instantiate(visualSpellDisplayPrefab, spellBookChangeDisplayContainer);
+        SpellDisplay spellDisplay = Instantiate(spellDisplayPrefab, spellBookChangeDisplayContainer);
         spellDisplay.SetSpell(spell);
         spellDisplay.SetSpellDisplayState(SpellDisplayState.Selected);
         RectTransform spellDisplayRect = spellDisplay.transform as RectTransform;

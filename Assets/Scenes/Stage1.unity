@@ -490,7 +490,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[2].NumPaths
-      value: 0
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[3].NumPaths
@@ -498,7 +498,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[4].NumPaths
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.generalMapNodes.dictionary.Array.size
@@ -830,7 +830,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[2].ChanceToConnectPaths.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[2].ShowSectionConnections
@@ -862,7 +862,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[4].ChanceToConnectPaths.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[4].ShowSectionConnections
@@ -1217,8 +1217,28 @@ PrefabInstance:
       value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].NodeTypeOdds.percentageMap.Array.size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[1].MapNodes.dictionary.Array.data[0].key
       value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].NodeTypeOdds.percentageMap.Array.size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].NodeTypeOdds.percentageMap.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].NodeTypeOdds.percentageMap.Array.size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].NodeTypeOdds.percentageMap.Array.size
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[0].SpecificMapNodes.dictionary.Array.size
@@ -1271,6 +1291,142 @@ PrefabInstance:
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[4].ForcedNodeIndicies.dictionary.Array.size
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].RandomNodeTypeOdds.percentageMap.Array.size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].RandomNodeTypeOdds.percentageMap.Array.size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].RandomNodeTypeOdds.percentageMap.Array.size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].NodeTypeOdds.percentageMap.Array.data[1].key
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].NodeTypeOdds.percentageMap.Array.data[2].key
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].NodeTypeOdds.percentageMap.Array.data[3].key
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].NodeTypeOdds.percentageMap.Array.data[4].key
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].NodeTypeOdds.percentageMap.Array.data[1].key
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].NodeTypeOdds.percentageMap.Array.data[2].key
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].NodeTypeOdds.percentageMap.Array.data[3].key
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].NodeTypeOdds.percentageMap.Array.data[4].key
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].NodeTypeOdds.percentageMap.Array.data[0].key
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].NodeTypeOdds.percentageMap.Array.data[1].key
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].NodeTypeOdds.percentageMap.Array.data[2].key
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].NodeTypeOdds.percentageMap.Array.data[3].key
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].NodeTypeOdds.percentageMap.Array.data[4].key
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].NodeTypeOdds.percentageMap.Array.data[0].key
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].NodeTypeOdds.percentageMap.Array.data[0].value
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].NodeTypeOdds.percentageMap.Array.data[1].value
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].NodeTypeOdds.percentageMap.Array.data[2].value
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].NodeTypeOdds.percentageMap.Array.data[3].value
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].NodeTypeOdds.percentageMap.Array.data[4].value
+      value: 45
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].NodeTypeOdds.percentageMap.Array.data[0].value
+      value: 35
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].NodeTypeOdds.percentageMap.Array.data[1].value
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].NodeTypeOdds.percentageMap.Array.data[2].value
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].NodeTypeOdds.percentageMap.Array.data[3].value
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].NodeTypeOdds.percentageMap.Array.data[4].value
+      value: 35
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[2].NodeTypeOdds.percentageMap.Array.data[0].value
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].NodeTypeOdds.percentageMap.Array.data[0].value
+      value: 40
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].NodeTypeOdds.percentageMap.Array.data[1].value
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].NodeTypeOdds.percentageMap.Array.data[2].value
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].NodeTypeOdds.percentageMap.Array.data[3].value
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].NodeTypeOdds.percentageMap.Array.data[4].value
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[4].NodeTypeOdds.percentageMap.Array.data[0].value
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[0].ForcedNodeIndicies.dictionary.Array.data[1].key
@@ -1369,8 +1525,116 @@ PrefabInstance:
       value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].RandomNodeTypeOdds.percentageMap.Array.data[1].key
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].RandomNodeTypeOdds.percentageMap.Array.data[2].key
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].RandomNodeTypeOdds.percentageMap.Array.data[3].key
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].RandomNodeTypeOdds.percentageMap.Array.data[4].key
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[1].MapNodes.dictionary.Array.data[0].value.Array.size
       value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].RandomNodeTypeOdds.percentageMap.Array.data[1].key
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].RandomNodeTypeOdds.percentageMap.Array.data[2].key
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].RandomNodeTypeOdds.percentageMap.Array.data[3].key
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].RandomNodeTypeOdds.percentageMap.Array.data[4].key
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].RandomNodeTypeOdds.percentageMap.Array.data[1].key
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].RandomNodeTypeOdds.percentageMap.Array.data[2].key
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].RandomNodeTypeOdds.percentageMap.Array.data[3].key
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].RandomNodeTypeOdds.percentageMap.Array.data[4].key
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].RandomNodeTypeOdds.percentageMap.Array.data[0].value
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].RandomNodeTypeOdds.percentageMap.Array.data[1].value
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].RandomNodeTypeOdds.percentageMap.Array.data[2].value
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].RandomNodeTypeOdds.percentageMap.Array.data[3].value
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[0].RandomNodeTypeOdds.percentageMap.Array.data[4].value
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].RandomNodeTypeOdds.percentageMap.Array.data[0].value
+      value: 40
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].RandomNodeTypeOdds.percentageMap.Array.data[1].value
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].RandomNodeTypeOdds.percentageMap.Array.data[2].value
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].RandomNodeTypeOdds.percentageMap.Array.data[3].value
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[1].RandomNodeTypeOdds.percentageMap.Array.data[4].value
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].RandomNodeTypeOdds.percentageMap.Array.data[0].value
+      value: 40
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].RandomNodeTypeOdds.percentageMap.Array.data[1].value
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].RandomNodeTypeOdds.percentageMap.Array.data[2].value
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].RandomNodeTypeOdds.percentageMap.Array.data[3].value
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
+      propertyPath: map.mapSections.Array.data[3].RandomNodeTypeOdds.percentageMap.Array.data[4].value
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 4738525776646052579, guid: 07e53dc2d2d10d840a65383b07c25206, type: 3}
       propertyPath: map.mapSections.Array.data[0].MapNodes.dictionary.Array.data[0].value.Array.data[0]
@@ -12155,7 +12419,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7820009083912382829, guid: 7eb7b43615745b741a06bf6ebbedf4b4, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -389.99985
+      value: -389.99994
       objectReference: {fileID: 0}
     - target: {fileID: 7822827192670774857, guid: 7eb7b43615745b741a06bf6ebbedf4b4, type: 3}
       propertyPath: m_AnchorMax.y

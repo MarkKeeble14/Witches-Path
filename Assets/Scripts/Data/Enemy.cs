@@ -706,8 +706,8 @@ public class TheScienceExperiment : Enemy
 
         // Turn 2s
         PercentageMap<string> turn2Map = new PercentageMap<string>();
-        turn2Map.AddOption(MakeOption(25, "Thorns"));
-        turn1Map.AddOption(MakeOption(75, "MoreWard"));
+        turn2Map.AddOption(MakeOption(10, "Thorns"));
+        turn1Map.AddOption(MakeOption(90, "MoreWard"));
 
         // Apply Behaviour
         AddEnemyBehaviour(() => CombatManager._Instance.TurnNumber % 2 == 1, turn1Map);

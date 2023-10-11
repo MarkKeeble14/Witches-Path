@@ -18,13 +18,14 @@ public class SetSortOrderOnHover : MonoBehaviour, IPointerEnterHandler, IPointer
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        Debug.Log("Pointer Enter: " + name);
         canvas.sortingOrder = sortOrder;
         canvas.overrideSorting = true;
-
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        Debug.Log("Pointer Exit: " + name);
         canvas.sortingOrder = defaultSortOrder;
         canvas.overrideSorting = false;
     }

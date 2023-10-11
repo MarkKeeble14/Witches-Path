@@ -908,7 +908,7 @@ GameObject:
   - component: {fileID: 7622704905560007702}
   - component: {fileID: 1709125184879610040}
   m_Layer: 0
-  m_Name: VisualSpellDisplay
+  m_Name: SpellDisplay
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1028,31 +1028,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 5087315625084445004}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 566b0ca7bd2933c4d99fbb403b482a75, type: 3}
+  m_Script: {fileID: 11500000, guid: eb615522a4578214299f2294d2df1ff4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  disableWhenEmpty: []
-  mainCV: {fileID: 5990510238731423548}
-  spellIcon: {fileID: 3387163862461033900}
-  toScale: {fileID: 4741811135389110733}
-  text: {fileID: 1496312441980065768}
-  nameText: {fileID: 347211925214977055}
-  progressBar: {fileID: 3123552209209709875}
-  lockedContainer: {fileID: 7602640196235964854}
-  defaultSprite: {fileID: 0}
-  canvas: {fileID: 7622704905560007702}
-  setColorOf:
-  - {fileID: 3387163862461033900}
-  coloredTexts:
-  - {fileID: 347211925214977055}
-  - {fileID: 8344746918344750730}
-  - {fileID: 1496312441980065768}
-  border: {fileID: 176068047461800008}
-  regularScale: 1
-  maxScale: 1.75
-  changeScaleSpeed: 2.5
-  mouseOverTargetScale: 1.5
-  lerpScaleRate: 25
+  delayBeforeSpawningToolTips: 0.5
+  distFromStartToCast: 75
+  rotateSpeedInHand: 5
+  rotateSpeedOnMoveToMiddle: 50
+  moveToCenterSpeed: 1750
+  moveUpFromHandSpeed: 2500
+  delayAfterMovingToPosition: 0.125
+  upDist: 250
   sortingOrderDict:
     dictionary:
     - key: 0
@@ -1070,12 +1056,11 @@ MonoBehaviour:
     - key: 6
       value: {x: 3, y: 3}
     - key: 7
-      value: {x: 1, y: 1}
+      value: {x: 3, y: 3}
     - key: 8
       value: {x: 1, y: 1}
-  delayBeforeSpawningToolTips: 0.5
-  distFromStartToCast: 75
-  rotateSpeed: 5
+    - key: 9
+      value: {x: 2, y: 3}
   onFailCast:
     Duration: 0.1
     Strength: 10
@@ -1084,17 +1069,40 @@ MonoBehaviour:
     Snapping: 0
     FadeOut: 1
     Mode: 0
-  rarityImage: {fileID: 9098088219400576944}
+  setColorOf:
+  - {fileID: 3387163862461033900}
+  coloredTexts:
+  - {fileID: 347211925214977055}
+  - {fileID: 8344746918344750730}
+  - {fileID: 1496312441980065768}
+  regularScale: 1
+  maxScale: 1.75
+  changeScaleSpeed: 2.5
+  mouseOverTargetScale: 1.5
+  lerpScaleRate: 25
+  rect: {fileID: 0}
+  toScale: {fileID: 4741811135389110733}
+  canvas: {fileID: 7622704905560007702}
+  defaultSprite: {fileID: 0}
   keyCodeText: {fileID: 6390130859139562968}
+  castTypeText: {fileID: 8344746918344750730}
+  effectInfo: {fileID: 1496312441980065768}
+  cooldownContainerText: {fileID: 3222128088362801389}
+  text: {fileID: 1496312441980065768}
+  nameText: {fileID: 347211925214977055}
+  border: {fileID: 176068047461800008}
+  rarityImage: {fileID: 9098088219400576944}
+  cooldownDisplay: {fileID: 412180014141952280}
+  spellIcon: {fileID: 3387163862461033900}
+  progressBar: {fileID: 3123552209209709875}
+  cooldownContainer: {fileID: 160001666878696838}
+  disableWhenEmpty: []
+  lockedContainer: {fileID: 7602640196235964854}
+  mainCV: {fileID: 5990510238731423548}
   manaCostInfo: {fileID: 2803127393865713091}
   cooldownInfo: {fileID: 6194938663852544300}
   prepTimeInfo: {fileID: 2619255957825258369}
   numAttacksInfo: {fileID: 3370289866269942853}
-  castTypeText: {fileID: 8344746918344750730}
-  effectInfo: {fileID: 1496312441980065768}
-  cooldownContainer: {fileID: 160001666878696838}
-  cooldownDisplay: {fileID: 412180014141952280}
-  cooldownContainerText: {fileID: 3222128088362801389}
 --- !u!225 &5990510238731423548
 CanvasGroup:
   m_ObjectHideFlags: 0

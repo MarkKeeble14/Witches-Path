@@ -569,32 +569,33 @@ public abstract class Spell : ToolTippable
         for (int i = 0; i < spellCallbackMap.Keys.Count; i++)
         {
             KeyValuePair<SpellCallbackType, SpellCallbackData> kvp = spellCallbackMap.ElementAt(i);
-            bool hasCallback = false;
+            bool needsCallbackText = false;
             string toAdd = "";
+
+            if (kvp.Value == null) continue;
 
             if (kvp.Value.SpellEffects.Count > 0)
             {
-                // Add Spell Effects
-                hasCallback = true;
-
+                needsCallbackText = true;
                 toAdd += GetSpellEffectString(kvp.Value.SpellEffects);
             }
 
-            if (kvp.Value != null)
+            if (kvp.Value.FuncCallbackString?.Invoke().Length > 0)
             {
-                if (kvp.Value.FuncCallbackString?.Invoke().Length > 0)
-                {
-                    hasCallback = true;
-                    toAdd += kvp.Value.FuncCallbackString();
-                }
+                needsCallbackText = true;
+                toAdd += kvp.Value.FuncCallbackString();
             }
 
-            if (hasCallback)
+            if (needsCallbackText)
             {
-                final += GetSpellCallbackTypeString(kvp.Key) + toAdd;
-                if (i < spellCallbackMap.Keys.Count - 2)
+                if (final.Length > 0)
                 {
-                    final += ", ";
+                    final += ", " + GetSpellCallbackTypeString(kvp.Key) + toAdd;
+                }
+                else
+                {
+
+                    final += GetSpellCallbackTypeString(kvp.Key) + toAdd;
                 }
             }
         }

@@ -52,7 +52,7 @@ public class RewardManager : MonoBehaviour
 
     [SerializeField] private GameObject selectSpellScreen;
     [SerializeField] private Transform parentSpellChoicesTo;
-    [SerializeField] private VisualSpellDisplay visualSpellDisplayPrefab;
+    [SerializeField] private SpellDisplay spellDisplayPrefab;
 
     public int NumSpellsPerChoice { get; private set; }
     [SerializeField] private int defaultNumSpellsPerChoice = 3;
@@ -90,7 +90,7 @@ public class RewardManager : MonoBehaviour
         // Debug.Log("Showing Spell Reward Screen");
         selectSpellScreen.SetActive(true);
 
-        List<VisualSpellDisplay> spawnedOptions = new List<VisualSpellDisplay>();
+        List<SpellDisplay> spawnedOptions = new List<SpellDisplay>();
 
         bool selectedSpellReward = false;
         List<Spell> choices = spawningFor.GetSpellChoices();
@@ -98,7 +98,7 @@ public class RewardManager : MonoBehaviour
         {
             Spell spell = choices[i];
 
-            VisualSpellDisplay spawned = Instantiate(visualSpellDisplayPrefab, parentSpellChoicesTo);
+            SpellDisplay spawned = Instantiate(spellDisplayPrefab, parentSpellChoicesTo);
             spawnedOptions.Add(spawned);
 
             // Set the Spell
@@ -129,7 +129,7 @@ public class RewardManager : MonoBehaviour
         // Destroy Options
         while (spawnedOptions.Count > 0)
         {
-            VisualSpellDisplay current = spawnedOptions[0];
+            SpellDisplay current = spawnedOptions[0];
             spawnedOptions.RemoveAt(0);
             Destroy(current.gameObject);
         }

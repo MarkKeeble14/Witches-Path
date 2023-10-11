@@ -91,7 +91,7 @@ public abstract class CombatEffect : ToolTippable
 
     public string GetToolTipText()
     {
-        return toolTipText + (additionalText.Length > 0 ? " - " + additionalText : "");
+        return toolTipText + (additionalText.Length > 0 ? " (" + additionalText + ")" : "");
     }
 
     public void AddAdditionalText(string toAdd)

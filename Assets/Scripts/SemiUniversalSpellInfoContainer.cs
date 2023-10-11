@@ -21,7 +21,7 @@ public class SemiUniversalSpellInfoContainer : MonoBehaviour, ToolTippable, IPoi
     [SerializeField] private GameObject container;
     public GameObject Container => container;
 
-    [SerializeField] private VisualSpellDisplay partOfDisplay;
+    [SerializeField] private SpellDisplay partOfDisplay;
 
     [SerializeField] private SemiUniversalSpellInfoType infoType;
     [SerializeField] private float delayBeforeSpawningToolTip;

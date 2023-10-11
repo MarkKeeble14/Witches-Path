@@ -15,7 +15,6 @@ public class MapManager : MonoBehaviour
     [SerializeField] private Map map;
 
     [SerializeField] private SerializableDictionary<string, GameOccurance> uniqueGameOccurances = new SerializableDictionary<string, GameOccurance>();
-
     public bool MapOpen => mapCV.alpha > 0;
     private ScrollRect mapScrollRect;
 

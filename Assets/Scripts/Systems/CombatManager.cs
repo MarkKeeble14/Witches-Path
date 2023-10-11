@@ -116,6 +116,8 @@ public partial class CombatManager : MonoBehaviour
     public bool InCombat { get; private set; }
     private bool combatScreenOpen;
     public bool CanCastSpells { get; private set; }
+    public bool ProcessingSpell { get; private set; }
+    public bool ProcessingSpellEffects { get; private set; }
     private bool hasCastQueue;
     public bool IsCastingQueue;
     public bool AllowGameSpaceToolTips => !IsCastingQueue;
@@ -143,16 +145,15 @@ public partial class CombatManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI drawPileCountText;
     [SerializeField] private TextMeshProUGUI exhaustPileCountText;
     [SerializeField] private TextMeshProUGUI showSpellPileTitleText;
-    private bool closeCurrentlyDisplayedSpellPile;
     [SerializeField] private GameObject showSpellPileScreen;
     [SerializeField] private Transform spawnShowSpellPileDisplaysOn;
-    [SerializeField] private VisualSpellDisplay visualSpellDisplayPrefab;
+    [SerializeField] private SpellDisplay spellDisplayPrefab;
     [SerializeField] private float drawSpellDelay = .15f;
     [SerializeField] private float forceLoseSpellDelay = .15f;
     [SerializeField] private float discardSpellDelay = .15f;
-    private List<Spell> alterHandSequenceSelectedSpells = new List<Spell>();
-    [SerializeField] private VisualSpellDisplay cardDisplayPrefab;
     [SerializeField] private HandLayoutGroup handLayoutGroup;
+    private bool closeCurrentlyDisplayedSpellPile;
+    private List<Spell> alterHandSequenceSelectedSpells = new List<Spell>();
     public HandLayoutGroup HandLayoutGroup => handLayoutGroup;
 
     private List<QueuedSpell> enemyCastQueue = new List<QueuedSpell>();
@@ -300,6 +301,8 @@ public partial class CombatManager : MonoBehaviour
 
     private KeyCode[] handHotKeyBindings = new KeyCode[] { KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4,
         KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9, KeyCode.Alpha0 };
+
+    private Queue<SpellDisplay> waitingSpells = new Queue<SpellDisplay>();
 
     // Callbacks
     public Action OnTurnStart;
@@ -476,7 +479,7 @@ public partial class CombatManager : MonoBehaviour
             showing.Reverse();
         }
 
-        List<VisualSpellDisplay> spawnedDisplays = new List<VisualSpellDisplay>();
+        List<SpellDisplay> spawnedDisplays = new List<SpellDisplay>();
 
         // Spawn entries
         foreach (Spell spell in showing)
@@ -486,7 +489,7 @@ public partial class CombatManager : MonoBehaviour
                 continue;
             }
 
-            VisualSpellDisplay spawned = Instantiate(visualSpellDisplayPrefab, spawnShowSpellPileDisplaysOn);
+            SpellDisplay spawned = Instantiate(spellDisplayPrefab, spawnShowSpellPileDisplaysOn);
             spawned.SetSpell(spell);
             spawnedDisplays.Add(spawned);
         }
@@ -501,7 +504,7 @@ public partial class CombatManager : MonoBehaviour
         // Closing
         while (spawnedDisplays.Count > 0)
         {
-            VisualSpellDisplay cur = spawnedDisplays[0];
+            SpellDisplay cur = spawnedDisplays[0];
             spawnedDisplays.RemoveAt(0);
             Destroy(cur.gameObject);
         }
@@ -674,6 +677,7 @@ public partial class CombatManager : MonoBehaviour
                     yield return StartCoroutine(ExhaustSpell(spell));
                     break;
                 case SpellQueueDeckAction.None:
+                    ReturnSpellToHand(spell);
                     break;
                 default:
                     throw new UnhandledSwitchCaseException();
@@ -757,7 +761,7 @@ public partial class CombatManager : MonoBehaviour
         Hand.Add(spell);
 
         // Spawn Card
-        VisualSpellDisplay spawned = Instantiate(cardDisplayPrefab, null);
+        SpellDisplay spawned = Instantiate(spellDisplayPrefab, null);
         handLayoutGroup.AddChild(spawned.transform);
         spawned.SetSpell(spell);
         spawned.SetSpellDisplayState(SpellDisplayState.InHand);
@@ -789,6 +793,9 @@ public partial class CombatManager : MonoBehaviour
             DiscardPile.Add(spell);
 
             SpellDisplay spellDisplay = spell.GetEquippedTo();
+
+            if (spellDisplay == null) yield break;
+
             handLayoutGroup.RemoveTransformFromHand(spellDisplay.transform);
 
             yield return StartCoroutine(DiscardCardAnimation(spellDisplay));
@@ -811,6 +818,17 @@ public partial class CombatManager : MonoBehaviour
         }
     }
 
+    public void ReturnSpellToHand(Spell spell)
+    {
+        SpellDisplay spellDisplay = spell.GetEquippedTo();
+
+        if (spellDisplay == null) return;
+
+        spellDisplay.ReturnToHand();
+
+        RecalculateKeyBinds();
+    }
+
     public IEnumerator ExhaustSpell(Spell spell)
     {
         if (Hand.Contains(spell))
@@ -821,9 +839,11 @@ public partial class CombatManager : MonoBehaviour
 
             SpellDisplay spellDisplay = spell.GetEquippedTo();
 
+            if (spellDisplay == null) yield break;
+
             handLayoutGroup.RemoveTransformFromHand(spellDisplay.transform);
 
-            spell.GetEquippedTo().SetSpellDisplayState(SpellDisplayState.Fading);
+            spellDisplay.SetSpellDisplayState(SpellDisplayState.Fading);
 
             AudioManager._Instance.PlayFromSFXDict("Card_Exhaust");
 
@@ -889,6 +909,7 @@ public partial class CombatManager : MonoBehaviour
 
     public void ClickedSpellForAlterHandSequence(Spell spell)
     {
+        Debug.Log("Clicked: " + spell);
         if (alterHandSequenceSelectedSpells.Contains(spell))
         {
             alterHandSequenceSelectedSpells.Remove(spell);
@@ -994,7 +1015,7 @@ public partial class CombatManager : MonoBehaviour
         for (int i = 0; i < inHand.Count; i++)
         {
             // Recalculate Key Bindings
-            VisualSpellDisplay spellDisplay = ((VisualSpellDisplay)inHand[i].GetEquippedTo());
+            SpellDisplay spellDisplay = inHand[i].GetEquippedTo();
             if (spellDisplay != null)
             {
                 spellDisplay.SetKeyBinding(GetKeyBindingAtIndex(i));
@@ -1336,20 +1357,6 @@ public partial class CombatManager : MonoBehaviour
 
     public IEnumerator AddSpellToCastQueue(Spell spell, Combatent adder, Combatent other, bool useMana, bool canEcho, Action<Spell> actOnSpell = null)
     {
-        // Echo Effect
-        if (TargetHasAffliction(AfflictionType.Echo, adder) && canEcho)
-        {
-            ConsumeAfflictionStack(AfflictionType.Echo, adder);
-            ShowAfflictionProc(AfflictionType.Echo, adder);
-            yield return StartCoroutine(AddSpellToCastQueue(spell, adder, other, false, false));
-        }
-
-        // Overwealming Blaze Effect
-        if (TargetHasAffliction(AfflictionType.OverwealmingBlaze, adder) && spell.DoesApplyAfflictionOfType(AfflictionType.Burn) && canEcho)
-        {
-            yield return StartCoroutine(AddSpellToCastQueue(spell, adder, other, false, false));
-        }
-
         // Spawn new display
         SemicircleLayoutGroup semicircleDisplay = GetQueuedSpellDisplayForTarget(adder);
         QueuedSpellDisplay queuedSpellDisplay = Instantiate(castingSpellPotencyDisplayPrefab, semicircleDisplay.transform);
@@ -1384,24 +1391,46 @@ public partial class CombatManager : MonoBehaviour
                     GameManager._Instance.AlterPlayerCurrentMana(-spell.ManaCost);
                 }
             }
+
+            playerCastQueue.Add(toQueue);
+        }
+        else
+        {
+            // Enemy is casting
+            enemyCastQueue.Add(toQueue);
         }
 
-        switch (adder)
-        {
-            case Combatent.Character:
-                playerCastQueue.Add(toQueue);
-                break;
-            case Combatent.Enemy:
-                enemyCastQueue.Add(toQueue);
-                break;
-            default: throw new UnhandledSwitchCaseException();
-        }
+        ProcessingSpellEffects = true;
 
         // Callback
         yield return StartCoroutine(spell.CallSpellCallback(SpellCallbackType.OnQueue));
 
+        // Echo Effect
+        if (TargetHasAffliction(AfflictionType.Echo, adder) && canEcho)
+        {
+            ConsumeAfflictionStack(AfflictionType.Echo, adder);
+            ShowAfflictionProc(AfflictionType.Echo, adder);
+            yield return StartCoroutine(AddSpellToCastQueue(spell, adder, other, false, false));
+        }
+
+        // Overwealming Blaze Effect
+        if (TargetHasAffliction(AfflictionType.OverwealmingBlaze, adder) && spell.DoesApplyAfflictionOfType(AfflictionType.Burn) && canEcho)
+        {
+            yield return StartCoroutine(AddSpellToCastQueue(spell, adder, other, false, false));
+        }
+
+        ProcessingSpell = false;
+        ProcessingSpellEffects = false;
+
         if (actOnSpell != null)
+        {
             actOnSpell(spell);
+        }
+    }
+
+    public void QueueWaitingSpellDisplay(SpellDisplay spell)
+    {
+        waitingSpells.Enqueue(spell);
     }
 
     private SemicircleLayoutGroup GetQueuedSpellDisplayForTarget(Combatent t)
@@ -1487,7 +1516,6 @@ public partial class CombatManager : MonoBehaviour
 
         // Play Sequence
         yield return StartCoroutine(PlaySpell(spell, queuedSpell.SpellQueueDisplay, caster, other));
-
     }
 
     private IEnumerator EnemyTurn()
@@ -1550,6 +1578,13 @@ public partial class CombatManager : MonoBehaviour
     {
         while (InCombat)
         {
+            if (waitingSpells.Count > 0 && !ProcessingSpell)
+            {
+                SpellDisplay spell = waitingSpells.Dequeue();
+                spell.SetWaiting(false);
+                ProcessingSpell = true;
+            }
+
             // Set effectiveness multiplier text
             effectivenessMultiplierText.text = "x" + Utils.RoundTo(currentSpellEffectivenessMultiplier, 2).ToString();
 
@@ -2252,7 +2287,7 @@ public partial class CombatManager : MonoBehaviour
                 break;
             case SpellPileType.Hand:
                 Hand.Add(deck.ToAdd);
-                VisualSpellDisplay spawned = Instantiate(cardDisplayPrefab, null);
+                SpellDisplay spawned = Instantiate(spellDisplayPrefab, null);
                 handLayoutGroup.AddChild(spawned.transform);
                 spawned.SetSpell(deck.ToAdd);
                 spawned.SetSpellDisplayState(SpellDisplayState.InHand);

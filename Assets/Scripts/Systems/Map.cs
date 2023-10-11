@@ -21,17 +21,10 @@ public struct MapNodeSizingInfo
     public Vector2 MinMaxVerticalOffset;
 }
 
-public enum MapSection
-{
-    Regular,
-    Miniboss,
-    Boss
-}
-
 [System.Serializable]
 public struct MapSectionInfo
 {
-    public MapSection Content;
+    public Sprite CombatBackground;
     public Vector2Int Size;
     public SerializableDictionary<int, MapNodeType> ForcedNodeIndicies;
     public int NumPaths;
@@ -40,7 +33,8 @@ public struct MapSectionInfo
     public bool ShowSectionConnections;
     public int MaxNumSectionConnections;
     public SerializableDictionary<MapNodeType, List<GameOccurance>> SpecificMapNodes;
-    public Sprite CombatBackground;
+    public PercentageMap<MapNodeType> NodeTypeOdds;
+    public PercentageMap<MapNodeType> RandomNodeTypeOdds;
 }
 
 [System.Serializable]
@@ -72,8 +66,6 @@ public class Map
     [Header("Map Config")]
     [SerializeField] private List<MapSectionInfo> mapSections = new List<MapSectionInfo>();
     private Dictionary<int, GridLayoutGroup> spawnedGrids = new Dictionary<int, GridLayoutGroup>();
-    [SerializeField] private SerializableDictionary<MapSection, PercentageMap<MapNodeType>> sectionNodeTypeOdds;
-    [SerializeField] private PercentageMap<MapNodeType> randomNodeTypeOdds;
 
     [Header("Map Settings")]
     [SerializeField] private List<EventLabelWithCondition> optionEvents = new List<EventLabelWithCondition>();
@@ -446,123 +438,111 @@ public class Map
 
     private void PopulateNodes(MapNodeUI[,] mapNodes, MapSectionInfo sectionInfo, GridLayoutGroup grid)
     {
-        // Opening if statement non-boss or mini-boss sections
-        if (sectionInfo.Content == MapSection.Regular)
+        int numPaths = sectionInfo.NumPaths;
+
+        List<MapNodeUI> starterNodes = new List<MapNodeUI>();
+        for (int i = 0; i < mapNodes.GetLength(1); i++)
         {
-            // if it is a regular section, we create paths
-            int numPaths = sectionInfo.NumPaths;
+            starterNodes.Add(mapNodes[0, i]);
+        }
 
-            List<MapNodeUI> starterNodes = new List<MapNodeUI>();
-            for (int i = 0; i < mapNodes.GetLength(1); i++)
+        // Repeat this process for however many paths asked for
+        for (int i = 0; i < numPaths; i++)
+        {
+            // if there are no more possible starter nodes, just break
+            if (starterNodes.Count == 0) break;
+
+            // Start at a Unqique Node on the First Row
+            MapNodeUI currentNode = RandomHelper.GetRandomFromList(starterNodes);
+            starterNodes.Remove(currentNode);
+
+            int rowIndex = 0;
+
+            // Repeat the moving upwards and connecting nodes until at the height of the section
+            while (rowIndex < mapNodes.GetLength(0) - 1)
             {
-                starterNodes.Add(mapNodes[0, i]);
-            }
+                // Set this node
+                SetNode(currentNode, sectionInfo, rowIndex);
 
-            // Repeat this process for however many paths asked for
-            for (int i = 0; i < numPaths; i++)
-            {
-                // if there are no more possible starter nodes, just break
-                if (starterNodes.Count == 0) break;
-
-                // Start at a Unqique Node on the First Row
-                MapNodeUI currentNode = RandomHelper.GetRandomFromList(starterNodes);
-                starterNodes.Remove(currentNode);
-
-                int rowIndex = 0;
-
-                // Repeat the moving upwards and connecting nodes until at the height of the section
-                while (rowIndex < mapNodes.GetLength(0) - 1)
+                // Try to move either up-left, up, or up-right, one of these directions must work
+                List<PathDirection> possibleDirections = new List<PathDirection>() { PathDirection.Up, PathDirection.UpLeft, PathDirection.UpRight };
+                bool hasMoved = false;
+                while (!hasMoved)
                 {
-                    // Set this node
-                    SetNode(currentNode, sectionInfo, rowIndex);
+                    // Get a random direction
+                    PathDirection attemptingDirection = RandomHelper.GetRandomFromList(possibleDirections);
+                    possibleDirections.Remove(attemptingDirection);
 
-                    // Try to move either up-left, up, or up-right, one of these directions must work
-                    List<PathDirection> possibleDirections = new List<PathDirection>() { PathDirection.Up, PathDirection.UpLeft, PathDirection.UpRight };
-                    bool hasMoved = false;
-                    while (!hasMoved)
+                    MapNodeUI nextNode;
+                    switch (attemptingDirection)
                     {
-                        // Get a random direction
-                        PathDirection attemptingDirection = RandomHelper.GetRandomFromList(possibleDirections);
-                        possibleDirections.Remove(attemptingDirection);
+                        case PathDirection.Up:
+                            // Added a new Connection
+                            nextNode = mapNodes[currentNode.Coords.x + 1, currentNode.Coords.y];
 
-                        MapNodeUI nextNode;
-                        switch (attemptingDirection)
-                        {
-                            case PathDirection.Up:
+                            if (!nextNode.HasIncomingConnection(currentNode))
+                            {
+                                currentNode.SpawnConnection(currentNode, nextNode,
+                                    nextNode.SpawnedOffset.x - currentNode.SpawnedOffset.x,
+                                    sectionInfo.SizingInfo.CellSize + grid.spacing.y + (nextNode.SpawnedOffset.y - currentNode.SpawnedOffset.y),
+                                    connectorOffsetFromNode,
+                                    numLinesPerConnector);
+                            }
+
+                            currentNode = nextNode;
+
+                            hasMoved = true;
+                            break;
+                        case PathDirection.UpLeft:
+                            if (currentNode.Coords.y - 1 > 0)
+                            {
                                 // Added a new Connection
-                                nextNode = mapNodes[currentNode.Coords.x + 1, currentNode.Coords.y];
-
+                                nextNode = mapNodes[currentNode.Coords.x + 1, currentNode.Coords.y - 1];
                                 if (!nextNode.HasIncomingConnection(currentNode))
                                 {
                                     currentNode.SpawnConnection(currentNode, nextNode,
-                                        nextNode.SpawnedOffset.x - currentNode.SpawnedOffset.x,
+                                        -sectionInfo.SizingInfo.CellSize - grid.spacing.x + (nextNode.SpawnedOffset.x - currentNode.SpawnedOffset.x),
                                         sectionInfo.SizingInfo.CellSize + grid.spacing.y + (nextNode.SpawnedOffset.y - currentNode.SpawnedOffset.y),
                                         connectorOffsetFromNode,
                                         numLinesPerConnector);
                                 }
-
                                 currentNode = nextNode;
 
                                 hasMoved = true;
-                                break;
-                            case PathDirection.UpLeft:
-                                if (currentNode.Coords.y - 1 > 0)
+                            }
+                            break;
+                        case PathDirection.UpRight:
+                            if (currentNode.Coords.y + 1 < mapNodes.GetLength(1) - 1)
+                            {
+                                // Added a new Connection
+                                nextNode = mapNodes[currentNode.Coords.x + 1, currentNode.Coords.y + 1];
+
+                                if (!nextNode.HasIncomingConnection(currentNode))
                                 {
-                                    // Added a new Connection
-                                    nextNode = mapNodes[currentNode.Coords.x + 1, currentNode.Coords.y - 1];
-                                    if (!nextNode.HasIncomingConnection(currentNode))
-                                    {
-                                        currentNode.SpawnConnection(currentNode, nextNode,
-                                            -sectionInfo.SizingInfo.CellSize - grid.spacing.x + (nextNode.SpawnedOffset.x - currentNode.SpawnedOffset.x),
-                                            sectionInfo.SizingInfo.CellSize + grid.spacing.y + (nextNode.SpawnedOffset.y - currentNode.SpawnedOffset.y),
-                                            connectorOffsetFromNode,
-                                            numLinesPerConnector);
-                                    }
-                                    currentNode = nextNode;
-
-                                    hasMoved = true;
+                                    currentNode.SpawnConnection(currentNode, nextNode,
+                                        sectionInfo.SizingInfo.CellSize + grid.spacing.x + (nextNode.SpawnedOffset.x - currentNode.SpawnedOffset.x),
+                                        sectionInfo.SizingInfo.CellSize + grid.spacing.y + (nextNode.SpawnedOffset.y - currentNode.SpawnedOffset.y),
+                                        connectorOffsetFromNode,
+                                        numLinesPerConnector);
                                 }
-                                break;
-                            case PathDirection.UpRight:
-                                if (currentNode.Coords.y + 1 < mapNodes.GetLength(1) - 1)
-                                {
-                                    // Added a new Connection
-                                    nextNode = mapNodes[currentNode.Coords.x + 1, currentNode.Coords.y + 1];
+                                currentNode = nextNode;
 
-                                    if (!nextNode.HasIncomingConnection(currentNode))
-                                    {
-                                        currentNode.SpawnConnection(currentNode, nextNode,
-                                            sectionInfo.SizingInfo.CellSize + grid.spacing.x + (nextNode.SpawnedOffset.x - currentNode.SpawnedOffset.x),
-                                            sectionInfo.SizingInfo.CellSize + grid.spacing.y + (nextNode.SpawnedOffset.y - currentNode.SpawnedOffset.y),
-                                            connectorOffsetFromNode,
-                                            numLinesPerConnector);
-                                    }
-                                    currentNode = nextNode;
-
-                                    hasMoved = true;
-                                }
-                                break;
-                        }
+                                hasMoved = true;
+                            }
+                            break;
                     }
-                    // move up a row
-                    rowIndex++;
                 }
-
-                // Set the last node
-                SetNode(currentNode, sectionInfo, rowIndex);
+                // move up a row
+                rowIndex++;
             }
 
-            // Disable any nodes that have not been set (to generate "holes")
-            DisableUnset(mapNodes);
+            // Set the last node
+            SetNode(currentNode, sectionInfo, rowIndex);
         }
-        else // if it is a boss or miniboss section, we simply set all nodes
-        {
-            foreach (MapNodeUI node in mapNodes)
-            {
-                node.SetShowConnections(sectionInfo.ShowSectionConnections);
-                SetNode(node, sectionInfo, 0);
-            }
-        }
+
+        // Disable any nodes that have not been set (to generate "holes")
+        DisableUnset(mapNodes);
+
     }
 
     private void DisableUnset(MapNodeUI[,] mapNodes)
@@ -596,7 +576,8 @@ public class Map
         }
         else
         {
-            nodeType = sectionNodeTypeOdds[sectionInfo.Content].GetOption();
+
+            nodeType = sectionInfo.NodeTypeOdds.GetOption();
         }
 
         // Only pre-emptively set the game occurance if it is defined to do so in the inspector
@@ -700,7 +681,7 @@ public class Map
         }
         else if (nodeType == MapNodeType.Random) // Defer
         {
-            nodeType = randomNodeTypeOdds.GetOption();
+            nodeType = sectionInfo.RandomNodeTypeOdds.GetOption();
             return GetGameOccuranceOfType(sectionInfo, nodeType);
         }
         else

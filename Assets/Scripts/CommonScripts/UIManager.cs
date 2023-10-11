@@ -98,7 +98,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private ToolTipListCanvas toolTipList;
     [SerializeField] private ToolTip toolTipPrefab;
     [SerializeField] private ConfirmPotionToolTip confirmPotionToolTipPrefab;
-    [SerializeField] private VisualSpellDisplay spellToolTipPrefab;
+    [SerializeField] private SpellDisplay spellToolTipPrefab;
 
     [Header("Tool Tips")]
     [SerializeField] private int toolTipWidth;
@@ -493,7 +493,7 @@ public class UIManager : MonoBehaviour
         ToolTipListCanvas list = SpawnToolTipList(spawningOn, 1, 1, true, spellToolTipWidth);
         Transform vLayout = list.GetVerticalLayoutGroup(0).transform;
         GameObject spawned = SpawnToolTip(spellToolTipPrefab.gameObject, vLayout, true, spellToolTipHeight);
-        VisualSpellDisplay display = spawned.GetComponent<VisualSpellDisplay>();
+        SpellDisplay display = spawned.GetComponent<SpellDisplay>();
         display.SetSpell(spell);
         display.SetScaleLocked(true);
         display.SetSpellDisplayState(SpellDisplayState.ToolTip);
